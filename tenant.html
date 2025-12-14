@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resident Portal | Kozeyy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
+        .sidebar-active { background-color: #312e81; border-left: 4px solid #6366f1; color: white !important; }
+        .nav-item { color: #94a3b8; }
+        .nav-item:hover { color: white; background-color: #312e81; }
+        .hidden-section { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .chat-scroll::-webkit-scrollbar { width: 6px; }
+        .chat-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+    <!-- SIDEBAR -->
+    <aside class="w-64 bg-indigo-950 flex flex-col transition-all duration-300 hidden md:flex shadow-xl z-20">
+        <div class="h-20 flex items-center px-6 border-b border-indigo-900 bg-indigo-950 gap-3">
+            <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="brand-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                        <stop offset="0%" stop-color="#4F46E5" />
+                        <stop offset="100%" stop-color="#0EA5E9" />
+                    </linearGradient>
+                </defs>
+                <rect x="6" y="6" width="10" height="28" rx="2" fill="url(#brand-grad)" />
+                <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="url(#brand-grad)" fill-opacity="0.8" />
+                <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="url(#brand-grad)" fill-opacity="0.9" />
+            </svg>
+            <span class="text-xl font-bold text-white tracking-tight brand-font">Kozeyy</span>
+        </div>
+
+        <nav class="flex-1 overflow-y-auto py-6 space-y-1">
+            <a href="#" onclick="switchTab('home')" id="nav-home" class="nav-item flex items-center px-6 py-3.5 transition sidebar-active">
+                <i class="fas fa-home w-6"></i> <span class="font-medium ml-3">Home</span>
+            </a>
+            <a href="#" onclick="switchTab('payments')" id="nav-payments" class="nav-item flex items-center px-6 py-3.5 transition">
+                <i class="fas fa-credit-card w-6"></i> <span class="font-medium ml-3">Payments</span>
+            </a>
+            <a href="#" onclick="switchTab('messages')" id="nav-messages" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
+                <div class="flex items-center"><i class="fas fa-comment w-6"></i> <span class="font-medium ml-3">Messages</span></div>
+            </a>
+            <a href="#" onclick="switchTab('maintenance')" id="nav-maintenance" class="nav-item flex items-center px-6 py-3.5 transition">
+                <i class="fas fa-tools w-6"></i> <span class="font-medium ml-3">Maintenance</span>
+            </a>
+            <a href="#" onclick="switchTab('insurance')" id="nav-insurance" class="nav-item flex items-center px-6 py-3.5 transition">
+                <i class="fas fa-shield-alt w-6"></i> <span class="font-medium ml-3">Insurance</span>
+            </a>
+        </nav>
+
+        <div class="p-6 border-t border-indigo-900 bg-indigo-950">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs"><i class="fas fa-user"></i></div>
+                <div>
+                    <p class="font-bold text-white text-sm" id="user-name">Loading...</p>
+                    <p class="text-xs text-indigo-300">Resident</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden relative">
+        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm z-10">
+            <h2 class="text-xl font-bold text-slate-800 brand-font">Resident Portal</h2>
+            <div class="flex items-center gap-6">
+                <div class="relative cursor-pointer hover:text-indigo-600 transition" onclick="switchTab('messages')">
+                    <i class="fas fa-bell text-lg text-slate-400"></i>
+                    <span id="notif-dot" class="hidden-section absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 bg-slate-50 scroll-smooth">
+            <!-- 1. HOME TAB -->
+            <div id="view-home" class="view-section fade-in">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-900 brand-font">Welcome home, <span class="display-name">...</span></h1>
+                        <p class="text-slate-500 mt-1">Unit <span id="display-unit">...</span></p>
+                    </div>
+                    <button onclick="switchTab('messages')" class="bg-white border border-slate-300 px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-slate-50 transition shadow-sm text-slate-700">
+                        <i class="fas fa-comment-alt mr-2 text-indigo-500"></i> Contact Manager
+                    </button>
+                </div>
+                <!-- Credit Builder -->
+                <div id="credit-card" class="bg-gradient-to-r from-slate-800 to-indigo-900 rounded-2xl p-8 text-white flex justify-between items-center shadow-lg mb-8 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform translate-x-10"></div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-2"><i class="fas fa-chart-line text-indigo-300"></i><span class="text-xs font-bold bg-indigo-500/30 border border-indigo-400/50 px-2 py-0.5 rounded uppercase tracking-wide">Boost Your Score</span></div>
+                        <h3 class="font-bold text-xl brand-font">Enable Credit Reporting</h3>
+                        <p class="text-indigo-200 text-sm mt-1 max-w-md">Report your on-time rent payments to TransUnion & Equifax to build your credit history.</p>
+                    </div>
+                    <button onclick="toggleCredit()" id="btn-credit" class="relative z-10 bg-white text-indigo-900 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition shadow-lg">Enable for $10/mo</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden">
+                        <div class="flex justify-between items-start mb-6"><div><h3 class="font-bold text-slate-500 text-xs uppercase tracking-wider">Current Balance</h3><div class="text-5xl font-extrabold text-slate-900 mt-2 brand-font" id="total-balance">$0.00</div></div><span id="payment-status-badge" class="bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase">All Paid</span></div>
+                        <p class="text-slate-500 text-sm mb-6" id="payment-due-date">No upcoming payments</p>
+                        <button onclick="switchTab('payments')" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20">Pay Balance</button>
+                    </div>
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-100"><h3 class="font-bold text-slate-700 mb-6 brand-font">Recent Activity</h3><div class="space-y-4" id="recent-activity-list"><div class="text-gray-400 text-sm italic">Loading activity...</div></div></div>
+                </div>
+            </div>
+
+            <!-- 2. PAYMENTS TAB -->
+            <div id="view-payments" class="view-section hidden-section fade-in">
+                <h1 class="text-2xl font-bold mb-6 brand-font">Payments</h1>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-8"><div class="p-6 border-b border-slate-100 bg-slate-50/50"><h3 class="font-bold text-slate-700">Due Now</h3></div><div id="unpaid-container" class="divide-y divide-slate-100"></div></div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b border-slate-100 bg-slate-50/50"><h3 class="font-bold text-slate-700">History</h3></div><table class="w-full text-left text-sm"><thead class="bg-slate-50 text-slate-500"><tr><th class="p-4">Date</th><th class="p-4">Description</th><th class="p-4">Total</th><th class="p-4 text-right">Status</th></tr></thead><tbody id="history-body" class="divide-y divide-slate-100"></tbody></table></div>
+            </div>
+
+            <!-- 3. MESSAGES TAB -->
+            <div id="view-messages" class="view-section hidden-section h-[calc(100vh-140px)] fade-in">
+                <div class="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 flex justify-between items-center"><span>Chat with Property Manager</span><span class="text-xs text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full font-bold">Online</span></div>
+                    <div id="chat-messages" class="flex-1 p-6 overflow-y-auto bg-slate-50 space-y-4 chat-scroll"></div>
+                    <div class="p-4 border-t border-slate-200 bg-white flex gap-2"><input type="text" id="chat-input" class="flex-1 border border-slate-300 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Type a message..."><button onclick="sendMessage()" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 transition">Send</button></div>
+                </div>
+            </div>
+
+            <!-- 4. MAINTENANCE TAB -->
+            <div id="view-maintenance" class="view-section hidden-section fade-in">
+                <div class="flex justify-between items-center mb-6"><h1 class="text-2xl font-bold brand-font">Maintenance</h1><button class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition" onclick="toggleModal('requestModal')">+ New Request</button></div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-700">Request History</div><div id="maint-list" class="divide-y divide-slate-100"></div></div>
+            </div>
+
+            <!-- 5. INSURANCE TAB -->
+            <div id="view-insurance" class="view-section hidden-section fade-in">
+                <h1 class="text-2xl font-bold mb-6 brand-font">Renter's Insurance</h1>
+                <div id="insurance-missing" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">I have a policy</h3>
+                        <p class="text-slate-500 text-sm mb-6" id="ins-req-text">Your lease requires active renter's insurance. Upload your declaration page here.</p>
+                        <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center cursor-pointer hover:bg-slate-50 transition" onclick="uploadInsurance()"><i class="fas fa-cloud-upload-alt text-3xl text-indigo-400 mb-2"></i><p class="text-sm font-bold text-slate-600">Upload Policy Document</p><p class="text-xs text-slate-400">PDF or JPG</p></div>
+                    </div>
+                    <div class="bg-indigo-950 p-8 rounded-2xl shadow-lg text-white flex flex-col justify-between">
+                        <div><div class="flex items-center gap-2 mb-4"><span class="bg-indigo-500/30 text-indigo-200 text-xs font-bold px-2 py-1 rounded uppercase">Recommended</span></div><h3 class="text-2xl font-bold mb-2 brand-font">Need coverage?</h3><p class="text-indigo-200 text-sm mb-6">Get instant approval starting at $5/mo. Covers theft, water damage, and liability.</p></div>
+                        <div class="space-y-3"><a href="https://www.lemonade.com" target="_blank" class="block w-full bg-[#FF0083] text-white text-center py-3 rounded-xl font-bold hover:bg-[#D5006D] transition">Get Lemonade Quote</a><a href="https://www.insurify.com" target="_blank" class="block w-full bg-blue-500 text-white text-center py-3 rounded-xl font-bold hover:bg-blue-600 transition">Compare on Insurify</a></div>
+                    </div>
+                </div>
+                <div id="insurance-verified" class="hidden-section bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-2xl border-l-4 border-l-emerald-500">
+                    <div class="flex justify-between items-start mb-6"><div class="flex items-center gap-4"><div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-xl"><i class="fas fa-check"></i></div><div><h3 class="text-xl font-bold text-slate-800">Policy Verified</h3><p class="text-sm text-slate-500">Uploaded on <span id="ins-date">Oct 12, 2023</span></p></div></div><span class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold uppercase">Active</span></div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200"><div class="flex items-center gap-3"><i class="fas fa-file-pdf text-red-500 text-2xl"></i><div><p class="text-sm font-bold text-slate-800">declaration_page.pdf</p><p class="text-xs text-slate-400">1.2 MB</p></div></div></div>
+                    <button onclick="resetInsurance()" class="mt-6 text-sm text-slate-400 hover:text-red-500 underline">Remove Policy</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Maintenance Modal -->
+    <div id="requestModal" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm"><div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md relative m-4"><button onclick="toggleModal('requestModal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button><h2 class="text-xl font-bold mb-4 brand-font">Request Maintenance</h2><form onsubmit="handleMaintSubmit(event)" class="space-y-4"><div><label class="block text-sm font-bold text-slate-700 mb-1">Issue Category</label><select id="m-cat" class="w-full border p-3 rounded-xl bg-slate-50 outline-none"><option>Plumbing</option><option>Electrical</option><option>Appliance</option><option>General</option></select></div><div><label class="block text-sm font-bold text-slate-700 mb-1">Description</label><textarea id="m-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24 outline-none" placeholder="Describe the issue..." required></textarea></div><div class="flex items-center gap-2"><input type="checkbox" id="entry" class="rounded text-indigo-600"><label for="entry" class="text-sm text-slate-600">Permission to enter if I am not home</label></div><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">Submit Request</button></form></div></div>
+
+    <script>
+        const DB_KEY = 'kozeyy_data_final_v12';
+        const USER_ID = 1; 
+        const DB = { get: () => { try { return JSON.parse(localStorage.getItem(DB_KEY)); } catch(e){ return null; } }, set: (data) => localStorage.setItem(DB_KEY, JSON.stringify(data)) };
+        let isCreditEnabled = false;
+
+        function render() {
+            const data = DB.get();
+            if(!data) { document.getElementById('user-name').innerText = "Demo User"; document.getElementById('recent-activity-list').innerHTML = '<div class="text-sm text-gray-400 italic">Waiting for owner setup...</div>'; return; }
+            const user = data.tenants.find(t => t.id == USER_ID) || {name: 'Unknown User', unit: 'N/A', insurance: false};
+            const myInvoices = data.invoices.filter(i => i.tenantId == USER_ID);
+            const myMsgs = data.msgs.filter(m => m.tenantId == USER_ID);
+            const myMaint = data.maint.filter(m => m.tenantId == USER_ID);
+
+            document.getElementById('user-name').innerText = user.name;
+            document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name.split(' ')[0]);
+            document.getElementById('display-unit').innerText = user.unit ? `Unit ${user.unit}` : 'Active Lease';
+
+            const unread = myMsgs.filter(m => m.from === 'Owner').length > 0;
+            const dot = document.getElementById('notif-dot');
+            if(unread) dot.classList.remove('hidden-section'); else dot.classList.add('hidden-section');
+
+            // Insurance Logic
+            const settings = data.settings || { requireInsurance: true };
+            const reqText = document.getElementById('ins-req-text');
+            if (settings.requireInsurance) { reqText.innerText = "Your lease requires active renter's insurance. Upload your declaration page here."; } else { reqText.innerText = "Upload your declaration page here to keep your records safe."; }
+            if(user.insurance) { document.getElementById('insurance-missing').classList.add('hidden-section'); document.getElementById('insurance-verified').classList.remove('hidden-section'); if(user.insuranceDate) document.getElementById('ins-date').innerText = user.insuranceDate; } else { document.getElementById('insurance-missing').classList.remove('hidden-section'); document.getElementById('insurance-verified').classList.add('hidden-section'); }
+
+            const unpaid = myInvoices.filter(i => i.status === 'Unpaid');
+            const totalDue = unpaid.reduce((sum, i) => sum + (i.total || 0), 0);
+            document.getElementById('total-balance').innerText = `$${totalDue.toLocaleString()}`;
+            const badge = document.getElementById('payment-status-badge');
+            if(totalDue > 0) { badge.className = "bg-rose-100 text-rose-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = `${unpaid.length} Due`; document.getElementById('payment-due-date').innerText = `Due: ${unpaid[0].date || 'Immediately'}`; } else { badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = "All Paid"; document.getElementById('payment-due-date').innerText = "No upcoming payments"; }
+
+            const uCont = document.getElementById('unpaid-container'); uCont.innerHTML = unpaid.length ? '' : `<div class="p-8 text-center text-slate-400 italic">No active invoices</div>`;
+            unpaid.forEach(i => { let itemsHtml = `<ul class="text-sm text-slate-500 mt-2 space-y-1">`; const items = i.items || [{desc: 'Balance', amt: i.total}]; items.forEach(item => { itemsHtml += `<li class="flex justify-between w-full max-w-xs border-b border-dashed border-slate-200 pb-1"><span>${item.desc}</span> <span>$${item.amount}</span></li>`; }); itemsHtml += `</ul>`; uCont.innerHTML += `<div class="p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100"><div class="mb-4 md:mb-0"><p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p>${itemsHtml}<p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p></div><div class="flex items-center gap-6"><span class="font-extrabold text-2xl text-slate-900">$${i.total.toLocaleString()}</span><button onclick="payInvoice(${i.id})" class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Pay Now</button></div></div>`; });
+
+            const hBody = document.getElementById('history-body'); hBody.innerHTML = '';
+            myInvoices.filter(i => i.status === 'Paid').forEach(i => { hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.date || '-'}</td><td class="p-4 text-slate-800 font-medium text-sm">Invoice #${i.id}</td><td class="p-4 font-bold">$${i.total.toLocaleString()}</td><td class="p-4 text-right"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase">Paid</span></td></tr>`; });
+
+            const activityList = document.getElementById('recent-activity-list'); activityList.innerHTML = '';
+            const feed = [...myInvoices.filter(i=>i.status==='Paid').map(x => ({type:'pay', date: 'Recent', txt: `Paid Invoice #${x.id}`})), ...myMaint.map(x => ({type:'maint', date: x.date, txt: `Request: ${x.issue} (${x.status})`}))].slice(0, 3);
+            if(feed.length === 0) activityList.innerHTML = '<div class="text-sm text-slate-400 italic">No recent activity</div>';
+            feed.forEach(item => { const icon = item.type === 'pay' ? '<div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center"><i class="fas fa-check"></i></div>' : '<div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center"><i class="fas fa-tools"></i></div>'; activityList.innerHTML += `<div class="flex items-center gap-4 pb-4 border-b border-slate-100 last:border-0 last:pb-0">${icon}<div><p class="font-bold text-sm text-slate-800">${item.txt}</p><p class="text-xs text-slate-500">${item.date}</p></div></div>`; });
+
+            const chatBox = document.getElementById('chat-messages'); chatBox.innerHTML = '';
+            myMsgs.forEach(m => { const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-800'; chatBox.innerHTML += `<div class="flex ${align}"><div class="max-w-xs px-4 py-2 rounded-xl ${color} text-sm shadow-sm">${m.text}</div></div>`; });
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            const maintList = document.getElementById('maint-list'); maintList.innerHTML = myMaint.length ? '' : `<div class="p-8 text-center text-slate-400 italic">No requests filed</div>`;
+            myMaint.forEach(m => { const statusColor = m.status === 'Active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'; maintList.innerHTML += `<div class="p-6 flex justify-between items-center hover:bg-slate-50 transition border-b border-slate-100"><div class="flex items-center gap-4"><div class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500"><i class="fas fa-wrench"></i></div><div><h4 class="font-bold text-slate-800">${m.issue}</h4><p class="text-sm text-slate-500">${m.date}</p></div></div><span class="${statusColor} px-3 py-1 rounded-full text-xs font-bold uppercase">${m.status}</span></div>`; });
+        }
+
+        function switchTab(t) { document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden-section')); document.getElementById(`view-${t}`).classList.remove('hidden-section'); document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('sidebar-active')); document.getElementById(`nav-${t}`).classList.add('sidebar-active'); if(t === 'messages') { document.getElementById('notif-dot').classList.add('hidden-section'); } }
+        function toggleModal(id) { const el = document.getElementById(id); if(el) el.classList.toggle('hidden-section'); }
+        function toggleCredit() { isCreditEnabled = !isCreditEnabled; const btn = document.getElementById('btn-credit'); if(isCreditEnabled) { btn.innerText = "Enabled ✓"; btn.classList.remove('bg-white', 'text-indigo-900'); btn.classList.add('bg-emerald-500', 'text-white'); alert("Credit reporting enabled! $10 will be added to your next invoice."); } else { btn.innerText = "Enable for $10/mo"; btn.classList.add('bg-white', 'text-indigo-900'); btn.classList.remove('bg-emerald-500', 'text-white'); } }
+        function uploadInsurance() { alert("File successfully uploaded!"); const data = DB.get(); const tenantIndex = data.tenants.findIndex(t => t.id == USER_ID); if(tenantIndex > -1) { data.tenants[tenantIndex].insurance = true; data.tenants[tenantIndex].insuranceDate = new Date().toLocaleDateString(); DB.set(data); render(); } }
+        function resetInsurance() { if(confirm("Remove this policy?")) { const data = DB.get(); const tenantIndex = data.tenants.findIndex(t => t.id == USER_ID); if(tenantIndex > -1) { data.tenants[tenantIndex].insurance = false; DB.set(data); render(); } } }
+        function payInvoice(id) { if(confirm("Pay this invoice now?")) { const data = DB.get(); const inv = data.invoices.find(i => i.id === id); if(inv) { inv.status = 'Paid'; DB.set(data); render(); } } }
+        function sendMessage() { const input = document.getElementById('chat-input'); const txt = input.value.trim(); if(txt) { const data = DB.get(); data.msgs.push({ id: Date.now(), tenantId: USER_ID, from: 'Tenant', text: txt, time: new Date().toLocaleTimeString() }); if(!data.notifications) data.notifications = { messages: 0 }; data.notifications.messages = (data.notifications.messages || 0) + 1; DB.set(data); input.value = ''; render(); } }
+        function handleMaintSubmit(e) { e.preventDefault(); const desc = document.getElementById('m-desc').value; const cat = document.getElementById('m-cat').value; if(desc) { const data = DB.get(); data.maint.push({ id: Date.now(), tenantId: USER_ID, issue: `${cat}: ${desc}`, status: 'Active', date: new Date().toLocaleDateString() }); if(!data.notifications) data.notifications = { maintenance: 0 }; data.notifications.maintenance = (data.notifications.maintenance || 0) + 1; DB.set(data); toggleModal('requestModal'); e.target.reset(); render(); } }
+
+        render();
+        setInterval(render, 2000); 
+
+    </script>
+</body>
+</html>

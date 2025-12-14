@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kozeyy | Streamlined Property Management</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, h4, .brand-font { font-family: 'Outfit', sans-serif; }
+        
+        .hero-bg {
+            background-image: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .blob {
+            position: absolute;
+            filter: blur(60px);
+            z-index: -1;
+            opacity: 0.5;
+        }
+        .hidden-page { display: none; }
+    </style>
+</head>
+<body class="bg-white text-slate-900 scroll-smooth">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-xl border-b border-slate-100 transition-all duration-300">
+        <div class="w-full px-6 lg:px-12">
+            <div class="flex justify-between items-center h-20">
+                
+                <!-- LOGO (Updated to match Owner/Tenant Portals exactly) -->
+                <div class="flex items-center gap-3 cursor-pointer group" onclick="showPage('home')">
+                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="transform group-hover:rotate-3 transition duration-500">
+                        <defs>
+                            <linearGradient id="brand-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#4F46E5" /> <!-- Indigo -->
+                                <stop offset="100%" stop-color="#0EA5E9" /> <!-- Sky Blue -->
+                            </linearGradient>
+                        </defs>
+                        <rect x="6" y="6" width="10" height="28" rx="2" fill="url(#brand-grad)" />
+                        <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="url(#brand-grad)" fill-opacity="0.8" />
+                        <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="url(#brand-grad)" fill-opacity="0.9" />
+                    </svg>
+                    <span class="text-3xl font-extrabold text-slate-900 tracking-tight brand-font">
+                        Kozeyy
+                    </span>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="javascript:void(0)" onclick="showPage('home', 'features')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Features</a>
+                    <a href="javascript:void(0)" onclick="showPage('home', 'pricing')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Pricing</a>
+                    
+                    <div class="relative group">
+                        <button class="text-sm font-semibold text-slate-600 hover:text-blue-600 flex items-center gap-1">
+                            Log In <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div class="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity invisible group-hover:visible transform translate-y-2 group-hover:translate-y-0">
+                            <a href="owner.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-slate-50 hover:text-blue-600 rounded-t-xl">Owner Portal</a>
+                            <a href="tenant.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-slate-50 hover:text-blue-600 rounded-b-xl">Tenant Portal</a>
+                        </div>
+                    </div>
+
+                    <a href="owner.html" class="bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">
+                        Join Founder's Club
+                    </a>
+                </div>
+
+                <div class="md:hidden">
+                    <button class="text-slate-600 hover:text-blue-600"><i class="fas fa-bars text-xl"></i></button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN LANDING PAGE CONTENT -->
+    <div id="page-home">
+        
+        <!-- Hero Section -->
+        <section class="hero-bg min-h-screen flex items-center relative pt-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+                
+                <span class="inline-block py-1.5 px-4 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold tracking-wide mb-8 backdrop-blur-sm uppercase">
+                    <i class="fas fa-star mr-1 text-yellow-400"></i> Founder's Club: Spots Limited
+                </span>
+
+                <h1 class="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tight leading-tight brand-font drop-shadow-md">
+                    Premium Management.<br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-100 via-white to-blue-200">
+                        Locked in at $0/mo.
+                    </span>
+                </h1>
+
+                <p class="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
+                    Kozeyy builds the future of property management. Join our <strong>Founder's Club</strong> today and get our Pro Software free for life.
+                </p>
+                
+                <div class="flex justify-center">
+                    <a href="owner.html" class="bg-blue-600 text-white px-10 py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-1">
+                        Claim Free Account
+                    </a>
+                </div>
+                
+                <!-- Trust Section -->
+                <div class="mt-16 text-slate-400 text-sm font-medium">
+                    <p class="mb-6 uppercase tracking-widest text-xs opacity-70">Secured & Powered By</p>
+                    <div class="flex justify-center gap-10 items-center opacity-70 grayscale transition hover:grayscale-0">
+                        <i class="fab fa-stripe text-5xl"></i>
+                        <i class="fab fa-aws text-4xl"></i>
+                        <i class="fab fa-google text-3xl"></i>
+                        <i class="fas fa-shield-alt text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Grid -->
+        <section id="features" class="py-24 bg-slate-50 relative overflow-hidden">
+            <div class="blob bg-blue-200 w-96 h-96 rounded-full top-0 left-0"></div>
+            
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 mb-4 brand-font">Enterprise tools for everyone</h2>
+                    <p class="text-lg text-slate-600 max-w-2xl mx-auto">Automate your rentals with the same tools the big firms use.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Automated Rent</h3>
+                        <p class="text-slate-600 leading-relaxed">Direct deposit ACH payments. Auto-late fees. Financial reporting.</p>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Tenant Screening</h3>
+                        <p class="text-slate-600 leading-relaxed">Full credit, criminal, and eviction reports paid for by the applicant.</p>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Maintenance</h3>
+                        <p class="text-slate-600 leading-relaxed">Digital ticketing system. Keep specific records of every repair and expense.</p>
+                    </div>
+
+                    <!-- Feature 4 -->
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Messaging</h3>
+                        <p class="text-slate-600 leading-relaxed">Centralized chat. Keep your personal phone number private.</p>
+                    </div>
+
+                    <!-- Feature 5 -->
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-mobile-screen"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Resident Portal</h3>
+                        <p class="text-slate-600 leading-relaxed">Give tenants a professional app to pay rent, request repairs, and view history.</p>
+                    </div>
+
+                    <!-- Feature 6 -->
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Marketing</h3>
+                        <p class="text-slate-600 leading-relaxed">Syndicate listings to major rental sites with one click.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="pricing" class="py-24 bg-white border-t border-slate-100">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 mb-4 brand-font">Founder's Club Pricing</h2>
+                    <p class="text-lg text-slate-600">Join our Beta. Help us build the best platform. Get it free forever.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    
+                    <!-- Landlord Card -->
+                    <div class="bg-slate-900 rounded-3xl p-10 text-white relative shadow-2xl overflow-hidden transform hover:-translate-y-2 transition duration-300 border-2 border-amber-500/50">
+                        <div class="absolute top-0 right-0 bg-amber-500 text-black text-xs font-bold px-4 py-2 rounded-bl-xl uppercase tracking-wider">Early Access</div>
+                        <h3 class="text-2xl font-bold mb-2">Founder's Plan</h3>
+                        
+                        <div class="flex items-end mb-6 gap-3">
+                            <span class="text-2xl text-slate-500 line-through decoration-red-500 decoration-2">$29</span>
+                            <span class="text-5xl font-extrabold">$0</span>
+                            <span class="text-slate-400">/ month</span>
+                        </div>
+                        
+                        <p class="text-slate-300 mb-8 border-b border-slate-700 pb-8">Lock in this rate for life. Future users will pay monthly fees.</p>
+                        
+                        <ul class="space-y-4 mb-10">
+                            <li class="flex items-center"><i class="fas fa-check-circle text-amber-400 mr-3"></i> <strong>Grandfathered Status</strong></li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Unlimited Properties</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Automated Rent Collection</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Maintenance Management</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Priority Support</li>
+                        </ul>
+                        <a href="owner.html" class="block w-full bg-amber-500 text-slate-900 text-center py-4 rounded-xl font-bold hover:bg-amber-400 transition">Lock In Free Rate</a>
+                    </div>
+
+                    <!-- Tenant Card -->
+                    <div class="bg-white rounded-3xl p-10 border border-slate-200 text-slate-900 hover:border-blue-200 transition duration-300 shadow-sm">
+                        <h3 class="text-2xl font-bold mb-2">Transaction Fees</h3>
+                        <div class="flex items-baseline mb-6">
+                            <span class="text-xl font-medium text-slate-500">Paid by Tenant or Applicant</span>
+                        </div>
+                        <p class="text-slate-500 mb-8 border-b border-slate-100 pb-8">We monetize financial transactions, not your subscription.</p>
+                        
+                        <ul class="space-y-6">
+                            <li class="flex justify-between items-center">
+                                <span class="font-bold flex items-center"><i class="fas fa-search text-slate-400 mr-3"></i> Screening Report</span>
+                                <span class="text-blue-600 font-bold">$45</span>
+                            </li>
+                            <li class="flex justify-between items-center">
+                                <span class="font-bold flex items-center"><i class="fas fa-university text-slate-400 mr-3"></i> ACH Bank Transfer</span>
+                                <span class="text-blue-600 font-bold">$2.00</span>
+                            </li>
+                            <li class="flex justify-between items-center">
+                                <span class="font-bold flex items-center"><i class="fas fa-credit-card text-slate-400 mr-3"></i> Credit Card</span>
+                                <span class="text-blue-600 font-bold">2.9%</span>
+                            </li>
+                            <li class="flex justify-between items-center">
+                                <span class="font-bold flex items-center"><i class="fas fa-shield-alt text-slate-400 mr-3"></i> Renter's Insurance</span>
+                                <span class="text-blue-600 font-bold">Varies</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA -->
+        <section class="py-20 bg-blue-600">
+            <div class="max-w-4xl mx-auto px-4 text-center text-white">
+                <h2 class="text-3xl md:text-5xl font-extrabold mb-6 brand-font">Don't miss the Founder's Window</h2>
+                <p class="text-xl text-blue-100 mb-10">We will switch to paid subscriptions once we hit our user cap. Secure your free account now.</p>
+                <div class="flex justify-center">
+                    <a href="owner.html" class="bg-slate-900 text-white px-10 py-4 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg text-lg">Create Account</a>
+                </div>
+                <p class="mt-4 text-sm text-blue-200 opacity-80">No credit card required to sign up.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- HIDDEN PAGES (POPULATED) -->
+    
+    <!-- 1. HELP CENTER -->
+    <div id="page-help" class="hidden-page pt-24 bg-slate-50 min-h-screen">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-8 brand-font">Help Center</h1>
+            <div class="space-y-6">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl mb-3 text-slate-800">How do I add a property?</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4">Go to your Owner Portal, click on the "Listings" tab, and select "Post Listing". Fill out the address and details to get started.</p>
+                    <a href="owner.html" class="text-blue-600 font-bold text-sm hover:underline">Go to Dashboard &rarr;</a>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl mb-3 text-slate-800">Is Kozeyy really free?</h3>
+                    <p class="text-slate-600 leading-relaxed">Yes! If you join our Founder's Club, your account is free forever. We operate on a SaaS model where tenants pay small convenience fees.</p>
+                </div>
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl mb-3 text-slate-800">How do payouts work?</h3>
+                    <p class="text-slate-600 leading-relaxed">We use Stripe Connect for bank-level security. Once a tenant pays rent, the funds are routed to your linked bank account within 2-3 business days.</p>
+                </div>
+            </div>
+            <button onclick="showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+        </div>
+    </div>
+
+    <!-- 2. RENTAL LAWS -->
+    <div id="page-laws" class="hidden-page pt-24 bg-slate-50 min-h-screen">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-4 brand-font">Rental Laws & Compliance</h1>
+            <p class="text-slate-500 mb-8 max-w-2xl">Disclaimer: Kozeyy provides this for informational purposes only. Landlord-tenant laws vary significantly by state and municipality. Please consult a local attorney for legal advice.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <a href="https://www.nolo.com/legal-encyclopedia/landlord-tenant-law" target="_blank" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 transition group">
+                    <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4"><i class="fas fa-scale-balanced text-xl"></i></div>
+                    <h3 class="font-bold text-lg mb-2 text-slate-800 group-hover:text-blue-600 transition">Fair Housing Act</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">Learn about federal laws prohibiting discrimination in housing based on race, color, national origin, religion, sex, familial status, and disability.</p>
+                </a>
+                <a href="https://www.hud.gov/topics/rental_assistance/tenantrights" target="_blank" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 transition group">
+                    <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4"><i class="fas fa-map-location-dot text-xl"></i></div>
+                    <h3 class="font-bold text-lg mb-2 text-slate-800 group-hover:text-blue-600 transition">Tenant Rights by State</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">View specific regulations regarding security deposits, evictions, and lease terminations for your specific state.</p>
+                </a>
+                <a href="https://www.irs.gov/businesses/small-businesses-self-employed/tips-on-rental-real-estate-income-deductions-and-recordkeeping" target="_blank" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 transition group">
+                    <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
+                    <h3 class="font-bold text-lg mb-2 text-slate-800 group-hover:text-blue-600 transition">Tax Deductions</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">A guide to what you can deduct as a landlord: mortgage interest, property tax, operating expenses, depreciation, and repairs.</p>
+                </a>
+            </div>
+            <button onclick="showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+        </div>
+    </div>
+
+    <!-- 3. PRIVACY POLICY -->
+    <div id="page-privacy" class="hidden-page pt-24 bg-white min-h-screen">
+        <div class="max-w-3xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold mb-6 brand-font text-slate-900">Privacy Policy</h1>
+            <p class="text-slate-500 text-sm mb-8 border-b border-slate-100 pb-8">Last Updated: Dec 12, 2025</p>
+            <div class="prose text-slate-700 leading-relaxed space-y-8">
+                <section>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">1. Information We Collect</h3>
+                    <p>We collect information you provide directly to us, such as when you create an account, post a listing, or communicate with other users.</p>
+                </section>
+                <section>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">2. Data Security</h3>
+                    <p>We use Stripe for payment processing. We do not store your credit card information on our servers. All traffic is encrypted via SSL technology.</p>
+                </section>
+            </div>
+            <button onclick="showPage('home')" class="mt-12 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+        </div>
+    </div>
+
+    <!-- 4. TERMS OF SERVICE -->
+    <div id="page-terms" class="hidden-page pt-24 bg-white min-h-screen">
+        <div class="max-w-3xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold mb-6 brand-font text-slate-900">Terms of Service</h1>
+            <p class="text-slate-500 text-sm mb-8 border-b border-slate-100 pb-8">Last Updated: Dec 12, 2025</p>
+            <div class="prose text-slate-700 leading-relaxed space-y-8">
+                <section>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">1. Role of Kozeyy</h3>
+                    <p>Kozeyy is a platform provider. We are not a party to any rental agreement between landlords and tenants. We do not own or manage properties directly.</p>
+                </section>
+                <section>
+                    <h3 class="text-xl font-bold text-slate-900 mb-2">2. Fees</h3>
+                    <p>Landlord accounts are free under the Founder's Club plan. Tenant transaction fees (ACH, Credit Card, Background Checks) are non-refundable.</p>
+                </section>
+            </div>
+            <button onclick="showPage('home')" class="mt-12 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div class="col-span-1 md:col-span-1">
+                <div class="flex items-center gap-2 text-white mb-4">
+                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs><linearGradient id="footer-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#4F46E5" /><stop offset="100%" stop-color="#0EA5E9" /></linearGradient></defs>
+                        <rect x="6" y="6" width="10" height="28" rx="2" fill="url(#footer-grad)" />
+                        <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="url(#footer-grad)" fill-opacity="0.8" />
+                        <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="url(#footer-grad)" fill-opacity="0.9" />
+                    </svg>
+                    <span class="text-xl font-bold brand-font">Kozeyy</span>
+                </div>
+                <p class="mt-4 text-sm text-slate-400">Simplifying property management for the modern landlord.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 brand-font">Product</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="javascript:void(0)" onclick="showPage('home', 'features')" class="hover:text-blue-400 transition">Features</a></li>
+                    <li><a href="javascript:void(0)" onclick="showPage('home', 'pricing')" class="hover:text-blue-400 transition">Pricing</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 brand-font">Resources</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="javascript:void(0)" onclick="showPage('help')" class="hover:text-blue-400 transition">Help Center</a></li>
+                    <li><a href="javascript:void(0)" onclick="showPage('laws')" class="hover:text-blue-400 transition">Rental Laws</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 brand-font">Legal</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="javascript:void(0)" onclick="showPage('privacy')" class="hover:text-blue-400 transition">Privacy Policy</a></li>
+                    <li><a href="javascript:void(0)" onclick="showPage('terms')" class="hover:text-blue-400 transition">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="text-center text-xs text-slate-600 pt-8 border-t border-slate-800">
+            &copy; 2025 Kozeyy Technologies Inc. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Router -->
+    <script>
+        function showPage(pageId, scrollToId = null) {
+            const pages = ['page-home', 'page-help', 'page-laws', 'page-privacy', 'page-terms'];
+            pages.forEach(id => document.getElementById(id).classList.add('hidden-page'));
+            document.getElementById('page-' + pageId).classList.remove('hidden-page');
+            if (scrollToId) {
+                const el = document.getElementById(scrollToId);
+                if(el) el.scrollIntoView();
+            } else {
+                window.scrollTo(0,0);
+            }
+        }
+    </script>
+
+</body>
+</html>
