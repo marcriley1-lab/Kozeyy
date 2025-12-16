@@ -96,12 +96,11 @@
             </div>
         </header>
 
-        <!-- Added pb-32 to fully clear mobile bottom bars -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 scroll-smooth pb-32" id="app-content">
             
             <!-- 1. DASHBOARD -->
             <div id="view-dashboard" class="view-section fade-in">
-                <!-- UPDATED: Livelier Mobile Squares (2 cols) -->
+                <!-- Grid: 2 cols on mobile (squares), 4 on desktop -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
                     
                     <!-- Revenue Card (Green) -->
@@ -188,11 +187,11 @@
                 </div>
             </div>
 
-            <!-- 5. MESSAGES (MOBILE FRIENDLY LAYOUT) -->
+            <!-- 5. MESSAGES -->
             <div id="view-messages" class="view-section hidden-section fade-in h-[calc(100vh-140px)]">
                 <div class="flex h-full bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden relative">
                     
-                    <!-- List Panel -->
+                    <!-- Chat List -->
                     <div id="msg-list-panel" class="w-full md:w-1/3 border-r border-slate-200 bg-slate-50 flex flex-col">
                         <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 brand-font">Conversations</div>
                         <div id="list-chats" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
@@ -264,19 +263,59 @@
                 </div>
             </div>
 
-            <!-- 10. SETTINGS -->
+            <!-- 10. SETTINGS (Restored Full Functionality) -->
             <div id="view-settings" class="view-section hidden-section fade-in">
-                <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto"><h3 class="text-2xl font-bold mb-8 brand-font">Settings</h3><div class="p-4 text-center text-slate-500 italic brand-font">Global settings available in next update.</div></div>
+                <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
+                    <h3 class="text-2xl font-bold mb-8 brand-font">Settings: Late Fees</h3>
+                    <form onsubmit="act_saveSettings(event)" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Apply To</label>
+                            <div class="flex gap-4">
+                                <label class="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-slate-50 transition">
+                                    <input type="radio" name="feeTarget" value="all" checked onchange="toggleFeeTarget()" class="text-indigo-600"> 
+                                    <span class="text-sm font-medium">All Tenants</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-slate-50 transition">
+                                    <input type="radio" name="feeTarget" value="select" onchange="toggleFeeTarget()" class="text-indigo-600"> 
+                                    <span class="text-sm font-medium">Specific Tenants</span>
+                                </label>
+                            </div>
+                            <div id="fee-tenant-select" class="hidden-section mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 max-h-32 overflow-y-auto"></div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Charge Method</label>
+                            <select id="fee-method" class="w-full border p-3 rounded-xl bg-slate-50" onchange="toggleFeeInput()">
+                                <option value="flat">Manual Flat Fee ($)</option>
+                                <option value="daily">Daily Charge ($/day)</option>
+                                <option value="percent">Percentage of Rent (%)</option>
+                            </select>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2 brand-font" id="fee-label">Amount ($)</label>
+                                <input type="number" id="fee-amount" class="w-full border p-3 rounded-xl bg-slate-50" value="50">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Grace Period (Days)</label>
+                                <input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50" value="5">
+                            </div>
+                        </div>
+                        <div class="pt-4 border-t border-slate-100">
+                            <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Lease Requirements</h4>
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" id="set-insurance" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
+                                    <span class="font-medium text-slate-700 brand-font">Require Renter's Insurance</span>
+                                </label>
+                                <p class="text-xs text-slate-500 mt-1 ml-8">If checked, tenants will see a requirement notice.</p>
+                            </div>
+                        </div>
+                        <button class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg brand-font">Save Configuration</button>
+                    </form>
+                </div>
             </div>
         </div>
     </main>
-
-    <!-- MODALS (Structure preserved, improved slightly for rounded corners) -->
-    <div id="modal-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative"><button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-6 brand-font">Add Tenant</h3><form onsubmit="act_saveTenant(event)" class="space-y-4"><input id="t-name" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Name" required><input id="t-email" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Email"><div class="flex gap-2"><input id="t-unit" class="w-1/2 border p-3 rounded-xl bg-slate-50" placeholder="Unit"><input id="t-rent" class="w-1/2 border p-3 rounded-xl bg-slate-50" placeholder="Rent"></div><input id="t-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Address"><button class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold brand-font">Save</button></form></div></div>
-    <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative"><button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-6 brand-font">Invoice</h3><form onsubmit="act_addInvoice(event)" class="space-y-4"><select id="inv-tenant" class="w-full border p-3 rounded-xl bg-slate-50"></select><input id="inv-desc" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Description"><input id="inv-amount" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amount"><input type="date" id="inv-date" class="w-full border p-3 rounded-xl bg-slate-50"><button class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold brand-font">Send</button></form></div></div>
-    <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative"><button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-6 brand-font">Listing</h3><form onsubmit="act_saveListing(event)" class="space-y-4"><input id="l-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Address"><div class="flex gap-2"><input id="l-price" class="w-1/2 border p-3 rounded-xl bg-slate-50" placeholder="Price"><input id="l-sqft" class="w-1/2 border p-3 rounded-xl bg-slate-50" placeholder="Sqft"></div><div class="flex gap-2"><input id="l-beds" class="w-1/2 border p-3 rounded-xl bg-slate-50" placeholder="Beds"><input id="l-baths" class="w-1/2 border p-3 rounded-xl bg-slate-50" placeholder="Baths"></div><textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Desc"></textarea><input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities"><input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50"><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font">Post</button></form></div></div>
-    <div id="modal-expense" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative"><button onclick="closeModal('modal-expense')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-6 brand-font">Expense</h3><form onsubmit="act_addExpense(event)" class="space-y-4"><select id="ex-prop" class="w-full border p-3 rounded-xl bg-slate-50"></select><input type="date" id="ex-date" class="w-full border p-3 rounded-xl bg-slate-50"><input id="ex-vendor" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Vendor"><select id="ex-cat" class="w-full border p-3 rounded-xl bg-slate-50"><option>Repairs</option><option>Utilities</option><option>Tax</option></select><input id="ex-amount" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amount"><button class="w-full bg-rose-600 text-white py-3 rounded-xl font-bold brand-font">Save</button></form></div></div>
-    <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1 brand-font"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">None</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-50 brand-font">Close</button></div></div>
 
     <!-- WELCOME MODAL -->
     <div id="modal-welcome" class="hidden-section fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-md fade-in px-4"><div class="bg-white p-10 rounded-3xl shadow-2xl max-w-lg text-center relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-blue-500"></div><div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fas fa-hand-sparkles text-3xl text-indigo-600"></i></div><h2 class="text-3xl font-extrabold text-slate-900 mb-4 brand-font">Welcome to Kozeyy</h2><p class="text-slate-600 mb-8 leading-relaxed">Your professional property management journey starts here. Let us show you how to automate your rentals in 5 easy steps.</p><button onclick="startTour()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-1">Start Quick Tour</button><button onclick="endTour()" class="mt-4 text-sm text-slate-400 hover:text-slate-600">Skip for now</button></div></div>
@@ -284,33 +323,109 @@
     <div id="tour-spotlight" class="hidden-section tour-spotlight"></div>
     <div id="tour-tooltip" class="hidden-section tour-tooltip"><div class="flex justify-between items-start mb-2"><h4 id="tour-title" class="font-bold text-lg text-slate-900"></h4><span id="tour-step" class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">1/5</span></div><p id="tour-text" class="text-sm text-slate-600 mb-4 leading-relaxed"></p><div class="flex justify-end gap-2"><button onclick="endTour()" class="text-xs text-slate-400 hover:text-slate-600 mr-auto px-2">End</button><button onclick="nextStep()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Next</button></div></div>
 
+    <!-- MODALS (Updated styles for rounded corners, restored fields) -->
+    
+    <!-- ADD TENANT (Restored Fields) -->
+    <div id="modal-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-tenant-title">Add Tenant</h3>
+            <form onsubmit="act_saveTenant(event)" class="grid grid-cols-2 gap-4">
+                <input type="hidden" id="t-id">
+                <div class="col-span-2 border-b pb-1 mb-2 font-bold text-slate-500 text-xs uppercase tracking-wider brand-font">Personal Info</div>
+                <input type="text" id="t-name" placeholder="Full Name" required class="col-span-2 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="email" id="t-email" placeholder="Email" required class="col-span-1 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="tel" id="t-phone" placeholder="Phone" required class="col-span-1 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                
+                <div class="col-span-2 border-b pb-1 mb-2 mt-4 font-bold text-slate-500 text-xs uppercase tracking-wider brand-font">Property Info</div>
+                <input type="text" id="t-addr" placeholder="Street Address" required class="col-span-2 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" id="t-city" placeholder="City" required class="col-span-1 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <div class="flex gap-2 col-span-1">
+                    <input type="text" id="t-state" placeholder="State" class="w-1/3 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                    <input type="text" id="t-zip" placeholder="Zip" class="w-2/3 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <input type="text" id="t-unit" placeholder="Unit (Optional)" class="col-span-1 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                
+                <div class="col-span-2 border-b pb-1 mb-2 mt-4 font-bold text-slate-500 text-xs uppercase tracking-wider brand-font">Lease Terms</div>
+                <div class="col-span-1">
+                    <label class="text-xs text-slate-500 ml-1">Start Date</label>
+                    <input type="date" id="t-start" required class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div class="col-span-1">
+                    <label class="text-xs text-slate-500 ml-1">End Date</label>
+                    <input type="date" id="t-end" required class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <input type="number" id="t-rent" placeholder="Monthly Rent ($)" required class="col-span-2 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
+                <button class="col-span-2 bg-blue-600 text-white py-3 rounded-xl font-bold mt-2 brand-font hover:bg-blue-700 transition" id="btn-save-tenant">Save Tenant</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- LISTING MODAL (Restored Fields) -->
+    <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Post Listing</h3>
+            <form onsubmit="act_saveListing(event)" class="grid grid-cols-2 gap-4">
+                <input type="hidden" id="l-id">
+                <input type="text" id="l-addr" placeholder="Address" required class="col-span-2 border p-3 rounded-xl bg-slate-50">
+                <div class="flex gap-2 col-span-1"><input type="number" id="l-price" placeholder="Rent ($)" required class="w-1/2 border p-3 rounded-xl bg-slate-50"><input type="number" id="l-sqft" placeholder="Sq. Ft." required class="w-1/2 border p-3 rounded-xl bg-slate-50"></div>
+                <div class="flex gap-2 col-span-1"><input type="number" id="l-beds" placeholder="Beds" required class="w-1/2 border p-3 rounded-xl bg-slate-50"><input type="number" id="l-baths" placeholder="Baths" required class="w-1/2 border p-3 rounded-xl bg-slate-50"></div>
+                <textarea id="l-desc" placeholder="Description..." class="col-span-2 border p-3 rounded-xl bg-slate-50 h-24" required></textarea>
+                <input type="text" id="l-amen" placeholder="Amenities..." class="col-span-2 border p-3 rounded-xl bg-slate-50">
+                <div class="col-span-2">
+                    <label class="block text-sm font-bold text-slate-500 mb-2">Photos</label>
+                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-50 transition" onclick="document.getElementById('l-img').click()">
+                        <i class="fas fa-cloud-upload-alt text-2xl text-slate-400"></i><p class="text-sm text-slate-500 mt-1">Click to upload</p><input type="file" id="l-img" class="hidden" multiple onchange="previewPhotos(this)">
+                    </div>
+                    <div id="l-photo-preview" class="flex gap-2 mt-2 overflow-x-auto"></div>
+                </div>
+                <div class="col-span-2">
+                    <label class="text-xs text-slate-500">Available Date</label>
+                    <input type="date" id="l-date" required class="w-full border p-3 rounded-xl bg-slate-50">
+                </div>
+                <button class="col-span-2 bg-indigo-600 text-white py-3 rounded-xl font-bold mt-2 brand-font" id="btn-save-listing">Post Listing</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- INVOICE MODAL -->
+    <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto"><button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-6 brand-font">Invoice</h3><form onsubmit="act_addInvoice(event)" class="space-y-4"><select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select><div class="flex gap-2 p-1 bg-slate-100 rounded-xl"><button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-lg font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button><button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-lg font-bold text-sm text-slate-500">Variable</button></div><div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto"></div><button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2 rounded-xl text-sm">+ Add Item</button><div class="border-t pt-4 flex justify-between items-center"><span class="font-bold text-slate-700 brand-font">Total:</span><span id="inv-total" class="font-bold text-2xl text-emerald-600 brand-font">$0.00</span></div><input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50"><button class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold brand-font">Send</button></form></div></div>
+
+    <!-- EXPENSE MODAL -->
+    <div id="modal-expense" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative"><button onclick="closeModal('modal-expense')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-6 brand-font">Expense</h3><form onsubmit="act_addExpense(event)" class="space-y-4"><select id="ex-prop" class="w-full border p-3 rounded-xl bg-slate-50"></select><input type="date" id="ex-date" class="w-full border p-3 rounded-xl bg-slate-50"><input id="ex-vendor" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Vendor"><select id="ex-cat" class="w-full border p-3 rounded-xl bg-slate-50"><option>Repairs</option><option>Utilities</option><option>Tax</option><option>Insurance</option><option>Other</option></select><input id="ex-amount" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amount"><button class="w-full bg-rose-600 text-white py-3 rounded-xl font-bold brand-font">Save</button></form></div></div>
+
+    <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1 brand-font"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">None</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-50 brand-font">Close</button></div></div>
+
     <script>
         // --- DUMMY DATA STATE ---
-        let state = {
-            tenants: [
-                { id: 1, name: 'John Doe', email: 'john@example.com', unit: '101', rent: 2000, addr: '123 Main St' },
-                { id: 2, name: 'Jane Smith', email: 'jane@example.com', unit: '102', rent: 2100, addr: '123 Main St' }
-            ],
-            invoices: [
-                { id: 101, tenantId: 1, total: 2000, amountPaid: 2000, status: 'Paid', date: '2023-10-01', paidDate: '2023-10-01' },
-                { id: 102, tenantId: 2, total: 2100, amountPaid: 0, status: 'Unpaid', date: '2023-11-01' }
-            ],
-            maint: [
-                { id: 1, tenantId: 1, issue: 'Leaky Faucet', status: 'Active', date: '2023-10-15' }
-            ],
-            messages: [
-                { id: 1, tenantId: 1, from: 'Tenant', text: 'Hey, when is rent due?', time: '10:00 AM' }
-            ],
-            expenses: [
-                { id: 1, date: '2023-10-05', vendor: 'Home Depot', cat: 'Repairs', amount: 150, prop: '123 Main St' }
-            ],
-            listings: [],
-            notifications: { messages: 1, maintenance: 1, screening: 0 },
-            ftux: true
+        const DB_KEY = 'kozeyy_data_final_v32';
+        const DB = {
+            get: () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch(e){ return null; } },
+            set: (data) => localStorage.setItem(DB_KEY, JSON.stringify(data)),
+            init: () => {
+                let data = DB.get();
+                if(!data) {
+                    data = {
+                        tenants: [{ id: 1, name: 'Alex Johnson', email: 'alex@demo.com', phone: '555-0101', addr: '123 Tech Ln', city: 'Austin', state: 'TX', zip: '78701', rent: 2000, start: '2023-01-01', end: '2024-01-01', status: 'Active', unit: '101' }],
+                        invoices: [{ id: 101, tenantId: 1, items: [{desc:'Rent', amount:2000}], total: 2000, status: 'Paid', date: '2023-10-01', paidDate: '2023-10-01' }],
+                        listings: [{ id: 1, addr: '123 Maple Ave', price: 2400, desc: 'Lovely home.', sqft: 1500, beds: 3, baths: 2, amen:'Pool, Gym', date:'2024-01-01' }],
+                        expenses: [{ id: 1, date: '2023-10-05', vendor: 'Home Depot', cat: 'Repairs', amount: 150, prop: '123 Tech Ln' }],
+                        apps: [], msgs: [
+                            { id: 1, tenantId: 1, from: 'Tenant', text: 'Hey, when is rent due?', time: '10:00 AM' }
+                        ], maint: [], notifications: { messages: 1, maintenance: 0, screening: 0 },
+                        settings: { feeTarget:'all', targets:[], method:'flat', amount:50, grace:5, requireInsurance: true },
+                        ftux: true
+                    };
+                    DB.set(data);
+                }
+                return data;
+            }
         };
 
-        let currentChatId = null;
-        let chartInstance = null;
+        let state = DB.init();
+        let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
+        let editTenantId = null, editListingId = null, tourStep = 0;
 
         // --- TOUR ---
         const tourSteps = [
@@ -343,16 +458,16 @@
                 }, 400);
             }
         }
-        function injectMockData(v) { if(v === 'messages') { document.getElementById('list-chats').innerHTML = `<div class="p-4 bg-white border border-slate-200 rounded-xl font-bold">John Doe</div>`; document.getElementById('box-chat').innerHTML = `<div class="flex"><div class="bg-white border p-3 rounded-xl text-sm mb-2 shadow-sm">Hi, picking up keys tomorrow?</div></div>`; } }
+        function injectMockData(v) { if(v === 'messages') { document.getElementById('list-chats').innerHTML = `<div class="p-3 bg-blue-50 border border-blue-200 rounded font-bold">John Doe</div>`; document.getElementById('box-chat').innerHTML = `<div class="flex"><div class="bg-white border p-2 rounded-lg text-sm mb-2 shadow-sm">Hi, picking up keys tomorrow?</div></div>`; } }
         function nextStep() { tourStep++; if(tourStep >= tourSteps.length) { endTour(); return; } runTourStep(); }
         function endTour() { 
             const wel = document.getElementById('modal-welcome'); 
             if(wel) { wel.classList.add('hidden-section'); wel.classList.remove('flex'); }
             document.getElementById('tour-spotlight').classList.add('hidden-section'); 
             document.getElementById('tour-tooltip').classList.add('hidden-section'); 
-            state.ftux = false; navTo('dashboard'); 
+            state.ftux = false; DB.set(state); navTo('dashboard'); 
         }
-        function restartTour() { state.ftux = true; location.reload(); }
+        function restartTour() { state.ftux = true; DB.set(state); location.reload(); }
 
         // --- MOBILE NAV TOGGLE ---
         function toggleSidebar() {
@@ -375,7 +490,6 @@
             const link = document.getElementById('link-' + view);
             if(link) link.classList.add('sidebar-active');
 
-            // Header Title Logic (Mobile "Menu" vs Desktop "Title")
             const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration' };
             document.getElementById('desktop-page-title').innerText = titles[view] || 'Dashboard';
 
@@ -386,118 +500,188 @@
             }
 
             if (!isTour) {
-                if(view === 'financials') renderInvoices();
-                if(view === 'expenses') { populateExpenseModal(); renderExpenses(); }
+                if(view === 'financials') populateFinFilter();
                 if(view === 'messages') { 
                     renderChatList(); 
                     backToChatList(); 
                 }
-                if(view === 'reports') { renderAll(); }
+                if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
+                if(view === 'tenants' || view === 'listings' || view === 'maintenance' || view === 'screening' || view === 'expenses') renderAll();
+                if(view === 'reports') { renderAll(); renderMonthlyChart(); }
+                if(view === 'settings') loadSettings();
             }
         }
 
         function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
-        function resetForms() { editTenantId = null; editListingId = null; document.getElementById('btn-save-tenant').innerText="Save"; document.getElementById('btn-save-listing').innerText="Post"; }
+        function resetForms() { editTenantId = null; editListingId = null; document.getElementById('btn-save-tenant').innerText="Save Tenant"; document.getElementById('btn-save-listing').innerText="Post Listing"; }
 
         // --- RENDER LOGIC ---
         function renderAll() {
-            // Dashboard
-            const revenue = state.invoices.filter(i=>i.status==='Paid').reduce((a,b)=>a+(b.amountPaid||0),0);
-            const outstanding = state.invoices.filter(i=>i.status!=='Paid').reduce((a,b)=>a+(b.total - (b.amountPaid||0)), 0);
-            document.getElementById('dash-revenue').innerText = `$${revenue.toLocaleString()}`;
-            document.getElementById('dash-outstanding').innerText = `$${outstanding.toLocaleString()}`;
+            updateBadge('messages', state.notifications.messages); updateBadge('maintenance', state.notifications.maintenance); updateBadge('screening', state.notifications.screening);
+            const rev = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0);
+            const out = state.invoices.reduce((a,b)=>a + (b.total - (b.amountPaid||0)), 0);
+            const activeMaint = state.maint.filter(m=>m.status==='Active').length;
+            
+            document.getElementById('dash-revenue').innerText = `$${rev.toLocaleString()}`;
+            document.getElementById('dash-outstanding').innerText = `$${out.toLocaleString()}`;
             document.getElementById('dash-occupancy').innerText = state.tenants.length > 0 ? "100%" : "0%";
-            document.getElementById('dash-maintenance').innerText = state.maint.filter(m=>m.status==='Active').length;
-
+            document.getElementById('dash-maintenance').innerText = activeMaint;
+            
             // Tenants
             const tbody = document.getElementById('table-tenants'); tbody.innerHTML = '';
-            state.tenants.forEach(t => {
-                tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm">${t.unit}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5 text-right"><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold brand-font uppercase">Active</span></td></tr>`;
-            });
+            state.tenants.forEach(t => { tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm">${t.unit}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5 text-right"><div class="flex justify-end gap-2"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 text-xs font-bold hover:underline">Edit</button><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold brand-font uppercase">Active</span></div></td></tr>`; });
 
-            // Maint
-            const mList = document.getElementById('list-maint-active'); 
-            mList.innerHTML = '';
-            state.maint.filter(m=>m.status==='Active').forEach(m => {
-                mList.innerHTML += `<div class="p-4 bg-white border border-slate-100 rounded-xl flex justify-between items-center mb-2 shadow-sm"><div><p class="font-bold text-slate-800 brand-font">${m.issue}</p><p class="text-xs text-slate-500">Unit 101 • ${m.date}</p></div><button class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg text-xs font-bold brand-font">Done</button></div>`;
-            });
+            // Listings
+            const grid = document.getElementById('grid-listings'); grid.innerHTML = '';
+            state.listings.forEach(l => { grid.innerHTML += `<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 relative group"><div class="absolute top-4 right-4 flex gap-2"><button onclick="act_editListing(${l.id})" class="text-slate-400 hover:text-blue-600"><i class="fas fa-edit"></i></button><button onclick="act_delListing(${l.id})" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash"></i></button></div><h4 class="font-bold text-lg text-slate-800">${l.addr}</h4><p class="text-emerald-600 font-bold">$${parseInt(l.price).toLocaleString()}/mo</p><div class="mt-2 text-xs text-slate-400 flex gap-3"><span><i class="fas fa-bed"></i> ${l.beds}</span><span><i class="fas fa-bath"></i> ${l.baths}</span><span><i class="fas fa-ruler"></i> ${l.sqft}</span></div></div>`; });
 
-            renderInvoices();
-            initChart();
+            // Maintenance
+            const activeList = document.getElementById('list-maint-active'); const histList = document.getElementById('list-maint-history'); activeList.innerHTML = ''; histList.innerHTML = '';
+            const activeMaintItems = state.maint.filter(m => m.status === 'Active');
+            if (activeMaintItems.length === 0) { activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">None</div>`; } else { activeMaintItems.forEach(m => { const t = state.tenants.find(x=>x.id==m.tenantId)||{name:'Unknown'}; activeList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white border-b border-slate-100"><div><p class="font-bold text-slate-800">${m.issue}</p><p class="text-xs text-slate-500">${t.name} • ${m.date}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-xs font-bold hover:bg-emerald-200">Done</button></div>`; }); }
+            state.maint.filter(m => m.status === 'Completed').forEach(m => { histList.innerHTML += `<div class="p-4 flex justify-between items-center opacity-70 border-b border-slate-100"><div><p class="font-medium line-through">${m.issue}</p><p class="text-xs text-slate-400">Completed: ${m.completedDate || 'N/A'}</p></div><button onclick="viewMaintNote(${m.id})" class="text-blue-500 text-xs hover:underline">View Notes</button></div>`; });
+
+            // Expenses
+            const exBody = document.getElementById('table-expenses'); exBody.innerHTML = '';
+            const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
+            let dEx = state.expenses;
+            if (fid !== 'all') dEx = dEx.filter(x => x.prop === fid);
+            dEx.forEach(x => { exBody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 whitespace-nowrap">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold">${x.vendor}</td><td class="p-5 text-sm"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-right"><i class="fas fa-receipt text-slate-300"></i></td></tr>`; });
+            const totalExp = dEx.reduce((a,b)=>a+b.amount,0);
+            if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${totalExp.toLocaleString()}`;
+
+            renderReports(); renderInvoices(); updateChart();
         }
 
-        function renderInvoices() {
-            const t = document.getElementById('table-invoices'); t.innerHTML='';
-            state.invoices.forEach(i => {
-                const tn = state.tenants.find(x=>x.id==i.tenantId) || {name:'Unknown'};
-                t.innerHTML+=`<tr class="border-b border-slate-100"><td class="p-5 text-sm">#${i.id}</td><td class="p-5 text-sm font-bold">${tn.name}</td><td class="p-5 text-sm text-slate-500">Rent</td><td class="p-5 font-bold">$${i.total}</td><td class="p-5 text-emerald-600 font-bold">$${i.amountPaid}</td><td class="p-5 text-right text-sm">${i.status}</td></tr>`;
-            });
+        function renderReports() {
+            const income = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0);
+            const expense = state.expenses.reduce((a,b)=>a+b.amount,0);
+            const noi = income - expense;
+            document.getElementById('report-income').innerText = `$${income.toLocaleString()}`;
+            document.getElementById('report-expense').innerText = `$${expense.toLocaleString()}`;
+            document.getElementById('report-noi').innerText = `$${noi.toLocaleString()}`;
+            
+            const eb = document.getElementById('report-expense-breakdown');
+            if(eb) {
+                eb.innerHTML = '';
+                const cats = {}; state.expenses.forEach(e => { cats[e.cat] = (cats[e.cat] || 0) + e.amount; });
+                if(Object.keys(cats).length === 0) eb.innerHTML = '<div class="italic text-xs text-slate-400">No expenses recorded</div>';
+                else for (const [c, a] of Object.entries(cats)) eb.innerHTML += `<div class="flex justify-between text-xs border-b border-slate-50 py-1"><span>${c}</span><span class="font-bold">$${a.toLocaleString()}</span></div>`;
+            }
         }
 
-        function renderExpenses() {
-            const t = document.getElementById('table-expenses'); t.innerHTML='';
-            let total = 0;
-            state.expenses.forEach(x => {
-                total += x.amount;
-                t.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 whitespace-nowrap">${x.date}</td><td class="p-5 text-sm">${x.prop}</td><td class="p-5 text-sm font-bold">${x.vendor}</td><td class="p-5 text-sm"><span class="bg-slate-100 px-2 py-1 rounded-lg text-xs font-bold brand-font">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount}</td></tr>`;
-            });
-            document.getElementById('exp-total-display').innerText = `$${total.toLocaleString()}`;
+        function updateBadge(id, count) { const el = document.getElementById('badge-' + id); if(count > 0) { el.innerText = count; el.classList.remove('hidden-section'); } else { el.classList.add('hidden-section'); } }
+
+        // --- PAYMENT & INVOICE ---
+        function act_openPayModal(id) {
+            const inv = state.invoices.find(x => x.id === id);
+            if(!inv) return;
+            document.getElementById('pay-id').value = id;
+            document.getElementById('pay-amount').value = inv.total - (inv.amountPaid || 0);
+            document.getElementById('pay-date').valueAsDate = new Date();
+            openModal('modal-pay');
         }
 
-        // --- ACTIONS ---
-        function act_saveTenant(e) {
+        function confirmPay() {
+            const id = parseInt(document.getElementById('pay-id').value);
+            const amt = parseFloat(document.getElementById('pay-amount').value);
+            const date = document.getElementById('pay-date').value;
+            const inv = state.invoices.find(x => x.id === id);
+            
+            if(inv && amt > 0) {
+                inv.amountPaid = (inv.amountPaid || 0) + amt;
+                inv.paidDate = date;
+                inv.status = inv.amountPaid >= inv.total ? 'Paid' : 'Partial';
+                DB.set(state); closeModal('modal-pay'); renderAll();
+            }
+        }
+
+        function renderInvoices() { 
+            const fid = document.getElementById('filter-financials') ? document.getElementById('filter-financials').value : 'all'; 
+            const t = document.getElementById('table-invoices'); t.innerHTML=''; 
+            let d = state.invoices; 
+            if(fid!=='all') d=d.filter(i=>i.tenantId==fid); 
+            d.sort((a,b)=>b.id-a.id).forEach(i => { 
+                const tn = state.tenants.find(x=>x.id==i.tenantId)||{name:'Unknown'}; 
+                const desc = i.items && i.items.length > 1 ? `${i.items.length} Items` : (i.items ? i.items[0].desc : 'Rent'); 
+                
+                let btn = '';
+                if(i.status === 'Paid') btn = `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold uppercase">Paid</span>`;
+                else { const btnLabel = i.status === 'Partial' ? 'Add Pay' : 'Record Pay'; btn = `<button onclick="act_openPayModal(${i.id})" class="text-indigo-600 font-bold text-xs border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-50">${btnLabel}</button>`; }
+                
+                let statusBadge = i.status;
+                if(i.status === 'Partial') statusBadge = `<span class="text-amber-600 font-bold">Partial</span>`;
+                if(i.status === 'Unpaid') statusBadge = `<span class="text-rose-600 font-bold">Unpaid</span>`;
+                const remaining = i.total - (i.amountPaid || 0);
+                const displayTotal = i.status === 'Partial' ? `<span class="text-amber-600">$${remaining.toLocaleString()} left</span>` : `$${i.total.toLocaleString()}`;
+
+                t.innerHTML+=`<tr><td class="p-5 text-sm">${statusBadge}</td><td class="p-5 text-sm">${tn.name}</td><td class="p-5 text-sm text-slate-500">${desc}</td><td class="p-5 font-bold">${displayTotal}</td><td class="p-5 text-sm text-slate-500">${i.paidDate || '-'}</td><td class="p-5 text-right">${btn}</td></tr>`; 
+            }); 
+        }
+
+        // --- EXPENSES ---
+        function populateExpenseModal() {
+            const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>';
+            const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr));
+            props.forEach(p => s.innerHTML += `<option>${p}</option>`);
+        }
+        function populateExpFilter() {
+            const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>';
+            const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr));
+            props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`);
+        }
+        function act_addExpense(e) {
             e.preventDefault();
-            state.tenants.push({
+            const data = {
                 id: Date.now(),
-                name: document.getElementById('t-name').value,
-                email: document.getElementById('t-email').value,
-                unit: document.getElementById('t-unit').value,
-                rent: document.getElementById('t-rent').value,
-                addr: document.getElementById('t-addr').value
-            });
-            closeModal('modal-tenant');
-            renderAll();
-            alert("Tenant added (Demo Mode)");
-        }
-
-        function act_addInvoice(e) { e.preventDefault(); alert("Invoice sent (Demo Mode)"); closeModal('modal-invoice'); }
-        function act_addExpense(e) { 
-            e.preventDefault(); 
-            state.expenses.push({
                 date: document.getElementById('ex-date').value,
                 vendor: document.getElementById('ex-vendor').value,
                 cat: document.getElementById('ex-cat').value,
-                amount: parseFloat(document.getElementById('ex-amount').value),
-                prop: document.getElementById('ex-prop').value
-            });
-            closeModal('modal-expense'); 
-            renderExpenses();
-        }
-        function act_saveListing(e) { e.preventDefault(); alert("Listing Posted"); closeModal('modal-listing'); }
-
-        function openInvoiceModal() {
-            const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="">Select Tenant</option>';
-            state.tenants.forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; });
-            openModal('modal-invoice');
+                prop: document.getElementById('ex-prop').value,
+                amount: parseFloat(document.getElementById('ex-amount').value) || 0
+            };
+            state.expenses.push(data); DB.set(state); closeModal('modal-expense'); renderAll();
         }
 
-        function populateExpenseModal() {
-            const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>';
-            state.tenants.forEach(t => s.innerHTML += `<option>${t.addr}</option>`);
+        // --- INVOICE CREATION ---
+        function openInvoiceModal() { const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; state.tenants.forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); openModal('modal-invoice'); logic_invMode('fixed'); }
+        function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
+        function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (invMode === 'fixed' && tid) { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; } else if (invMode === 'variable') { logic_addRow(); } renderInvItems(); }
+        function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
+        function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
+        function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); calcTotal(); }
+        function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; calcTotal(); }
+        function calcTotal() { document.getElementById('inv-total').innerText = `$${invItems.reduce((a,b)=>a+(b.amount||0),0).toLocaleString()}`; }
+        function act_addInvoice(e) { e.preventDefault(); const total = invItems.reduce((a,b)=>a+(b.amount||0),0); state.invoices.push({ id: Date.now(), tenantId: document.getElementById('inv-tenant').value, items: invItems, total: total, date: document.getElementById('inv-date').value, status: 'Unpaid', paidDate: '-' }); 
+            const tId = document.getElementById('inv-tenant').value; const tName = state.tenants.find(t=>t.id==tId).name; alert(`✅ Invoice Created.\n📧 Email Notification sent to ${tName}`);
+            DB.set(state); closeModal('modal-invoice'); renderAll(); 
         }
 
+        function initChart() { const ctx = document.getElementById('revenueChart').getContext('2d'); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['Collected', 'Outstanding'], datasets: [{ label: 'Financials', data: [0,0], backgroundColor: ['#10b981', '#f59e0b'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+        function updateChart() { if(!chartInstance) return; const rev = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0); const pend = state.invoices.filter(i=>i.status==='Unpaid').reduce((a,b)=>a+(b.total||0),0); chartInstance.data.datasets[0].data = [rev, pend]; chartInstance.update(); }
+        function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart').getContext('2d'); const labels = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']; const income = [12000, 12500, 11800, 13000, 13000, state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0)]; const expenses = [4000, 3500, 5000, 4200, 3800, state.expenses.reduce((a,b)=>a+b.amount,0)]; if(monthlyChartInstance) monthlyChartInstance.destroy(); monthlyChartInstance = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [ { label: 'Revenue', data: income, backgroundColor: '#10b981' }, { label: 'Expenses', data: expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
+        
+        function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id == id); document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone; document.getElementById('t-addr').value = t.addr; document.getElementById('t-city').value = t.city; document.getElementById('t-state').value = t.state; document.getElementById('t-zip').value = t.zip; document.getElementById('t-unit').value = t.unit; document.getElementById('t-rent').value = t.rent; document.getElementById('t-start').value = t.start; document.getElementById('t-end').value = t.end; document.getElementById('btn-save-tenant').innerText = "Update Tenant"; openModal('modal-tenant'); }
+        function act_saveTenant(e) { e.preventDefault(); const d = { name: document.getElementById('t-name').value, email: document.getElementById('t-email').value, phone: document.getElementById('t-phone').value, addr: document.getElementById('t-addr').value, city: document.getElementById('t-city').value, state: document.getElementById('t-state').value, zip: document.getElementById('t-zip').value, unit: document.getElementById('t-unit').value, rent: document.getElementById('t-rent').value, start: document.getElementById('t-start').value, end: document.getElementById('t-end').value, status: 'Active' }; if(editTenantId) { const i = state.tenants.findIndex(x=>x.id==editTenantId); state.tenants[i] = {...state.tenants[i], ...d}; } else { state.tenants.push({id:Date.now(), ...d}); } DB.set(state); closeModal('modal-tenant'); renderAll(); }
+        function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.addr; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.desc; document.getElementById('l-amen').value = l.amen || ''; document.getElementById('l-date').value = l.date; document.getElementById('btn-save-listing').innerText = "Update Listing"; openModal('modal-listing'); }
+        function act_saveListing(e) { e.preventDefault(); const d = { addr: document.getElementById('l-addr').value, price: document.getElementById('l-price').value, sqft: document.getElementById('l-sqft').value, beds: document.getElementById('l-beds').value, baths: document.getElementById('l-baths').value, desc: document.getElementById('l-desc').value, amen: document.getElementById('l-amen').value, date: document.getElementById('l-date').value }; if(editListingId) { const i = state.listings.findIndex(x=>x.id==editListingId); state.listings[i] = {...state.listings[i], ...d}; } else { state.listings.push({id:Date.now(), ...d}); } DB.set(state); closeModal('modal-listing'); renderAll(); }
+        function act_completeMaint(id) { const n = prompt("Notes?")||"Done"; const m = state.maint.find(x=>x.id==id); if(m){ m.status='Completed'; m.completedDate=new Date().toLocaleDateString(); m.notes=n; DB.set(state); renderAll(); } }
+        function viewMaintNote(id) { const m = state.maint.find(x => x.id == id); document.getElementById('md-issue').innerText = m.issue; document.getElementById('md-meta').innerText = `Completed: ${m.completedDate}`; document.getElementById('md-notes').innerText = m.notes || "No notes."; openModal('modal-maint-detail'); }
+        function act_saveSettings(e) { e.preventDefault(); const tType = document.querySelector('input[name="feeTarget"]:checked').value; let tIds = []; if(tType === 'select') { document.querySelectorAll('#fee-tenant-select input:checked').forEach(cb => tIds.push(cb.value)); } state.settings = { feeTarget: tType, targets: tIds, method: document.getElementById('fee-method').value, amount: document.getElementById('fee-amount').value, grace: document.getElementById('fee-grace').value, requireInsurance: document.getElementById('set-insurance').checked }; DB.set(state); alert("Saved"); }
+        function toggleFeeTarget() { const v = document.querySelector('input[name="feeTarget"]:checked').value; const c = document.getElementById('fee-tenant-select'); if(v === 'select') { c.classList.remove('hidden-section'); c.innerHTML = ''; state.tenants.forEach(t => { c.innerHTML += `<label class="block mb-2"><input type="checkbox" class="mr-2" value="${t.id}"> ${t.name}</label>`; }); } else { c.classList.add('hidden-section'); } }
+        function toggleFeeInput() { document.getElementById('fee-label').innerText = document.getElementById('fee-method').value === 'percent' ? "Percentage (%)" : "Amount ($)"; }
+        
         // --- MESSAGING LOGIC (MOBILE OPTIMIZED) ---
         function renderChatList() { 
             const l=document.getElementById('list-chats'); l.innerHTML=''; 
-            state.tenants.forEach(t=> l.innerHTML+=`<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-2xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`); 
+            state.tenants.forEach(t=> l.innerHTML+=`<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`); 
         }
         
         function openChat(id) { 
             currentChatId=id; 
             document.getElementById('chat-title').innerText = state.tenants.find(x=>x.id==id).name; 
             renderMessages();
-            
             // Mobile: Hide List, Show View
             if(window.innerWidth < 768) {
                 document.getElementById('msg-list-panel').classList.add('hidden');
@@ -517,7 +701,7 @@
 
         function renderMessages() { 
             const b=document.getElementById('box-chat'); b.innerHTML=''; 
-            state.messages.filter(m=>m.tenantId==currentChatId).forEach(m=>{ 
+            state.msgs.filter(m=>m.tenantId==currentChatId).forEach(m=>{ 
                 b.innerHTML+=`<div class="flex w-full"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${m.from==='Owner'?'ml-auto bg-indigo-600 text-white rounded-br-none':'mr-auto bg-white border border-slate-200 rounded-bl-none'}">${m.text}</div></div>`; 
             }); 
             b.scrollTop = b.scrollHeight;
@@ -525,29 +709,20 @@
         function sendMsg() { 
             const i=document.getElementById('input-chat'); 
             if(i.value && currentChatId) { 
-                state.messages.push({id:Date.now(), tenantId:currentChatId, from:'Owner', text:i.value}); 
+                state.msgs.push({id:Date.now(), tenantId:currentChatId, from:'Owner', text:i.value}); 
                 i.value=''; 
                 renderMessages(); 
             } 
         }
 
-        // --- CHARTS ---
-        function initChart() { 
-            if(chartInstance) chartInstance.destroy();
-            const ctx = document.getElementById('revenueChart').getContext('2d'); 
-            chartInstance = new Chart(ctx, { 
-                type: 'bar', 
-                data: { labels: ['Collected', 'Outstanding'], datasets: [{ label: 'Financials', data: [4100, 0], backgroundColor: ['#10b981', '#f59e0b'], borderRadius: 6 }] }, 
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } 
-            }); 
-        }
-
         function hardReset() { if(confirm("Factory Reset?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
         function clearNotifications() { state.notifications = { messages: 0, maintenance: 0, screening: 0 }; DB.set(state); renderAll(); }
-        
-        // Init App & Tour
-        checkTour();
-        renderAll();
+        function act_delListing(id) { state.listings = state.listings.filter(x => x.id !== id); DB.set(state); renderAll(); }
+        function previewPhotos(input) { const c = document.getElementById('l-photo-preview'); c.innerHTML=''; Array.from(input.files).forEach(f => { const r = new FileReader(); r.onload = e => { const img = document.createElement('img'); img.src = e.target.result; img.className="w-16 h-16 rounded border object-cover"; c.appendChild(img); }; r.readAsDataURL(f); }); }
+        function loadSettings() { const s = state.settings || { feeTarget:'all', targets:[], method:'flat', amount:50, grace:5, requireInsurance: true }; if(document.getElementById('set-insurance')) { document.getElementById('set-insurance').checked = s.requireInsurance !== false; } document.querySelector(`input[name="feeTarget"][value="${s.feeTarget}"]`).checked = true; toggleFeeTarget(); document.getElementById('fee-method').value = s.method; toggleFeeInput(); document.getElementById('fee-amount').value = s.amount; document.getElementById('fee-grace').value = s.grace; }
+
+        initApp = () => { checkTour(); renderAll(); initChart(); setInterval(() => { state=DB.get(); renderAll(); }, 3000); }
+        initApp();
     </script>
 </body>
 </html>
