@@ -26,16 +26,18 @@
         /* Tour Styling */
         .tour-spotlight { position: absolute; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); pointer-events: none; z-index: 61; transition: all 0.5s ease; border: 2px solid #6366f1; }
         .tour-tooltip { position: absolute; width: 320px; background: white; padding: 24px; border-radius: 16px; z-index: 62; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
+        /* Mobile Overlay */
+        #mobile-overlay { background-color: rgba(0,0,0,0.5); }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800 bg-slate-50">
 
-    <!-- MOBILE OVERLAY (Background dimming) -->
-    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-20 hidden transition-opacity backdrop-blur-sm md:hidden"></div>
+    <!-- MOBILE OVERLAY (Click to close sidebar) -->
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 z-40 hidden transition-opacity backdrop-blur-sm md:hidden"></div>
 
     <!-- SIDEBAR -->
-    <!-- Changed: Fixed position on mobile, slides in from left (-translate-x-full) -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-indigo-950 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static shadow-xl">
+    <!-- UPDATED: Fixed position on mobile, slides in from left -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-indigo-950 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static shadow-xl">
         <div class="h-20 flex items-center justify-between px-6 border-b border-indigo-900 bg-indigo-950">
             <div class="flex items-center gap-3">
                 <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -68,8 +70,9 @@
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 flex flex-col overflow-hidden relative">
-        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shadow-sm z-10">
+    <main class="flex-1 flex flex-col overflow-hidden relative w-full">
+        <!-- HEADER -->
+        <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shadow-sm z-10 sticky top-0">
             <div class="flex items-center gap-4">
                 <!-- Hamburger Menu Button -->
                 <button onclick="toggleSidebar()" class="md:hidden text-slate-500 hover:text-indigo-600 focus:outline-none p-2 -ml-2 rounded-lg hover:bg-slate-50">
@@ -90,15 +93,17 @@
             </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 scroll-smooth" id="app-content">
+        <!-- UPDATED: Added pb-24 for mobile address bar clearance -->
+        <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 scroll-smooth pb-24" id="app-content">
             
             <!-- 1. DASHBOARD -->
             <div id="view-dashboard" class="view-section fade-in">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 mb-8">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Total Revenue</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2" id="dash-revenue">$0.00</h3></div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Outstanding</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2 text-rose-600" id="dash-outstanding">$0.00</h3></div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Occupancy</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2" id="dash-occupancy">0%</h3></div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Active Maint.</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2" id="dash-maintenance">0</h3></div>
+                <!-- UPDATED: grid-cols-2 on mobile (squares) instead of long rows -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
+                    <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center h-32 md:h-auto"><p class="text-slate-500 text-[10px] md:text-xs font-bold uppercase truncate">Total Revenue</p><h3 class="text-xl md:text-3xl font-extrabold text-slate-900 mt-1 md:mt-2" id="dash-revenue">$0.00</h3></div>
+                    <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center h-32 md:h-auto"><p class="text-slate-500 text-[10px] md:text-xs font-bold uppercase truncate">Outstanding</p><h3 class="text-xl md:text-3xl font-extrabold text-rose-600 mt-1 md:mt-2" id="dash-outstanding">$0.00</h3></div>
+                    <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center h-32 md:h-auto"><p class="text-slate-500 text-[10px] md:text-xs font-bold uppercase truncate">Occupancy</p><h3 class="text-xl md:text-3xl font-extrabold text-slate-900 mt-1 md:mt-2" id="dash-occupancy">0%</h3></div>
+                    <div class="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-center h-32 md:h-auto"><p class="text-slate-500 text-[10px] md:text-xs font-bold uppercase truncate">Active Maint.</p><h3 class="text-xl md:text-3xl font-extrabold text-slate-900 mt-1 md:mt-2" id="dash-maintenance">0</h3></div>
                 </div>
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-80">
@@ -119,7 +124,10 @@
             <!-- 2. TENANTS -->
             <div id="view-tenants" class="view-section hidden-section fade-in">
                 <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Tenant Directory</h3><button onclick="openModal('modal-tenant')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700">Add Tenant</button></div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto"><table class="w-full text-left min-w-[600px]"><thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Tenant</th><th class="p-5">Property</th><th class="p-5">Lease</th><th class="p-5 text-right">Actions</th></tr></thead><tbody id="table-tenants" class="divide-y divide-slate-100"></tbody></table></div>
+                <!-- UPDATED: Overflow Auto for Mobile Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto w-full">
+                    <table class="w-full text-left whitespace-nowrap"><thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Tenant</th><th class="p-5">Property</th><th class="p-5">Lease</th><th class="p-5 text-right">Actions</th></tr></thead><tbody id="table-tenants" class="divide-y divide-slate-100"></tbody></table>
+                </div>
             </div>
 
             <!-- 3. LISTINGS -->
@@ -130,14 +138,34 @@
 
             <!-- 4. SCREENING -->
             <div id="view-screening" class="view-section hidden-section fade-in">
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto"><div class="p-6 border-b bg-slate-50"><h3 class="text-lg font-bold brand-font">Applicant Queue</h3></div><table class="w-full text-left min-w-[600px]"><thead class="bg-white text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Applicant</th><th class="p-5">Score</th><th class="p-5">Income</th><th class="p-5 text-right">Action</th></tr></thead><tbody id="table-screening" class="divide-y divide-slate-100"></tbody></table></div>
+                <!-- UPDATED: Overflow Auto for Mobile Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 w-full overflow-x-auto">
+                    <div class="p-6 border-b bg-slate-50"><h3 class="text-lg font-bold brand-font">Applicant Queue</h3></div>
+                    <table class="w-full text-left whitespace-nowrap"><thead class="bg-white text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Applicant</th><th class="p-5">Score</th><th class="p-5">Income</th><th class="p-5 text-right">Action</th></tr></thead><tbody id="table-screening" class="divide-y divide-slate-100"></tbody></table>
+                </div>
             </div>
 
-            <!-- 5. MESSAGES -->
+            <!-- 5. MESSAGES (REDESIGNED FOR MOBILE) -->
             <div id="view-messages" class="view-section hidden-section fade-in h-[calc(100vh-140px)]">
-                <div class="flex h-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex-col md:flex-row">
-                    <div class="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-slate-200 bg-slate-50 p-4 h-1/3 md:h-auto"><h3 class="font-bold text-slate-700 mb-4 brand-font">Conversations</h3><div id="list-chats" class="space-y-2 overflow-y-auto h-[calc(100%-2rem)]"></div></div>
-                    <div class="w-full md:w-2/3 flex flex-col h-2/3 md:h-auto"><div id="header-chat" class="p-4 border-b border-slate-200 bg-white font-bold text-slate-800 brand-font">Select a tenant</div><div id="box-chat" class="flex-1 p-6 overflow-y-auto bg-slate-50 space-y-4 custom-scroll"></div><div class="p-4 border-t border-slate-200 bg-white flex gap-2"><input type="text" id="input-chat" class="flex-1 border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Type a message..."><button onclick="sendMsg()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold">Send</button></div></div>
+                <div class="flex h-full bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden relative">
+                    
+                    <!-- Chat List (Visible on desktop, Hidden on mobile when chat is open) -->
+                    <div id="msg-list-panel" class="w-full md:w-1/3 border-r border-slate-200 bg-slate-50 flex flex-col">
+                        <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 brand-font">Conversations</div>
+                        <div id="list-chats" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
+                    </div>
+
+                    <!-- Chat View (Hidden on mobile by default, Visible on desktop) -->
+                    <div id="msg-view-panel" class="absolute inset-0 bg-white md:static w-full md:w-2/3 flex-col hidden md:flex z-20">
+                        <div id="header-chat" class="p-4 border-b border-slate-200 bg-white font-bold text-slate-800 brand-font flex items-center gap-3">
+                            <!-- Back Button -->
+                            <button onclick="backToChatList()" class="md:hidden text-slate-500 mr-2"><i class="fas fa-arrow-left"></i></button>
+                            <span id="chat-title">Select a tenant</span>
+                        </div>
+                        <div id="box-chat" class="flex-1 p-6 overflow-y-auto bg-slate-50 space-y-4 custom-scroll"></div>
+                        <div class="p-4 border-t border-slate-200 bg-white flex gap-2"><input type="text" id="input-chat" class="flex-1 border p-2 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Type a message..."><button onclick="sendMsg()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold">Send</button></div>
+                    </div>
+
                 </div>
             </div>
 
@@ -152,21 +180,25 @@
             <!-- 7. PAYMENT RECORDS -->
             <div id="view-financials" class="view-section hidden-section fade-in">
                 <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Payment Records</h3><div class="flex gap-4"><select id="filter-financials" onchange="renderInvoices()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"><option value="all">All Tenants</option></select><button onclick="openInvoiceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-emerald-700">New Invoice</button></div></div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto"><table class="w-full text-left min-w-[600px]"><thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Status</th><th class="p-5">Tenant</th><th class="p-5">Description</th><th class="p-5">Total</th><th class="p-5">Date Paid</th><th class="p-5 text-right">Action</th></tr></thead><tbody id="table-invoices" class="divide-y divide-slate-100"></tbody></table></div>
+                <!-- UPDATED: Overflow Auto for Mobile Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 w-full overflow-x-auto">
+                    <table class="w-full text-left whitespace-nowrap"><thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Status</th><th class="p-5">Tenant</th><th class="p-5">Description</th><th class="p-5">Total</th><th class="p-5">Date Paid</th><th class="p-5 text-right">Action</th></tr></thead><tbody id="table-invoices" class="divide-y divide-slate-100"></tbody></table>
+                </div>
             </div>
 
             <!-- 8. EXPENSES -->
             <div id="view-expenses" class="view-section hidden-section fade-in">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h3 class="text-xl font-bold text-slate-800 brand-font">Expense Tracker</h3>
-                    <div class="flex gap-4">
-                        <select id="filter-expenses" onchange="renderExpenses()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"><option value="all">All Properties</option></select>
-                        <div class="bg-rose-50 text-rose-700 px-4 py-2 rounded-lg font-bold border border-rose-200">Total: <span id="exp-total-display">$0.00</span></div>
-                        <button onclick="populateExpenseModal(); openModal('modal-expense')" class="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-rose-700">+ Add Expense</button>
+                    <div class="flex gap-4 w-full md:w-auto">
+                        <select id="filter-expenses" onchange="renderExpenses()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white flex-1 md:flex-none"><option value="all">All Properties</option></select>
+                        <div class="bg-rose-50 text-rose-700 px-4 py-2 rounded-lg font-bold border border-rose-200 flex-1 md:flex-none text-center">Total: <span id="exp-total-display">$0.00</span></div>
+                        <button onclick="populateExpenseModal(); openModal('modal-expense')" class="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-rose-700 flex-none">+ Add</button>
                     </div>
                 </div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-x-auto">
-                    <table class="w-full text-left min-w-[600px]">
+                <!-- UPDATED: Overflow Auto for Mobile Table -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 w-full overflow-x-auto">
+                    <table class="w-full text-left whitespace-nowrap">
                         <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Date</th><th class="p-5">Property</th><th class="p-5">Vendor</th><th class="p-5">Category</th><th class="p-5 text-right">Amount</th><th class="p-5 text-right">Receipt</th></tr></thead>
                         <tbody id="table-expenses" class="divide-y divide-slate-100"></tbody>
                     </table>
@@ -255,6 +287,7 @@
     <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto"><button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-4 brand-font">Generate Invoice</h3><form onsubmit="act_addInvoice(event)" class="space-y-4"><select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-lg bg-slate-50 text-slate-800" required><option value="" disabled selected>Select a Tenant</option></select><div class="flex gap-2 p-1 bg-slate-100 rounded-lg"><button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button><button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-md font-bold text-sm text-slate-500">Variable</button></div><div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto"></div><button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2 rounded-lg text-sm">+ Add Item</button><div class="border-t pt-4 flex justify-between items-center"><span class="font-bold text-slate-700">Total:</span><span id="inv-total" class="font-bold text-2xl text-emerald-600">$0.00</span></div><input type="date" id="inv-date" required class="w-full border p-3 rounded-lg bg-slate-50"><button class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold">Send Invoice</button></form></div></div>
 
     <script>
+        // --- DUMMY DATA STATE (Mobile Ready) ---
         const DB_KEY = 'kozeyy_data_final_v32';
         const DB = {
             get: () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch(e){ return null; } },
@@ -263,11 +296,13 @@
                 let data = DB.get();
                 if(!data) {
                     data = {
-                        tenants: [{ id: 1, name: 'Alex Johnson', email: 'alex@demo.com', phone: '555-0101', addr: '123 Tech Ln', city: 'Austin', state: 'TX', zip: '78701', rent: 2000, start: '2023-01-01', end: '2024-01-01', status: 'Active' }],
+                        tenants: [{ id: 1, name: 'Alex Johnson', email: 'alex@demo.com', phone: '555-0101', addr: '123 Tech Ln', city: 'Austin', state: 'TX', zip: '78701', rent: 2000, start: '2023-01-01', end: '2024-01-01', status: 'Active', unit: '101' }],
                         invoices: [{ id: 101, tenantId: 1, items: [{desc:'Rent', amount:2000}], total: 2000, status: 'Paid', date: '2023-10-01', paidDate: '2023-10-01' }],
                         listings: [{ id: 1, addr: '123 Maple Ave', price: 2400, desc: 'Lovely home.', sqft: 1500, beds: 3, baths: 2, amen:'Pool, Gym', date:'2024-01-01' }],
                         expenses: [{ id: 1, date: '2023-10-05', vendor: 'Home Depot', cat: 'Repairs', amount: 150, prop: '123 Tech Ln' }],
-                        apps: [], msgs: [], maint: [], notifications: { messages: 0, maintenance: 0, screening: 0 },
+                        apps: [], msgs: [
+                            { id: 1, tenantId: 1, from: 'Tenant', text: 'Hey, when is rent due?', time: '10:00 AM' }
+                        ], maint: [], notifications: { messages: 1, maintenance: 0, screening: 0 },
                         settings: { feeTarget:'all', targets:[], method:'flat', amount:50, grace:5, requireInsurance: true },
                         ftux: true
                     };
@@ -323,47 +358,65 @@
         }
         function restartTour() { state.ftux = true; DB.set(state); location.reload(); }
 
-        // --- APP ---
+        // --- MOBILE NAV TOGGLE ---
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('mobile-overlay');
-            if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } 
-            else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); }
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
         }
 
+        // --- NAVIGATION ---
         function navTo(view, isTour = false) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
             document.getElementById('view-' + view).classList.remove('hidden-section');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
-            document.getElementById('link-' + view).classList.add('sidebar-active');
-            if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
-            
+            const link = document.getElementById('link-' + view);
+            if(link) link.classList.add('sidebar-active');
+
             const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration' };
             document.getElementById('page-title').innerText = titles[view] || 'Dashboard';
-            
+
+            // Close sidebar on mobile
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('-translate-x-full');
+                document.getElementById('mobile-overlay').classList.add('hidden');
+            }
+
             if (!isTour) {
                 if(view === 'financials') populateFinFilter();
-                if(view === 'messages') renderChatList();
+                if(view === 'messages') { 
+                    renderChatList(); 
+                    backToChatList(); 
+                }
                 if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
                 if(view === 'tenants' || view === 'listings' || view === 'maintenance' || view === 'screening' || view === 'expenses') renderAll();
                 if(view === 'reports') { renderAll(); renderMonthlyChart(); }
                 if(view === 'settings') loadSettings();
             }
         }
+
         function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
         function resetForms() { editTenantId = null; editListingId = null; document.getElementById('btn-save-tenant').innerText="Save Tenant"; document.getElementById('btn-save-listing').innerText="Post Listing"; }
 
+        // --- RENDER LOGIC ---
         function renderAll() {
             updateBadge('messages', state.notifications.messages); updateBadge('maintenance', state.notifications.maintenance); updateBadge('screening', state.notifications.screening);
             const rev = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0);
             const out = state.invoices.reduce((a,b)=>a + (b.total - (b.amountPaid||0)), 0);
             const activeMaint = state.maint.filter(m=>m.status==='Active').length;
+            
             document.getElementById('dash-revenue').innerText = `$${rev.toLocaleString()}`;
             document.getElementById('dash-outstanding').innerText = `$${out.toLocaleString()}`;
             document.getElementById('dash-occupancy').innerText = state.tenants.length > 0 ? "100%" : "0%";
             document.getElementById('dash-maintenance').innerText = activeMaint;
-
+            
             // Tenants
             const tbody = document.getElementById('table-tenants'); tbody.innerHTML = '';
             state.tenants.forEach(t => { tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm">${t.addr}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5 text-right"><div class="flex justify-end gap-2"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 text-xs font-bold hover:underline">Edit</button><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">Active</span></div></td></tr>`; });
@@ -507,10 +560,34 @@
         function act_saveSettings(e) { e.preventDefault(); const tType = document.querySelector('input[name="feeTarget"]:checked').value; let tIds = []; if(tType === 'select') { document.querySelectorAll('#fee-tenant-select input:checked').forEach(cb => tIds.push(cb.value)); } state.settings = { feeTarget: tType, targets: tIds, method: document.getElementById('fee-method').value, amount: document.getElementById('fee-amount').value, grace: document.getElementById('fee-grace').value, requireInsurance: document.getElementById('set-insurance').checked }; DB.set(state); alert("Saved"); }
         function toggleFeeTarget() { const v = document.querySelector('input[name="feeTarget"]:checked').value; const c = document.getElementById('fee-tenant-select'); if(v === 'select') { c.classList.remove('hidden-section'); c.innerHTML = ''; state.tenants.forEach(t => { c.innerHTML += `<label class="block mb-2"><input type="checkbox" class="mr-2" value="${t.id}"> ${t.name}</label>`; }); } else { c.classList.add('hidden-section'); } }
         function toggleFeeInput() { document.getElementById('fee-label').innerText = document.getElementById('fee-method').value === 'percent' ? "Percentage (%)" : "Amount ($)"; }
-        function renderChatList() { const l=document.getElementById('list-chats'); l.innerHTML=''; state.tenants.forEach(t=> l.innerHTML+=`<div onclick="openChat(${t.id})" class="p-3 bg-white border border-slate-200 rounded cursor-pointer hover:bg-slate-50 font-bold text-sm">${t.name}</div>`); }
-        function openChat(id) { currentChatId=id; document.getElementById('header-chat').innerText=`Chat with ${state.tenants.find(x=>x.id==id).name}`; renderMessages(); }
-        function renderMessages() { const b=document.getElementById('box-chat'); b.innerHTML=''; state.msgs.filter(m=>m.tenantId==currentChatId).forEach(m=>{ b.innerHTML+=`<div class="flex w-full"><div class="px-4 py-2 rounded-lg text-sm shadow-sm max-w-xs ${m.from==='Owner'?'ml-auto bg-indigo-600 text-white':'mr-auto bg-white border'}">${m.text}</div></div>`; }); }
+        
+        // --- MOBILE MESSAGING LOGIC ---
+        function renderChatList() { const l=document.getElementById('list-chats'); l.innerHTML=''; state.tenants.forEach(t=> l.innerHTML+=`<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center"><span>${t.name}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`); }
+        
+        function openChat(id) { 
+            currentChatId=id; 
+            document.getElementById('chat-title').innerText = state.tenants.find(x=>x.id==id).name; 
+            renderMessages();
+            // Mobile: Switch views
+            if(window.innerWidth < 768) {
+                document.getElementById('msg-list-panel').classList.add('hidden');
+                document.getElementById('msg-view-panel').classList.remove('hidden');
+                document.getElementById('msg-view-panel').classList.add('flex');
+            }
+        }
+
+        function backToChatList() {
+            // Mobile: Switch back
+            if(window.innerWidth < 768) {
+                document.getElementById('msg-view-panel').classList.add('hidden');
+                document.getElementById('msg-view-panel').classList.remove('flex');
+                document.getElementById('msg-list-panel').classList.remove('hidden');
+            }
+        }
+
+        function renderMessages() { const b=document.getElementById('box-chat'); b.innerHTML=''; state.msgs.filter(m=>m.tenantId==currentChatId).forEach(m=>{ b.innerHTML+=`<div class="flex w-full"><div class="px-4 py-3 rounded-xl text-sm shadow-sm max-w-[85%] ${m.from==='Owner'?'ml-auto bg-indigo-600 text-white rounded-br-none':'mr-auto bg-white border border-slate-200 rounded-bl-none'}">${m.text}</div></div>`; }); b.scrollTop = b.scrollHeight; }
         function sendMsg() { const i=document.getElementById('input-chat'); if(i.value && currentChatId) { state.msgs.push({id:Date.now(), tenantId:currentChatId, from:'Owner', text:i.value}); DB.set(state); i.value=''; renderMessages(); } }
+        
         function hardReset() { if(confirm("Factory Reset?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
         function clearNotifications() { state.notifications = { messages: 0, maintenance: 0, screening: 0 }; DB.set(state); renderAll(); }
         function act_delListing(id) { state.listings = state.listings.filter(x => x.id !== id); DB.set(state); renderAll(); }
