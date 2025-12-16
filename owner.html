@@ -96,13 +96,12 @@
             </div>
         </header>
 
+        <!-- Main Scrollable Area -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 scroll-smooth pb-32" id="app-content">
             
             <!-- 1. DASHBOARD -->
             <div id="view-dashboard" class="view-section fade-in">
-                <!-- Grid: 2 cols on mobile (squares), 4 on desktop -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
-                    
                     <!-- Revenue Card (Green) -->
                     <div class="bg-gradient-to-br from-emerald-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-emerald-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-emerald-100 rounded-full opacity-50 blur-xl"></div>
@@ -112,7 +111,6 @@
                             <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-revenue">$0.00</h3>
                         </div>
                     </div>
-
                     <!-- Outstanding Card (Rose) -->
                     <div class="bg-gradient-to-br from-rose-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-rose-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-rose-100 rounded-full opacity-50 blur-xl"></div>
@@ -122,7 +120,6 @@
                             <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-outstanding">$0.00</h3>
                         </div>
                     </div>
-
                     <!-- Occupancy Card (Indigo) -->
                     <div class="bg-gradient-to-br from-indigo-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-indigo-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-indigo-100 rounded-full opacity-50 blur-xl"></div>
@@ -132,7 +129,6 @@
                             <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-occupancy">0%</h3>
                         </div>
                     </div>
-
                     <!-- Maintenance Card (Amber) -->
                     <div class="bg-gradient-to-br from-amber-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-amber-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-amber-100 rounded-full opacity-50 blur-xl"></div>
@@ -187,11 +183,12 @@
                 </div>
             </div>
 
-            <!-- 5. MESSAGES -->
-            <div id="view-messages" class="view-section hidden-section fade-in h-[calc(100vh-140px)]">
+            <!-- 5. MESSAGES (MOBILE FRIENDLY LAYOUT + FIXED INPUT) -->
+            <!-- Adjusted height to 100dvh (dynamic height) - 90px to ensure input is visible above keyboard/address bar -->
+            <div id="view-messages" class="view-section hidden-section fade-in h-[calc(100dvh-90px)]">
                 <div class="flex h-full bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden relative">
                     
-                    <!-- Chat List -->
+                    <!-- List Panel -->
                     <div id="msg-list-panel" class="w-full md:w-1/3 border-r border-slate-200 bg-slate-50 flex flex-col">
                         <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 brand-font">Conversations</div>
                         <div id="list-chats" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
@@ -204,7 +201,8 @@
                             <span id="chat-title">Select a tenant</span>
                         </div>
                         <div id="box-chat" class="flex-1 p-4 md:p-6 overflow-y-auto bg-slate-50 space-y-4 custom-scroll"></div>
-                        <div class="p-4 border-t border-slate-200 bg-white flex gap-2">
+                        <!-- Increased padding bottom slightly for mobile feel -->
+                        <div class="p-4 md:pb-4 pb-6 border-t border-slate-200 bg-white flex gap-2">
                             <input type="text" id="input-chat" class="flex-1 border p-3 rounded-full outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-medium" placeholder="Type a message...">
                             <button onclick="sendMsg()" class="bg-indigo-600 text-white w-12 h-12 rounded-full font-bold flex items-center justify-center shadow-lg hover:bg-indigo-700 transition"><i class="fas fa-paper-plane"></i></button>
                         </div>
@@ -248,7 +246,7 @@
                 </div>
             </div>
 
-            <!-- 9. REPORTS -->
+            <!-- 9. REPORTS (Restored Chart) -->
             <div id="view-reports" class="view-section hidden-section fade-in">
                 <h3 class="text-xl font-bold text-slate-800 brand-font mb-6">Reports</h3>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -259,6 +257,11 @@
                             <div class="flex justify-between items-center"><span class="text-slate-600">Total Expenses</span><span class="font-bold text-rose-600 text-lg brand-font" id="report-expense">$0.00</span></div>
                             <div class="border-t pt-4 flex justify-between items-center mt-4"><span class="font-extrabold text-slate-800 brand-font">Net Operating Income</span><span class="font-extrabold text-indigo-900 text-2xl brand-font" id="report-noi">$0.00</span></div>
                         </div>
+                    </div>
+                    <!-- Restored Chart Container -->
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
+                        <h4 class="font-bold text-lg text-slate-900 mb-4 brand-font">Monthly Breakdown</h4>
+                        <div class="h-64"><canvas id="monthlyChart"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -317,15 +320,9 @@
         </div>
     </main>
 
-    <!-- WELCOME MODAL -->
-    <div id="modal-welcome" class="hidden-section fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-md fade-in px-4"><div class="bg-white p-10 rounded-3xl shadow-2xl max-w-lg text-center relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-blue-500"></div><div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fas fa-hand-sparkles text-3xl text-indigo-600"></i></div><h2 class="text-3xl font-extrabold text-slate-900 mb-4 brand-font">Welcome to Kozeyy</h2><p class="text-slate-600 mb-8 leading-relaxed">Your professional property management journey starts here. Let us show you how to automate your rentals in 5 easy steps.</p><button onclick="startTour()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-1">Start Quick Tour</button><button onclick="endTour()" class="mt-4 text-sm text-slate-400 hover:text-slate-600">Skip for now</button></div></div>
-    <!-- TOUR OVERLAYS -->
-    <div id="tour-spotlight" class="hidden-section tour-spotlight"></div>
-    <div id="tour-tooltip" class="hidden-section tour-tooltip"><div class="flex justify-between items-start mb-2"><h4 id="tour-title" class="font-bold text-lg text-slate-900"></h4><span id="tour-step" class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">1/5</span></div><p id="tour-text" class="text-sm text-slate-600 mb-4 leading-relaxed"></p><div class="flex justify-end gap-2"><button onclick="endTour()" class="text-xs text-slate-400 hover:text-slate-600 mr-auto px-2">End</button><button onclick="nextStep()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Next</button></div></div>
-
-    <!-- MODALS (Updated styles for rounded corners, restored fields) -->
+    <!-- MODALS (Full forms restored) -->
     
-    <!-- ADD TENANT (Restored Fields) -->
+    <!-- ADD TENANT -->
     <div id="modal-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
@@ -361,7 +358,7 @@
         </div>
     </div>
 
-    <!-- LISTING MODAL (Restored Fields) -->
+    <!-- LISTING MODAL -->
     <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
@@ -530,7 +527,7 @@
             
             // Tenants
             const tbody = document.getElementById('table-tenants'); tbody.innerHTML = '';
-            state.tenants.forEach(t => { tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm">${t.unit}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5 text-right"><div class="flex justify-end gap-2"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 text-xs font-bold hover:underline">Edit</button><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold brand-font uppercase">Active</span></div></td></tr>`; });
+            state.tenants.forEach(t => { tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm">${t.addr}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5 text-right"><div class="flex justify-end gap-2"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 text-xs font-bold hover:underline">Edit</button><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold brand-font uppercase">Active</span></div></td></tr>`; });
 
             // Listings
             const grid = document.getElementById('grid-listings'); grid.innerHTML = '';
@@ -709,7 +706,7 @@
         function sendMsg() { 
             const i=document.getElementById('input-chat'); 
             if(i.value && currentChatId) { 
-                state.msgs.push({id:Date.now(), tenantId:currentChatId, from:'Owner', text:i.value}); 
+                state.messages.push({id:Date.now(), tenantId:currentChatId, from:'Owner', text:i.value}); 
                 i.value=''; 
                 renderMessages(); 
             } 
