@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Owner Dashboard | Kozeyy</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
@@ -19,8 +23,9 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
-        .tour-spotlight { position: absolute; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); pointer-events: none; z-index: 61; transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1); border: 2px solid #6366f1; }
-        .tour-tooltip { position: absolute; width: 320px; background: white; padding: 24px; border-radius: 16px; z-index: 62; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); transition: all 0.4s ease; border: 1px solid #e2e8f0; }
+        /* Tour Styling */
+        .tour-spotlight { position: absolute; border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7); pointer-events: none; z-index: 61; transition: all 0.5s ease; border: 2px solid #6366f1; }
+        .tour-tooltip { position: absolute; width: 320px; background: white; padding: 24px; border-radius: 16px; z-index: 62; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800">
@@ -28,58 +33,29 @@
     <!-- SIDEBAR -->
     <aside class="w-64 bg-indigo-950 flex flex-col transition-all duration-300 hidden md:flex shadow-xl z-20">
         <div class="h-20 flex items-center px-6 border-b border-indigo-900 bg-indigo-950 gap-3">
-            <!-- CORRECT KOZEYY LOGO -->
             <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                    <linearGradient id="brand-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                        <stop offset="0%" stop-color="#4F46E5" />
-                        <stop offset="100%" stop-color="#0EA5E9" />
-                    </linearGradient>
-                </defs>
-                <rect x="6" y="6" width="10" height="28" rx="2" fill="url(#brand-grad)" />
-                <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="url(#brand-grad)" fill-opacity="0.8" />
-                <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="url(#brand-grad)" fill-opacity="0.9" />
+                <rect x="6" y="6" width="10" height="28" rx="2" fill="#6366f1" />
+                <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="#6366f1" fill-opacity="0.8" />
+                <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="#6366f1" fill-opacity="0.9" />
             </svg>
             <span class="text-xl font-bold text-white tracking-tight brand-font">Kozeyy</span>
         </div>
         
         <nav class="flex-1 overflow-y-auto py-6 space-y-1">
-            <a href="#" onclick="navTo('dashboard')" id="link-dashboard" class="nav-item flex items-center justify-between px-6 py-3.5 transition sidebar-active">
-                <div class="flex items-center"><i class="fas fa-th-large w-6"></i> <span class="font-medium ml-3">Dashboard</span></div>
-            </a>
-            <a href="#" onclick="navTo('tenants')" id="link-tenants" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
-                <div class="flex items-center"><i class="fas fa-users w-6"></i> <span class="font-medium ml-3">Tenants</span></div>
-            </a>
-            <a href="#" onclick="navTo('listings')" id="link-listings" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
-                <div class="flex items-center"><i class="fas fa-sign w-6"></i> <span class="font-medium ml-3">Listings</span></div>
-            </a>
-            <a href="#" onclick="navTo('screening')" id="link-screening" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
-                <div class="flex items-center"><i class="fas fa-user-check w-6"></i> <span class="font-medium ml-3">Screening</span></div>
-                <span id="badge-screening" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
-            </a>
-            <a href="#" onclick="navTo('messages')" id="link-messages" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
-                <div class="flex items-center"><i class="fas fa-comment-dots w-6"></i> <span class="font-medium ml-3">Messages</span></div>
-                <span id="badge-messages" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
-            </a>
-            <a href="#" onclick="navTo('maintenance')" id="link-maintenance" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
-                <div class="flex items-center"><i class="fas fa-tools w-6"></i> <span class="font-medium ml-3">Maintenance</span></div>
-                <span id="badge-maintenance" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
-            </a>
-            <a href="#" onclick="navTo('financials')" id="link-financials" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
-                <div class="flex items-center"><i class="fas fa-file-invoice-dollar w-6"></i> <span class="font-medium ml-3">Financials</span></div>
-            </a>
-            <a href="#" onclick="navTo('settings')" id="link-settings" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
-                <div class="flex items-center"><i class="fas fa-sliders-h w-6"></i> <span class="font-medium ml-3">Settings</span></div>
-            </a>
+            <a href="#" onclick="navTo('dashboard')" id="link-dashboard" class="nav-item flex items-center justify-between px-6 py-3.5 transition sidebar-active"><div class="flex items-center"><i class="fas fa-th-large w-5"></i> <span class="font-medium ml-3 text-sm">Dashboard</span></div></a>
+            <a href="#" onclick="navTo('tenants')" id="link-tenants" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-users w-5"></i> <span class="font-medium ml-3 text-sm">Tenants</span></div></a>
+            <a href="#" onclick="navTo('listings')" id="link-listings" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-sign w-5"></i> <span class="font-medium ml-3 text-sm">Listings</span></div></a>
+            <a href="#" onclick="navTo('screening')" id="link-screening" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-user-check w-5"></i> <span class="font-medium ml-3 text-sm">Screening</span></div><span id="badge-screening" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span></a>
+            <a href="#" onclick="navTo('messages')" id="link-messages" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-comment-dots w-5"></i> <span class="font-medium ml-3 text-sm">Messages</span></div><span id="badge-messages" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span></a>
+            <a href="#" onclick="navTo('maintenance')" id="link-maintenance" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-tools w-5"></i> <span class="font-medium ml-3 text-sm">Maintenance</span></div><span id="badge-maintenance" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span></a>
+            <a href="#" onclick="navTo('financials')" id="link-financials" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-money-bill-wave w-5"></i> <span class="font-medium ml-3 text-sm">Payment Records</span></div></a>
+            <a href="#" onclick="navTo('expenses')" id="link-expenses" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-receipt w-5"></i> <span class="font-medium ml-3 text-sm">Expense Tracker</span></div></a>
+            <a href="#" onclick="navTo('reports')" id="link-reports" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-chart-pie w-5"></i> <span class="font-medium ml-3 text-sm">Reports</span></div></a>
+            <a href="#" onclick="navTo('settings')" id="link-settings" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-sliders-h w-5"></i> <span class="font-medium ml-3 text-sm">Settings</span></div></a>
         </nav>
-        
         <div class="p-6 border-t border-indigo-900 bg-indigo-950 flex flex-col gap-2">
-            <button onclick="hardReset()" class="flex items-center text-xs text-indigo-300 hover:text-white transition">
-                <i class="fas fa-trash-alt mr-2"></i> Reset System
-            </button>
-            <button onclick="restartTour()" class="flex items-center text-xs text-indigo-300 hover:text-white transition">
-                <i class="fas fa-play-circle mr-2"></i> Replay Tour
-            </button>
+            <button onclick="hardReset()" class="flex items-center text-xs text-indigo-300 hover:text-white transition"><i class="fas fa-trash-alt mr-2"></i> Reset System</button>
+            <button onclick="restartTour()" class="flex items-center text-xs text-indigo-300 hover:text-white transition"><i class="fas fa-play-circle mr-2"></i> Replay Tour</button>
         </div>
     </aside>
 
@@ -93,10 +69,7 @@
                     <span id="notif-badge" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
                 </div>
                 <div class="flex items-center gap-3 pl-6 border-l border-slate-200">
-                    <div class="text-right hidden sm:block">
-                        <p class="text-sm font-bold text-slate-700">James Dalton</p>
-                        <p class="text-xs text-slate-500">Property Owner</p>
-                    </div>
+                    <div class="text-right hidden sm:block"><p class="text-sm font-bold text-slate-700">James Dalton</p><p class="text-xs text-slate-500">Property Owner</p></div>
                     <div class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-blue-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">JD</div>
                 </div>
             </div>
@@ -110,9 +83,8 @@
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Total Revenue</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2" id="dash-revenue">$0.00</h3></div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Outstanding</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2 text-rose-600" id="dash-outstanding">$0.00</h3></div>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Occupancy</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2" id="dash-occupancy">0%</h3></div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Open Maintenance Requests</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2" id="dash-maintenance">0</h3></div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><p class="text-slate-500 text-xs font-bold uppercase">Active Maint.</p><h3 class="text-3xl font-extrabold text-slate-900 mt-2" id="dash-maintenance">0</h3></div>
                 </div>
-
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-80">
                         <h3 class="font-bold text-lg text-slate-800 mb-4 brand-font">Revenue Performance</h3>
@@ -159,13 +131,53 @@
                 </div>
             </div>
 
-            <!-- 7. FINANCIALS -->
+            <!-- 7. PAYMENT RECORDS -->
             <div id="view-financials" class="view-section hidden-section fade-in">
-                <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Financials</h3><div class="flex gap-4"><select id="filter-financials" onchange="renderInvoices()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"><option value="all">All Tenants</option></select><button onclick="openInvoiceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-emerald-700">New Invoice</button></div></div>
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><table class="w-full text-left"><thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Status</th><th class="p-5">Tenant</th><th class="p-5">Description</th><th class="p-5">Total</th><th class="p-5 text-right">Action</th></tr></thead><tbody id="table-invoices" class="divide-y divide-slate-100"></tbody></table></div>
+                <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Payment Records</h3><div class="flex gap-4"><select id="filter-financials" onchange="renderInvoices()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"><option value="all">All Tenants</option></select><button onclick="openInvoiceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-emerald-700">New Invoice</button></div></div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"><table class="w-full text-left"><thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Status</th><th class="p-5">Tenant</th><th class="p-5">Description</th><th class="p-5">Total</th><th class="p-5">Date Paid</th><th class="p-5 text-right">Action</th></tr></thead><tbody id="table-invoices" class="divide-y divide-slate-100"></tbody></table></div>
             </div>
 
-            <!-- 8. SETTINGS -->
+            <!-- 8. EXPENSES -->
+            <div id="view-expenses" class="view-section hidden-section fade-in">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-slate-800 brand-font">Expense Tracker</h3>
+                    <div class="flex gap-4">
+                        <select id="filter-expenses" onchange="renderExpenses()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white"><option value="all">All Properties</option></select>
+                        <div class="bg-rose-50 text-rose-700 px-4 py-2 rounded-lg font-bold border border-rose-200">Total: <span id="exp-total-display">$0.00</span></div>
+                        <button onclick="populateExpenseModal(); openModal('modal-expense')" class="bg-rose-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-rose-700">+ Add Expense</button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200"><tr><th class="p-5">Date</th><th class="p-5">Property</th><th class="p-5">Vendor</th><th class="p-5">Category</th><th class="p-5 text-right">Amount</th><th class="p-5 text-right">Receipt</th></tr></thead>
+                        <tbody id="table-expenses" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 9. REPORTS -->
+            <div id="view-reports" class="view-section hidden-section fade-in">
+                <h3 class="text-xl font-bold text-slate-800 brand-font mb-6">Financial Reports (YTD)</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Income Statement -->
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <h4 class="font-bold text-lg text-slate-900 border-b pb-4 mb-4">Income Statement</h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center"><span class="text-slate-600">Total Revenue</span><span class="font-bold text-emerald-600 text-lg" id="report-income">$0.00</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-600">Total Expenses</span><span class="font-bold text-rose-600 text-lg" id="report-expense">$0.00</span></div>
+                            <div id="report-expense-breakdown" class="pl-4 text-sm text-slate-500 space-y-2 border-l-2 border-slate-100"></div>
+                            <div class="border-t pt-4 flex justify-between items-center mt-4"><span class="font-extrabold text-slate-800">Net Operating Income (NOI)</span><span class="font-extrabold text-indigo-900 text-2xl" id="report-noi">$0.00</span></div>
+                        </div>
+                    </div>
+                    <!-- Chart -->
+                    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <h4 class="font-bold text-lg text-slate-900 mb-4">Monthly Breakdown</h4>
+                        <div class="h-64"><canvas id="monthlyChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 10. SETTINGS -->
             <div id="view-settings" class="view-section hidden-section fade-in">
                 <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto"><h3 class="text-2xl font-bold mb-8 brand-font">Settings: Late Fees</h3><form onsubmit="act_saveSettings(event)" class="space-y-6"><div><label class="block text-sm font-bold text-slate-700 mb-2">Apply To</label><div class="flex gap-4"><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="feeTarget" value="all" checked onchange="toggleFeeTarget()"> All Tenants</label><label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="feeTarget" value="select" onchange="toggleFeeTarget()"> Specific Tenants</label></div><div id="fee-tenant-select" class="hidden-section mt-3 p-3 bg-slate-50 rounded border border-slate-200 max-h-32 overflow-y-auto"></div></div><div><label class="block text-sm font-bold text-slate-700 mb-2">Charge Method</label><select id="fee-method" class="w-full border p-3 rounded-lg" onchange="toggleFeeInput()"><option value="flat">Manual Flat Fee ($)</option><option value="daily">Daily Charge ($/day)</option><option value="percent">Percentage of Rent (%)</option></select></div><div><label class="block text-sm font-bold text-slate-700 mb-2" id="fee-label">Amount ($)</label><input type="number" id="fee-amount" class="w-full border p-3 rounded-lg" value="50"></div><div><label class="block text-sm font-bold text-slate-700 mb-2">Grace Period (Days)</label><input type="number" id="fee-grace" class="w-full border p-3 rounded-lg" value="5"></div><div class="pt-4 border-t border-slate-100"><h4 class="font-bold text-lg text-slate-800 mb-4">Lease Requirements</h4><div class="p-4 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="set-insurance" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300"><span class="font-medium text-slate-700">Require Renter's Insurance</span></label><p class="text-xs text-slate-500 mt-1 ml-8">If checked, tenants will see a requirement notice in their portal.</p></div></div><button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg">Save Configuration</button></form></div>
             </div>
@@ -173,82 +185,150 @@
     </main>
 
     <!-- WELCOME MODAL -->
-    <div id="modal-welcome" class="hidden-section fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-md fade-in"><div class="bg-white p-10 rounded-3xl shadow-2xl max-w-lg text-center relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-blue-500"></div><div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fas fa-hand-sparkles text-3xl text-indigo-600"></i></div><h2 class="text-3xl font-extrabold text-slate-900 mb-4 brand-font">Welcome to Kozeyy</h2><p class="text-slate-600 mb-8 leading-relaxed">Your professional property management journey starts here. Let us show you how to automate your rentals in 3 easy steps.</p><button onclick="startTour()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-1">Start Quick Tour</button><button onclick="endTour()" class="mt-4 text-sm text-slate-400 hover:text-slate-600">Skip for now</button></div></div>
+    <div id="modal-welcome" class="hidden-section fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-md fade-in"><div class="bg-white p-10 rounded-3xl shadow-2xl max-w-lg text-center relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-blue-500"></div><div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fas fa-hand-sparkles text-3xl text-indigo-600"></i></div><h2 class="text-3xl font-extrabold text-slate-900 mb-4 brand-font">Welcome to Kozeyy</h2><p class="text-slate-600 mb-8 leading-relaxed">Your professional property management journey starts here. Let us show you how to automate your rentals in 5 easy steps.</p><button onclick="startTour()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-1">Start Quick Tour</button><button onclick="endTour()" class="mt-4 text-sm text-slate-400 hover:text-slate-600">Skip for now</button></div></div>
     <!-- TOUR OVERLAYS -->
     <div id="tour-spotlight" class="hidden-section tour-spotlight"></div>
     <div id="tour-tooltip" class="hidden-section tour-tooltip"><div class="flex justify-between items-start mb-2"><h4 id="tour-title" class="font-bold text-lg text-slate-900"></h4><span id="tour-step" class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">1/5</span></div><p id="tour-text" class="text-sm text-slate-600 mb-4 leading-relaxed"></p><div class="flex justify-end gap-2"><button onclick="endTour()" class="text-xs text-slate-400 hover:text-slate-600 mr-auto px-2">End</button><button onclick="nextStep()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Next</button></div></div>
 
     <!-- MODALS -->
+    <!-- ADD EXPENSE -->
+    <div id="modal-expense" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md relative">
+            <button onclick="closeModal('modal-expense')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-4 brand-font">Add Expense</h3>
+            <form onsubmit="act_addExpense(event)" class="space-y-4">
+                <select id="ex-prop" class="w-full border p-3 rounded-lg bg-slate-50 text-slate-800" required><option value="" disabled selected>Select Property</option></select>
+                <input type="date" id="ex-date" required class="w-full border p-3 rounded-lg bg-slate-50">
+                <input type="text" id="ex-vendor" placeholder="Vendor" required class="w-full border p-3 rounded-lg bg-slate-50">
+                <select id="ex-cat" class="w-full border p-3 rounded-lg bg-slate-50"><option>Repairs</option><option>Utilities</option><option>Management</option><option>Taxes</option><option>Insurance</option><option>Other</option></select>
+                <input type="number" id="ex-amount" placeholder="Amount ($)" required class="w-full border p-3 rounded-lg bg-slate-50">
+                <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:bg-slate-50 transition" onclick="document.getElementById('ex-file').click()">
+                    <i class="fas fa-receipt text-2xl text-slate-400"></i><p class="text-sm text-slate-500 mt-1">Upload Receipt</p>
+                    <input type="file" id="ex-file" class="hidden" onchange="alert('Receipt Attached')">
+                </div>
+                <button class="w-full bg-rose-600 text-white py-3 rounded-lg font-bold hover:bg-rose-700 transition">Save Expense</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- RECORD PAYMENT MODAL -->
+    <div id="modal-pay" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm relative">
+            <button onclick="closeModal('modal-pay')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+            <h3 class="text-lg font-bold mb-4 brand-font">Record Payment</h3>
+            <p class="text-sm text-slate-500 mb-4">Marking this invoice as paid outside of Kozeyy.</p>
+            <input type="hidden" id="pay-id">
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-500 mb-1">Amount Paid ($)</label>
+                <input type="number" id="pay-amount" class="w-full border p-2 rounded-lg">
+            </div>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-500 mb-1">Date Paid</label>
+                <input type="date" id="pay-date" class="w-full border p-2 rounded-lg">
+            </div>
+            <button onclick="confirmPay()" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-bold hover:bg-emerald-700">Confirm Payment</button>
+        </div>
+    </div>
+
+    <!-- OTHER MODALS -->
     <div id="modal-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm"><div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto"><button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-6 brand-font" id="modal-tenant-title">Add Tenant</h3><form onsubmit="act_saveTenant(event)" class="grid grid-cols-2 gap-4"><input type="hidden" id="t-id"><div class="col-span-2 border-b pb-1 mb-2 font-bold text-slate-500 text-xs uppercase">Personal Info</div><input type="text" id="t-name" placeholder="Full Name" required class="col-span-2 border p-3 rounded-lg bg-slate-50"><input type="email" id="t-email" placeholder="Email" required class="col-span-1 border p-3 rounded-lg bg-slate-50"><input type="tel" id="t-phone" placeholder="Phone" required class="col-span-1 border p-3 rounded-lg bg-slate-50"><div class="col-span-2 border-b pb-1 mb-2 mt-4 font-bold text-slate-500 text-xs uppercase">Property Info</div><input type="text" id="t-addr" placeholder="Street Address" required class="col-span-2 border p-3 rounded-lg bg-slate-50"><input type="text" id="t-city" placeholder="City" required class="col-span-1 border p-3 rounded-lg bg-slate-50"><div class="flex gap-2 col-span-1"><input type="text" id="t-state" placeholder="State" class="w-1/3 border p-3 rounded-lg bg-slate-50"><input type="text" id="t-zip" placeholder="Zip" class="w-2/3 border p-3 rounded-lg bg-slate-50"></div><input type="text" id="t-unit" placeholder="Unit (Optional)" class="col-span-1 border p-3 rounded-lg bg-slate-50"><div class="col-span-2 border-b pb-1 mb-2 mt-4 font-bold text-slate-500 text-xs uppercase">Lease</div><div class="col-span-1"><label class="text-xs text-slate-500">Start</label><input type="date" id="t-start" required class="w-full border p-3 rounded-lg bg-slate-50"></div><div class="col-span-1"><label class="text-xs text-slate-500">End</label><input type="date" id="t-end" required class="w-full border p-3 rounded-lg bg-slate-50"></div><input type="number" id="t-rent" placeholder="Monthly Rent ($)" required class="col-span-2 border p-3 rounded-lg bg-slate-50"><button class="col-span-2 bg-blue-600 text-white py-3 rounded-lg font-bold mt-2" id="btn-save-tenant">Save Tenant</button></form></div></div>
     <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm"><div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto"><button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Post Listing</h3><form onsubmit="act_saveListing(event)" class="grid grid-cols-2 gap-4"><input type="hidden" id="l-id"><input type="text" id="l-addr" placeholder="Address" required class="col-span-2 border p-3 rounded-lg bg-slate-50"><input type="number" id="l-price" placeholder="Rent ($)" required class="col-span-1 border p-3 rounded-lg bg-slate-50"><input type="number" id="l-sqft" placeholder="Sq. Ft." required class="col-span-1 border p-3 rounded-lg bg-slate-50"><input type="number" id="l-beds" placeholder="Beds" required class="col-span-1 border p-3 rounded-lg bg-slate-50"><input type="number" id="l-baths" placeholder="Baths" required class="col-span-1 border p-3 rounded-lg bg-slate-50"><textarea id="l-desc" placeholder="Description..." class="col-span-2 border p-3 rounded-lg bg-slate-50 h-24" required></textarea><input type="text" id="l-amen" placeholder="Amenities..." class="col-span-2 border p-3 rounded-lg bg-slate-50"><div class="col-span-2"><label class="block text-sm font-bold text-slate-500 mb-2">Photos</label><div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center cursor-pointer hover:bg-slate-50 transition" onclick="document.getElementById('l-img').click()"><i class="fas fa-cloud-upload-alt text-2xl text-slate-400"></i><p class="text-sm text-slate-500 mt-1">Click to upload property photos</p><input type="file" id="l-img" class="hidden" multiple onchange="previewPhotos(this)"></div><div id="l-photo-preview" class="flex gap-2 mt-2 overflow-x-auto"></div></div><div class="col-span-2"><label class="text-xs text-slate-500">Available Date</label><input type="date" id="l-date" required class="w-full border p-3 rounded-lg bg-slate-50"></div><button class="col-span-2 bg-indigo-600 text-white py-3 rounded-lg font-bold mt-2" id="btn-save-listing">Post Listing</button></form></div></div>
-    <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm"><div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request Details</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Completion Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">No notes available.</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-lg font-bold hover:bg-slate-50">Close</button></div></div>
-    <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm"><div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto"><button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button><h3 class="text-xl font-bold mb-4 brand-font">Generate Invoice</h3><form onsubmit="act_addInvoice(event)" class="space-y-4"><select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-lg bg-slate-50 text-slate-800" required><option value="" disabled selected>Select a Tenant</option></select><div class="flex gap-2 p-1 bg-slate-100 rounded-lg"><button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button><button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-md font-bold text-sm text-slate-500">Variable</button></div><div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto"></div><button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2 rounded-lg text-sm">+ Add Item</button><div class="border-t pt-4 flex justify-between items-center"><span class="font-bold text-slate-700">Total:</span><span id="inv-total" class="font-bold text-2xl text-emerald-600">$0.00</span></div><input type="date" id="inv-date" required class="w-full border p-3 rounded-lg bg-slate-50"><button class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold">Send Invoice</button></form></div></div>
+    <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm"><div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request Details</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-lg border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Completion Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">No notes available.</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-lg font-bold hover:bg-slate-50">Close</button></div></div>
+    <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm"><div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto"><button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-4 brand-font">Generate Invoice</h3><form onsubmit="act_addInvoice(event)" class="space-y-4"><select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-lg bg-slate-50 text-slate-800" required><option value="" disabled selected>Select a Tenant</option></select><div class="flex gap-2 p-1 bg-slate-100 rounded-lg"><button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button><button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-md font-bold text-sm text-slate-500">Variable</button></div><div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto"></div><button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2 rounded-lg text-sm">+ Add Item</button><div class="border-t pt-4 flex justify-between items-center"><span class="font-bold text-slate-700">Total:</span><span id="inv-total" class="font-bold text-2xl text-emerald-600">$0.00</span></div><input type="date" id="inv-date" required class="w-full border p-3 rounded-lg bg-slate-50"><button class="w-full bg-emerald-600 text-white py-3 rounded-lg font-bold">Send Invoice</button></form></div></div>
 
     <script>
-        const DB_KEY = 'kozeyy_data_v21'; // Clean key
+        const DB_KEY = 'kozeyy_data_final_v32';
         const DB = {
-            get: () => JSON.parse(localStorage.getItem(DB_KEY)),
+            get: () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch(e){ return null; } },
             set: (data) => localStorage.setItem(DB_KEY, JSON.stringify(data)),
             init: () => {
                 let data = DB.get();
                 if(!data) {
                     data = {
                         tenants: [{ id: 1, name: 'Alex Johnson', email: 'alex@demo.com', phone: '555-0101', addr: '123 Tech Ln', city: 'Austin', state: 'TX', zip: '78701', rent: 2000, start: '2023-01-01', end: '2024-01-01', status: 'Active' }],
-                        invoices: [{ id: 101, tenantId: 1, items: [{desc:'Rent', amount:2000}], total: 2000, status: 'Paid', date: '2023-10-01' }],
-                        listings: [], apps: [], msgs: [], maint: [], notifications: { messages: 0, maintenance: 0, screening: 0 },
-                        settings: { amount: 50, grace: 5, requireInsurance: true, feeTarget: 'all', targets: [], method: 'flat' },
+                        invoices: [{ id: 101, tenantId: 1, items: [{desc:'Rent', amount:2000}], total: 2000, status: 'Paid', date: '2023-10-01', paidDate: '2023-10-01' }],
+                        listings: [{ id: 1, addr: '123 Maple Ave', price: 2400, desc: 'Lovely home.', sqft: 1500, beds: 3, baths: 2, amen:'Pool, Gym', date:'2024-01-01' }],
+                        expenses: [{ id: 1, date: '2023-10-05', vendor: 'Home Depot', cat: 'Repairs', amount: 150, prop: '123 Tech Ln' }],
+                        apps: [], msgs: [], maint: [], notifications: { messages: 0, maintenance: 0, screening: 0 },
+                        settings: { feeTarget:'all', targets:[], method:'flat', amount:50, grace:5, requireInsurance: true },
                         ftux: true
-                    }; DB.set(data);
-                } return data;
+                    };
+                    DB.set(data);
+                }
+                return data;
             }
         };
 
-        let state = DB.init(), currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, tourStep = 0, editTenantId = null, editListingId = null;
+        let state = DB.init();
+        let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
+        let editTenantId = null, editListingId = null, tourStep = 0;
 
         // --- TOUR ---
         const tourSteps = [
             { id: 'link-dashboard', title: 'Dashboard', text: 'Overview of revenue & occupancy.', render: 'dashboard' },
             { id: 'qa-tenant', title: 'Add Tenant', text: 'Quickly onboard new tenants.', render: 'dashboard' },
             { id: 'qa-invoice', title: 'Create Invoice', text: 'Generate bills in seconds.', render: 'dashboard' },
-            { id: 'link-settings', title: 'Settings', text: 'Configure late fees and requirements.', render: 'settings' },
+            { id: 'link-settings', title: 'Settings', text: 'Configure global late fees.', render: 'settings' },
             { id: 'link-messages', title: 'Messages', text: 'Chat securely with tenants.', render: 'messages', mock: true }
         ];
 
-        function checkTour() { if(state.ftux) openModal('modal-welcome'); }
-        function startTour() { closeModal('modal-welcome'); tourStep = 0; runTourStep(); }
+        function checkTour() { if(state.ftux) { document.getElementById('modal-welcome').classList.remove('hidden-section'); document.getElementById('modal-welcome').classList.add('flex'); } }
+        function startTour() { document.getElementById('modal-welcome').classList.add('hidden-section'); document.getElementById('modal-welcome').classList.remove('flex'); tourStep = 0; runTourStep(); }
         function runTourStep() {
             const step = tourSteps[tourStep];
             navTo(step.render, true);
             if(step.mock) injectMockData(step.render);
             const el = document.getElementById(step.id);
-            el.scrollIntoView({behavior: "smooth", block: "center"});
-            setTimeout(() => {
-                const spot = document.getElementById('tour-spotlight'); const tip = document.getElementById('tour-tooltip');
-                spot.classList.remove('hidden-section'); tip.classList.remove('hidden-section');
-                const rect = el.getBoundingClientRect();
-                spot.style.top = `${rect.top - 5}px`; spot.style.left = `${rect.left - 5}px`; spot.style.width = `${rect.width + 10}px`; spot.style.height = `${rect.height + 10}px`;
-                let tipTop = rect.bottom + 15; let tipLeft = rect.left; if(tipLeft + 320 > window.innerWidth) tipLeft = window.innerWidth - 340;
-                tip.style.top = `${tipTop}px`; tip.style.left = `${tipLeft}px`;
-                document.getElementById('tour-title').innerText = step.title; document.getElementById('tour-text').innerText = step.text; document.getElementById('tour-step').innerText = `${tourStep + 1}/5`;
-            }, 400);
+            if(el) {
+                el.scrollIntoView({behavior: "smooth", block: "center"});
+                setTimeout(() => {
+                    const spot = document.getElementById('tour-spotlight'); const tip = document.getElementById('tour-tooltip');
+                    spot.classList.remove('hidden-section'); tip.classList.remove('hidden-section');
+                    const rect = el.getBoundingClientRect();
+                    spot.style.top = `${rect.top - 5}px`; spot.style.left = `${rect.left - 5}px`; spot.style.width = `${rect.width + 10}px`; spot.style.height = `${rect.height + 10}px`;
+                    let tipTop = rect.bottom + 15; let tipLeft = rect.left;
+                    if(window.innerWidth < 768) { tipLeft = 10; tip.style.width = 'calc(100% - 20px)'; } 
+                    else if(tipLeft + 280 > window.innerWidth) tipLeft = window.innerWidth - 300;
+                    tip.style.top = `${tipTop}px`; tip.style.left = `${tipLeft}px`;
+                    document.getElementById('tour-title').innerText = step.title; document.getElementById('tour-text').innerText = step.text; document.getElementById('tour-step').innerText = `${tourStep + 1}/5`;
+                }, 400);
+            }
         }
         function injectMockData(v) { if(v === 'messages') { document.getElementById('list-chats').innerHTML = `<div class="p-3 bg-blue-50 border border-blue-200 rounded font-bold">John Doe</div>`; document.getElementById('box-chat').innerHTML = `<div class="flex"><div class="bg-white border p-2 rounded-lg text-sm mb-2 shadow-sm">Hi, picking up keys tomorrow?</div></div>`; } }
         function nextStep() { tourStep++; if(tourStep >= tourSteps.length) { endTour(); return; } runTourStep(); }
-        function endTour() { document.getElementById('tour-spotlight').classList.add('hidden-section'); document.getElementById('tour-tooltip').classList.add('hidden-section'); state.ftux = false; DB.set(state); navTo('dashboard'); }
+        function endTour() { 
+            const wel = document.getElementById('modal-welcome'); 
+            if(wel) { wel.classList.add('hidden-section'); wel.classList.remove('flex'); }
+            document.getElementById('tour-spotlight').classList.add('hidden-section'); 
+            document.getElementById('tour-tooltip').classList.add('hidden-section'); 
+            state.ftux = false; DB.set(state); navTo('dashboard'); 
+        }
         function restartTour() { state.ftux = true; DB.set(state); location.reload(); }
 
-        // --- CORE ---
+        // --- APP ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } 
+            else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); }
+        }
+
         function navTo(view, isTour = false) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
             document.getElementById('view-' + view).classList.remove('hidden-section');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
             document.getElementById('link-' + view).classList.add('sidebar-active');
-            const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests', financials: 'Financial Reports', settings: 'System Configuration' };
+            if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
+            
+            const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration' };
             document.getElementById('page-title').innerText = titles[view] || 'Dashboard';
+            
             if (!isTour) {
                 if(view === 'financials') populateFinFilter();
                 if(view === 'messages') renderChatList();
-                if(view === 'tenants' || view === 'listings' || view === 'maintenance' || view === 'screening') renderAll();
+                if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
+                if(view === 'tenants' || view === 'listings' || view === 'maintenance' || view === 'screening' || view === 'expenses') renderAll();
+                if(view === 'reports') { renderAll(); renderMonthlyChart(); }
                 if(view === 'settings') loadSettings();
             }
         }
@@ -258,34 +338,131 @@
 
         function renderAll() {
             updateBadge('messages', state.notifications.messages); updateBadge('maintenance', state.notifications.maintenance); updateBadge('screening', state.notifications.screening);
-            const rev = state.invoices.filter(i=>i.status==='Paid').reduce((a,b)=>a+(b.total||0),0);
-            const out = state.invoices.filter(i=>i.status==='Unpaid').reduce((a,b)=>a+(b.total||0),0);
+            const rev = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0);
+            const out = state.invoices.reduce((a,b)=>a + (b.total - (b.amountPaid||0)), 0);
             const activeMaint = state.maint.filter(m=>m.status==='Active').length;
             document.getElementById('dash-revenue').innerText = `$${rev.toLocaleString()}`;
             document.getElementById('dash-outstanding').innerText = `$${out.toLocaleString()}`;
             document.getElementById('dash-occupancy').innerText = state.tenants.length > 0 ? "100%" : "0%";
             document.getElementById('dash-maintenance').innerText = activeMaint;
 
+            // Tenants
             const tbody = document.getElementById('table-tenants'); tbody.innerHTML = '';
-            state.tenants.forEach(t => { tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}</td><td class="p-5 text-sm">${t.addr}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5 text-right"><div class="flex justify-end gap-2"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 text-xs font-bold hover:underline">Edit</button><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">Active</span></div></td></tr>`; });
+            state.tenants.forEach(t => { tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm">${t.addr}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5 text-right"><div class="flex justify-end gap-2"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 text-xs font-bold hover:underline">Edit</button><span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold">Active</span></div></td></tr>`; });
 
+            // Listings
             const grid = document.getElementById('grid-listings'); grid.innerHTML = '';
             state.listings.forEach(l => { grid.innerHTML += `<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 relative group"><div class="absolute top-4 right-4 flex gap-2"><button onclick="act_editListing(${l.id})" class="text-slate-400 hover:text-blue-600"><i class="fas fa-edit"></i></button><button onclick="act_delListing(${l.id})" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash"></i></button></div><h4 class="font-bold text-lg text-slate-800">${l.addr}</h4><p class="text-emerald-600 font-bold">$${parseInt(l.price).toLocaleString()}/mo</p><div class="mt-2 text-xs text-slate-400 flex gap-3"><span><i class="fas fa-bed"></i> ${l.beds}</span><span><i class="fas fa-bath"></i> ${l.baths}</span><span><i class="fas fa-ruler"></i> ${l.sqft}</span></div></div>`; });
 
+            // Maintenance
             const activeList = document.getElementById('list-maint-active'); const histList = document.getElementById('list-maint-history'); activeList.innerHTML = ''; histList.innerHTML = '';
             const activeMaintItems = state.maint.filter(m => m.status === 'Active');
             if (activeMaintItems.length === 0) { activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">None</div>`; } else { activeMaintItems.forEach(m => { const t = state.tenants.find(x=>x.id==m.tenantId)||{name:'Unknown'}; activeList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white border-b border-slate-100"><div><p class="font-bold text-slate-800">${m.issue}</p><p class="text-xs text-slate-500">${t.name} • ${m.date}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-xs font-bold hover:bg-emerald-200">Done</button></div>`; }); }
             state.maint.filter(m => m.status === 'Completed').forEach(m => { histList.innerHTML += `<div class="p-4 flex justify-between items-center opacity-70 border-b border-slate-100"><div><p class="font-medium line-through">${m.issue}</p><p class="text-xs text-slate-400">Completed: ${m.completedDate || 'N/A'}</p></div><button onclick="viewMaintNote(${m.id})" class="text-blue-500 text-xs hover:underline">View Notes</button></div>`; });
 
-            const sBody = document.getElementById('table-screening'); sBody.innerHTML = '';
-            state.apps.forEach(a => { sBody.innerHTML += `<tr><td class="p-5 font-bold">${a.name}</td><td class="p-5"><span class="bg-green-100 text-green-700 px-2 py-1 rounded font-bold">${a.score}</span></td><td class="p-5">$${a.income}</td><td class="p-5 text-right"><button onclick="act_appDecide(${a.id}, false)" class="text-red-500 mr-2 text-sm">Deny</button><button onclick="act_appDecide(${a.id}, true)" class="bg-indigo-600 text-white px-3 py-1 rounded text-xs font-bold">Approve</button></td></tr>`; });
+            // Expenses
+            const exBody = document.getElementById('table-expenses'); exBody.innerHTML = '';
+            const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
+            let dEx = state.expenses;
+            if (fid !== 'all') dEx = dEx.filter(x => x.prop === fid);
+            dEx.forEach(x => { exBody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 whitespace-nowrap">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold">${x.vendor}</td><td class="p-5 text-sm"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-right"><i class="fas fa-receipt text-slate-300"></i></td></tr>`; });
+            const totalExp = dEx.reduce((a,b)=>a+b.amount,0);
+            if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${totalExp.toLocaleString()}`;
 
-            renderInvoices(); updateChart();
+            renderReports(); renderInvoices(); updateChart();
+        }
+
+        function renderReports() {
+            const income = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0);
+            const expense = state.expenses.reduce((a,b)=>a+b.amount,0);
+            const noi = income - expense;
+            document.getElementById('report-income').innerText = `$${income.toLocaleString()}`;
+            document.getElementById('report-expense').innerText = `$${expense.toLocaleString()}`;
+            document.getElementById('report-noi').innerText = `$${noi.toLocaleString()}`;
+            
+            const eb = document.getElementById('report-expense-breakdown');
+            if(eb) {
+                eb.innerHTML = '';
+                const cats = {}; state.expenses.forEach(e => { cats[e.cat] = (cats[e.cat] || 0) + e.amount; });
+                if(Object.keys(cats).length === 0) eb.innerHTML = '<div class="italic text-xs text-slate-400">No expenses recorded</div>';
+                else for (const [c, a] of Object.entries(cats)) eb.innerHTML += `<div class="flex justify-between text-xs border-b border-slate-50 py-1"><span>${c}</span><span class="font-bold">$${a.toLocaleString()}</span></div>`;
+            }
         }
 
         function updateBadge(id, count) { const el = document.getElementById('badge-' + id); if(count > 0) { el.innerText = count; el.classList.remove('hidden-section'); } else { el.classList.add('hidden-section'); } }
 
-        // Invoicing
+        // --- PAYMENT & INVOICE ---
+        function act_openPayModal(id) {
+            const inv = state.invoices.find(x => x.id === id);
+            if(!inv) return;
+            document.getElementById('pay-id').value = id;
+            document.getElementById('pay-amount').value = inv.total - (inv.amountPaid || 0);
+            document.getElementById('pay-date').valueAsDate = new Date();
+            openModal('modal-pay');
+        }
+
+        function confirmPay() {
+            const id = parseInt(document.getElementById('pay-id').value);
+            const amt = parseFloat(document.getElementById('pay-amount').value);
+            const date = document.getElementById('pay-date').value;
+            const inv = state.invoices.find(x => x.id === id);
+            
+            if(inv && amt > 0) {
+                inv.amountPaid = (inv.amountPaid || 0) + amt;
+                inv.paidDate = date;
+                inv.status = inv.amountPaid >= inv.total ? 'Paid' : 'Partial';
+                DB.set(state); closeModal('modal-pay'); renderAll();
+            }
+        }
+
+        function renderInvoices() { 
+            const fid = document.getElementById('filter-financials') ? document.getElementById('filter-financials').value : 'all'; 
+            const t = document.getElementById('table-invoices'); t.innerHTML=''; 
+            let d = state.invoices; 
+            if(fid!=='all') d=d.filter(i=>i.tenantId==fid); 
+            d.sort((a,b)=>b.id-a.id).forEach(i => { 
+                const tn = state.tenants.find(x=>x.id==i.tenantId)||{name:'Unknown'}; 
+                const desc = i.items && i.items.length > 1 ? `${i.items.length} Items` : (i.items ? i.items[0].desc : 'Rent'); 
+                
+                let btn = '';
+                if(i.status === 'Paid') btn = `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold uppercase">Paid</span>`;
+                else { const btnLabel = i.status === 'Partial' ? 'Add Pay' : 'Record Pay'; btn = `<button onclick="act_openPayModal(${i.id})" class="text-indigo-600 font-bold text-xs border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-50">${btnLabel}</button>`; }
+                
+                let statusBadge = i.status;
+                if(i.status === 'Partial') statusBadge = `<span class="text-amber-600 font-bold">Partial</span>`;
+                if(i.status === 'Unpaid') statusBadge = `<span class="text-rose-600 font-bold">Unpaid</span>`;
+                const remaining = i.total - (i.amountPaid || 0);
+                const displayTotal = i.status === 'Partial' ? `<span class="text-amber-600">$${remaining.toLocaleString()} left</span>` : `$${i.total.toLocaleString()}`;
+
+                t.innerHTML+=`<tr><td class="p-5 text-sm">${statusBadge}</td><td class="p-5 text-sm">${tn.name}</td><td class="p-5 text-sm text-slate-500">${desc}</td><td class="p-5 font-bold">${displayTotal}</td><td class="p-5 text-sm text-slate-500">${i.paidDate || '-'}</td><td class="p-5 text-right">${btn}</td></tr>`; 
+            }); 
+        }
+
+        // --- EXPENSES ---
+        function populateExpenseModal() {
+            const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>';
+            const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr));
+            props.forEach(p => s.innerHTML += `<option>${p}</option>`);
+        }
+        function populateExpFilter() {
+            const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>';
+            const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr));
+            props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`);
+        }
+        function act_addExpense(e) {
+            e.preventDefault();
+            const data = {
+                id: Date.now(),
+                date: document.getElementById('ex-date').value,
+                vendor: document.getElementById('ex-vendor').value,
+                cat: document.getElementById('ex-cat').value,
+                prop: document.getElementById('ex-prop').value,
+                amount: parseFloat(document.getElementById('ex-amount').value) || 0
+            };
+            state.expenses.push(data); DB.set(state); closeModal('modal-expense'); renderAll();
+        }
+
+        // --- INVOICE CREATION ---
         function openInvoiceModal() { const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; state.tenants.forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); openModal('modal-invoice'); logic_invMode('fixed'); }
         function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
         function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (invMode === 'fixed' && tid) { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; } else if (invMode === 'variable') { logic_addRow(); } renderInvItems(); }
@@ -294,49 +471,35 @@
         function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); calcTotal(); }
         function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; calcTotal(); }
         function calcTotal() { document.getElementById('inv-total').innerText = `$${invItems.reduce((a,b)=>a+(b.amount||0),0).toLocaleString()}`; }
-        function act_addInvoice(e) { e.preventDefault(); const total = invItems.reduce((a,b)=>a+(b.amount||0),0); state.invoices.push({ id: Date.now(), tenantId: document.getElementById('inv-tenant').value, items: invItems, total: total, date: document.getElementById('inv-date').value, status: 'Unpaid' }); DB.set(state); closeModal('modal-invoice'); renderAll(); }
-
-        // Settings
-        function loadSettings() {
-            const s = state.settings || { feeTarget:'all', targets:[], method:'flat', amount:50, grace:5, requireInsurance: true };
-            if(document.getElementById('set-insurance')) document.getElementById('set-insurance').checked = s.requireInsurance !== false;
-            document.querySelector(`input[name="feeTarget"][value="${s.feeTarget}"]`).checked = true;
-            toggleFeeTarget();
-            document.getElementById('fee-method').value = s.method;
-            toggleFeeInput();
-            document.getElementById('fee-amount').value = s.amount;
-            document.getElementById('fee-grace').value = s.grace;
+        function act_addInvoice(e) { e.preventDefault(); const total = invItems.reduce((a,b)=>a+(b.amount||0),0); state.invoices.push({ id: Date.now(), tenantId: document.getElementById('inv-tenant').value, items: invItems, total: total, date: document.getElementById('inv-date').value, status: 'Unpaid', paidDate: '-' }); 
+            const tId = document.getElementById('inv-tenant').value; const tName = state.tenants.find(t=>t.id==tId).name; alert(`✅ Invoice Created.\n📧 Email Notification sent to ${tName}`);
+            DB.set(state); closeModal('modal-invoice'); renderAll(); 
         }
-        function act_saveSettings(e) { e.preventDefault(); const tType = document.querySelector('input[name="feeTarget"]:checked').value; let tIds = []; if(tType === 'select') { document.querySelectorAll('#fee-tenant-select input:checked').forEach(cb => tIds.push(cb.value)); } state.settings = { feeTarget: tType, targets: tIds, method: document.getElementById('fee-method').value, amount: document.getElementById('fee-amount').value, grace: document.getElementById('fee-grace').value, requireInsurance: document.getElementById('set-insurance').checked }; DB.set(state); alert("Saved"); }
-        function toggleFeeTarget() { const v = document.querySelector('input[name="feeTarget"]:checked').value; const c = document.getElementById('fee-tenant-select'); if(v === 'select') { c.classList.remove('hidden-section'); c.innerHTML = ''; state.tenants.forEach(t => { c.innerHTML += `<label class="block mb-2"><input type="checkbox" class="mr-2" value="${t.id}"> ${t.name}</label>`; }); } else { c.classList.add('hidden-section'); } }
-        function toggleFeeInput() { document.getElementById('fee-label').innerText = document.getElementById('fee-method').value === 'percent' ? "Percentage (%)" : "Amount ($)"; }
 
-        // Invoices
-        function renderInvoices() { const fid = document.getElementById('filter-financials') ? document.getElementById('filter-financials').value : 'all'; const t = document.getElementById('table-invoices'); t.innerHTML=''; let d=state.invoices; if(fid!=='all') d=d.filter(i=>i.tenantId==fid); d.sort((a,b)=>b.id-a.id).forEach(i => { const tn = state.tenants.find(x=>x.id==i.tenantId)||{name:'Unknown'}; const desc = i.items && i.items.length > 1 ? `${i.items.length} Items` : (i.items ? i.items[0].desc : 'Rent'); const btn = i.status === 'Unpaid' ? `<button onclick="act_payInv(${i.id})" class="text-indigo-600 font-bold text-xs border border-indigo-200 px-2 py-1 rounded">Pay</button>` : `<span class="text-slate-400 text-xs">Paid</span>`; t.innerHTML+=`<tr><td class="p-5"><span class="text-xs font-bold uppercase ${i.status==='Paid'?'text-emerald-600':'text-rose-600'}">${i.status}</span></td><td class="p-5 text-sm">${tn.name}</td><td class="p-5 text-sm text-slate-500">${desc}</td><td class="p-5 font-bold">$${(i.total||0).toLocaleString()}</td><td class="p-5 text-right">${btn}</td></tr>`; }); }
-
-        function initChart() { const ctx = document.getElementById('revenueChart').getContext('2d'); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['Paid', 'Outstanding'], datasets: [{ data: [0, 0], backgroundColor: ['#10b981', '#f59e0b'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
-        function updateChart() { if(!chartInstance) return; const rev = state.invoices.filter(i=>i.status==='Paid').reduce((a,b)=>a+b.total,0); const pend = state.invoices.filter(i=>i.status==='Unpaid').reduce((a,b)=>a+b.total,0); chartInstance.data.datasets[0].data = [rev, pend]; chartInstance.update(); }
-        function populateFinFilter() { const s = document.getElementById('filter-financials'); s.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.forEach(t => s.innerHTML += `<option value="${t.id}">${t.name}</option>`); }
-
-        // General
+        function initChart() { const ctx = document.getElementById('revenueChart').getContext('2d'); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['Collected', 'Outstanding'], datasets: [{ label: 'Financials', data: [0,0], backgroundColor: ['#10b981', '#f59e0b'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+        function updateChart() { if(!chartInstance) return; const rev = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0); const pend = state.invoices.filter(i=>i.status==='Unpaid').reduce((a,b)=>a+(b.total||0),0); chartInstance.data.datasets[0].data = [rev, pend]; chartInstance.update(); }
+        function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart').getContext('2d'); const labels = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']; const income = [12000, 12500, 11800, 13000, 13000, state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0)]; const expenses = [4000, 3500, 5000, 4200, 3800, state.expenses.reduce((a,b)=>a+b.amount,0)]; if(monthlyChartInstance) monthlyChartInstance.destroy(); monthlyChartInstance = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [ { label: 'Revenue', data: income, backgroundColor: '#10b981' }, { label: 'Expenses', data: expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
+        
         function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id == id); document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone; document.getElementById('t-addr').value = t.addr; document.getElementById('t-city').value = t.city; document.getElementById('t-state').value = t.state; document.getElementById('t-zip').value = t.zip; document.getElementById('t-unit').value = t.unit; document.getElementById('t-rent').value = t.rent; document.getElementById('t-start').value = t.start; document.getElementById('t-end').value = t.end; document.getElementById('btn-save-tenant').innerText = "Update Tenant"; openModal('modal-tenant'); }
         function act_saveTenant(e) { e.preventDefault(); const d = { name: document.getElementById('t-name').value, email: document.getElementById('t-email').value, phone: document.getElementById('t-phone').value, addr: document.getElementById('t-addr').value, city: document.getElementById('t-city').value, state: document.getElementById('t-state').value, zip: document.getElementById('t-zip').value, unit: document.getElementById('t-unit').value, rent: document.getElementById('t-rent').value, start: document.getElementById('t-start').value, end: document.getElementById('t-end').value, status: 'Active' }; if(editTenantId) { const i = state.tenants.findIndex(x=>x.id==editTenantId); state.tenants[i] = {...state.tenants[i], ...d}; } else { state.tenants.push({id:Date.now(), ...d}); } DB.set(state); closeModal('modal-tenant'); renderAll(); }
         function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.addr; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.desc; document.getElementById('l-amen').value = l.amen || ''; document.getElementById('l-date').value = l.date; document.getElementById('btn-save-listing').innerText = "Update Listing"; openModal('modal-listing'); }
         function act_saveListing(e) { e.preventDefault(); const d = { addr: document.getElementById('l-addr').value, price: document.getElementById('l-price').value, sqft: document.getElementById('l-sqft').value, beds: document.getElementById('l-beds').value, baths: document.getElementById('l-baths').value, desc: document.getElementById('l-desc').value, amen: document.getElementById('l-amen').value, date: document.getElementById('l-date').value }; if(editListingId) { const i = state.listings.findIndex(x=>x.id==editListingId); state.listings[i] = {...state.listings[i], ...d}; } else { state.listings.push({id:Date.now(), ...d}); } DB.set(state); closeModal('modal-listing'); renderAll(); }
         function act_completeMaint(id) { const n = prompt("Notes?")||"Done"; const m = state.maint.find(x=>x.id==id); if(m){ m.status='Completed'; m.completedDate=new Date().toLocaleDateString(); m.notes=n; DB.set(state); renderAll(); } }
         function viewMaintNote(id) { const m = state.maint.find(x => x.id == id); document.getElementById('md-issue').innerText = m.issue; document.getElementById('md-meta').innerText = `Completed: ${m.completedDate}`; document.getElementById('md-notes').innerText = m.notes || "No notes."; openModal('modal-maint-detail'); }
+        function act_saveSettings(e) { e.preventDefault(); const tType = document.querySelector('input[name="feeTarget"]:checked').value; let tIds = []; if(tType === 'select') { document.querySelectorAll('#fee-tenant-select input:checked').forEach(cb => tIds.push(cb.value)); } state.settings = { feeTarget: tType, targets: tIds, method: document.getElementById('fee-method').value, amount: document.getElementById('fee-amount').value, grace: document.getElementById('fee-grace').value, requireInsurance: document.getElementById('set-insurance').checked }; DB.set(state); alert("Saved"); }
+        function toggleFeeTarget() { const v = document.querySelector('input[name="feeTarget"]:checked').value; const c = document.getElementById('fee-tenant-select'); if(v === 'select') { c.classList.remove('hidden-section'); c.innerHTML = ''; state.tenants.forEach(t => { c.innerHTML += `<label class="block mb-2"><input type="checkbox" class="mr-2" value="${t.id}"> ${t.name}</label>`; }); } else { c.classList.add('hidden-section'); } }
+        function toggleFeeInput() { document.getElementById('fee-label').innerText = document.getElementById('fee-method').value === 'percent' ? "Percentage (%)" : "Amount ($)"; }
         function renderChatList() { const l=document.getElementById('list-chats'); l.innerHTML=''; state.tenants.forEach(t=> l.innerHTML+=`<div onclick="openChat(${t.id})" class="p-3 bg-white border border-slate-200 rounded cursor-pointer hover:bg-slate-50 font-bold text-sm">${t.name}</div>`); }
         function openChat(id) { currentChatId=id; document.getElementById('header-chat').innerText=`Chat with ${state.tenants.find(x=>x.id==id).name}`; renderMessages(); }
         function renderMessages() { const b=document.getElementById('box-chat'); b.innerHTML=''; state.msgs.filter(m=>m.tenantId==currentChatId).forEach(m=>{ b.innerHTML+=`<div class="flex w-full"><div class="px-4 py-2 rounded-lg text-sm shadow-sm max-w-xs ${m.from==='Owner'?'ml-auto bg-indigo-600 text-white':'mr-auto bg-white border'}">${m.text}</div></div>`; }); }
         function sendMsg() { const i=document.getElementById('input-chat'); if(i.value && currentChatId) { state.msgs.push({id:Date.now(), tenantId:currentChatId, from:'Owner', text:i.value}); DB.set(state); i.value=''; renderMessages(); } }
         function hardReset() { if(confirm("Factory Reset?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
         function clearNotifications() { state.notifications = { messages: 0, maintenance: 0, screening: 0 }; DB.set(state); renderAll(); }
-        function act_payInv(id) { const i = state.invoices.find(x => x.id === id); if(i) { i.status = 'Paid'; DB.set(state); renderAll(); } }
         function act_delListing(id) { state.listings = state.listings.filter(x => x.id !== id); DB.set(state); renderAll(); }
         function previewPhotos(input) { const c = document.getElementById('l-photo-preview'); c.innerHTML=''; Array.from(input.files).forEach(f => { const r = new FileReader(); r.onload = e => { const img = document.createElement('img'); img.src = e.target.result; img.className="w-16 h-16 rounded border object-cover"; c.appendChild(img); }; r.readAsDataURL(f); }); }
-        function act_appDecide(id, ok) { if(ok){ const a=state.apps.find(x=>x.id==id); state.tenants.push({id:Date.now(), name:a.name, rent:2000, status:'Active'}); } state.apps=state.apps.filter(x=>x.id!=id); DB.set(state); renderAll(); }
+        function loadSettings() { const s = state.settings || { feeTarget:'all', targets:[], method:'flat', amount:50, grace:5, requireInsurance: true }; if(document.getElementById('set-insurance')) { document.getElementById('set-insurance').checked = s.requireInsurance !== false; } document.querySelector(`input[name="feeTarget"][value="${s.feeTarget}"]`).checked = true; toggleFeeTarget(); document.getElementById('fee-method').value = s.method; toggleFeeInput(); document.getElementById('fee-amount').value = s.amount; document.getElementById('fee-grace').value = s.grace; }
 
-        initApp = () => { checkTour(); renderAll(); initChart(); setInterval(() => { state=DB.get(); renderAll(); }, 4000); }
+        initApp = () => { checkTour(); renderAll(); initChart(); setInterval(() => { state=DB.get(); renderAll(); }, 3000); }
         initApp();
     </script>
 </body>
