@@ -24,8 +24,7 @@
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
         #mobile-overlay { background-color: rgba(0,0,0,0.5); }
-        .tour-spotlight { position: fixed; z-index: 60; border: 2px solid #6366f1; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); border-radius: 8px; pointer-events: none; transition: all 0.3s ease; }
-        .tour-tooltip { position: fixed; z-index: 70; width: 280px; background: white; padding: 1.5rem; border-radius: 1rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); pointer-events: auto; }
+        .paper-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0,0,0,0.05); }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800 bg-slate-50">
@@ -51,9 +50,11 @@
             <a href="#" onclick="navTo('dashboard')" id="link-dashboard" class="nav-item flex items-center justify-between px-6 py-3.5 transition sidebar-active"><div class="flex items-center"><i class="fas fa-th-large w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Dashboard</span></div></a>
             <a href="#" onclick="navTo('tenants')" id="link-tenants" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-users w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Tenants</span></div></a>
             <a href="#" onclick="navTo('listings')" id="link-listings" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-sign w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Listings</span></div></a>
+            
             <a href="#" onclick="navTo('screening')" id="link-screening" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-user-check w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Screening</span></div><span id="badge-screening" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span></a>
             <a href="#" onclick="navTo('messages')" id="link-messages" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-comment-dots w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Messages</span></div><span id="badge-messages" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span></a>
             <a href="#" onclick="navTo('maintenance')" id="link-maintenance" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-tools w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Maintenance</span></div><span id="badge-maintenance" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span></a>
+            
             <a href="#" onclick="navTo('financials')" id="link-financials" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-money-bill-wave w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Records</span></div></a>
             <a href="#" onclick="navTo('expenses')" id="link-expenses" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-receipt w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Expenses</span></div></a>
             <a href="#" onclick="navTo('reports')" id="link-reports" class="nav-item flex items-center justify-between px-6 py-3.5 transition"><div class="flex items-center"><i class="fas fa-chart-pie w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Reports</span></div></a>
@@ -61,7 +62,6 @@
         </nav>
         <div class="p-6 border-t border-indigo-900 bg-indigo-950 flex flex-col gap-2">
             <button onclick="hardReset()" class="flex items-center text-xs text-indigo-300 hover:text-white transition"><i class="fas fa-trash-alt mr-2"></i> Reset System</button>
-            <button onclick="restartTour()" class="hidden md:flex items-center text-xs text-indigo-300 hover:text-white transition"><i class="fas fa-play-circle mr-2"></i> Replay Tour</button>
         </div>
     </aside>
 
@@ -79,10 +79,6 @@
             </div>
             
             <div class="flex items-center gap-4 md:gap-6">
-                <div class="relative cursor-pointer hover:text-indigo-600 transition" onclick="clearNotifications()">
-                    <i class="fas fa-bell text-xl text-slate-400"></i>
-                    <span id="notif-badge" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
-                </div>
                 <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
                     <div class="text-right hidden md:block"><p class="text-sm font-bold text-slate-700 brand-font">James Dalton</p><p class="text-xs text-slate-500">Property Owner</p></div>
                     <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font">JD</div>
@@ -95,18 +91,22 @@
             <!-- 1. DASHBOARD -->
             <div id="view-dashboard" class="view-section fade-in">
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
+                    <!-- Revenue -->
                     <div class="bg-gradient-to-br from-emerald-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-emerald-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-emerald-100 rounded-full opacity-50 blur-xl"></div>
-                        <div class="relative z-10"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-dollar-sign"></i></div><p class="text-emerald-800 text-[11px] font-bold uppercase tracking-wider brand-font">Revenue</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-revenue">$0.00</h3></div>
+                        <div class="relative z-10"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-dollar-sign"></i></div><p class="text-emerald-800 text-[11px] font-bold uppercase tracking-wider brand-font">Revenue (This Month)</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-revenue">$0.00</h3></div>
                     </div>
+                    <!-- Overdue -->
                     <div class="bg-gradient-to-br from-rose-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-rose-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-rose-100 rounded-full opacity-50 blur-xl"></div>
-                        <div class="relative z-10"><div class="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-exclamation"></i></div><p class="text-rose-800 text-[11px] font-bold uppercase tracking-wider brand-font">Pending</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-outstanding">$0.00</h3></div>
+                        <div class="relative z-10"><div class="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-exclamation"></i></div><p class="text-rose-800 text-[11px] font-bold uppercase tracking-wider brand-font">Overdue</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-overdue">$0.00</h3></div>
                     </div>
+                    <!-- Occupancy -->
                     <div class="bg-gradient-to-br from-indigo-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-indigo-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-indigo-100 rounded-full opacity-50 blur-xl"></div>
                         <div class="relative z-10"><div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-home"></i></div><p class="text-indigo-800 text-[11px] font-bold uppercase tracking-wider brand-font">Occupancy</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-occupancy">0%</h3></div>
                     </div>
+                    <!-- REPAIRS -->
                     <div class="bg-gradient-to-br from-amber-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-amber-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-amber-100 rounded-full opacity-50 blur-xl"></div>
                         <div class="relative z-10"><div class="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-tools"></i></div><p class="text-amber-800 text-[11px] font-bold uppercase tracking-wider brand-font">Repairs</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-maintenance">0</h3></div>
@@ -115,7 +115,9 @@
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 h-80">
-                        <h3 class="font-bold text-lg text-slate-800 mb-4 brand-font">Performance</h3>
+                        <div class="flex justify-between items-end mb-4">
+                            <h3 class="font-bold text-lg text-slate-800 brand-font" id="chart-title">Performance</h3>
+                        </div>
                         <div class="h-64"><canvas id="revenueChart"></canvas></div>
                     </div>
                     <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
@@ -189,8 +191,42 @@
             <!-- 7. PAYMENT RECORDS -->
             <div id="view-financials" class="view-section hidden-section fade-in">
                 <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Records</h3><button onclick="openInvoiceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-emerald-700 brand-font">+ Invoice</button></div>
+                
+                <div id="fin-summary-container" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 hidden-section">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-500 font-bold uppercase">Open Balance</p>
+                        <h4 class="text-xl font-bold text-slate-800" id="fin-open-bal">$0.00</h4>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-500 font-bold uppercase">Credit Balance</p>
+                        <h4 class="text-xl font-bold text-emerald-600" id="fin-credit">$0.00</h4>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                        <p class="text-xs text-slate-500 font-bold uppercase">Net Position</p>
+                        <h4 class="text-xl font-bold text-indigo-600" id="fin-net">$0.00</h4>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <select id="filter-financials" onchange="renderInvoices()" class="border p-2 rounded-lg text-sm bg-white"><option value="all">All Tenants</option></select>
+                </div>
+
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 w-full overflow-x-auto">
-                    <table class="w-full text-left whitespace-nowrap"><thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font"><tr><th class="p-5">Date</th><th class="p-5">Tenant</th><th class="p-5">Description</th><th class="p-5">Total</th><th class="p-5">Status</th><th class="p-5 text-right">Action</th></tr></thead><tbody id="table-invoices" class="divide-y divide-slate-100"></tbody></table>
+                    <table class="w-full text-left whitespace-nowrap">
+                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font">
+                            <tr>
+                                <th class="p-5">Date</th>
+                                <th class="p-5">Tenant</th>
+                                <th class="p-5">Description</th>
+                                <th class="p-5">Total</th>
+                                <th class="p-5">Paid</th>
+                                <th class="p-5">Balance</th>
+                                <th class="p-5">Status</th>
+                                <th class="p-5 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-invoices" class="divide-y divide-slate-100"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -206,7 +242,7 @@
                 </div>
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 w-full overflow-x-auto">
                     <table class="w-full text-left whitespace-nowrap">
-                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font"><tr><th class="p-5">Date</th><th class="p-5">Property</th><th class="p-5">Vendor</th><th class="p-5">Category</th><th class="p-5 text-right">Amount</th><th class="p-5 text-right">Actions</th></tr></thead>
+                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font"><tr><th class="p-5">Date</th><th class="p-5">Property</th><th class="p-5">Vendor</th><th class="p-5">Category</th><th class="p-5 text-right">Amount</th><th class="p-5 text-center">Receipt</th><th class="p-5 text-right">Actions</th></tr></thead>
                         <tbody id="table-expenses" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
@@ -217,7 +253,7 @@
                 <h3 class="text-xl font-bold text-slate-800 brand-font mb-6">Reports</h3>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-                        <h4 class="font-bold text-lg text-slate-900 border-b pb-4 mb-4 brand-font">Income Statement</h4>
+                        <h4 class="font-bold text-lg text-slate-900 border-b pb-4 mb-4 brand-font">Income Statement (Year to Date)</h4>
                         <div class="space-y-4">
                             <div class="flex justify-between items-center"><span class="text-slate-600">Total Revenue</span><span class="font-bold text-emerald-600 text-lg brand-font" id="report-income">$0.00</span></div>
                             <div class="flex justify-between items-center"><span class="text-slate-600">Total Expenses</span><span class="font-bold text-rose-600 text-lg brand-font" id="report-expense">$0.00</span></div>
@@ -266,52 +302,62 @@
         </div>
     </main>
 
-    <!-- WELCOME MODAL -->
-    <div id="modal-welcome" class="hidden-section fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-md fade-in px-4"><div class="bg-white p-10 rounded-3xl shadow-2xl max-w-lg text-center relative overflow-hidden"><div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-blue-500"></div><div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-6"><i class="fas fa-hand-sparkles text-3xl text-indigo-600"></i></div><h2 class="text-3xl font-extrabold text-slate-900 mb-4 brand-font">Welcome to Kozeyy</h2><p class="text-slate-600 mb-8 leading-relaxed">Your professional property management journey starts here. Let us show you how to automate your rentals in 5 easy steps.</p><button onclick="startTour()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition transform hover:-translate-y-1">Start Quick Tour</button><button onclick="endTour()" class="mt-4 text-sm text-slate-400 hover:text-slate-600">Skip for now</button></div></div>
-    
-    <!-- TOUR OVERLAYS -->
-    <div id="tour-spotlight" class="hidden-section tour-spotlight"></div>
-    <div id="tour-tooltip" class="hidden-section tour-tooltip"><div class="flex justify-between items-start mb-2"><h4 id="tour-title" class="font-bold text-lg text-slate-900"></h4><span id="tour-step" class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded">1/5</span></div><p id="tour-text" class="text-sm text-slate-600 mb-4 leading-relaxed"></p><div class="flex justify-end gap-2"><button onclick="endTour()" class="text-xs text-slate-400 hover:text-slate-600 mr-auto px-2">End</button><button onclick="nextStep()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold">Next</button></div></div>
-
-    <!-- MODALS -->
+    <!-- RESTORED: TENANT MODAL -->
     <div id="modal-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
+            <button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
             <h3 class="text-xl font-bold mb-6 brand-font" id="modal-tenant-title">Add Tenant</h3>
-            <form onsubmit="act_saveTenant(event)" class="grid grid-cols-2 gap-4">
+            <form onsubmit="act_saveTenant(event)" class="space-y-4">
                 <input type="hidden" id="t-id">
-                <div class="col-span-2 border-b pb-1 mb-2 font-bold text-slate-500 text-xs uppercase tracking-wider brand-font">Personal Info</div>
-                <input type="text" id="t-name" placeholder="Full Name" required class="col-span-2 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
-                <input type="email" id="t-email" placeholder="Email" required class="col-span-1 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
-                <input type="tel" id="t-phone" placeholder="Phone" required class="col-span-1 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
-                <div class="col-span-2 border-b pb-1 mb-2 mt-4 font-bold text-slate-500 text-xs uppercase tracking-wider brand-font">Property Info</div>
-                <input type="text" id="t-addr" placeholder="Street Address" required class="col-span-2 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
-                <input type="text" id="t-city" placeholder="City" required class="col-span-1 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
-                <div class="flex gap-2 col-span-1"><input type="text" id="t-state" placeholder="State" class="w-1/3 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"><input type="text" id="t-zip" placeholder="Zip" class="w-2/3 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                <input type="text" id="t-unit" placeholder="Unit (Optional)" class="col-span-1 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
-                <div class="col-span-2 border-b pb-1 mb-2 mt-4 font-bold text-slate-500 text-xs uppercase tracking-wider brand-font">Lease Terms</div>
-                <div class="col-span-1"><label class="text-xs text-slate-500 ml-1">Start Date</label><input type="date" id="t-start" required class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                <div class="col-span-1"><label class="text-xs text-slate-500 ml-1">End Date</label><input type="date" id="t-end" required class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500"></div>
-                <input type="number" id="t-rent" placeholder="Monthly Rent ($)" required class="col-span-2 border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500">
-                <button class="col-span-2 bg-blue-600 text-white py-3 rounded-xl font-bold mt-2 brand-font hover:bg-blue-700 transition" id="btn-save-tenant">Save Tenant</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="t-name" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Full Name" required>
+                    <input id="t-phone" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Phone">
+                </div>
+                <input id="t-email" type="email" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Email Address" required>
+                <!-- ADDED ADDRESS INPUTS -->
+                <input id="t-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address">
+                <div class="grid grid-cols-3 gap-4">
+                    <input id="t-city" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="City">
+                    <input id="t-state" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="State">
+                    <input id="t-zip" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Zip">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="t-unit" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Unit #">
+                    <input id="t-rent" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Rent Amount" required>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="text-xs font-bold text-slate-500 ml-1">Lease Start</label><input type="date" id="t-start" class="w-full border p-3 rounded-xl bg-slate-50"></div>
+                    <div><label class="text-xs font-bold text-slate-500 ml-1">Lease End</label><input type="date" id="t-end" class="w-full border p-3 rounded-xl bg-slate-50"></div>
+                </div>
+                 <select id="t-status" class="w-full border p-3 rounded-xl bg-slate-50">
+                    <option value="Active">Active</option>
+                    <option value="Vacant">Vacant</option>
+                    <option value="Archived">Archived</option>
+                </select>
+                <button class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-blue-700 transition" id="btn-save-tenant">Save Tenant</button>
             </form>
         </div>
     </div>
 
+    <!-- RESTORED: LISTING MODAL -->
     <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
-            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Post Listing</h3>
-            <form onsubmit="act_saveListing(event)" class="grid grid-cols-2 gap-4">
-                <input type="hidden" id="l-id">
-                <input type="text" id="l-addr" placeholder="Address" required class="col-span-2 border p-3 rounded-xl bg-slate-50">
-                <div class="flex gap-2 col-span-1"><input type="number" id="l-price" placeholder="Rent ($)" required class="w-1/2 border p-3 rounded-xl bg-slate-50"><input type="number" id="l-sqft" placeholder="Sq. Ft." required class="w-1/2 border p-3 rounded-xl bg-slate-50"></div>
-                <div class="flex gap-2 col-span-1"><input type="number" id="l-beds" placeholder="Beds" required class="w-1/2 border p-3 rounded-xl bg-slate-50"><input type="number" id="l-baths" placeholder="Baths" required class="w-1/2 border p-3 rounded-xl bg-slate-50"></div>
-                <textarea id="l-desc" placeholder="Description..." class="col-span-2 border p-3 rounded-xl bg-slate-50 h-24" required></textarea>
-                <input type="text" id="l-amen" placeholder="Amenities..." class="col-span-2 border p-3 rounded-xl bg-slate-50">
-                <div class="col-span-2"><label class="block text-sm font-bold text-slate-500 mb-2">Photos</label><div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-50 transition" onclick="document.getElementById('l-img').click()"><i class="fas fa-cloud-upload-alt text-2xl text-slate-400"></i><p class="text-sm text-slate-500 mt-1">Click to upload</p><input type="file" id="l-img" class="hidden" multiple onchange="previewPhotos(this)"></div><div id="l-photo-preview" class="flex gap-2 mt-2 overflow-x-auto"></div></div>
-                <div class="col-span-2"><label class="text-xs text-slate-500">Available Date</label><input type="date" id="l-date" required class="w-full border p-3 rounded-xl bg-slate-50"></div>
-                <button class="col-span-2 bg-indigo-600 text-white py-3 rounded-xl font-bold mt-2 brand-font" id="btn-save-listing">Post Listing</button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Property Listing</h3>
+            <form onsubmit="act_saveListing(event)" class="space-y-4">
+                <input id="l-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address" required>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="l-price" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Price" required>
+                    <input id="l-sqft" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Sq Ft">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="l-beds" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Beds">
+                    <input id="l-baths" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Baths">
+                </div>
+                <textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24" placeholder="Description"></textarea>
+                <input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities (comma separated)">
+                <input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
+                <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-indigo-700 transition" id="btn-save-listing">Post Listing</button>
             </form>
         </div>
     </div>
@@ -320,23 +366,115 @@
     <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
-            <h3 class="text-xl font-bold mb-6 brand-font">Invoice</h3>
-            <form onsubmit="act_addInvoice(event)" class="space-y-4">
-                <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
-                <div class="flex gap-2 p-1 bg-slate-100 rounded-xl"><button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-lg font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button><button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-lg font-bold text-sm text-slate-500">Variable</button></div>
-                <div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto"></div>
-                <button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2 rounded-xl text-sm">+ Add Item</button>
-                <div class="mt-2">
-                    <label class="block text-sm font-bold text-slate-700 mb-1 brand-font">Attach Document</label>
-                    <input type="file" id="inv-doc" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+            <h3 class="text-xl font-bold mb-6 brand-font" id="inv-modal-title">Create Invoice</h3>
+            
+            <!-- STEP 1: INPUTS -->
+            <div id="inv-step-input">
+                <form onsubmit="event.preventDefault(); logic_generatePreview();" class="space-y-4">
+                    <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
+                    
+                    <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
+                        <button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-lg font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button>
+                        <button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-lg font-bold text-sm text-slate-500">Variable</button>
+                    </div>
+                    
+                    <!-- Items Area -->
+                    <div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                    <button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2 rounded-xl text-sm">+ Add Item</button>
+                    
+                    <!-- Attach Document -->
+                    <div class="mt-4">
+                        <label class="block text-sm font-bold text-slate-700 mb-1 brand-font">Attach Document</label>
+                        <div class="flex items-center gap-2">
+                            <label for="inv-doc" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 border border-slate-300">
+                                <i class="fas fa-paperclip"></i> <span id="inv-doc-label">Choose File</span>
+                            </label>
+                            <input type="file" id="inv-doc" class="hidden" onchange="updateFileName('inv-doc', 'inv-doc-label')">
+                        </div>
+                    </div>
+
+                    <!-- Date Selection -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Send Invoice On</label>
+                        <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
+                    </div>
+
+                    <!-- Recurring Options (Visible only for Fixed) -->
+                    <div id="inv-recurring-options" class="p-4 bg-slate-50 rounded-xl border border-slate-200 hidden-section">
+                        <label class="flex items-center gap-2 mb-3 cursor-pointer">
+                            <input type="checkbox" id="inv-is-recurring" class="w-4 h-4 text-emerald-600 rounded">
+                            <span class="font-bold text-sm text-slate-700">Recurring Invoice?</span>
+                        </label>
+                        <div id="inv-rec-details" class="hidden-section space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="text-xs text-slate-500 block">Send Day (1-31)</label><input type="number" id="inv-rec-day" min="1" max="31" value="1" class="w-full border p-2 rounded-lg"></div>
+                                <div><label class="text-xs text-slate-500 block">End Date</label><input type="date" id="inv-rec-end" class="w-full border p-2 rounded-lg"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400">Invoice will automatically generate each month.</p>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font hover:bg-indigo-700 transition">Preview Invoice</button>
+                </form>
+            </div>
+
+            <!-- STEP 2: PREVIEW -->
+            <div id="inv-step-preview" class="hidden-section">
+                <div class="bg-white border border-slate-200 rounded-xl p-6 mb-6 paper-shadow relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
+                    <div class="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-800 brand-font">INVOICE</h2>
+                            <p class="text-xs text-slate-400 mt-1">Kozeyy Property Mgmt</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-slate-700" id="prev-date">Oct 24, 2023</p>
+                            <p class="text-xs text-slate-500">Bill To: <span id="prev-name">Tenant Name</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- Account Summary -->
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Previous Balance</span><span id="prev-bal-amt">$0.00</span></div>
+                            <div class="flex justify-between text-xs text-emerald-600 mb-1"><span>Payments Received</span><span id="prev-pay-amt">-$0.00</span></div>
+                            <div class="border-t border-slate-200 my-1"></div>
+                            <div class="flex justify-between text-xs font-bold text-slate-700"><span>Forward Balance</span><span id="prev-fwd-amt">$0.00</span></div>
+                        </div>
+
+                        <!-- Current Charges -->
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-400 uppercase border-b"><tr><th class="py-2">Description</th><th class="py-2 text-right">Amount</th></tr></thead>
+                            <tbody id="prev-items-body" class="text-slate-700"></tbody>
+                        </table>
+                        
+                        <!-- Attachment Indicator -->
+                        <div id="prev-attachment" class="hidden-section mt-2 text-xs text-slate-500 flex items-center gap-2">
+                             <i class="fas fa-paperclip text-indigo-500"></i> <span>Attachment Included</span>
+                        </div>
+                        
+                        <!-- Total -->
+                        <div class="border-t-2 border-slate-800 pt-3 mt-4 flex justify-between items-center">
+                            <span class="font-bold text-lg brand-font">Total Due</span>
+                            <span class="font-bold text-2xl text-indigo-700 brand-font" id="prev-total-due">$0.00</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="border-t pt-4 flex justify-between items-center"><span class="font-bold text-slate-700 brand-font">Total:</span><span id="inv-total" class="font-bold text-2xl text-emerald-600 brand-font">$0.00</span></div>
-                <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
-                <button class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold brand-font">Send</button>
-            </form>
+                
+                <div id="inv-actions-create" class="flex gap-3">
+                    <button onclick="logic_backToInput()" class="flex-1 py-3 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50">Back</button>
+                    <button onclick="logic_confirmInvoice()" id="btn-confirm-inv" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow hover:bg-emerald-700">Send Invoice</button>
+                </div>
+                
+                <div id="inv-actions-view" class="hidden-section">
+                    <button onclick="closeModal('modal-invoice')" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold shadow hover:bg-slate-900">Close</button>
+                </div>
+            </div>
+
         </div>
     </div>
-    
+
+    <!-- EXPENSE MODAL -->
     <div id="modal-expense" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
             <button onclick="closeModal('modal-expense')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
@@ -344,238 +482,686 @@
             <form onsubmit="act_saveExpense(event)" class="space-y-4">
                 <input type="hidden" id="ex-id">
                 <select id="ex-prop" class="w-full border p-3 rounded-xl bg-slate-50"></select>
-                <input type="date" id="ex-date" class="w-full border p-3 rounded-xl bg-slate-50">
-                <input id="ex-vendor" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Vendor">
+                <input type="date" id="ex-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
+                <input id="ex-vendor" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Vendor" required>
                 <select id="ex-cat" class="w-full border p-3 rounded-xl bg-slate-50"><option>Repairs</option><option>Utilities</option><option>Tax</option><option>Insurance</option><option>Other</option></select>
-                <input id="ex-amount" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amount">
+                <input id="ex-amount" type="number" step="0.01" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amount" required>
+                
+                <!-- Receipt Upload -->
+                <div class="mt-2">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Receipt</label>
+                    <div class="flex items-center gap-2">
+                        <label for="ex-doc" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-300">
+                            <i class="fas fa-camera"></i> <span id="ex-doc-label">Upload</span>
+                        </label>
+                        <input type="file" id="ex-doc" class="hidden" onchange="updateFileName('ex-doc', 'ex-doc-label')">
+                    </div>
+                </div>
+
                 <button class="w-full bg-rose-600 text-white py-3 rounded-xl font-bold brand-font" id="btn-save-expense">Save</button>
             </form>
         </div>
     </div>
 
-    <div id="modal-pay" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm relative"><h3 class="text-xl font-bold mb-4 brand-font">Record Payment</h3><input type="hidden" id="pay-id"><input type="number" id="pay-amount" class="w-full border p-3 rounded-xl mb-4" placeholder="Amount Recieved"><input type="date" id="pay-date" class="w-full border p-3 rounded-xl mb-4"><div class="flex gap-2"><button onclick="closeModal('modal-pay')" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">Cancel</button><button onclick="confirmPay()" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold">Save</button></div></div></div>
+    <!-- PAYMENT MODAL -->
+    <div id="modal-pay" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm relative"><h3 class="text-xl font-bold mb-4 brand-font">Record Payment</h3><input type="hidden" id="pay-tenant-id"><input type="number" id="pay-amount" class="w-full border p-3 rounded-xl mb-4" placeholder="Amount Recieved"><input type="date" id="pay-date" class="w-full border p-3 rounded-xl mb-4"><div class="flex gap-2"><button onclick="closeModal('modal-pay')" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">Cancel</button><button onclick="confirmPay()" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold">Save</button></div></div></div>
+    
+    <!-- MAINT DETAIL MODAL -->
     <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1 brand-font"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">None</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-50 brand-font">Close</button></div></div>
 
     <script>
-        const DB_KEY = 'kozeyy_data_fix_v11';
+        const DB_KEY = 'kozeyy_data_v21_final';
         const DB = {
             get: () => { try { return JSON.parse(localStorage.getItem(DB_KEY)) || null; } catch(e){ return null; } },
             set: (data) => localStorage.setItem(DB_KEY, JSON.stringify(data)),
             init: () => {
                 let data = DB.get();
+                const today = new Date();
+                const parseDate = (d) => d.toISOString().split('T')[0];
+
                 if(!data) {
                     data = {
                         tenants: [{ id: 1, name: 'Alex Johnson', email: 'alex@demo.com', phone: '555-0101', addr: '123 Tech Ln', city: 'Austin', state: 'TX', zip: '78701', rent: 2000, start: '2023-01-01', end: '2024-01-01', status: 'Active', unit: '101' }],
-                        invoices: [{ id: 101, tenantId: 1, tenantName: 'Alex Johnson', items: [{desc:'Rent', amount:2000}], total: 2000, status: 'Paid', date: '2023-10-01', paidDate: '2023-10-01' }],
+                        invoices: [
+                            { id: 101, tenantId: 1, tenantName: 'Alex Johnson', items: [{desc:'Rent', amount:2000}], total: 2000, date: parseDate(today), paid: 0, balance: 2000, status: 'Unpaid', snapshot: { prevBalance: 0 } }
+                        ],
+                        payments: [],
                         listings: [{ id: 1, addr: '123 Maple Ave', price: 2400, desc: 'Lovely home.', sqft: 1500, beds: 3, baths: 2, amen:'Pool, Gym', date:'2024-01-01' }],
-                        expenses: [{ id: 1, date: '2023-10-05', vendor: 'Home Depot', cat: 'Repairs', amount: 150, prop: '123 Tech Ln' }],
-                        apps: [], msgs: [
-                            { id: 1, tenantId: 1, from: 'Tenant', text: 'Hey, when is rent due?', time: '10:00 AM' }
-                        ], maint: [], notifications: { messages: 1, maintenance: 0, screening: 0 },
+                        expenses: [],
+                        apps: [ { id: 10, name: 'Sarah Connor', score: 720, income: 5000, status: 'Pending' } ], 
+                        msgs: [ { id: 1, tenantId: 1, from: 'Tenant', text: 'Hey, is the gym open?', time: '10:00 AM' } ], 
+                        maint: [ { id: 1, tenantId: 1, issue: 'Leaky Faucet', date: '2023-10-25', status: 'Active', notes: '' } ], 
+                        notifications: { messages: 1, maintenance: 1, screening: 1 },
                         settings: { feeTarget:'all', targets:[], method:'flat', amount:50, grace:5, requireInsurance: true },
-                        ftux: true
+                        recurringInvoices: [], // Store Recurring Configs
+                        lastVarItems: {} // Store Tenant ID -> Last used variable items
                     };
                     DB.set(data);
                 }
+                // Migrations
+                if(!data.recurringInvoices) { data.recurringInvoices = []; DB.set(data); }
+                if(!data.lastVarItems) { data.lastVarItems = {}; DB.set(data); }
                 return data;
             }
         };
 
         let state = DB.init();
         let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
-        let editTenantId = null, editListingId = null, editExpenseId = null, tourStep = 0;
+        let editTenantId = null, editListingId = null, editExpenseId = null;
+        let draftInvoice = null; // Holds the preview data
 
-        const tourSteps = [
-            { id: 'link-dashboard', title: 'Dashboard', text: 'Overview of revenue & occupancy.', render: 'dashboard' },
-            { id: 'qa-tenant', title: 'Add Tenant', text: 'Quickly onboard new tenants.', render: 'dashboard' },
-            { id: 'qa-invoice', title: 'Create Invoice', text: 'Generate bills in seconds.', render: 'dashboard' },
-            { id: 'link-settings', title: 'Settings', text: 'Configure global late fees.', render: 'settings' },
-            { id: 'link-messages', title: 'Messages', text: 'Chat securely with tenants.', render: 'messages', mock: true }
-        ];
-
-        function checkTour() { 
-            if (window.innerWidth < 768) return; 
-            if(state.ftux) { document.getElementById('modal-welcome').classList.remove('hidden-section'); document.getElementById('modal-welcome').classList.add('flex'); } 
+        // --- CORE DATE PARSER ---
+        function parseDateStr(str) {
+            if(!str) return new Date();
+            const parts = str.split('-');
+            return new Date(parts[0], parts[1]-1, parts[2]);
         }
-        function startTour() { document.getElementById('modal-welcome').classList.add('hidden-section'); document.getElementById('modal-welcome').classList.remove('flex'); tourStep = 0; runTourStep(); }
-        function runTourStep() {
-            const step = tourSteps[tourStep];
-            navTo(step.render, true);
-            if(step.mock) injectMockData(step.render);
-            const el = document.getElementById(step.id);
-            if(el) {
-                setTimeout(() => {
-                    const spot = document.getElementById('tour-spotlight'); const tip = document.getElementById('tour-tooltip');
-                    spot.classList.remove('hidden-section'); tip.classList.remove('hidden-section');
-                    const rect = el.getBoundingClientRect();
-                    spot.style.top = `${rect.top}px`; spot.style.left = `${rect.left}px`; spot.style.width = `${rect.width}px`; spot.style.height = `${rect.height}px`;
-                    let tipTop = rect.bottom + 15; let tipLeft = rect.left;
-                    if(window.innerWidth < 768) { tipLeft = 10; tip.style.width = 'calc(100% - 20px)'; } 
-                    else if(tipLeft + 280 > window.innerWidth) tipLeft = window.innerWidth - 300;
-                    tip.style.top = `${tipTop}px`; tip.style.left = `${tipLeft}px`;
-                    document.getElementById('tour-title').innerText = step.title; document.getElementById('tour-text').innerText = step.text; document.getElementById('tour-step').innerText = `${tourStep + 1}/5`;
-                }, 300);
+
+        // --- FINANCIAL ENGINE ---
+        function getTenantFinancials(tenantId) {
+            let invoices = state.invoices.filter(i => i.tenantId == tenantId).sort((a,b) => parseDateStr(a.date) - parseDateStr(b.date));
+            let payments = state.payments.filter(p => p.tenantId == tenantId);
+            let totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+            
+            let paymentPool = totalPaid;
+            let processedInvoices = [];
+            
+            invoices.forEach(inv => {
+                let paidAmount = 0;
+                if (paymentPool > 0) {
+                    if (paymentPool >= inv.total) {
+                        paidAmount = inv.total;
+                        paymentPool -= inv.total;
+                    } else {
+                        paidAmount = paymentPool;
+                        paymentPool = 0;
+                    }
+                }
+                
+                let balance = inv.total - paidAmount;
+                let status = 'Unpaid';
+                if (paidAmount >= inv.total) status = 'Paid';
+                else if (paidAmount > 0) status = 'Partial';
+                
+                processedInvoices.push({ ...inv, paid: paidAmount, balance: balance, status: status });
+            });
+            
+            let openBalance = processedInvoices.reduce((sum, inv) => sum + inv.balance, 0);
+            let credit = paymentPool; 
+            let net = credit - openBalance;
+            
+            return {
+                invoices: processedInvoices,
+                summary: { openBalance, credit, netPosition: net }
+            };
+        }
+
+        function calculateGlobalStats() {
+            let revenue = 0; // Collected THIS MONTH
+            let outstanding = 0; // Unpaid Future
+            let overdue = 0; // Unpaid Past
+            
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+            
+            state.payments.forEach(p => {
+                const pDate = parseDateStr(p.date);
+                if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
+                    revenue += p.amount;
+                }
+            });
+
+            const distinctTenantIds = [...new Set(state.invoices.map(i => i.tenantId))];
+            distinctTenantIds.forEach(tid => {
+                const fin = getTenantFinancials(tid);
+                fin.invoices.forEach(inv => {
+                    if (inv.balance > 0) {
+                        const d1 = parseDateStr(inv.date).setHours(0,0,0,0);
+                        const d2 = new Date().setHours(0,0,0,0);
+                        if (d1 < d2) overdue += inv.balance;
+                        else outstanding += inv.balance;
+                    }
+                });
+            });
+
+            return { revenue, outstanding, overdue };
+        }
+
+        function getMonthlyFinancials() {
+            const months = [];
+            const revenueData = [];
+            const expenseData = [];
+            
+            const today = new Date();
+            for(let i=5; i>=0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                const mKey = d.getMonth();
+                const yKey = d.getFullYear();
+                months.push(d.toLocaleString('default', { month: 'short' }));
+                
+                const monthRev = state.payments.reduce((sum, p) => {
+                    const pd = parseDateStr(p.date);
+                    return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum;
+                }, 0);
+                revenueData.push(monthRev);
+                
+                const monthExp = state.expenses.reduce((sum, e) => {
+                    const ed = parseDateStr(e.date);
+                    return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum;
+                }, 0);
+                expenseData.push(monthExp);
             }
-        }
-        function injectMockData(v) { if(v === 'messages') { document.getElementById('list-chats').innerHTML = `<div class="p-3 bg-blue-50 border border-blue-200 rounded font-bold">John Doe</div>`; document.getElementById('box-chat').innerHTML = `<div class="flex"><div class="bg-white border p-2 rounded-lg text-sm mb-2 shadow-sm">Hi, picking up keys tomorrow?</div></div>`; } }
-        function nextStep() { tourStep++; if(tourStep >= tourSteps.length) { endTour(); return; } runTourStep(); }
-        function endTour() { 
-            const wel = document.getElementById('modal-welcome'); 
-            if(wel) { wel.classList.add('hidden-section'); wel.classList.remove('flex'); }
-            document.getElementById('tour-spotlight').classList.add('hidden-section'); 
-            document.getElementById('tour-tooltip').classList.add('hidden-section'); 
-            state.ftux = false; DB.set(state); navTo('dashboard'); 
-        }
-        function restartTour() { 
-            if(window.innerWidth < 768) { alert("Desktop only feature."); return; }
-            state.ftux = true; DB.set(state); location.reload(); 
+            return { labels: months, revenue: revenueData, expenses: expenseData };
         }
 
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const overlay = document.getElementById('mobile-overlay');
-            if (sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.remove('-translate-x-full');
-                overlay.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            }
-        }
-
-        function navTo(view, isTour = false) {
+        // --- NAVIGATION ---
+        function navTo(view) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
             document.getElementById('view-' + view).classList.remove('hidden-section');
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
             const link = document.getElementById('link-' + view);
             if(link) link.classList.add('sidebar-active');
-
-            const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration' };
+            
+            const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests' };
             document.getElementById('desktop-page-title').innerText = titles[view] || 'Dashboard';
-
-            if(window.innerWidth < 768) {
-                document.getElementById('sidebar').classList.add('-translate-x-full');
-                document.getElementById('mobile-overlay').classList.add('hidden');
-            }
-
-            if (!isTour) {
-                if(view === 'financials') populateFinFilter();
-                if(view === 'messages') { renderChatList(); backToChatList(); }
-                if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
-                if(view === 'tenants' || view === 'listings' || view === 'maintenance' || view === 'screening' || view === 'expenses') renderAll();
-                if(view === 'reports') { renderAll(); renderMonthlyChart(); }
-                if(view === 'settings') loadSettings();
-            }
+            if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
+            
+            if(view === 'financials') populateFinFilter();
+            if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
+            if(view === 'messages') { renderChatList(); backToChatList(); }
+            if(view === 'tenants' || view === 'listings' || view === 'expenses' || view === 'maintenance' || view === 'screening') renderAll();
+            if(view === 'reports') { renderAll(); setTimeout(renderMonthlyChart, 50); }
         }
 
         function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
-        function resetForms() { editTenantId = null; editListingId = null; editExpenseId = null; document.getElementById('btn-save-tenant').innerText="Save Tenant"; document.getElementById('btn-save-listing').innerText="Post Listing"; document.getElementById('btn-save-expense').innerText="Save"; document.getElementById('ex-id').value = ""; document.getElementById('ex-amount').value = ""; document.getElementById('ex-vendor').value = ""; document.getElementById('ex-date').value = ""; document.getElementById('inv-doc').value = "";}
+        function resetForms() { 
+            editTenantId = null; editListingId = null; editExpenseId = null; 
+            document.getElementById('btn-save-tenant').innerText="Save Tenant"; 
+            document.getElementById('btn-save-listing').innerText="Post Listing"; 
+            document.getElementById('btn-save-expense').innerText="Save"; 
+            
+            document.getElementById('ex-id').value = ""; document.getElementById('ex-amount').value = ""; document.getElementById('ex-vendor').value = ""; document.getElementById('ex-date').value = ""; document.getElementById('ex-doc').value = ""; 
+            
+            document.getElementById('t-id').value = ""; document.getElementById('t-name').value = ""; document.getElementById('t-email').value = ""; document.getElementById('t-phone').value = ""; document.getElementById('t-unit').value = ""; document.getElementById('t-rent').value = ""; document.getElementById('t-start').value = ""; document.getElementById('t-end').value = ""; document.getElementById('t-addr').value = ""; document.getElementById('t-city').value = ""; document.getElementById('t-state').value = ""; document.getElementById('t-zip').value = "";
+            
+            document.getElementById('l-addr').value = ""; document.getElementById('l-price').value = ""; document.getElementById('l-sqft').value = ""; document.getElementById('l-beds').value = ""; document.getElementById('l-baths').value = ""; document.getElementById('l-desc').value = ""; document.getElementById('l-amen').value = ""; document.getElementById('l-date').value = "";
+
+            updateFileName('inv-doc', 'inv-doc-label'); updateFileName('ex-doc', 'ex-doc-label'); 
+        }
 
         function renderAll() {
-            updateBadge('messages', state.notifications.messages); updateBadge('maintenance', state.notifications.maintenance); updateBadge('screening', state.notifications.screening);
-            
-            // Financial Totals
-            const rev = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0);
-            const out = state.invoices.reduce((a,b)=>a + (b.total - (b.amountPaid||0)), 0);
-            const activeMaint = state.maint.filter(m=>m.status==='Active').length;
-            
-            // Occupancy Logic: (Active Tenants / Total Units) * 100
-            // Exclude 'Archived' from calculation as they are "past" tenants. Include 'Vacant' as units.
-            // Note: In this simple DB, 'Vacant' is a tenant record placeholder for a unit. 'Archived' is hidden history.
+            updateBadge('messages', state.notifications.messages); 
+            updateBadge('maintenance', state.notifications.maintenance); 
+            updateBadge('screening', state.notifications.screening);
+
+            const stats = calculateGlobalStats();
             const validUnits = state.tenants.filter(t => t.status !== 'Archived');
             const activeTenants = validUnits.filter(t => t.status === 'Active').length;
             const totalUnits = validUnits.length;
             const occupancyRate = totalUnits === 0 ? 0 : Math.round((activeTenants / totalUnits) * 100);
+            const activeMaint = state.maint.filter(m=>m.status==='Active').length;
 
-            document.getElementById('dash-revenue').innerText = `$${rev.toLocaleString()}`;
-            document.getElementById('dash-outstanding').innerText = `$${out.toLocaleString()}`;
+            document.getElementById('dash-revenue').innerText = `$${stats.revenue.toLocaleString()}`;
+            document.getElementById('dash-maintenance').innerText = activeMaint; 
+            document.getElementById('dash-overdue').innerText = `$${stats.overdue.toLocaleString()}`;
             document.getElementById('dash-occupancy').innerText = `${occupancyRate}%`;
-            document.getElementById('dash-maintenance').innerText = activeMaint;
             
-            // Tenants
+            // Performance Chart Logic (Restored)
+            if(chartInstance) {
+                chartInstance.data.datasets[0].data = [stats.revenue, stats.outstanding, stats.overdue];
+                chartInstance.update();
+            } else if(document.getElementById('revenueChart')) {
+                // Initialize if exists but not created (page reload)
+                initChart();
+                if(chartInstance) {
+                    chartInstance.data.datasets[0].data = [stats.revenue, stats.outstanding, stats.overdue];
+                    chartInstance.update();
+                }
+            }
+
+            // Tables Render Logic
             const tbody = document.getElementById('table-tenants'); tbody.innerHTML = '';
             state.tenants.filter(t => t.status !== 'Archived').forEach(t => { 
                 const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
-                tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm">${t.unit || '-'}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td><td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button><button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
+                tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span><br><span class="text-xs text-slate-500 font-normal">${t.phone || '-'}</span></td><td class="p-5 text-sm">${t.unit || '-'}</td><td class="p-5 text-sm">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td><td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button><button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
             });
 
-            // Listings
             const grid = document.getElementById('grid-listings'); grid.innerHTML = '';
             state.listings.forEach(l => { grid.innerHTML += `<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 relative group"><div class="absolute top-4 right-4 flex gap-3"><button onclick="act_editListing(${l.id})" class="text-slate-400 hover:text-blue-600"><i class="fas fa-edit"></i></button><button onclick="act_delListing(${l.id})" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash"></i></button></div><h4 class="font-bold text-lg text-slate-800">${l.addr}</h4><p class="text-emerald-600 font-bold">$${parseInt(l.price).toLocaleString()}/mo</p><div class="mt-2 text-xs text-slate-400 flex gap-3"><span><i class="fas fa-bed"></i> ${l.beds}</span><span><i class="fas fa-bath"></i> ${l.baths}</span><span><i class="fas fa-ruler"></i> ${l.sqft}</span></div></div>`; });
 
-            // Maintenance
             const activeList = document.getElementById('list-maint-active'); const histList = document.getElementById('list-maint-history'); activeList.innerHTML = ''; histList.innerHTML = '';
             const activeMaintItems = state.maint.filter(m => m.status === 'Active');
             if (activeMaintItems.length === 0) { activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">None</div>`; } else { activeMaintItems.forEach(m => { const t = state.tenants.find(x=>x.id==m.tenantId)||{name:'Unknown'}; activeList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white border-b border-slate-100"><div><p class="font-bold text-slate-800">${m.issue}</p><p class="text-xs text-slate-500">${t.name} • ${m.date}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-xs font-bold hover:bg-emerald-200">Done</button></div>`; }); }
             state.maint.filter(m => m.status === 'Completed').forEach(m => { histList.innerHTML += `<div class="p-4 flex justify-between items-center opacity-70 border-b border-slate-100"><div><p class="font-medium line-through">${m.issue}</p><p class="text-xs text-slate-400">Completed: ${m.completedDate || 'N/A'}</p></div><button onclick="viewMaintNote(${m.id})" class="text-blue-500 text-xs hover:underline">View Notes</button></div>`; });
 
-            // Expenses
+            const sT = document.getElementById('table-screening'); sT.innerHTML = '';
+            state.apps.forEach(a => { sT.innerHTML += `<tr><td class="p-5 font-bold">${a.name}</td><td class="p-5"><span class="bg-slate-100 px-2 py-1 rounded text-xs font-bold">${a.score}</span></td><td class="p-5 text-sm">$${a.income.toLocaleString()}</td><td class="p-5 text-right"><button class="text-emerald-600 text-xs font-bold uppercase bg-emerald-50 px-3 py-1 rounded">Approve</button></td></tr>`; });
+
             const exBody = document.getElementById('table-expenses'); exBody.innerHTML = '';
             const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
             let dEx = state.expenses;
             if (fid !== 'all') dEx = dEx.filter(x => x.prop === fid);
-            dEx.forEach(x => { exBody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 whitespace-nowrap">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold">${x.vendor}</td><td class="p-5 text-sm"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; });
+            dEx.forEach(x => { 
+                const receiptIcon = x.doc ? `<i class="fas fa-paperclip text-slate-400" title="${x.doc}"></i>` : '-';
+                exBody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 whitespace-nowrap">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold">${x.vendor}</td><td class="p-5 text-sm"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center">${receiptIcon}</td><td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
+            });
             const totalExp = dEx.reduce((a,b)=>a+b.amount,0);
             if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${totalExp.toLocaleString()}`;
 
-            renderReports(); renderInvoices(); updateChart();
+            renderInvoices();
+            renderReports(); 
         }
 
         function renderReports() {
-            const income = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0);
-            const expense = state.expenses.reduce((a,b)=>a+b.amount,0);
-            const noi = income - expense;
-            document.getElementById('report-income').innerText = `$${income.toLocaleString()}`;
-            document.getElementById('report-expense').innerText = `$${expense.toLocaleString()}`;
-            document.getElementById('report-noi').innerText = `$${noi.toLocaleString()}`;
-        }
+            const now = new Date();
+            const currentYear = now.getFullYear();
 
+            // YTD Revenue (Payments)
+            let ytdRevenue = 0;
+            state.payments.forEach(p => {
+                const pd = parseDateStr(p.date);
+                if(pd.getFullYear() === currentYear) {
+                    ytdRevenue += p.amount;
+                }
+            });
+
+            // YTD Expenses
+            let ytdExpense = 0;
+            state.expenses.forEach(e => {
+                const ed = parseDateStr(e.date);
+                if(ed.getFullYear() === currentYear) {
+                    ytdExpense += e.amount;
+                }
+            });
+
+            const ytdNOI = ytdRevenue - ytdExpense;
+
+            document.getElementById('report-income').innerText = `$${ytdRevenue.toLocaleString()}`;
+            document.getElementById('report-expense').innerText = `$${ytdExpense.toLocaleString()}`;
+            document.getElementById('report-noi').innerText = `$${ytdNOI.toLocaleString()}`;
+        }
+        
         function updateBadge(id, count) { const el = document.getElementById('badge-' + id); if(count > 0) { el.innerText = count; el.classList.remove('hidden-section'); } else { el.classList.add('hidden-section'); } }
 
-        function act_openPayModal(id) {
-            const inv = state.invoices.find(x => x.id === id);
-            if(!inv) return;
-            document.getElementById('pay-id').value = id;
-            document.getElementById('pay-amount').value = inv.total - (inv.amountPaid || 0);
+        function act_openPayModal(tenantId) {
+            document.getElementById('pay-tenant-id').value = tenantId;
+            document.getElementById('pay-amount').value = '';
             document.getElementById('pay-date').valueAsDate = new Date();
             openModal('modal-pay');
         }
 
         function confirmPay() {
-            const id = parseInt(document.getElementById('pay-id').value);
+            const tid = parseInt(document.getElementById('pay-tenant-id').value);
             const amt = parseFloat(document.getElementById('pay-amount').value);
             const date = document.getElementById('pay-date').value;
-            const inv = state.invoices.find(x => x.id === id);
-            if(inv && amt > 0) {
-                inv.amountPaid = (inv.amountPaid || 0) + amt;
-                inv.paidDate = date;
-                inv.status = inv.amountPaid >= inv.total ? 'Paid' : 'Partial';
-                DB.set(state); closeModal('modal-pay'); renderAll();
+            if(tid && amt > 0) {
+                state.payments.push({ id: Date.now(), tenantId: tid, amount: amt, date: date });
+                DB.set(state); closeModal('modal-pay'); renderAll(); 
             }
         }
 
+        function populateFinFilter() {
+            const sel = document.getElementById('filter-financials');
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="all">All Tenants</option>';
+            const uniqueTids = [...new Set(state.invoices.map(i => i.tenantId))];
+            state.tenants.forEach(t => { if(t.status === 'Active' && !uniqueTids.includes(t.id)) uniqueTids.push(t.id); });
+            uniqueTids.forEach(tid => { const t = state.tenants.find(x => x.id === tid) || { name: 'Unknown' }; sel.innerHTML += `<option value="${tid}">${t.name}</option>`; });
+            sel.value = currentVal;
+        }
+
         function renderInvoices() { 
-            const t = document.getElementById('table-invoices'); t.innerHTML=''; 
-            state.invoices.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(i => { 
+            const filterVal = document.getElementById('filter-financials').value;
+            const t = document.getElementById('table-invoices'); 
+            const sumContainer = document.getElementById('fin-summary-container');
+            t.innerHTML=''; 
+            
+            let targetTenants = [];
+            if(filterVal === 'all') {
+                targetTenants = [...new Set(state.invoices.map(i => i.tenantId))];
+                sumContainer.classList.add('hidden-section');
+            } else {
+                targetTenants = [parseInt(filterVal)];
+                sumContainer.classList.remove('hidden-section');
+            }
+
+            let grandInvoices = [];
+            let totalOpen = 0, totalCredit = 0;
+
+            targetTenants.forEach(tid => {
+                const fin = getTenantFinancials(tid);
+                grandInvoices = [...grandInvoices, ...fin.invoices];
+                if(filterVal !== 'all') {
+                    totalOpen = fin.summary.openBalance;
+                    totalCredit = fin.summary.credit;
+                }
+            });
+
+            if(filterVal !== 'all') {
+                document.getElementById('fin-open-bal').innerText = `$${totalOpen.toLocaleString()}`;
+                document.getElementById('fin-credit').innerText = `$${totalCredit.toLocaleString()}`;
+                const net = totalCredit - totalOpen;
+                const el = document.getElementById('fin-net');
+                el.innerText = `$${Math.abs(net).toLocaleString()}`;
+                el.className = net >= 0 ? "text-xl font-bold text-emerald-600" : "text-xl font-bold text-rose-600";
+                el.innerText += net >= 0 ? " (Credit)" : " (Owed)";
+            }
+
+            grandInvoices.sort((a,b)=>new Date(b.date)-new Date(a.date)).forEach(i => { 
                 const currentTenant = state.tenants.find(x=>x.id==i.tenantId);
                 const displayName = i.tenantName || (currentTenant ? currentTenant.name : 'Deleted Tenant');
                 const descText = i.items && i.items.length > 1 ? `${i.items.length} Items` : (i.items ? i.items[0].desc : 'Rent'); 
-                // Add paperclip if document exists
                 const docIcon = i.doc ? `<i class="fas fa-paperclip text-slate-400 ml-2" title="${i.doc}"></i>` : '';
                 
-                let btn = '';
-                if(i.status === 'Paid') btn = `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold uppercase">Paid</span>`;
-                else { const btnLabel = i.status === 'Partial' ? 'Add Pay' : 'Record Pay'; btn = `<button onclick="act_openPayModal(${i.id})" class="text-indigo-600 font-bold text-xs border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-50">${btnLabel}</button>`; }
+                let btn = i.status === 'Paid' ? `<span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded text-xs font-bold uppercase">Paid</span>` : `<button onclick="act_openPayModal(${i.tenantId})" class="text-indigo-600 font-bold text-xs border border-indigo-200 px-2 py-1 rounded hover:bg-indigo-50">Pay</button>`;
+                let statusBadge = i.status === 'Partial' ? `<span class="text-amber-600 font-bold">Partial</span>` : (i.status === 'Unpaid' ? `<span class="text-rose-600 font-bold">Unpaid</span>` : i.status);
                 
-                let statusBadge = i.status;
-                if(i.status === 'Partial') statusBadge = `<span class="text-amber-600 font-bold">Partial</span>`;
-                if(i.status === 'Unpaid') statusBadge = `<span class="text-rose-600 font-bold">Unpaid</span>`;
-                const displayTotal = `$${i.total.toLocaleString()}`;
-
-                t.innerHTML+=`<tr><td class="p-5 text-sm font-medium text-slate-500">${i.date}</td><td class="p-5 text-sm font-bold">${displayName}</td><td class="p-5 text-sm text-slate-500 flex items-center">${descText} ${docIcon}</td><td class="p-5 font-bold">${displayTotal}</td><td class="p-5 text-sm">${statusBadge}</td><td class="p-5 text-right">${btn}</td></tr>`; 
+                t.innerHTML+=`<tr>
+                    <td class="p-5 text-sm font-medium text-slate-500">${i.date}</td>
+                    <td class="p-5 text-sm font-bold">${displayName}</td>
+                    <td class="p-5 text-sm text-slate-500 flex items-center">${descText} ${docIcon}</td>
+                    <td class="p-5 font-bold">$${i.total.toLocaleString()}</td>
+                    <td class="p-5 text-emerald-600 font-bold">$${i.paid.toLocaleString()}</td>
+                    <td class="p-5 font-bold text-slate-800">$${i.balance.toLocaleString()}</td>
+                    <td class="p-5 text-sm">${statusBadge}</td>
+                    <td class="p-5 text-right">
+                        <div class="flex gap-2 justify-end items-center">
+                            <button onclick="act_viewInvoice(${i.id})" class="text-slate-400 hover:text-slate-600" title="View Details"><i class="fas fa-eye"></i></button>
+                            ${btn}
+                        </div>
+                    </td>
+                </tr>`; 
             }); 
         }
+
+        // --- NEW INVOICE LOGIC ---
+
+        function openInvoiceModal() { 
+            const s = document.getElementById('inv-tenant'); 
+            s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; 
+            state.tenants.filter(t => t.status !== 'Archived' && t.status !== 'Vacant').forEach(t => { 
+                s.innerHTML += `<option value="${t.id}">${t.name}</option>`; 
+            }); 
+            
+            // Reset Wizard
+            document.getElementById('inv-step-input').classList.remove('hidden-section');
+            document.getElementById('inv-step-preview').classList.add('hidden-section');
+            document.getElementById('inv-actions-create').classList.remove('hidden-section');
+            document.getElementById('inv-actions-create').classList.add('flex');
+            document.getElementById('inv-actions-view').classList.add('hidden-section');
+            document.getElementById('inv-modal-title').innerText = "Create Invoice";
+            document.getElementById('inv-date').valueAsDate = new Date();
+            document.getElementById('inv-doc').value = "";
+            document.getElementById('btn-confirm-inv').disabled = false;
+            updateFileName('inv-doc', 'inv-doc-label');
+            
+            // Default recurring options for new Fixed
+            document.getElementById('inv-is-recurring').checked = false;
+            document.getElementById('inv-rec-details').classList.add('hidden-section');
+            
+            openModal('modal-invoice'); 
+            logic_invMode('fixed'); 
+        }
+
+        function act_viewInvoice(id) {
+            const inv = state.invoices.find(x => x.id === id);
+            if(!inv) return;
+
+            // Retrieve saved snapshot data if available, or calculate fallback (not ideal but safe)
+            const snapPrev = inv.snapshot ? inv.snapshot.prevBalance : 0;
+            const snapFwd = snapPrev + inv.total;
+
+            document.getElementById('prev-name').innerText = inv.tenantName;
+            document.getElementById('prev-date').innerText = new Date(inv.date).toLocaleDateString();
+            document.getElementById('prev-bal-amt').innerText = `$${snapPrev.toLocaleString()}`;
+            document.getElementById('prev-pay-amt').innerText = `$0.00`;
+            document.getElementById('prev-fwd-amt').innerText = `$${snapFwd.toLocaleString()}`;
+            
+            // CORRECTED: Calculate Total Due as (Previous Balance + Current Invoice Total)
+            const totalDue = snapPrev + inv.total;
+            document.getElementById('prev-total-due').innerText = `$${totalDue.toLocaleString()}`;
+
+            const tbody = document.getElementById('prev-items-body');
+            tbody.innerHTML = '';
+            inv.items.forEach(i => {
+                tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`;
+            });
+
+            if(inv.doc) {
+                document.getElementById('prev-attachment').classList.remove('hidden-section');
+                document.getElementById('prev-attachment').innerHTML = `<i class="fas fa-paperclip text-indigo-500"></i> <span>${inv.doc}</span>`;
+            } else {
+                document.getElementById('prev-attachment').classList.add('hidden-section');
+            }
+
+            // Set View Mode UI
+            document.getElementById('inv-modal-title').innerText = "Invoice Details";
+            document.getElementById('inv-step-input').classList.add('hidden-section');
+            document.getElementById('inv-step-preview').classList.remove('hidden-section');
+            document.getElementById('inv-actions-create').classList.add('hidden-section');
+            document.getElementById('inv-actions-create').classList.remove('flex');
+            document.getElementById('inv-actions-view').classList.remove('hidden-section');
+
+            openModal('modal-invoice');
+        }
+
+        function logic_invMode(m) { 
+            invMode = m; 
+            document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
+            document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
+            
+            document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed');
+            
+            // Recurring toggle only for Fixed
+            const recOpts = document.getElementById('inv-recurring-options');
+            if(m === 'fixed') recOpts.classList.remove('hidden-section');
+            else recOpts.classList.add('hidden-section');
+
+            logic_resetInvoice(); 
+        }
+
+        function logic_resetInvoice() { 
+            const tid = document.getElementById('inv-tenant').value; 
+            invItems = []; 
+            
+            if (tid) {
+                if (invMode === 'fixed') { 
+                    const t = state.tenants.find(x => x.id == tid); 
+                    if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; 
+                } 
+                else if (invMode === 'variable') { 
+                    if(state.lastVarItems && state.lastVarItems[tid]) {
+                        invItems = JSON.parse(JSON.stringify(state.lastVarItems[tid]));
+                    } else {
+                        logic_addRow(); 
+                    }
+                } 
+            }
+            renderInvItems(); 
+        }
+
+        function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
+        function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
+        function renderInvItems() { 
+            const c = document.getElementById('inv-items-container'); 
+            c.innerHTML=''; 
+            invItems.forEach((r,i) => { 
+                const ro = invMode==='fixed'?'readonly':''; 
+                const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; 
+                c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; 
+            }); 
+        }
+        function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
+
+        function logic_generatePreview() {
+            const tid = document.getElementById('inv-tenant').value;
+            if(!tid) return alert("Please select a tenant");
+            
+            const tenant = state.tenants.find(t => t.id == tid);
+            const date = document.getElementById('inv-date').value;
+            const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0);
+            
+            const fin = getTenantFinancials(tid);
+            const prevBalance = fin.summary.openBalance; 
+            const totalDue = prevBalance + currentTotal;
+
+            // Handle File Input
+            const fileInput = document.getElementById('inv-doc');
+            const fileName = fileInput.files[0] ? fileInput.files[0].name : null;
+
+            draftInvoice = {
+                tenantId: tid,
+                tenantName: tenant.name,
+                items: JSON.parse(JSON.stringify(invItems)),
+                total: currentTotal,
+                date: date,
+                isRecurring: document.getElementById('inv-is-recurring').checked,
+                recDay: document.getElementById('inv-rec-day').value,
+                recEnd: document.getElementById('inv-rec-end').value,
+                doc: fileName,
+                snapshot: { prevBalance: prevBalance } // SAVE SNAPSHOT
+            };
+
+            document.getElementById('prev-name').innerText = tenant.name;
+            document.getElementById('prev-date').innerText = new Date(date).toLocaleDateString();
+            document.getElementById('prev-bal-amt').innerText = `$${prevBalance.toLocaleString()}`;
+            document.getElementById('prev-pay-amt').innerText = `$0.00`;
+            document.getElementById('prev-fwd-amt').innerText = `$${prevBalance.toLocaleString()}`;
+            
+            const tbody = document.getElementById('prev-items-body');
+            tbody.innerHTML = '';
+            invItems.forEach(i => {
+                tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`;
+            });
+
+            if(fileName) {
+                document.getElementById('prev-attachment').classList.remove('hidden-section');
+                document.getElementById('prev-attachment').innerHTML = `<i class="fas fa-paperclip text-indigo-500"></i> <span>${fileName}</span>`;
+            } else {
+                document.getElementById('prev-attachment').classList.add('hidden-section');
+            }
+
+            document.getElementById('prev-total-due').innerText = `$${totalDue.toLocaleString()}`;
+
+            document.getElementById('inv-step-input').classList.add('hidden-section');
+            document.getElementById('inv-step-preview').classList.remove('hidden-section');
+            document.getElementById('inv-modal-title').innerText = "Review Invoice";
+        }
+
+        function logic_backToInput() {
+            document.getElementById('inv-step-input').classList.remove('hidden-section');
+            document.getElementById('inv-step-preview').classList.add('hidden-section');
+            document.getElementById('inv-modal-title').innerText = "Create Invoice";
+        }
+
+        function logic_confirmInvoice() {
+            if(!draftInvoice) return;
+            
+            // Disable button to prevent double-click duplicates
+            document.getElementById('btn-confirm-inv').disabled = true;
+
+            state.invoices.push({ 
+                id: Date.now(), 
+                tenantId: draftInvoice.tenantId, 
+                tenantName: draftInvoice.tenantName, 
+                items: draftInvoice.items, 
+                total: draftInvoice.total, 
+                paid: 0, 
+                balance: draftInvoice.total, 
+                status: 'Unpaid', 
+                date: draftInvoice.date,
+                doc: draftInvoice.doc,
+                snapshot: draftInvoice.snapshot // Persist the snapshot
+            });
+
+            if(invMode === 'variable') {
+                state.lastVarItems[draftInvoice.tenantId] = draftInvoice.items;
+            }
+
+            if(invMode === 'fixed' && draftInvoice.isRecurring) {
+                state.recurringInvoices.push({
+                    id: Date.now(),
+                    tenantId: draftInvoice.tenantId,
+                    amount: draftInvoice.total,
+                    day: parseInt(draftInvoice.recDay),
+                    endDate: draftInvoice.recEnd,
+                    lastRun: draftInvoice.date // Set lastRun to invoice date to prevent immediate duplication by cron
+                });
+                alert("Invoice sent & Recurring schedule set!");
+            } else {
+                alert("Invoice sent!");
+            }
+
+            DB.set(state);
+            closeModal('modal-invoice');
+            renderAll();
+        }
+
+        // --- FILE HELPER ---
+        function updateFileName(inputId, labelId) {
+            const input = document.getElementById(inputId);
+            const label = document.getElementById(labelId);
+            if(input.files && input.files[0]) {
+                label.innerText = input.files[0].name;
+                label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+            } else {
+                label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File';
+                label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+            }
+        }
+
+        // --- RECURRING CHECKER (Simulated Cron) ---
+        function checkRecurringInvoices() {
+            const today = new Date();
+            const currentDay = today.getDate();
+            const dateStr = today.toISOString().split('T')[0];
+            let changed = false;
+
+            state.recurringInvoices.forEach(rec => {
+                if(rec.endDate && new Date(rec.endDate) < today) return; 
+                
+                const lastRun = new Date(rec.lastRun);
+                // Prevent duplicate for same month/year
+                if(lastRun.getMonth() === today.getMonth() && lastRun.getFullYear() === today.getFullYear()) return; 
+
+                if(currentDay >= rec.day) {
+                    const t = state.tenants.find(x => x.id == rec.tenantId);
+                    if(t) {
+                        // Calculate balance for snapshot
+                        const fin = getTenantFinancials(rec.tenantId);
+
+                        state.invoices.push({
+                            id: Date.now() + Math.random(),
+                            tenantId: rec.tenantId,
+                            tenantName: t.name,
+                            items: [{desc: 'Monthly Rent (Recurring)', amount: rec.amount}],
+                            total: rec.amount,
+                            paid: 0,
+                            balance: rec.amount,
+                            status: 'Unpaid',
+                            date: dateStr,
+                            snapshot: { prevBalance: fin.summary.openBalance }
+                        });
+                        rec.lastRun = dateStr;
+                        changed = true;
+                    }
+                }
+            });
+
+            if(changed) {
+                DB.set(state);
+                console.log("Recurring invoices generated.");
+            }
+        }
+
+        // Toggle Recurring Details UI
+        document.getElementById('inv-is-recurring').addEventListener('change', function() {
+            const det = document.getElementById('inv-rec-details');
+            if(this.checked) det.classList.remove('hidden-section');
+            else det.classList.add('hidden-section');
+        });
 
         function populateExpenseModal() {
             const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>';
@@ -588,7 +1174,6 @@
             props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`);
         }
         
-        // --- EXPENSE CRUD ---
         function act_editExpense(id) {
             editExpenseId = id;
             const e = state.expenses.find(x => x.id === id);
@@ -605,20 +1190,19 @@
         }
 
         function act_delExpense(id) {
-            if(confirm("Delete this expense?")) {
-                state.expenses = state.expenses.filter(x => x.id !== id);
-                DB.set(state); renderAll();
-            }
+            if(confirm("Delete this expense?")) { state.expenses = state.expenses.filter(x => x.id !== id); DB.set(state); renderAll(); }
         }
 
         function act_saveExpense(e) {
             e.preventDefault();
+            const fileInput = document.getElementById('ex-doc');
             const data = {
                 date: document.getElementById('ex-date').value,
                 vendor: document.getElementById('ex-vendor').value,
                 cat: document.getElementById('ex-cat').value,
                 prop: document.getElementById('ex-prop').value,
-                amount: parseFloat(document.getElementById('ex-amount').value) || 0
+                amount: parseFloat(document.getElementById('ex-amount').value) || 0,
+                doc: fileInput.files[0] ? fileInput.files[0].name : null
             };
             if(editExpenseId) {
                 const i = state.expenses.findIndex(x => x.id === editExpenseId);
@@ -629,145 +1213,93 @@
             DB.set(state); closeModal('modal-expense'); renderAll();
         }
 
-        function openInvoiceModal() { const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; state.tenants.filter(t => t.status !== 'Archived' && t.status !== 'Vacant').forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); openModal('modal-invoice'); logic_invMode('fixed'); }
-        function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
-        function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (invMode === 'fixed' && tid) { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; } else if (invMode === 'variable') { logic_addRow(); } renderInvItems(); }
-        function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
-        function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
-        function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); calcTotal(); }
-        function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; calcTotal(); }
-        function calcTotal() { document.getElementById('inv-total').innerText = `$${invItems.reduce((a,b)=>a+(b.amount||0),0).toLocaleString()}`; }
-        
-        function act_addInvoice(e) { e.preventDefault(); 
-            const total = invItems.reduce((a,b)=>a+(b.amount||0),0); 
-            const tId = document.getElementById('inv-tenant').value; 
-            const tName = state.tenants.find(t=>t.id==tId).name; // SNAPSHOT Name
-            const docFile = document.getElementById('inv-doc').files[0];
-            const docName = docFile ? docFile.name : null;
-            
-            state.invoices.push({ 
-                id: Date.now(), 
-                tenantId: tId, 
-                tenantName: tName, // Save snapshot
-                items: invItems, 
-                total: total, 
-                date: document.getElementById('inv-date').value, 
-                status: 'Unpaid', 
-                paidDate: '-',
-                doc: docName 
-            }); 
-            
-            alert(`✅ Invoice Created.`);
-            DB.set(state); closeModal('modal-invoice'); renderAll(); 
-        }
-
-        function initChart() { const ctx = document.getElementById('revenueChart').getContext('2d'); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['Collected', 'Outstanding'], datasets: [{ label: 'Financials', data: [0,0], backgroundColor: ['#10b981', '#f59e0b'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
-        
-        function updateChart() { 
-            if(!chartInstance) return; 
-            const rev = state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0); 
-            const pend = state.invoices.reduce((a,b)=>a + (b.total - (b.amountPaid||0)), 0); 
-            chartInstance.data.datasets[0].data = [rev, pend]; 
-            chartInstance.update(); 
-        }
-        
-        function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart').getContext('2d'); const labels = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct']; const income = [12000, 12500, 11800, 13000, 13000, state.invoices.filter(i=>i.status==='Paid' || i.status==='Partial').reduce((a,b)=>a+(b.amountPaid||0),0)]; const expenses = [4000, 3500, 5000, 4200, 3800, state.expenses.reduce((a,b)=>a+b.amount,0)]; if(monthlyChartInstance) monthlyChartInstance.destroy(); monthlyChartInstance = new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [ { label: 'Revenue', data: income, backgroundColor: '#10b981' }, { label: 'Expenses', data: expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
-        
-        function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id == id); document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone; document.getElementById('t-addr').value = t.addr; document.getElementById('t-city').value = t.city; document.getElementById('t-state').value = t.state; document.getElementById('t-zip').value = t.zip; document.getElementById('t-unit').value = t.unit; document.getElementById('t-rent').value = t.rent; document.getElementById('t-start').value = t.start; document.getElementById('t-end').value = t.end; document.getElementById('btn-save-tenant').innerText = "Update Tenant"; openModal('modal-tenant'); }
-        function act_saveTenant(e) { e.preventDefault(); const d = { name: document.getElementById('t-name').value, email: document.getElementById('t-email').value, phone: document.getElementById('t-phone').value, addr: document.getElementById('t-addr').value, city: document.getElementById('t-city').value, state: document.getElementById('t-state').value, zip: document.getElementById('t-zip').value, unit: document.getElementById('t-unit').value, rent: document.getElementById('t-rent').value, start: document.getElementById('t-start').value, end: document.getElementById('t-end').value, status: 'Active' }; if(editTenantId) { const i = state.tenants.findIndex(x=>x.id==editTenantId); state.tenants[i] = {...state.tenants[i], ...d}; } else { state.tenants.push({id:Date.now(), ...d}); } DB.set(state); closeModal('modal-tenant'); renderAll(); }
-        
-        // --- NEW VACANT / ARCHIVE LOGIC ---
-        function act_delTenant(id) {
-            const t = state.tenants.find(x => x.id === id);
-            // Confirm logic
-            const keepProperty = confirm(`Do you want to mark "${t.name}" as VACANT?\n\n• OK: Yes (Archives tenant history, keeps unit).\n• CANCEL: No (Permanently delete).`);
-            
-            if(keepProperty) {
-                // 1. Archive current tenant (preserves messages/invoices)
-                t.status = 'Archived';
-                
-                // 2. Create new Vacant placeholder for Directory
-                state.tenants.push({
-                    id: Date.now(),
-                    name: 'Vacant Unit',
-                    addr: t.addr,
-                    unit: t.unit,
-                    rent: t.rent,
-                    status: 'Vacant',
-                    email: '-',
-                    phone: '-'
-                });
-                
-                DB.set(state); renderAll();
-            } else {
-                if(confirm("Permanently delete this record?")) {
-                    state.tenants = state.tenants.filter(x => x.id !== id);
-                    DB.set(state); renderAll();
-                }
-            }
-        }
-
-        function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.addr; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.desc; document.getElementById('l-amen').value = l.amen || ''; document.getElementById('l-date').value = l.date; document.getElementById('btn-save-listing').innerText = "Update Listing"; openModal('modal-listing'); }
-        function act_saveListing(e) { e.preventDefault(); const d = { addr: document.getElementById('l-addr').value, price: document.getElementById('l-price').value, sqft: document.getElementById('l-sqft').value, beds: document.getElementById('l-beds').value, baths: document.getElementById('l-baths').value, desc: document.getElementById('l-desc').value, amen: document.getElementById('l-amen').value, date: document.getElementById('l-date').value }; if(editListingId) { const i = state.listings.findIndex(x=>x.id==editListingId); state.listings[i] = {...state.listings[i], ...d}; } else { state.listings.push({id:Date.now(), ...d}); } DB.set(state); closeModal('modal-listing'); renderAll(); }
         function act_completeMaint(id) { const n = prompt("Notes?")||"Done"; const m = state.maint.find(x=>x.id==id); if(m){ m.status='Completed'; m.completedDate=new Date().toLocaleDateString(); m.notes=n; DB.set(state); renderAll(); } }
         function viewMaintNote(id) { const m = state.maint.find(x => x.id == id); document.getElementById('md-issue').innerText = m.issue; document.getElementById('md-meta').innerText = `Completed: ${m.completedDate}`; document.getElementById('md-notes').innerText = m.notes || "No notes."; openModal('modal-maint-detail'); }
+        
+        // --- RESTORED TENANT FUNCTIONS ---
+        function act_saveTenant(e) {
+            e.preventDefault();
+            const data = {
+                name: document.getElementById('t-name').value,
+                email: document.getElementById('t-email').value,
+                phone: document.getElementById('t-phone').value,
+                unit: document.getElementById('t-unit').value,
+                rent: parseFloat(document.getElementById('t-rent').value) || 0,
+                start: document.getElementById('t-start').value,
+                end: document.getElementById('t-end').value,
+                status: document.getElementById('t-status').value,
+                addr: document.getElementById('t-addr').value,
+                city: document.getElementById('t-city').value, // ADDED
+                state: document.getElementById('t-state').value, // ADDED
+                zip: document.getElementById('t-zip').value // ADDED
+            };
+            
+            if(editTenantId) {
+                const i = state.tenants.findIndex(x => x.id === editTenantId);
+                if(i > -1) state.tenants[i] = { ...state.tenants[i], ...data };
+            } else {
+                state.tenants.push({ id: Date.now(), ...data });
+            }
+            DB.set(state); closeModal('modal-tenant'); renderAll();
+        }
+
+        function act_editTenant(id) {
+            editTenantId = id;
+            const t = state.tenants.find(x => x.id === id);
+            if(!t) return;
+            document.getElementById('modal-tenant-title').innerText = "Edit Tenant";
+            document.getElementById('btn-save-tenant').innerText = "Update Tenant";
+            document.getElementById('t-id').value = t.id;
+            document.getElementById('t-name').value = t.name;
+            document.getElementById('t-email').value = t.email;
+            document.getElementById('t-phone').value = t.phone || '';
+            document.getElementById('t-unit').value = t.unit || '';
+            document.getElementById('t-rent').value = t.rent;
+            document.getElementById('t-start').value = t.start || '';
+            document.getElementById('t-end').value = t.end || '';
+            document.getElementById('t-status').value = t.status;
+            document.getElementById('t-addr').value = t.addr || '';
+            document.getElementById('t-city').value = t.city || ''; // ADDED
+            document.getElementById('t-state').value = t.state || ''; // ADDED
+            document.getElementById('t-zip').value = t.zip || ''; // ADDED
+            openModal('modal-tenant');
+        }
+
+        function act_delTenant(id) {
+            if(confirm("Are you sure you want to delete this tenant?")) {
+                state.tenants = state.tenants.filter(x => x.id !== id);
+                DB.set(state);
+                renderAll();
+            }
+        }
+        
+        function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.addr; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.desc; document.getElementById('l-amen').value = l.amen || ''; document.getElementById('l-date').value = l.date; document.getElementById('btn-save-listing').innerText = "Update Listing"; openModal('modal-listing'); }
+        function act_saveListing(e) { e.preventDefault(); const d = { addr: document.getElementById('l-addr').value, price: document.getElementById('l-price').value, sqft: document.getElementById('l-sqft').value, beds: document.getElementById('l-beds').value, baths: document.getElementById('l-baths').value, desc: document.getElementById('l-desc').value, amen: document.getElementById('l-amen').value, date: document.getElementById('l-date').value }; if(editListingId) { const i = state.listings.findIndex(x=>x.id==editListingId); state.listings[i] = {...state.listings[i], ...d}; } else { state.listings.push({id:Date.now(), ...d}); } DB.set(state); closeModal('modal-listing'); renderAll(); }
+        function act_delListing(id) { state.listings = state.listings.filter(x => x.id !== id); DB.set(state); renderAll(); }
+        
         function act_saveSettings(e) { e.preventDefault(); const tType = document.querySelector('input[name="feeTarget"]:checked').value; let tIds = []; if(tType === 'select') { document.querySelectorAll('#fee-tenant-select input:checked').forEach(cb => tIds.push(cb.value)); } state.settings = { feeTarget: tType, targets: tIds, method: document.getElementById('fee-method').value, amount: document.getElementById('fee-amount').value, grace: document.getElementById('fee-grace').value, requireInsurance: document.getElementById('set-insurance').checked }; DB.set(state); alert("Saved"); }
         function toggleFeeTarget() { const v = document.querySelector('input[name="feeTarget"]:checked').value; const c = document.getElementById('fee-tenant-select'); if(v === 'select') { c.classList.remove('hidden-section'); c.innerHTML = ''; state.tenants.forEach(t => { c.innerHTML += `<label class="block mb-2"><input type="checkbox" class="mr-2" value="${t.id}"> ${t.name}</label>`; }); } else { c.classList.add('hidden-section'); } }
         function toggleFeeInput() { document.getElementById('fee-label').innerText = document.getElementById('fee-method').value === 'percent' ? "Percentage (%)" : "Amount ($)"; }
         
-        function renderChatList() { 
-            const l=document.getElementById('list-chats'); l.innerHTML=''; 
-            // Show Active and Archived tenants in Chat. Hide Vacant units (nobody to chat with)
-            state.tenants.filter(t => t.status !== 'Vacant').forEach(t => {
-                const statusIndicator = t.status === 'Archived' ? '<span class="text-[10px] bg-slate-100 px-1 rounded ml-2">Archived</span>' : '';
-                l.innerHTML+=`<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name} ${statusIndicator}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`;
-            }); 
-        }
-        
-        function openChat(id) { 
-            currentChatId=id; 
-            document.getElementById('chat-title').innerText = state.tenants.find(x=>x.id==id).name; 
-            renderMessages();
-            if(window.innerWidth < 768) {
-                document.getElementById('msg-list-panel').classList.add('hidden');
-                document.getElementById('msg-view-panel').classList.remove('hidden');
-                document.getElementById('msg-view-panel').classList.add('flex');
-            }
-        }
-
-        function backToChatList() {
-            if(window.innerWidth < 768) {
-                document.getElementById('msg-view-panel').classList.add('hidden');
-                document.getElementById('msg-view-panel').classList.remove('flex');
-                document.getElementById('msg-list-panel').classList.remove('hidden');
-            }
-        }
-
-        function renderMessages() { 
-            const b=document.getElementById('box-chat'); b.innerHTML=''; 
-            state.msgs.filter(m=>m.tenantId==currentChatId).forEach(m=>{ 
-                b.innerHTML+=`<div class="flex w-full"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${m.from==='Owner'?'ml-auto bg-indigo-600 text-white rounded-br-none':'mr-auto bg-white border border-slate-200 rounded-bl-none'}">${m.text}</div></div>`; 
-            }); 
-            b.scrollTop = b.scrollHeight;
-        }
-        function sendMsg() { 
-            const i=document.getElementById('input-chat'); 
-            if(i.value && currentChatId) { 
-                state.msgs.push({id:Date.now(), tenantId:currentChatId, from:'Owner', text:i.value}); 
-                i.value=''; 
-                renderMessages(); 
-            } 
-        }
-
         function hardReset() { if(confirm("Factory Reset?")) { localStorage.removeItem(DB_KEY); location.reload(); } }
-        function clearNotifications() { state.notifications = { messages: 0, maintenance: 0, screening: 0 }; DB.set(state); renderAll(); }
-        function act_delListing(id) { state.listings = state.listings.filter(x => x.id !== id); DB.set(state); renderAll(); }
-        function previewPhotos(input) { const c = document.getElementById('l-photo-preview'); c.innerHTML=''; Array.from(input.files).forEach(f => { const r = new FileReader(); r.onload = e => { const img = document.createElement('img'); img.src = e.target.result; img.className="w-16 h-16 rounded border object-cover"; c.appendChild(img); }; r.readAsDataURL(f); }); }
-        function loadSettings() { const s = state.settings || { feeTarget:'all', targets:[], method:'flat', amount:50, grace:5, requireInsurance: true }; if(document.getElementById('set-insurance')) { document.getElementById('set-insurance').checked = s.requireInsurance !== false; } document.querySelector(`input[name="feeTarget"][value="${s.feeTarget}"]`).checked = true; toggleFeeTarget(); document.getElementById('fee-method').value = s.method; toggleFeeInput(); document.getElementById('fee-amount').value = s.amount; document.getElementById('fee-grace').value = s.grace; }
-        function populateFinFilter() { /* Optional: Filter logic if needed for dropdown */ }
+        function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
 
-        initApp = () => { checkTour(); renderAll(); initChart(); setInterval(() => { state=DB.get(); renderAll(); }, 3000); }
-        initApp();
+        // --- CHARTS & CHAT ---
+        function initChart() { const ctx = document.getElementById('revenueChart').getContext('2d'); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+        
+        function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart').getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(ctx, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
+
+        function renderChatList() { const l=document.getElementById('list-chats'); l.innerHTML=''; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { const statusIndicator = t.status === 'Archived' ? '<span class="text-[10px] bg-slate-100 px-1 rounded ml-2">Archived</span>' : ''; l.innerHTML+=`<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name} ${statusIndicator}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`; }); }
+        function openChat(id) { currentChatId=id; document.getElementById('chat-title').innerText = state.tenants.find(x=>x.id==id).name; renderMessages(); if(window.innerWidth < 768) { document.getElementById('msg-list-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('hidden'); document.getElementById('msg-view-panel').classList.add('flex'); } }
+        function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
+        function renderMessages() { const b=document.getElementById('box-chat'); b.innerHTML=''; state.msgs.filter(m=>m.tenantId==currentChatId).forEach(m=>{ b.innerHTML+=`<div class="flex w-full"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${m.from==='Owner'?'ml-auto bg-indigo-600 text-white rounded-br-none':'mr-auto bg-white border border-slate-200 rounded-bl-none'}">${m.text}</div></div>`; }); b.scrollTop = b.scrollHeight; }
+        function sendMsg() { const i=document.getElementById('input-chat'); if(i.value && currentChatId) { state.msgs.push({id:Date.now(), tenantId:currentChatId, from:'Owner', text:i.value}); i.value=''; renderMessages(); } }
+
+        // Initialize Application
+        initChart(); 
+        checkRecurringInvoices(); // Check cron
+        renderAll(); 
+        setInterval(() => { state=DB.get(); renderAll(); }, 3000); 
     </script>
 </body>
 </html>
