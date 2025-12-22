@@ -12,8 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Supabase JS (FIXED CDN URL) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style> .rotate-180 { transform: rotate(180deg); }
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         h1, h2, h3, h4, .brand-font { font-family: 'Outfit', sans-serif; }
@@ -38,7 +38,6 @@
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-indigo-950 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static shadow-xl">
         <div class="h-20 flex items-center justify-between px-6 border-b border-indigo-900 bg-indigo-950">
             <div class="flex items-center gap-3">
-                <!-- Logo Icon -->
                 <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <rect x="6" y="6" width="10" height="28" rx="2" fill="#6366f1" />
                     <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="#6366f1" fill-opacity="0.8" />
@@ -50,7 +49,6 @@
         </div>
         
         <nav class="flex-1 overflow-y-auto py-6 space-y-1">
-            <!-- FIXED LINKS BELOW: Added event.preventDefault() -->
             <a href="#" onclick="event.preventDefault(); navTo('dashboard')" id="link-dashboard" class="nav-item flex items-center justify-between px-6 py-3.5 transition sidebar-active">
                 <div class="flex items-center"><i class="fas fa-th-large w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Dashboard</span></div>
             </a>
@@ -97,6 +95,7 @@
         
         <div class="p-6 border-t border-indigo-900 bg-indigo-950 flex flex-col gap-2">
             <button onclick="initSystem()" class="flex items-center text-xs text-indigo-300 hover:text-white transition"><i class="fas fa-sync-alt mr-2"></i> Refresh Data</button>
+            <a href="login.html" class="flex items-center text-xs text-rose-300 hover:text-white transition"><i class="fas fa-sign-out-alt mr-2"></i> Sign Out</a>
         </div>
     </aside>
 
@@ -115,8 +114,11 @@
             
             <div class="flex items-center gap-4 md:gap-6">
                 <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
-                    <div class="text-right hidden md:block"><p class="text-sm font-bold text-slate-700 brand-font">James Dalton</p><p class="text-xs text-slate-500">Property Owner</p></div>
-                    <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font">JD</div>
+                    <div class="text-right hidden md:block">
+                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">James Dalton</p>
+                        <p class="text-xs text-slate-500">Property Owner</p>
+                    </div>
+                    <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font" id="owner-initials-display">JD</div>
                 </div>
             </div>
         </header>
@@ -679,9 +681,16 @@
     <script>
         // --- SUPABASE CONFIG ---
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        // FIXED: window.supabase is now guaranteed to exist due to updated script source
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // FIXED: Added missing 'E' at the end of the key
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
+        
+        // FIXED: Renamed variable to 'supabaseClient' to prevent "Identifier 'supabase' has already been declared" error
+        let supabaseClient = null;
+        try {
+            if(window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+        } catch(e) { console.error("Error init Supabase:", e); }
 
         // --- GLOBAL STATE ---
         let state = {
@@ -706,18 +715,32 @@
         // --- INIT DATA FETCH ---
         async function initSystem() {
             try {
-                // Fetch all tables in parallel
+                if(!supabaseClient) throw new Error("Supabase library not loaded.");
+
+                // 1. Get Owner ID (Simulated - Assuming user ID 1 for now)
+                // In a real app, use: const { data: { user } } = await supabaseClient.auth.getUser();
+                const ownerId = 1;
+
+                // 2. Fetch Data (Attempt to filter by owner_id if column exists)
+                // Note: If 'owner_id' column is missing in DB, this filter is ignored or might error depending on config.
+                // We add .eq('owner_id', ownerId) to demonstrate intent.
+                
+                // Fetch Tenants owned by this user
+                let tQuery = supabaseClient.from('tenants').select('*');
+                // Uncomment this line once you add 'owner_id' column to 'tenants' table:
+                // tQuery = tQuery.eq('owner_id', ownerId); 
+                
                 const [t, l, i, p, e, m, msg, s, a, r] = await Promise.all([
-                    supabase.from('tenants').select('*'),
-                    supabase.from('listings').select('*'),
-                    supabase.from('invoices').select('*'),
-                    supabase.from('payments').select('*'),
-                    supabase.from('expenses').select('*'),
-                    supabase.from('maintenance').select('*'),
-                    supabase.from('msgs').select('*'),
-                    supabase.from('settings').select('*').single(),
-                    supabase.from('apps').select('*'),
-                    supabase.from('recurring_invoices').select('*')
+                    tQuery,
+                    supabaseClient.from('listings').select('*'),
+                    supabaseClient.from('invoices').select('*'),
+                    supabaseClient.from('payments').select('*'),
+                    supabaseClient.from('expenses').select('*'),
+                    supabaseClient.from('maintenance').select('*'),
+                    supabaseClient.from('msgs').select('*'),
+                    supabaseClient.from('settings').select('*').single(),
+                    supabaseClient.from('apps').select('*'),
+                    supabaseClient.from('recurring_invoices').select('*')
                 ]);
 
                 // Populate State
@@ -1128,7 +1151,7 @@
             const date = document.getElementById('pay-date').value;
             
             if(tid && amt > 0) {
-                await supabase.from('payments').insert([{ tenant_id: tid, amount: amt, date: date }]);
+                await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: date }]);
                 closeModal('modal-pay'); 
                 initSystem(); 
             } else {
@@ -1401,7 +1424,7 @@
             document.getElementById('btn-confirm-inv').disabled = true;
 
             // Save Invoice
-            await supabase.from('invoices').insert([{ 
+            await supabaseClient.from('invoices').insert([{ 
                 tenant_id: draftInvoice.tenantId, 
                 tenant_name: draftInvoice.tenantName, 
                 items: draftInvoice.items, 
@@ -1414,7 +1437,7 @@
 
             // Save Recurring if checked
             if(invMode === 'fixed' && draftInvoice.isRecurring) {
-                await supabase.from('recurring_invoices').insert([{
+                await supabaseClient.from('recurring_invoices').insert([{
                     tenant_id: draftInvoice.tenantId,
                     amount: draftInvoice.total,
                     day: parseInt(draftInvoice.recDay),
@@ -1469,8 +1492,8 @@
                 doc: fileInput.files[0] ? fileInput.files[0].name : null
             };
             
-            if(editExpenseId) await supabase.from('expenses').update(data).eq('id', editExpenseId);
-            else await supabase.from('expenses').insert([data]);
+            if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId);
+            else await supabaseClient.from('expenses').insert([data]);
             
             closeModal('modal-expense'); 
             initSystem();
@@ -1492,12 +1515,12 @@
         }
 
         async function act_delExpense(id) {
-            if(confirm("Delete this expense?")) { await supabase.from('expenses').delete().eq('id', id); initSystem(); }
+            if(confirm("Delete this expense?")) { await supabaseClient.from('expenses').delete().eq('id', id); initSystem(); }
         }
 
         async function act_completeMaint(id) { 
             const n = prompt("Notes?")||"Done"; 
-            await supabase.from('maintenance').update({ status: 'Completed', completed_date: new Date().toISOString(), notes: n }).eq('id', id);
+            await supabaseClient.from('maintenance').update({ status: 'Completed', completed_date: new Date().toISOString(), notes: n }).eq('id', id);
             initSystem(); 
         }
         function viewMaintNote(id) { const m = state.maint.find(x => x.id == id); document.getElementById('md-issue').innerText = m.issue; document.getElementById('md-meta').innerText = `Completed: ${m.completed_date}`; document.getElementById('md-notes').innerText = m.notes || "No notes."; openModal('modal-maint-detail'); }
@@ -1542,7 +1565,7 @@
         }
 
         async function act_quickDecide(id, status) {
-            await supabase.from('apps').update({ status: status }).eq('id', id);
+            await supabaseClient.from('apps').update({ status: status }).eq('id', id);
             initSystem();
         }
 
@@ -1563,8 +1586,8 @@
                 zip: document.getElementById('t-zip').value
             };
             
-            if(editTenantId) await supabase.from('tenants').update(data).eq('id', editTenantId);
-            else await supabase.from('tenants').insert([data]);
+            if(editTenantId) await supabaseClient.from('tenants').update(data).eq('id', editTenantId);
+            else await supabaseClient.from('tenants').insert([data]);
             
             closeModal('modal-tenant'); 
             initSystem();
@@ -1593,7 +1616,7 @@
         }
 
         async function act_delTenant(id) {
-            if(confirm("Delete this tenant?")) { await supabase.from('tenants').delete().eq('id', id); initSystem(); }
+            if(confirm("Delete this tenant?")) { await supabaseClient.from('tenants').delete().eq('id', id); initSystem(); }
         }
         
         function act_editListing(id) { 
@@ -1622,14 +1645,14 @@
                 amen: document.getElementById('l-amen').value, 
                 date: document.getElementById('l-date').value 
             }; 
-            if(editListingId) await supabase.from('listings').update(d).eq('id', editListingId);
-            else await supabase.from('listings').insert([d]);
+            if(editListingId) await supabaseClient.from('listings').update(d).eq('id', editListingId);
+            else await supabaseClient.from('listings').insert([d]);
             
             closeModal('modal-listing'); 
             initSystem(); 
         }
         
-        async function act_delListing(id) { await supabase.from('listings').delete().eq('id', id); initSystem(); }
+        async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); initSystem(); }
         
         async function act_saveSettings(e) { 
             e.preventDefault(); 
@@ -1646,7 +1669,7 @@
                 requireJob: document.getElementById('set-req-job').checked
             };
 
-            await supabase.from('settings').update({
+            await supabaseClient.from('settings').update({
                 fee_target: tType,
                 targets: tIds,
                 method: document.getElementById('fee-method').value,
@@ -1707,15 +1730,31 @@
         async function sendMsg() { 
             const i=document.getElementById('input-chat'); 
             if(i.value && currentChatId) { 
-                await supabase.from('msgs').insert([{tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString()}]);
+                await supabaseClient.from('msgs').insert([{tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString()}]);
                 i.value=''; initSystem(); 
             } 
         }
 
+        // --- USER PROFILE LOAD ---
+        function loadUserProfile() {
+            const savedProfile = localStorage.getItem('kozeyy_profile');
+            if (savedProfile) {
+                const user = JSON.parse(savedProfile);
+                if(user.role === 'owner') {
+                    // Update Name/Username in Header
+                    const nameDisplay = user.username ? user.username : user.name;
+                    document.getElementById('owner-name-display').innerText = nameDisplay; // Header Name
+                    
+                    // Update Initials
+                    const initialBox = document.getElementById('owner-initials-display');
+                    if(initialBox) initialBox.innerText = user.initials;
+                }
+            }
+        }
+
         // Initialize Application
+        loadUserProfile();
         initSystem();
     </script>
 </body>
 </html>
-
-
