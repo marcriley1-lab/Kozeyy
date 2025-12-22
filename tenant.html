@@ -4,9 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Resident Portal | Kozeyy</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
@@ -62,14 +67,15 @@
             </a>
         </nav>
 
-        <div class="p-6 border-t border-indigo-900 bg-indigo-950">
+        <div class="p-6 border-t border-indigo-900 bg-indigo-950 flex flex-col gap-2">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs"><i class="fas fa-user"></i></div>
+                <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs display-initials">U</div>
                 <div>
                     <p class="font-bold text-white text-sm" id="user-name">Loading...</p>
                     <p class="text-xs text-indigo-300">Resident</p>
                 </div>
             </div>
+            <a href="login.html" class="text-xs text-indigo-400 hover:text-white mt-2 flex items-center"><i class="fas fa-sign-out-alt mr-2"></i> Sign Out</a>
         </div>
     </aside>
 
@@ -146,7 +152,9 @@
                 <h1 class="text-2xl font-bold mb-4 brand-font">Payments</h1>
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
                     <div class="p-4 border-b border-slate-100 bg-slate-50/50"><h3 class="font-bold text-slate-700">Due Now</h3></div>
-                    <div id="unpaid-container" class="divide-y divide-slate-100"></div>
+                    <div id="unpaid-container" class="divide-y divide-slate-100">
+                        <!-- JS INJECTS HERE -->
+                    </div>
                 </div>
                 <h2 class="text-lg font-bold mb-3 brand-font text-slate-700">History</h2>
                 <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -165,7 +173,9 @@
                         <span>Property Manager</span>
                         <span class="text-xs text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full font-bold">Online</span>
                     </div>
-                    <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-3"></div>
+                    <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-3">
+                        <!-- JS INJECTS HERE -->
+                    </div>
                     <div class="p-3 border-t border-slate-200 bg-white flex gap-2 flex-none">
                         <input type="text" id="chat-input" class="flex-1 border border-slate-300 p-3 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Type a message...">
                         <button onclick="sendMessage()" class="bg-indigo-600 text-white w-12 h-12 rounded-full font-bold hover:bg-indigo-700 transition flex items-center justify-center shadow-lg"><i class="fas fa-paper-plane"></i></button>
@@ -181,7 +191,9 @@
                 </div>
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="p-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-700">History</div>
-                    <div id="maint-list" class="divide-y divide-slate-100"></div>
+                    <div id="maint-list" class="divide-y divide-slate-100">
+                        <!-- JS INJECTS HERE -->
+                    </div>
                 </div>
             </div>
 
@@ -254,7 +266,7 @@
                         <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in"><input type="checkbox" name="toggle" id="toggle-credit" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300" onclick="handleCreditToggle()"/><label for="toggle-credit" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div>
                     </div>
                 </div>
-                <div class="mt-8 text-center"><button class="text-red-500 text-sm font-medium hover:underline">Sign Out</button><p class="text-xs text-slate-300 mt-4">Version 3.2.0</p></div>
+                <div class="mt-8 text-center"><a href="login.html" class="text-red-500 text-sm font-medium hover:underline">Sign Out</a><p class="text-xs text-slate-300 mt-4">Version 3.2.0</p></div>
             </div>
         </div>
     </main>
@@ -293,7 +305,7 @@
         </div>
     </div>
 
-    <!-- ADDED: INVOICE DETAILS MODAL -->
+    <!-- INVOICE DETAILS MODAL -->
     <div id="invoiceModal" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <button onclick="toggleModal('invoiceModal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
@@ -334,162 +346,209 @@
     </div>
 
     <script>
-        const DB_KEY = 'kozeyy_data_final_v32'; 
-        const USER_ID = 1; 
-
-        const DB = { 
-            get: () => { try { return JSON.parse(localStorage.getItem(DB_KEY)); } catch(e){ return null; } }, 
-            set: (data) => localStorage.setItem(DB_KEY, JSON.stringify(data)),
-            init: () => {
-                const dummy = {
-                    tenants: [{ id: 1, name: 'Demo User', email: 'demo@example.com', phone: '555-0101', unit: '101', insurance: false, creditReporting: false }],
-                    invoices: [], 
-                    msgs: [{ id: 999, tenantId: 1, from: 'Owner', text: 'Welcome to Kozeyy! How can I help you?', time: '9:00 AM' }], 
-                    maint: [], 
-                    settings: { requireInsurance: true }
-                };
-                localStorage.setItem(DB_KEY, JSON.stringify(dummy));
-                return dummy;
-            }
-        };
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
         
-        let isCreditEnabled = false;
+        let supabaseClient = null;
+        try {
+            if(window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+        } catch(e) { console.error("Error init Supabase:", e); }
+        
+        // --- STATE ---
+        const USER_ID = localStorage.getItem('kozeyy_user_id') || 1; 
+        let globalData = { user: null, invoices: [] };
 
-        function render() {
-            let data = DB.get();
-            if(!data) data = DB.init();
+        async function render() {
+            if(!supabaseClient) return;
 
-            const user = data.tenants.find(t => t.id == USER_ID) || {name: 'Unknown User', unit: '', insurance: false};
-            const myInvoices = data.invoices.filter(i => i.tenantId == USER_ID);
-            const myMsgs = data.msgs.filter(m => m.tenantId == USER_ID);
-            const myMaint = data.maint.filter(m => m.tenantId == USER_ID);
+            // Fetch All Needed Data Parallel
+            const [u, i, m, mt] = await Promise.all([
+               supabaseClient.from('tenants').select('*').eq('id', USER_ID).single(),
+               supabaseClient.from('invoices').select('*').eq('tenant_id', USER_ID),
+               supabaseClient.from('msgs').select('*').eq('tenant_id', USER_ID),
+               supabaseClient.from('maintenance').select('*').eq('tenant_id', USER_ID)
+            ]);
 
-            document.getElementById('user-name').innerText = user.name;
-            document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name.split(' ')[0]);
-            document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name.charAt(0));
+            let user = u.data;
+            if(!user) {
+                console.log("User not found, using guest fallback");
+                user = { name: "Guest User", email: "guest@example.com", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
+            }
+
+            const invoices = i.data || [];
+            const msgs = m.data || [];
+            const maint = mt.data || [];
+            
+            globalData.user = user;
+            globalData.invoices = invoices;
+
+            // --- UI UPDATE WITH LOCAL STORAGE PREFERENCE ---
+            const savedProfile = localStorage.getItem('kozeyy_profile');
+            let displayName = user.name;
+            let displayInitials = user.name ? user.name.charAt(0) : 'U';
+
+            if (savedProfile) {
+                try {
+                    const profile = JSON.parse(savedProfile);
+                    if(profile.role === 'tenant') {
+                        displayName = profile.username || user.name;
+                        displayInitials = profile.initials || displayInitials;
+                    }
+                } catch(e) {}
+            }
+
+            // Update DOM Elements
+            document.getElementById('user-name').innerText = displayName;
+            document.querySelectorAll('.display-name').forEach(el => el.innerText = displayName);
+            document.querySelectorAll('.display-initials').forEach(el => el.innerText = displayInitials);
             document.getElementById('set-email').innerText = user.email || 'N/A';
             document.getElementById('set-phone').innerText = user.phone || 'N/A';
             
-            const unitContainer = document.getElementById('unit-info-container');
-            if (user.unit && user.unit.trim() !== '') {
-                unitContainer.classList.remove('hidden-section');
+            if(user.unit && user.unit.trim() !== '') {
+                document.getElementById('unit-info-container').classList.remove('hidden-section');
                 document.getElementById('display-unit').innerText = user.unit;
             } else {
-                unitContainer.classList.add('hidden-section');
+                document.getElementById('unit-info-container').classList.add('hidden-section');
             }
 
-            // Calculation Logic Update: Handle snapshot/prev balance correctly for dashboard total
-            const unpaid = myInvoices.filter(i => i.status === 'Unpaid' || i.status === 'Partial');
-            const totalDue = unpaid.reduce((sum, i) => {
-                // If invoice has snapshot, calculate total due based on (Prev + Current - Paid)
-                const prev = i.snapshot ? (i.snapshot.prevBalance || 0) : 0;
-                const grandTotal = prev + i.total;
-                return sum + (grandTotal - (i.amountPaid || 0));
-            }, 0);
+            // Insurance & Settings
+            if(user.insurance) {
+                 document.getElementById('insurance-missing').classList.add('hidden-section');
+                 document.getElementById('insurance-verified').classList.remove('hidden-section');
+            } else {
+                 document.getElementById('insurance-missing').classList.remove('hidden-section');
+                 document.getElementById('insurance-verified').classList.add('hidden-section');
+            }
+            document.getElementById('toggle-credit').checked = user.credit_reporting;
+
+            // --- FINANCIALS ---
+            const unpaid = invoices.filter(i => i.status === 'Unpaid' || i.status === 'Partial');
+            const totalDue = unpaid.reduce((sum, i) => sum + i.balance, 0);
 
             document.getElementById('total-balance').innerText = `$${totalDue.toLocaleString()}`;
             const badge = document.getElementById('payment-status-badge');
+            
+            // PAYMENTS EMPTY STATE logic
+            const uCont = document.getElementById('unpaid-container'); 
+            
             if(totalDue > 0) { 
                 badge.className = "bg-rose-100 text-rose-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = `${unpaid.length} Due`; 
                 document.getElementById('payment-due-date').innerText = `Due: ${unpaid[0].date || 'Immediately'}`; 
+                
+                uCont.innerHTML = '';
+                unpaid.forEach(i => { 
+                    let itemsHtml = `<ul class="text-xs text-slate-500 mt-2 space-y-1">`; 
+                    const items = i.items || [{desc: 'Balance', amount: i.total}]; 
+                    items.slice(0, 2).forEach(item => { itemsHtml += `<li class="flex justify-between w-full max-w-xs border-b border-dashed border-slate-200 pb-1"><span>${item.desc}</span> <span>$${item.amount}</span></li>`; });
+                    if (items.length > 2) itemsHtml += `<li class="text-[10px] text-slate-400 italic">+ ${items.length - 2} more items</li>`;
+                    itemsHtml += `</ul>`; 
+                    
+                    uCont.innerHTML += `
+                    <div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4">
+                        <div class="w-full md:w-auto">
+                            <div class="flex items-center gap-2">
+                                <p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p>
+                                <button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> View Details</button>
+                            </div>
+                            ${itemsHtml}
+                            <p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p>
+                        </div>
+                        <div class="flex items-center justify-between w-full md:w-auto gap-4">
+                            <div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${i.balance.toLocaleString()}</span></div>
+                            <button onclick="payInvoice(${i.id}, ${i.balance})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm">Pay Now</button>
+                        </div>
+                    </div>`; 
+                });
             } else { 
                 badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = "All Paid"; 
-                document.getElementById('payment-due-date').innerText = "No upcoming payments"; 
+                document.getElementById('payment-due-date').innerText = "No upcoming payments";
+                
+                uCont.innerHTML = `
+                <div class="p-8 text-center text-slate-400 flex flex-col items-center">
+                    <div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3">
+                        <i class="fas fa-check text-emerald-400 text-xl"></i>
+                    </div>
+                    <p class="text-sm font-medium text-slate-600">You're all caught up!</p>
+                    <p class="text-xs text-slate-400">No payments due.</p>
+                </div>`;
             }
 
-            const uCont = document.getElementById('unpaid-container'); 
-            uCont.innerHTML = unpaid.length ? '' : `<div class="p-8 text-center text-slate-400 italic text-sm">No active invoices</div>`;
-            unpaid.forEach(i => { 
-                const prev = i.snapshot ? (i.snapshot.prevBalance || 0) : 0;
-                const grandTotal = prev + i.total;
-                const remaining = grandTotal - (i.amountPaid || 0);
-                
-                let itemsHtml = `<ul class="text-xs text-slate-500 mt-2 space-y-1">`; 
-                const items = i.items || [{desc: 'Balance', amount: i.total}]; 
-                // Only show first 2 items then ... if more
-                items.slice(0, 2).forEach(item => { itemsHtml += `<li class="flex justify-between w-full max-w-xs border-b border-dashed border-slate-200 pb-1"><span>${item.desc}</span> <span>$${item.amount}</span></li>`; });
-                if (items.length > 2) itemsHtml += `<li class="text-[10px] text-slate-400 italic">+ ${items.length - 2} more items</li>`;
-                itemsHtml += `</ul>`; 
-                
-                let statusText = i.status === 'Partial' ? `<span class="text-amber-600 text-xs font-bold mb-1 block">Partial Payment</span>` : '';
-                
-                uCont.innerHTML += `
-                <div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4">
-                    <div class="w-full md:w-auto">
-                        ${statusText}
-                        <div class="flex items-center gap-2">
-                            <p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p>
-                            <button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> View Details</button>
-                        </div>
-                        ${itemsHtml}
-                        <p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p>
-                    </div>
-                    <div class="flex items-center justify-between w-full md:w-auto gap-4">
-                        <div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${remaining.toLocaleString()}</span></div>
-                        <button onclick="payInvoice(${i.id}, ${remaining})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm">Pay Now</button>
-                    </div>
-                </div>`; 
-            });
-
+            // Render History
             const hBody = document.getElementById('history-body'); const hMob = document.getElementById('history-mobile');
             hBody.innerHTML = ''; hMob.innerHTML = '';
-            const historyItems = myInvoices.filter(i => i.status === 'Paid');
-            if(historyItems.length === 0) hMob.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No payment history</div>';
-            historyItems.forEach(i => { 
-                const prev = i.snapshot ? (i.snapshot.prevBalance || 0) : 0;
-                const totalAmt = prev + i.total;
-                
-                hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paidDate || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.id}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice(${i.id})" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
-                
-                hMob.innerHTML += `
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice(${i.id})">
-                    <div>
-                        <p class="font-bold text-slate-800 text-sm">Invoice #${i.id}</p>
-                        <p class="text-xs text-slate-500">${i.paidDate || i.date}</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p>
-                        <span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span>
-                    </div>
-                </div>`;
-            });
-
-            // Activity Feed (Re-rendered to avoid stuck states)
-            const activityList = document.getElementById('recent-activity-list'); 
-            const feed = [...myInvoices.filter(i=>i.status==='Paid').map(x => ({type:'pay', date: x.paidDate || 'Recent', txt: `Paid Invoice #${x.id}`})), ...myMaint.map(x => ({type:'maint', date: x.date, txt: `Request: ${(x.issue || 'Request').split(':')[0]} (${x.status})`}))].sort((a,b) => b.date > a.date ? 1 : -1).slice(0, 3);
-            activityList.innerHTML = feed.length > 0 ? feed.map(item => {
-                const icon = item.type === 'pay' ? '<div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs"><i class="fas fa-check"></i></div>' : '<div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs"><i class="fas fa-tools"></i></div>'; 
-                return `<div class="flex items-center gap-3 pb-3 border-b border-slate-50 last:border-0 last:pb-0">${icon}<div><p class="font-bold text-sm text-slate-800">${item.txt}</p><p class="text-xs text-slate-500">${item.date}</p></div></div>`; 
-            }).join('') : '<div class="text-gray-400 text-sm italic">No recent activity</div>';
-
-            const chatBox = document.getElementById('chat-messages'); 
-            const newChatHTML = myMsgs.map(m => {
-                const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; 
-                const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
-                return `<div class="flex ${align}"><div class="max-w-[80%] px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">${m.text}</div></div>`;
-            }).join('');
-
-            if (chatBox.innerHTML !== newChatHTML) {
-                chatBox.innerHTML = newChatHTML;
-                chatBox.scrollTop = chatBox.scrollHeight;
+            const historyItems = invoices.filter(i => i.status === 'Paid');
+            if(historyItems.length === 0) {
+                hMob.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No payment history</div>';
+                hBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">No payment history</td></tr>';
+            } else {
+                historyItems.forEach(i => { 
+                    const prev = i.snapshot ? (i.snapshot.prevBalance || 0) : 0;
+                    const totalAmt = prev + i.total;
+                    
+                    hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.id}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice(${i.id})" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
+                    hMob.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice(${i.id})">
+                        <div>
+                            <p class="font-bold text-slate-800 text-sm">Invoice #${i.id}</p>
+                            <p class="text-xs text-slate-500">${i.paid_date || i.date}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p>
+                            <span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span>
+                        </div>
+                    </div>`;
+                });
             }
 
-            const maintList = document.getElementById('maint-list'); maintList.innerHTML = myMaint.length ? '' : `<div class="p-8 text-center text-slate-400 italic text-sm">No requests filed</div>`;
-            myMaint.forEach(m => { const statusColor = m.status === 'Active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'; const notes = m.notes ? `<p class="text-xs text-slate-500 mt-1 italic border-l-2 border-slate-300 pl-2">"${m.notes}"</p>` : ''; maintList.innerHTML += `<div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100"><div class="flex justify-between items-start"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-wrench"></i></div><div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${m.date}</p></div></div><span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span></div>${notes}</div>`; });
+            // --- CHAT ---
+            const chatBox = document.getElementById('chat-messages'); 
+            
+            if(msgs.length === 0) {
+                chatBox.innerHTML = `
+                <div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60">
+                    <i class="fas fa-comment-slash text-4xl mb-2"></i>
+                    <p class="text-sm">No messages yet</p>
+                    <p class="text-xs">Start a conversation below.</p>
+                </div>`;
+            } else {
+                const newChatHTML = msgs.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at)).map(m => {
+                    const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; 
+                    const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
+                    return `<div class="flex ${align}"><div class="max-w-[80%] px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">${m.text}</div></div>`;
+                }).join('');
+                
+                if (chatBox.innerHTML !== newChatHTML) { 
+                    chatBox.innerHTML = newChatHTML; 
+                    chatBox.scrollTop = chatBox.scrollHeight; 
+                }
+            }
+
+            // --- MAINTENANCE ---
+            const maintList = document.getElementById('maint-list'); 
+            if (maint.length === 0) { 
+                maintList.innerHTML = `
+                <div class="p-8 text-center text-slate-400 flex flex-col items-center">
+                    <i class="fas fa-check-circle text-3xl text-emerald-100 mb-2"></i>
+                    <p class="text-sm">No maintenance requests found</p>
+                </div>`; 
+            } else {
+                maintList.innerHTML = '';
+                maint.forEach(m => { const statusColor = m.status === 'Active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'; const notes = m.notes ? `<p class="text-xs text-slate-500 mt-1 italic border-l-2 border-slate-300 pl-2">"${m.notes}"</p>` : ''; maintList.innerHTML += `<div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100"><div class="flex justify-between items-start"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-wrench"></i></div><div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${m.date}</p></div></div><span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span></div>${notes}</div>`; });
+            }
         }
 
-        // ADDED: View Invoice Details Logic
         function viewInvoice(id) {
-            const data = DB.get();
-            const inv = data.invoices.find(i => i.id === id);
+            const inv = globalData.invoices.find(i => i.id === id);
             if(!inv) return;
 
             document.getElementById('inv-id').innerText = inv.id;
             document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
             
-            // Logic must match owner.html preview logic
             const prevBal = inv.snapshot ? (inv.snapshot.prevBalance || 0) : 0;
-            const forwardBal = prevBal; // Payments received in owner snapshot logic is visually $0.00
+            const forwardBal = prevBal; 
             const currentTotal = inv.total;
             const totalDue = prevBal + currentTotal;
 
@@ -515,12 +574,70 @@
 
             const btnContainer = document.getElementById('inv-pay-btn-container');
             if(inv.status === 'Paid') {
-                btnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paidDate}</div>`;
+                btnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date}</div>`;
             } else {
                 btnContainer.innerHTML = `<button onclick="toggleModal('invoiceModal')" class="w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold mt-4 hover:bg-slate-200">Close</button>`;
             }
-
             toggleModal('invoiceModal');
+        }
+
+        // --- ACTIONS ---
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const txt = input.value.trim();
+            if(txt) {
+                await supabaseClient.from('msgs').insert([{ tenant_id: USER_ID, from: 'Tenant', text: txt, time: new Date().toISOString() }]);
+                input.value = '';
+                render();
+            }
+        }
+
+        async function handleMaintSubmit(e) {
+            e.preventDefault();
+            const desc = document.getElementById('m-desc').value;
+            const cat = document.getElementById('m-cat').value;
+            if(desc) {
+                await supabaseClient.from('maintenance').insert([{ tenant_id: USER_ID, issue: `${cat}: ${desc}`, status: 'Active', date: new Date().toISOString(), notes: '' }]);
+                toggleModal('requestModal');
+                e.target.reset();
+                render();
+            }
+        }
+
+        async function handleCreditToggle() {
+            const checkBox = document.getElementById('toggle-credit');
+            await supabaseClient.from('tenants').update({ credit_reporting: checkBox.checked }).eq('id', USER_ID);
+            alert(checkBox.checked ? "Credit Reporting Enabled!" : "Credit Reporting Disabled.");
+        }
+
+        async function uploadInsurance() {
+            const input = document.createElement('input'); input.type = 'file'; 
+            input.onchange = async () => { 
+                await supabaseClient.from('tenants').update({ insurance: true }).eq('id', USER_ID);
+                alert("File successfully uploaded!");
+                render(); 
+            }; 
+            input.click();
+        }
+
+        async function resetInsurance() {
+            if(confirm("Remove this policy?")) {
+                await supabaseClient.from('tenants').update({ insurance: false }).eq('id', USER_ID);
+                render();
+            }
+        }
+
+        async function payInvoice(id, amount) {
+            const achFee = 2.00;
+            const total = amount + achFee;
+            if(confirm(`Confirm Payment:\n\nInvoice Balance: $${amount.toLocaleString()}\nACH Collection Fee: $${achFee.toFixed(2)}\n\nTOTAL: $${total.toLocaleString()}\n\nProceed with payment?`)) {
+                // 1. Mark Invoice Paid
+                await supabaseClient.from('invoices').update({ status: 'Paid', balance: 0, paid: amount, paid_date: new Date().toISOString() }).eq('id', id);
+                // 2. Insert Payment Record (For Owner)
+                await supabaseClient.from('payments').insert([{ tenant_id: USER_ID, amount: amount, date: new Date().toISOString() }]);
+                render();
+            }
         }
 
         function switchTab(t) { 
@@ -539,15 +656,10 @@
         }
 
         function toggleModal(id) { const el = document.getElementById(id); if(el) el.classList.toggle('hidden-section'); }
-        function handleCreditToggle() { const checkBox = document.getElementById('toggle-credit'); const data = DB.get(); const tenantIndex = data.tenants.findIndex(t => t.id == USER_ID); if(tenantIndex > -1) { data.tenants[tenantIndex].creditReporting = checkBox.checked; DB.set(data); if(checkBox.checked) alert("Credit Reporting Enabled! $10 will be added to your monthly invoice."); else alert("Credit Reporting Disabled."); render(); } }
-        function uploadInsurance() { const input = document.createElement('input'); input.type = 'file'; input.onchange = () => { alert("File successfully uploaded!"); const data = DB.get(); const tenantIndex = data.tenants.findIndex(t => t.id == USER_ID); if(tenantIndex > -1) { data.tenants[tenantIndex].insurance = true; data.tenants[tenantIndex].insuranceDate = new Date().toLocaleDateString(); DB.set(data); render(); } }; input.click(); }
-        function resetInsurance() { if(confirm("Remove this policy?")) { const data = DB.get(); const tenantIndex = data.tenants.findIndex(t => t.id == USER_ID); if(tenantIndex > -1) { data.tenants[tenantIndex].insurance = false; DB.set(data); render(); } } }
-        function payInvoice(id, amount) { const achFee = 2.00; const total = amount + achFee; if(confirm(`Confirm Payment:\n\nInvoice Balance: $${amount.toLocaleString()}\nACH Collection Fee: $${achFee.toFixed(2)}\n\nTOTAL: $${total.toLocaleString()}\n\nProceed with payment?`)) { const data = DB.get(); const inv = data.invoices.find(i => i.id === id); if(inv) { inv.amountPaid = inv.total; inv.status = 'Paid'; inv.paidDate = new Date().toLocaleDateString(); DB.set(data); render(); } } }
-        function sendMessage() { const input = document.getElementById('chat-input'); const txt = input.value.trim(); if(txt) { const data = DB.get(); data.msgs.push({ id: Date.now(), tenantId: USER_ID, from: 'Tenant', text: txt, time: new Date().toLocaleTimeString() }); if(!data.notifications) data.notifications = { messages: 0 }; data.notifications.messages = (data.notifications.messages || 0) + 1; DB.set(data); input.value = ''; render(); } }
-        function handleMaintSubmit(e) { e.preventDefault(); const desc = document.getElementById('m-desc').value; const cat = document.getElementById('m-cat').value; if(desc) { const data = DB.get(); data.maint.push({ id: Date.now(), tenantId: USER_ID, issue: `${cat}: ${desc}`, status: 'Active', date: new Date().toLocaleDateString(), notes: '' }); if(!data.notifications) data.notifications = { maintenance: 0 }; data.notifications.maintenance = (data.notifications.maintenance || 0) + 1; DB.set(data); toggleModal('requestModal'); e.target.reset(); render(); } }
 
         render();
-        setInterval(render, 3000); 
+        // Removed Interval polling, added manual refresh on specific actions or every 5 sec if needed
+        // setInterval(render, 5000); 
 
     </script>
 </body>
