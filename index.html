@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         h1, h2, h3, h4, .brand-font { font-family: 'Outfit', sans-serif; }
@@ -27,6 +29,8 @@
             opacity: 0.5;
         }
         .hidden-page { display: none; }
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="bg-white text-slate-900 scroll-smooth">
@@ -36,7 +40,7 @@
         <div class="w-full px-6 lg:px-12">
             <div class="flex justify-between items-center h-20">
                 
-                <!-- LOGO (Updated to match Owner/Tenant Portals exactly) -->
+                <!-- LOGO -->
                 <div class="flex items-center gap-3 cursor-pointer group" onclick="showPage('home')">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="transform group-hover:rotate-3 transition duration-500">
                         <defs>
@@ -56,25 +60,18 @@
                 
                 <!-- Desktop Menu -->
                 <div class="hidden md:flex items-center space-x-8">
+                    <a href="javascript:void(0)" onclick="showPage('rentals')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Rentals</a>
                     <a href="javascript:void(0)" onclick="showPage('home', 'features')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Features</a>
                     <a href="javascript:void(0)" onclick="showPage('home', 'pricing')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Pricing</a>
                     
-                    <div class="relative group">
-                        <button class="text-sm font-semibold text-slate-600 hover:text-blue-600 flex items-center gap-1">
-                            Log In <i class="fas fa-chevron-down text-xs"></i>
-                        </button>
-                        <div class="absolute right-0 mt-2 w-48 bg-white border border-slate-100 rounded-xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity invisible group-hover:visible transform translate-y-2 group-hover:translate-y-0">
-                            <a href="owner.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-slate-50 hover:text-blue-600 rounded-t-xl">Owner Portal</a>
-                            <a href="tenant.html" class="block px-4 py-3 text-sm text-gray-700 hover:bg-slate-50 hover:text-blue-600 rounded-b-xl">Tenant Portal</a>
-                        </div>
-                    </div>
-
-                    <a href="owner.html" class="bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">
-                        Join Founder's Club
+                    <!-- NEW SINGLE LOGIN BUTTON -->
+                    <a href="login.html" class="bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">
+                        Log In
                     </a>
                 </div>
 
                 <div class="md:hidden">
+                    <a href="login.html" class="text-blue-600 font-bold mr-4">Log In</a>
                     <button class="text-slate-600 hover:text-blue-600"><i class="fas fa-bars text-xl"></i></button>
                 </div>
             </div>
@@ -103,8 +100,8 @@
                     Kozeyy builds the future of property management. Join our <strong>Founder's Club</strong> today and get our Pro Software free for life.
                 </p>
                 
-                <div class="flex justify-center">
-                    <a href="owner.html" class="bg-blue-600 text-white px-10 py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-1">
+                <div class="flex justify-center gap-4">
+                    <a href="signup.html" class="bg-blue-600 text-white px-12 py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-1">
                         Claim Free Account
                     </a>
                 </div>
@@ -220,7 +217,7 @@
                             <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Maintenance Management</li>
                             <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Priority Support</li>
                         </ul>
-                        <a href="owner.html" class="block w-full bg-amber-500 text-slate-900 text-center py-4 rounded-xl font-bold hover:bg-amber-400 transition">Lock In Free Rate</a>
+                        <a href="signup.html" class="block w-full bg-amber-500 text-slate-900 text-center py-4 rounded-xl font-bold hover:bg-amber-400 transition">Lock In Free Rate</a>
                     </div>
 
                     <!-- Tenant Card -->
@@ -234,7 +231,7 @@
                         <ul class="space-y-6">
                             <li class="flex justify-between items-center">
                                 <span class="font-bold flex items-center"><i class="fas fa-search text-slate-400 mr-3"></i> Screening Report</span>
-                                <span class="text-blue-600 font-bold">$45</span>
+                                <span class="text-blue-600 font-bold">$55</span>
                             </li>
                             <li class="flex justify-between items-center">
                                 <span class="font-bold flex items-center"><i class="fas fa-university text-slate-400 mr-3"></i> ACH Bank Transfer</span>
@@ -260,18 +257,30 @@
             <div class="max-w-4xl mx-auto px-4 text-center text-white">
                 <h2 class="text-3xl md:text-5xl font-extrabold mb-6 brand-font">Don't miss the Founder's Window</h2>
                 <p class="text-xl text-blue-100 mb-10">We will switch to paid subscriptions once we hit our user cap. Secure your free account now.</p>
-                <div class="flex justify-center">
-                    <a href="owner.html" class="bg-slate-900 text-white px-10 py-4 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg text-lg">Create Account</a>
-                </div>
-                <p class="mt-4 text-sm text-blue-200 opacity-80">No credit card required to sign up.</p>
             </div>
         </section>
     </div>
 
-    <!-- HIDDEN PAGES (POPULATED) -->
-    
+    <!-- 0. PUBLIC RENTALS (Dynamic) -->
+    <div id="page-rentals" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
+        <div class="max-w-6xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-4 brand-font">Available Rentals</h1>
+            <p class="text-slate-500 mb-8 max-w-2xl">Browse our current listings. Apply online in minutes.</p>
+            
+            <div id="listings-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Content injected via JS -->
+                <div class="col-span-full text-center py-12">
+                    <i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i>
+                    <p class="text-slate-500">Loading properties...</p>
+                </div>
+            </div>
+            
+            <button onclick="showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+        </div>
+    </div>
+
     <!-- 1. HELP CENTER -->
-    <div id="page-help" class="hidden-page pt-24 bg-slate-50 min-h-screen">
+    <div id="page-help" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
         <div class="max-w-4xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold text-slate-900 mb-8 brand-font">Help Center</h1>
             <div class="space-y-6">
@@ -294,7 +303,7 @@
     </div>
 
     <!-- 2. RENTAL LAWS -->
-    <div id="page-laws" class="hidden-page pt-24 bg-slate-50 min-h-screen">
+    <div id="page-laws" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
         <div class="max-w-4xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold text-slate-900 mb-4 brand-font">Rental Laws & Compliance</h1>
             <p class="text-slate-500 mb-8 max-w-2xl">Disclaimer: Kozeyy provides this for informational purposes only. Landlord-tenant laws vary significantly by state and municipality. Please consult a local attorney for legal advice.</p>
@@ -320,7 +329,7 @@
     </div>
 
     <!-- 3. PRIVACY POLICY -->
-    <div id="page-privacy" class="hidden-page pt-24 bg-white min-h-screen">
+    <div id="page-privacy" class="hidden-page pt-24 bg-white min-h-screen fade-in">
         <div class="max-w-3xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold mb-6 brand-font text-slate-900">Privacy Policy</h1>
             <p class="text-slate-500 text-sm mb-8 border-b border-slate-100 pb-8">Last Updated: Dec 12, 2025</p>
@@ -339,7 +348,7 @@
     </div>
 
     <!-- 4. TERMS OF SERVICE -->
-    <div id="page-terms" class="hidden-page pt-24 bg-white min-h-screen">
+    <div id="page-terms" class="hidden-page pt-24 bg-white min-h-screen fade-in">
         <div class="max-w-3xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold mb-6 brand-font text-slate-900">Terms of Service</h1>
             <p class="text-slate-500 text-sm mb-8 border-b border-slate-100 pb-8">Last Updated: Dec 12, 2025</p>
@@ -399,18 +408,127 @@
         </div>
     </footer>
 
-    <!-- Router -->
+   <!-- Router & Supabase Logic -->
     <script>
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        // FIXED: Added missing 'EE'
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
+        
+        // FIXED: Renamed to supabaseClient
+        let supabaseClient = null;
+        let isDemoMode = false;
+
+        // Initialize Supabase
+        try {
+            if (!window.supabase) throw new Error("Supabase Library not loaded");
+            
+            if (SUPABASE_URL.includes('YOUR_SUPABASE') || SUPABASE_URL === '') {
+                throw new Error("No API Keys");
+            }
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log("✅ Supabase Connected");
+        } catch (e) {
+            console.warn("⚠️ Running in DEMO MODE:", e.message);
+            isDemoMode = true;
+        }
+
+        // --- NAVIGATION ---
         function showPage(pageId, scrollToId = null) {
-            const pages = ['page-home', 'page-help', 'page-laws', 'page-privacy', 'page-terms'];
-            pages.forEach(id => document.getElementById(id).classList.add('hidden-page'));
-            document.getElementById('page-' + pageId).classList.remove('hidden-page');
+            // 1. Hide all pages
+            const pages = ['page-home', 'page-rentals', 'page-help', 'page-laws', 'page-privacy', 'page-terms'];
+            pages.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('hidden-page');
+            });
+
+            // 2. Show target page
+            const target = document.getElementById('page-' + pageId);
+            if(target) {
+                target.classList.remove('hidden-page');
+            } else {
+                console.error("Target page not found:", pageId);
+            }
+            
+            // 3. Special Logic
+            if(pageId === 'rentals') {
+                fetchListings();
+            }
+
+            // 4. Scroll
             if (scrollToId) {
                 const el = document.getElementById(scrollToId);
                 if(el) el.scrollIntoView();
             } else {
                 window.scrollTo(0,0);
             }
+        }
+
+        // --- RENTALS LOGIC ---
+        async function fetchListings() {
+            const container = document.getElementById('listings-container');
+            if(!container) return;
+            
+            container.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i><p class="text-slate-500">Loading properties...</p></div>`;
+            
+            let listings = [];
+
+            if(isDemoMode) {
+                // Fake Data for Demo
+                await new Promise(r => setTimeout(r, 800)); 
+                listings = [
+                    { addr: '123 Demo St, Austin TX', price: 2400, beds: 3, baths: 2, sqft: 1500, desc: 'Beautiful home with pool.' },
+                    { addr: '500 Market St, San Francisco CA', price: 4200, beds: 2, baths: 2, sqft: 1100, desc: 'Downtown luxury apartment.' }
+                ];
+            } else {
+                // Real Data
+                try {
+                    const { data, error } = await supabaseClient.from('listings').select('*');
+                    if(error) throw error;
+                    listings = data || [];
+                } catch (err) {
+                    console.error("Error fetching listings:", err);
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Error loading rentals.</div>`;
+                    return;
+                }
+            }
+
+            if(listings.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No rentals currently available.</div>`;
+                return;
+            }
+
+            // Render Listings
+            container.innerHTML = '';
+            listings.forEach(l => {
+                container.innerHTML += `
+                <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group">
+                    <div class="h-48 bg-slate-200 relative overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow">
+                            For Rent
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <h3 class="font-bold text-lg text-slate-900 mb-1 truncate">${l.addr}</h3>
+                        <p class="text-slate-500 text-sm mb-4 truncate">${l.desc || 'Contact for details'}</p>
+                        
+                        <div class="flex items-center gap-4 text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">
+                            <span><i class="fas fa-bed mr-1"></i> ${l.beds} Beds</span>
+                            <span><i class="fas fa-bath mr-1"></i> ${l.baths} Baths</span>
+                            <span><i class="fas fa-ruler mr-1"></i> ${l.sqft} SqFt</span>
+                        </div>
+
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                            <div>
+                                <span class="text-2xl font-extrabold text-indigo-600 brand-font">$${parseInt(l.price).toLocaleString()}</span>
+                                <span class="text-xs text-slate-400 font-bold">/mo</span>
+                            </div>
+                            <a href="applicant.html" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-600 transition shadow-lg">Apply Now</a>
+                        </div>
+                    </div>
+                </div>`;
+            });
         }
     </script>
 
