@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account | Kozeyy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .bg-image {
+            background-image: url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+        .role-selected { border-color: #4F46E5; background-color: #EEF2FF; color: #4338CA; }
+        .role-default { border-color: #E2E8F0; background-color: #F8FAFC; color: #64748B; }
+        .scroll-y::-webkit-scrollbar { width: 4px; }
+        .scroll-y::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
+        
+        /* Password Validation Styles */
+        .valid-rule { color: #10B981; }
+        .invalid-rule { color: #94A3B8; }
+    </style>
+</head>
+<body class="bg-image min-h-screen flex items-center justify-center p-4 relative">
+
+    <div class="absolute inset-0 bg-indigo-950/40 backdrop-blur-[2px]"></div>
+
+    <div class="glass-panel w-full max-w-[500px] rounded-3xl shadow-2xl relative z-10 overflow-hidden max-h-[90vh] flex flex-col">
+        <div class="h-2 w-full bg-gradient-to-r from-emerald-500 to-teal-500 flex-none"></div>
+
+        <div class="p-8 md:p-10 overflow-y-auto scroll-y">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center gap-2 mb-4 bg-white/50 p-2 pr-4 rounded-full border border-slate-100 shadow-sm">
+                    <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 40 40" fill="none"><rect x="6" y="6" width="10" height="28" rx="2" fill="currentColor" /><path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="currentColor" fill-opacity="0.8" /><path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="currentColor" fill-opacity="0.9" /></svg>
+                    </div>
+                    <span class="text-xl font-bold text-slate-800 brand-font tracking-tight">Kozeyy</span>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 brand-font">Create Account</h2>
+                <p class="text-sm text-slate-500 mt-2">Join the future of property management</p>
+            </div>
+
+            <!-- Error Banner -->
+            <div id="error-banner" class="hidden mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-start gap-2">
+                <i class="fas fa-exclamation-circle mt-0.5"></i>
+                <span id="error-text"></span>
+            </div>
+
+            <form onsubmit="handleSignup(event)" class="space-y-5" novalidate>
+                
+                <!-- Role Selection -->
+                <div class="grid grid-cols-2 gap-4 mb-2">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="role" value="owner" class="hidden" checked onchange="toggleRole(this)">
+                        <div id="role-owner" class="role-selected border-2 rounded-xl p-3 text-center transition">
+                            <i class="fas fa-building mb-1 text-lg"></i>
+                            <p class="text-xs font-bold uppercase">Landlord</p>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="role" value="tenant" class="hidden" onchange="toggleRole(this)">
+                        <div id="role-tenant" class="role-default border-2 rounded-xl p-3 text-center transition">
+                            <i class="fas fa-key mb-1 text-lg"></i>
+                            <p class="text-xs font-bold uppercase">Resident</p>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Section: Account -->
+                <div class="space-y-3 pt-2">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1">Account Info</p>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Username <span class="text-red-400">*</span></label>
+                        <input type="text" id="username" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="jdalton88" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Email <span class="text-red-400">*</span></label>
+                        <input type="email" id="email" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="you@mail.com" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Password <span class="text-red-400">*</span></label>
+                            <input type="password" id="password" onkeyup="checkPasswordStrength()" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="••••••••" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Confirm Password <span class="text-red-400">*</span></label>
+                            <input type="password" id="confirm-password" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase mb-2">Password Requirements:</p>
+                        <ul class="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                            <li id="rule-length" class="invalid-rule flex items-center gap-1.5"><i class="fa-solid fa-circle text-[6px]"></i> 8+ Characters</li>
+                            <li id="rule-upper" class="invalid-rule flex items-center gap-1.5"><i class="fa-solid fa-circle text-[6px]"></i> Uppercase Letter</li>
+                            <li id="rule-lower" class="invalid-rule flex items-center gap-1.5"><i class="fa-solid fa-circle text-[6px]"></i> Lowercase Letter</li>
+                            <li id="rule-number" class="invalid-rule flex items-center gap-1.5"><i class="fa-solid fa-circle text-[6px]"></i> Number</li>
+                            <li id="rule-special" class="invalid-rule flex items-center gap-1.5"><i class="fa-solid fa-circle text-[6px]"></i> Special Char (!@#$)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Section: Personal -->
+                <div class="space-y-3 pt-2">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1">Contact Details</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">First Name <span class="text-red-400">*</span></label>
+                            <input type="text" id="fname" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="James" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Last Name <span class="text-red-400">*</span></label>
+                            <input type="text" id="lname" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="Dalton" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Phone Number <span class="text-red-400">*</span></label>
+                        <input type="tel" id="phone" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="(555) 123-4567" required>
+                        <p class="text-[10px] text-slate-400 ml-1 mt-1">Format: 10 digits required</p>
+                    </div>
+                </div>
+
+                <!-- Section: Address -->
+                <div class="space-y-3 pt-2">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1">Current Address</p>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Street <span class="text-red-400">*</span></label>
+                        <input type="text" id="addr-street" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="Street Address" required>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <input type="text" id="addr-city" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="City" required>
+                        <input type="text" id="addr-state" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="State" required>
+                        <input type="text" id="addr-zip" class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-700" placeholder="Zip" required>
+                    </div>
+                </div>
+
+                <button type="submit" id="btn-signup" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-600 active:scale-[0.98] transition shadow-lg shadow-slate-900/20 text-base flex items-center justify-center gap-2 mt-6">
+                    Complete Registration
+                </button>
+            </form>
+
+            <div class="mt-6 text-center pb-2">
+                <p class="text-xs text-slate-400">Already have an account? <a href="login.html" class="text-indigo-600 font-bold hover:underline">Log in</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+        
+        let supabaseClient = null;
+        try { if(window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
+
+        const MOCK_TAKEN_USERNAMES = ['admin', 'manager', 'kozeyy'];
+
+        const passwordInput = document.getElementById('password');
+        const rules = {
+            length: { regex: /.{8,}/, element: document.getElementById('rule-length') },
+            upper: { regex: /[A-Z]/, element: document.getElementById('rule-upper') },
+            lower: { regex: /[a-z]/, element: document.getElementById('rule-lower') },
+            number: { regex: /[0-9]/, element: document.getElementById('rule-number') },
+            special: { regex: /[!@#$%^&*(),.?":{}|<>]/, element: document.getElementById('rule-special') }
+        };
+
+        function checkPasswordStrength() {
+            const val = passwordInput.value;
+            let allValid = true;
+
+            for (const key in rules) {
+                const rule = rules[key];
+                const isValid = rule.regex.test(val);
+                
+                if (isValid) {
+                    rule.element.classList.remove('invalid-rule');
+                    rule.element.classList.add('valid-rule', 'font-semibold');
+                    rule.element.querySelector('i').className = "fa-solid fa-check text-[10px]";
+                } else {
+                    rule.element.classList.remove('valid-rule', 'font-semibold');
+                    rule.element.classList.add('invalid-rule');
+                    rule.element.querySelector('i').className = "fa-solid fa-circle text-[6px]";
+                    allValid = false;
+                }
+            }
+            return allValid;
+        }
+
+        function toggleRole(radio) {
+            const isOwner = radio.value === 'owner';
+            document.getElementById('role-owner').className = isOwner ? 'role-selected border-2 rounded-xl p-3 text-center transition' : 'role-default border-2 rounded-xl p-3 text-center transition';
+            document.getElementById('role-tenant').className = !isOwner ? 'role-selected border-2 rounded-xl p-3 text-center transition' : 'role-default border-2 rounded-xl p-3 text-center transition';
+        }
+
+        function showError(msg) {
+            const banner = document.getElementById('error-banner');
+            const text = document.getElementById('error-text');
+            text.innerText = msg;
+            banner.classList.remove('hidden');
+            banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function hideError() {
+            document.getElementById('error-banner').classList.add('hidden');
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            hideError();
+            
+            const btn = document.getElementById('btn-signup');
+            const originalText = btn.innerHTML;
+
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const fname = document.getElementById('fname').value.trim();
+            const lname = document.getElementById('lname').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            
+            const street = document.getElementById('addr-street').value.trim();
+            const city = document.getElementById('addr-city').value.trim();
+            const state = document.getElementById('addr-state').value.trim();
+            const zip = document.getElementById('addr-zip').value.trim();
+
+            if(!username || !email || !password || !confirmPassword || !fname || !lname || !phone || !street || !city || !state || !zip) {
+                return showError("Please complete all required fields.");
+            }
+            if(username.length < 3) return showError("Username must be at least 3 characters.");
+            if(!checkPasswordStrength()) return showError("Password does not meet the complexity requirements.");
+            if(password !== confirmPassword) return showError("Passwords do not match.");
+
+            const phoneDigits = phone.replace(/\D/g, '');
+            const phoneRegex = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/im;
+            if(phoneDigits.length < 10 || !phoneRegex.test(phone)) return showError("Please enter a valid phone number (digits only).");
+
+            const zipRegex = /^\d{5}(-\d{4})?$/;
+            if(!zipRegex.test(zip)) return showError("Please enter a valid 5-digit Zip Code.");
+
+            if(MOCK_TAKEN_USERNAMES.includes(username.toLowerCase())) return showError("Username taken.");
+
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Creating...`;
+            btn.disabled = true;
+
+            const fullAddress = `${street}, ${city} ${state} ${zip}`;
+            const fullName = `${fname} ${lname}`;
+
+            try {
+                if(!supabaseClient) throw new Error("Database connection failed. Please refresh.");
+
+                // Check Duplicate Email in Real DB (Tenants)
+                if (role === 'tenant') {
+                    const { data: existingUser } = await supabaseClient.from('tenants').select('id').eq('email', email).single();
+                    if (existingUser) throw new Error("An account with this email already exists.");
+                }
+
+                const userProfile = {
+                    username: username,
+                    name: fullName,
+                    email: email,
+                    phone: phone,
+                    role: role,
+                    address: fullAddress,
+                    initials: (fname[0] + lname[0]).toUpperCase()
+                };
+
+                if (role === 'tenant') {
+                    // CORRECTED INSERT TO MATCH SQL SCHEMA
+                    const { data, error } = await supabaseClient.from('tenants').insert([{ 
+                        name: fullName, 
+                        email: email, 
+                        phone: phone, 
+                        addr: street,        // Matches SQL 'addr'
+                        city: city,          // Matches SQL 'city'
+                        state: state,        // Matches SQL 'state'
+                        zip: zip,            // Matches SQL 'zip'
+                        rent: 0,             // Matches SQL 'rent'
+                        status: 'Active' 
+                    }]).select().single();
+                    
+                    if (error) throw error;
+                    
+                    localStorage.setItem('kozeyy_user_id', data.id);
+                    localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
+                    localStorage.setItem('kozeyy_role', 'tenant');
+                    window.location.href = 'tenant.html';
+
+                } else {
+                    // Simulate Owner Signup
+                    await new Promise(r => setTimeout(r, 1000));
+                    localStorage.setItem('kozeyy_user_id', '1');
+                    localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
+                    localStorage.setItem('kozeyy_role', 'owner');
+                    window.location.href = 'owner.html';
+                }
+
+            } catch (err) {
+                console.error(err);
+                showError(err.message || "Unknown error occurred.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

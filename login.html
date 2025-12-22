@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In | Kozeyy</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .bg-image {
+            background-image: url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+        .hidden-section { display: none !important; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="bg-image min-h-screen flex items-center justify-center p-4 relative">
+
+    <!-- Soft Overlay for readability -->
+    <div class="absolute inset-0 bg-indigo-950/40 backdrop-blur-[2px]"></div>
+
+    <!-- Main Card -->
+    <div class="glass-panel w-full max-w-[400px] rounded-3xl shadow-2xl relative z-10 overflow-hidden min-h-[420px]">
+        
+        <!-- Decorative Top Bar -->
+        <div class="h-2 w-full bg-gradient-to-r from-blue-500 to-indigo-600"></div>
+
+        <div class="p-8 md:p-10">
+            
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center gap-2 mb-4 bg-white/50 p-2 pr-4 rounded-full border border-slate-100 shadow-sm">
+                    <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center">
+                        <svg width="16" height="16" viewBox="0 0 40 40" fill="none">
+                            <rect x="6" y="6" width="10" height="28" rx="2" fill="currentColor" />
+                            <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="currentColor" fill-opacity="0.8" />
+                            <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="currentColor" fill-opacity="0.9" />
+                        </svg>
+                    </div>
+                    <span class="text-xl font-bold text-slate-800 brand-font tracking-tight">Kozeyy</span>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800 brand-font" id="view-title">Welcome Home</h2>
+                <p class="text-sm text-slate-500 mt-2" id="view-subtitle">Sign in to manage your property</p>
+            </div>
+
+            <!-- VIEW 1: LOGIN FORM -->
+            <div id="view-login" class="fade-in">
+                
+                <!-- Error Message Container (Hidden by default) -->
+                <div id="login-error" class="hidden-section mb-5 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
+                    <i class="fas fa-exclamation-circle text-rose-500 mt-0.5 text-sm"></i>
+                    <div>
+                        <p class="text-xs font-bold text-rose-800" id="error-title">Login Failed</p>
+                        <p class="text-xs text-rose-600 leading-snug" id="error-text">Incorrect email or password.</p>
+                    </div>
+                </div>
+
+                <form onsubmit="handleLogin(event)" class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Email Address</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-3.5 text-slate-400"><i class="fas fa-envelope"></i></span>
+                            <input type="email" id="email" oninput="hideError()" class="w-full bg-slate-50 border border-slate-200 p-3 pl-11 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition font-medium text-slate-700 placeholder:text-slate-300" placeholder="you@example.com" required>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5 ml-1">
+                            <label class="block text-xs font-bold text-slate-500 uppercase">Password</label>
+                            <button type="button" onclick="switchView('forgot')" class="text-[10px] font-bold text-indigo-600 hover:underline cursor-pointer">Forgot?</button>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute left-4 top-3.5 text-slate-400"><i class="fas fa-lock"></i></span>
+                            <input type="password" id="password" oninput="hideError()" class="w-full bg-slate-50 border border-slate-200 p-3 pl-11 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition font-medium text-slate-700 placeholder:text-slate-300" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-login" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-600 active:scale-[0.98] transition shadow-lg shadow-indigo-900/10 text-base flex items-center justify-center gap-2 mt-4">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+
+            <!-- VIEW 2: FORGOT PASSWORD -->
+            <div id="view-forgot" class="hidden-section fade-in">
+                <!-- Success Message Container -->
+                <div id="forgot-success" class="hidden-section mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                    <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <p class="text-sm font-bold text-emerald-800">Check your email</p>
+                    <p class="text-xs text-emerald-600 mt-1">We've sent a password reset link.</p>
+                </div>
+
+                <form id="form-forgot" onsubmit="handleForgot(event)" class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Account Email</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-3.5 text-slate-400"><i class="fas fa-envelope"></i></span>
+                            <input type="email" id="forgot-email" class="w-full bg-slate-50 border border-slate-200 p-3 pl-11 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition font-medium text-slate-700 placeholder:text-slate-300" placeholder="Enter your email" required>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="btn-forgot" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 active:scale-[0.98] transition shadow-lg shadow-indigo-600/20 text-base">
+                        Send Reset Link
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center">
+                    <button type="button" onclick="switchView('login')" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center justify-center gap-2 mx-auto">
+                        <i class="fas fa-arrow-left"></i> Back to Login
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
+        
+        let supabaseClient = null;
+        try {
+            if(window.supabase) {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            }
+        } catch(e) { console.error("Error initializing Supabase:", e); }
+
+        // --- STATE ---
+        let failedAttempts = 0; // Track incorrect logins
+
+        // --- UI UTILITIES ---
+        function showError(title, msg, isActionable = false) {
+            const errDiv = document.getElementById('login-error');
+            const errTitle = document.getElementById('error-title');
+            const errText = document.getElementById('error-text');
+            
+            errTitle.innerText = title;
+            
+            if(isActionable) {
+                // If 3+ failures, inject the link
+                errText.innerHTML = `${msg} <button onclick="switchView('forgot')" class="underline font-bold hover:text-rose-800 ml-1">Reset Password?</button>`;
+            } else {
+                errText.innerText = msg;
+            }
+
+            errDiv.classList.remove('hidden-section');
+            
+            // Shake animation
+            errDiv.animate([
+                { transform: 'translateX(0)' },
+                { transform: 'translateX(-4px)' },
+                { transform: 'translateX(4px)' },
+                { transform: 'translateX(0)' }
+            ], { duration: 200 });
+        }
+
+        function hideError() {
+            document.getElementById('login-error').classList.add('hidden-section');
+        }
+
+        function switchView(view) {
+            hideError(); 
+            // Reset attempts when switching manually to Forgot Password, 
+            // but usually we keep it to prevent brute force. For UI purposes, we just hide error.
+            document.getElementById('forgot-success').classList.add('hidden-section');
+            document.getElementById('form-forgot').classList.remove('hidden-section'); 
+
+            if(view === 'forgot') {
+                document.getElementById('view-login').classList.add('hidden-section');
+                document.getElementById('view-forgot').classList.remove('hidden-section');
+                document.getElementById('view-title').innerText = "Reset Password";
+                document.getElementById('view-subtitle').innerText = "We'll send you a recovery link";
+            } else {
+                document.getElementById('view-forgot').classList.add('hidden-section');
+                document.getElementById('view-login').classList.remove('hidden-section');
+                document.getElementById('view-title').innerText = "Welcome Home";
+                document.getElementById('view-subtitle').innerText = "Sign in to manage your property";
+            }
+        }
+
+        // --- AUTH LOGIC ---
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login');
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const password = document.getElementById('password').value.trim();
+
+            hideError(); 
+
+            // UI Loading State
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Checking...`;
+            btn.disabled = true;
+            btn.classList.add('opacity-75');
+
+            try {
+                // 1. CHECK FOR ADMIN (OWNER)
+                if(email === 'admin@kozeyy.com') {
+                    if(password === 'admin') {
+                        await new Promise(r => setTimeout(r, 800)); // Fake delay
+                        localStorage.setItem('kozeyy_role', 'owner');
+                        localStorage.setItem('kozeyy_user_id', '1');
+                        window.location.href = 'owner.html';
+                        return;
+                    } else {
+                        throw new Error("Incorrect password.");
+                    }
+                }
+
+                // 2. CHECK FOR TENANT (DATABASE LOOKUP)
+                if(!supabaseClient) throw new Error("Database connection failed.");
+
+                const { data: tenant, error } = await supabaseClient
+                    .from('tenants')
+                    .select('*')
+                    .ilike('email', email)
+                    .single();
+
+                if (error || !tenant) {
+                    throw new Error("Incorrect email or password.");
+                }
+
+                // Success
+                localStorage.setItem('kozeyy_role', 'tenant');
+                localStorage.setItem('kozeyy_user_id', tenant.id);
+                window.location.href = 'tenant.html';
+
+            } catch (err) {
+                failedAttempts++; // Increment failure counter
+                
+                // --- FAILURE LOGIC ---
+                if (failedAttempts >= 3) {
+                    // Show "Did you forget?" message with link
+                    showError("Having trouble?", "Did you forget your password?", true);
+                } else {
+                    // Show standard error
+                    showError("Login Failed", "Incorrect email or password.", false);
+                }
+
+            } finally {
+                // Reset Button
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                btn.classList.remove('opacity-75');
+            }
+        }
+
+        // --- PASSWORD RECOVERY LOGIC ---
+        async function handleForgot(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-forgot');
+            
+            // Reset state if they recover password
+            failedAttempts = 0;
+
+            // UI Loading
+            const originalText = btn.innerText;
+            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Sending...`;
+            btn.disabled = true;
+
+            // Simulate API Call
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                // Show Success State
+                document.getElementById('form-forgot').classList.add('hidden-section');
+                document.getElementById('forgot-success').classList.remove('hidden-section');
+            }, 1500);
+        }
+    </script>
+</body>
+</html>
