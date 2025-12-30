@@ -715,7 +715,7 @@
             }
         }
 
-        async function openStripePortal() {
+       async function openStripePortal() {
             toggleModal('processingModal');
             try {
                 const response = await fetch(FUNCTION_URL, {
@@ -726,12 +726,17 @@
                     },
                     body: JSON.stringify({ action: 'create-portal-session', tenantId: USER_ID })
                 });
+                
                 const data = await response.json();
+                
+                // --- NEW: Check for backend errors specifically ---
+                if (data.error) throw new Error(data.error);
+
                 if(data.url) window.location.href = data.url;
-                else throw new Error("Failed to create portal session");
+                else throw new Error("No URL returned (Unknown Error)");
             } catch(err) {
                 toggleModal('processingModal');
-                alert("Error: " + err.message);
+                alert("Portal Error: " + err.message); // <--- Now you will see the real reason
             }
         }
         
@@ -787,3 +792,4 @@
     </script>
 </body>
 </html>
+
