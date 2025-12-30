@@ -136,10 +136,11 @@
                     <p class="text-slate-500 text-sm mb-6" id="payment-due-date">No upcoming payments</p>
                     <button onclick="switchTab('payments')" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-95 transform duration-100 flex items-center justify-center gap-2">
                         <span>Make a Payment</span>
+                        <i class="fas fa-arrow-right text-xs"></i>
                     </button>
                 </div>
 
-                <div id="credit-banner" class="bg-gradient-to-r from-slate-800 to-indigo-900 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg mb-6 gap-4">
+                <div id="credit-banner" class="hidden-section bg-gradient-to-r from-slate-800 to-indigo-900 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg mb-6 gap-4">
                     <div>
                         <div class="flex items-center gap-2 mb-2"><i class="fas fa-chart-line text-indigo-300"></i><span class="text-xs font-bold uppercase tracking-wide opacity-80">Credit Builder</span></div>
                         <h3 class="font-bold text-lg brand-font">Boost Your Score</h3>
@@ -283,7 +284,7 @@
                         <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in"><input type="checkbox" name="toggle" id="toggle-credit" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300" onclick="handleCreditToggle()"/><label for="toggle-credit" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div>
                     </div>
                 </div>
-                <div class="mt-8 text-center"><a href="login.html" class="text-red-500 text-sm font-medium hover:underline">Sign Out</a><p class="text-xs text-slate-300 mt-4">Version 3.4.1 (Supabase Edge)</p></div>
+                <div class="mt-8 text-center"><a href="login.html" class="text-red-500 text-sm font-medium hover:underline">Sign Out</a><p class="text-xs text-slate-300 mt-4">Version 3.6.0 (Calculated Balance)</p></div>
             </div>
         </div>
     </main>
@@ -379,8 +380,6 @@
 
     <script>
         // --- CONFIG ---
-        // ** IMPORTANT: REPLACE WITH YOUR SUPABASE FUNCTION URL **
-        // Example: https://xxxxxxxx.supabase.co/functions/v1/stripe-pay
         const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
         
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
@@ -450,10 +449,22 @@
                  document.getElementById('insurance-missing').classList.remove('hidden-section');
                  document.getElementById('insurance-verified').classList.add('hidden-section');
             }
+            
+            // --- UPDATED CREDIT LOGIC IN RENDER ---
             document.getElementById('toggle-credit').checked = user.credit_reporting;
+            
+            if(user.credit_reporting) {
+                document.getElementById('credit-banner').classList.add('hidden-section');
+            } else {
+                document.getElementById('credit-banner').classList.remove('hidden-section');
+            }
 
-            const unpaid = invoices.filter(i => i.status === 'Unpaid' || i.status === 'Partial');
-            const totalDue = unpaid.reduce((sum, i) => sum + i.balance, 0);
+            // --- CALCULATE UNPAID BALANCE (TOTAL - AMOUNT_PAID) ---
+            const unpaid = invoices.filter(i => {
+                const bal = i.total - (i.amount_paid || 0);
+                return bal > 0 && i.status !== 'Paid';
+            });
+            const totalDue = unpaid.reduce((sum, i) => sum + (i.total - (i.amount_paid || 0)), 0);
 
             document.getElementById('total-balance').innerText = `$${totalDue.toLocaleString()}`;
             const badge = document.getElementById('payment-status-badge');
@@ -465,6 +476,8 @@
                 
                 uCont.innerHTML = '';
                 unpaid.forEach(i => { 
+                    const currentBalance = i.total - (i.amount_paid || 0);
+                    
                     let itemsHtml = `<ul class="text-xs text-slate-500 mt-2 space-y-1">`; 
                     const items = i.items || [{desc: 'Balance', amount: i.total}]; 
                     items.slice(0, 2).forEach(item => { itemsHtml += `<li class="flex justify-between w-full max-w-xs border-b border-dashed border-slate-200 pb-1"><span>${item.desc}</span> <span>$${item.amount}</span></li>`; });
@@ -482,8 +495,8 @@
                             <p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p>
                         </div>
                         <div class="flex items-center justify-between w-full md:w-auto gap-4">
-                            <div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${i.balance.toLocaleString()}</span></div>
-                            <button onclick="initStripePayment(${i.id}, ${i.balance})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2">
+                            <div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${currentBalance.toLocaleString()}</span></div>
+                            <button onclick="initStripePayment(${i.id}, ${currentBalance})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2">
                                 <span>Pay Now</span>
                                 <i class="fas fa-lock text-[10px] opacity-70"></i>
                             </button>
@@ -512,8 +525,8 @@
                 hBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">No payment history</td></tr>';
             } else {
                 historyItems.forEach(i => { 
-                    const prev = i.snapshot ? (i.snapshot.prevBalance || 0) : 0;
-                    const totalAmt = prev + i.total;
+                    // History just shows Total paid
+                    const totalAmt = i.total; 
                     hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.id}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice(${i.id})" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
                     hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice(${i.id})"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.id}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
                 });
@@ -540,6 +553,39 @@
             }
         }
 
+        // --- NEW: HANDLE URL RETURNS (UPDATE DB ON SUCCESS) ---
+        async function checkReturnParams() {
+            const params = new URLSearchParams(window.location.search);
+            
+            // 1. CREDIT SUBSCRIPTION SUCCESS
+            if (params.get('sub') === 'active') {
+                toggleModal('processingModal'); // Briefly show loading
+                try {
+                    // Update Database
+                    await supabaseClient.from('tenants').update({ credit_reporting: true }).eq('id', USER_ID);
+                    
+                    // Update Local State immediately for speed
+                    if (globalData.user) globalData.user.credit_reporting = true;
+                    
+                    alert("Credit Reporting Activated Successfully! 🚀\nYour on-time payments will now be reported.");
+                    
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Refresh View
+                    render();
+                } catch(e) { console.error(e); }
+                toggleModal('processingModal'); // Hide loading
+            }
+            
+            // 2. RENT PAYMENT SUCCESS
+            if (params.get('success') === 'true') {
+                alert("Payment Successful! Thank you.");
+                window.history.replaceState({}, document.title, window.location.pathname);
+                render();
+            }
+        }
+
         function viewInvoice(id) {
             const inv = globalData.invoices.find(i => i.id === id);
             if(!inv) return;
@@ -547,14 +593,14 @@
             document.getElementById('inv-id').innerText = inv.id;
             document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
             
-            const prevBal = inv.snapshot ? (inv.snapshot.prevBalance || 0) : 0;
-            const currentTotal = inv.total;
+            const prevBal = 0; // Using 0 for simplicity if snapshot missing
+            const currentBalance = inv.total - (inv.amount_paid || 0);
             const stripeFee = 2.99; 
-            const totalDue = prevBal + currentTotal; 
-
+            
+            // Update Modal UI with calculated balance
             document.getElementById('inv-prev-bal').innerText = `$${prevBal.toLocaleString()}`;
-            document.getElementById('inv-prev-pay').innerText = `$0.00`;
-            document.getElementById('inv-fwd-bal').innerText = `$${prevBal.toLocaleString()}`;
+            document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid || 0).toLocaleString()}`;
+            document.getElementById('inv-fwd-bal').innerText = `$${currentBalance.toLocaleString()}`;
             
             const tbody = document.getElementById('inv-items-body');
             tbody.innerHTML = '';
@@ -573,16 +619,16 @@
             const feeSection = document.getElementById('inv-fees-section');
             const totalEl = document.getElementById('inv-total');
             
-            if(inv.status === 'Paid') {
+            if(currentBalance <= 0 || inv.status === 'Paid') {
                 feeSection.classList.add('hidden-section');
-                totalEl.innerText = `$${(totalDue).toLocaleString()}`;
-                document.getElementById('inv-pay-btn-container').innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date}</div>`;
+                totalEl.innerText = `$0.00`;
+                document.getElementById('inv-pay-btn-container').innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date || 'Unknown'}</div>`;
             } else {
                 feeSection.classList.remove('hidden-section');
-                totalEl.innerText = `$${(totalDue + stripeFee).toLocaleString()}`;
+                totalEl.innerText = `$${(currentBalance + stripeFee).toLocaleString()}`;
                 document.getElementById('inv-stripe-fee').innerText = `$${stripeFee.toFixed(2)}`;
                 document.getElementById('inv-pay-btn-container').innerHTML = `
-                <button onclick="initStripePayment(${inv.id}, ${totalDue})" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold mt-4 hover:bg-indigo-700 shadow-lg flex items-center justify-center gap-2"><i class="fas fa-lock"></i> Pay with Stripe</button>
+                <button onclick="initStripePayment(${inv.id}, ${currentBalance})" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold mt-4 hover:bg-indigo-700 shadow-lg flex items-center justify-center gap-2"><i class="fas fa-lock"></i> Pay with Stripe</button>
                 <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold mt-3 hover:text-slate-600">Cancel</button>`;
             }
             toggleModal('invoiceModal');
@@ -593,10 +639,6 @@
         async function initStripePayment(invoiceId, baseAmount) {
             toggleModal('invoiceModal');
             toggleModal('processingModal');
-
-            // MOCK LANDLORD ACCOUNT ID for testing. 
-            // In Production, backend should lookup invoice -> landlord -> stripe_account_id
-            const mockConnectedAccountId = "acct_123456789"; 
 
             try {
                 const response = await fetch(FUNCTION_URL, {
@@ -609,8 +651,7 @@
                         action: 'create-checkout-session',
                         invoiceId: invoiceId,
                         amount: baseAmount,
-                        tenantId: USER_ID,
-                        landlordAccountId: mockConnectedAccountId 
+                        tenantId: USER_ID
                     })
                 });
 
@@ -626,43 +667,50 @@
             }
         }
 
-        async function handleCreditToggle() {
+       async function handleCreditToggle() {
             const checkBox = document.getElementById('toggle-credit');
-            const isEnabling = checkBox.checked;
-            checkBox.checked = !isEnabling; // Revert UI until success
-
-            const action = isEnabling ? 'subscribe' : 'cancel';
-            const msg = isEnabling 
-                ? "Activate Credit Reporting ($10/mo)?\nProceed to secure payment?" 
-                : "Cancel Credit Reporting subscription?";
-
-            if(confirm(msg)) {
-                toggleModal('processingModal');
-                try {
-                    const response = await fetch(FUNCTION_URL, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${SUPABASE_KEY}` 
-                        },
-                        body: JSON.stringify({ action: 'subscribe', tenantId: USER_ID })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if(action === 'subscribe') {
-                         if(data.url) window.location.href = data.url; // Redirect to Checkout
-                         else throw new Error("No URL returned");
-                    } else {
-                         // Cancelation handled immediately
-                         toggleModal('processingModal');
-                         alert("Subscription Canceled.");
-                         checkBox.checked = false;
-                         await supabaseClient.from('tenants').update({ credit_reporting: false }).eq('id', USER_ID);
-                    }
-                } catch(err) {
+            
+            // CASE 1: TURNING ON (Subscribe)
+            if (checkBox.checked) {
+                const msg = "Activate Credit Reporting ($10/mo)?\nProceed to secure payment?";
+                if(confirm(msg)) {
                     toggleModal('processingModal');
-                    alert("Error: " + err.message);
+                    try {
+                        const response = await fetch(FUNCTION_URL, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${SUPABASE_KEY}` 
+                            },
+                            body: JSON.stringify({ action: 'subscribe', tenantId: USER_ID })
+                        });
+                        
+                        const data = await response.json();
+
+                        // --- NEW: CATCH BACKEND ERRORS SPECIFICALLY ---
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        
+                        if(data.url) window.location.href = data.url; 
+                        else throw new Error("No URL returned from Stripe");
+
+                    } catch(err) {
+                        toggleModal('processingModal');
+                        alert("Error: " + err.message); // <--- THIS WILL NOW SHOW THE REAL REASON
+                        checkBox.checked = false; // Reset UI
+                    }
+                } else {
+                    checkBox.checked = false; 
+                }
+            } 
+            
+            // CASE 2: TURNING OFF (Cancel)
+            else {
+                checkBox.checked = true; 
+                const msg = "To prevent accidental double-billing, please cancel directly in the Billing Portal.\n\nYour subscription will remain active until the end of the current billing period.";
+                if(confirm(msg)) {
+                    openStripePortal();
                 }
             }
         }
@@ -731,9 +779,11 @@
 
         function toggleModal(id) { const el = document.getElementById(id); if(el) el.classList.toggle('hidden-section'); }
 
+        // Start App
         render();
+        // Check for returns from Stripe immediately
+        checkReturnParams();
+
     </script>
 </body>
 </html>
-
-
