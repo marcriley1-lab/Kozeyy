@@ -4,15 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Owner Dashboard | Kozeyy</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style> 
         .rotate-180 { transform: rotate(180deg); }
@@ -32,11 +27,9 @@
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800 bg-slate-50">
 
-    <!-- MOBILE OVERLAY -->
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 z-40 hidden transition-opacity backdrop-blur-sm md:hidden"></div>
 
-   <!-- SIDEBAR -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-indigo-950 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static shadow-xl">
+   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-indigo-950 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static shadow-xl">
         <div class="h-20 flex items-center justify-between px-6 border-b border-indigo-900 bg-indigo-950">
             <div class="flex items-center gap-3">
                 <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -91,7 +84,6 @@
         </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col overflow-hidden relative w-full">
         <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shadow-sm z-10 sticky top-0">
             <div class="flex items-center gap-3">
@@ -117,25 +109,20 @@
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 scroll-smooth pb-32" id="app-content">
             
-            <!-- 1. DASHBOARD -->
             <div id="view-dashboard" class="view-section fade-in">
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
-                    <!-- Revenue -->
                     <div class="bg-gradient-to-br from-emerald-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-emerald-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-emerald-100 rounded-full opacity-50 blur-xl"></div>
                         <div class="relative z-10"><div class="w-8 h-8 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-dollar-sign"></i></div><p class="text-emerald-800 text-[11px] font-bold uppercase tracking-wider brand-font">Revenue (This Month)</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-revenue">$0.00</h3></div>
                     </div>
-                    <!-- Overdue -->
                     <div class="bg-gradient-to-br from-rose-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-rose-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-rose-100 rounded-full opacity-50 blur-xl"></div>
                         <div class="relative z-10"><div class="w-8 h-8 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-exclamation"></i></div><p class="text-rose-800 text-[11px] font-bold uppercase tracking-wider brand-font">Overdue</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-overdue">$0.00</h3></div>
                     </div>
-                    <!-- Occupancy -->
                     <div class="bg-gradient-to-br from-indigo-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-indigo-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-indigo-100 rounded-full opacity-50 blur-xl"></div>
                         <div class="relative z-10"><div class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-home"></i></div><p class="text-indigo-800 text-[11px] font-bold uppercase tracking-wider brand-font">Occupancy</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-occupancy">0%</h3></div>
                     </div>
-                    <!-- REPAIRS -->
                     <div class="bg-gradient-to-br from-amber-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-amber-100 flex flex-col justify-between h-36 relative overflow-hidden">
                         <div class="absolute -right-3 -top-3 w-16 h-16 bg-amber-100 rounded-full opacity-50 blur-xl"></div>
                         <div class="relative z-10"><div class="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-xs mb-2"><i class="fas fa-tools"></i></div><p class="text-amber-800 text-[11px] font-bold uppercase tracking-wider brand-font">Repairs</p><h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 brand-font" id="dash-maintenance">0</h3></div>
@@ -160,14 +147,24 @@
                 </div>
             </div>
 
-            <!-- 2. TENANTS -->
             <div id="view-tenants" class="view-section hidden-section fade-in">
-                <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Directory</h3><button onclick="openModal('modal-tenant')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-700 brand-font">+ Add</button></div>
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-slate-800 brand-font">Directory</h3>
+                    <div class="flex gap-2">
+                        <select id="filter-tenant-status" onchange="renderAll()" class="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white font-medium text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="Active">Active Tenants</option>
+                            <option value="Archived">Archived</option>
+                            <option value="all">All Records</option>
+                        </select>
+                        <button onclick="openModal('modal-tenant')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-700 brand-font">+ Add</button>
+                    </div>
+                </div>
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-x-auto w-full">
                     <table class="w-full text-left whitespace-nowrap">
                         <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font">
                             <tr>
                                 <th class="p-5">Tenant</th>
+                                <th class="p-5 hidden md:table-cell">Address</th>
                                 <th class="p-5 hidden md:table-cell">Unit</th>
                                 <th class="p-5 hidden md:table-cell">Rent</th>
                                 <th class="p-5">Status</th>
@@ -179,13 +176,11 @@
                 </div>
             </div>
 
-            <!-- 3. LISTINGS -->
             <div id="view-listings" class="view-section hidden-section fade-in">
                 <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Listings</h3><button onclick="openModal('modal-listing')" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow hover:bg-indigo-700 brand-font">+ Post</button></div>
                 <div id="grid-listings" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
             </div>
 
-            <!-- 4. SCREENING -->
             <div id="view-screening" class="view-section hidden-section fade-in">
                 <h3 class="text-xl font-bold text-slate-800 brand-font mb-4">Applicant Queue</h3>
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 w-full overflow-x-auto">
@@ -202,7 +197,6 @@
                 </div>
             </div>
 
-            <!-- 5. MESSAGES -->
             <div id="view-messages" class="view-section hidden-section fade-in h-[calc(100dvh-90px)]">
                 <div class="flex h-full bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden relative">
                     <div id="msg-list-panel" class="w-full md:w-1/3 border-r border-slate-200 bg-slate-50 flex flex-col">
@@ -223,7 +217,6 @@
                 </div>
             </div>
 
-            <!-- 6. MAINTENANCE -->
             <div id="view-maintenance" class="view-section hidden-section fade-in">
                 <h3 class="text-xl font-bold text-slate-800 mb-4 brand-font">Maintenance</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -232,7 +225,6 @@
                 </div>
             </div>
 
-            <!-- 7. PAYMENT RECORDS -->
             <div id="view-financials" class="view-section hidden-section fade-in">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-slate-800 brand-font">Records</h3>
@@ -270,7 +262,6 @@
                 </div>
             </div>
 
-            <!-- 8. EXPENSES -->
             <div id="view-expenses" class="view-section hidden-section fade-in">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h3 class="text-xl font-bold text-slate-800 brand-font">Expenses</h3>
@@ -289,7 +280,6 @@
                 </div>
             </div>
 
-            <!-- 9. REPORTS -->
             <div id="view-reports" class="view-section hidden-section fade-in">
                 <h3 class="text-xl font-bold text-slate-800 brand-font mb-6">Reports</h3>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -308,13 +298,11 @@
                 </div>
             </div>
 
-            <!-- 10. SETTINGS -->
             <div id="view-settings" class="view-section hidden-section fade-in">
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
                     <form onsubmit="act_saveSettings(event)" class="space-y-6">
                         
-                        <!-- STRIPE CONNECT SECTION -->
                         <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
                             <h4 class="font-bold text-indigo-900 mb-2 brand-font flex items-center gap-2"><i class="fab fa-stripe text-xl"></i> Payments Integration</h4>
                             <p class="text-xs text-indigo-700 mb-4">Enter your Stripe Connected Account ID to receive payments automatically from tenants.</p>
@@ -351,7 +339,6 @@
         </div>
     </main>
 
-    <!-- TENANT MODAL -->
     <div id="modal-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
             <button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
@@ -363,7 +350,6 @@
                     <input id="t-phone" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Phone">
                 </div>
                 <input id="t-email" type="email" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Email Address" required>
-                <!-- ADDED ADDRESS INPUTS -->
                 <input id="t-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address">
                 <div class="grid grid-cols-3 gap-4">
                     <input id="t-city" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="City">
@@ -388,7 +374,6 @@
         </div>
     </div>
 
-    <!-- VIEW TENANT MODAL -->
     <div id="modal-view-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
             <button onclick="closeModal('modal-view-tenant')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
@@ -424,7 +409,6 @@
         </div>
     </div>
 
-    <!-- LISTING MODAL -->
     <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
@@ -441,7 +425,6 @@
                 </div>
                 <textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24" placeholder="Description"></textarea>
                 <input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities (comma separated)">
-                <!-- Image URL Input -->
                 <input id="l-img" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Image URL (e.g. Unsplash link)">
                 <input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
                 <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-indigo-700 transition" id="btn-save-listing">Post Listing</button>
@@ -449,13 +432,11 @@
         </div>
     </div>
 
-    <!-- INVOICE MODAL -->
     <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
             <h3 class="text-xl font-bold mb-6 brand-font" id="inv-modal-title">Create Invoice</h3>
             
-            <!-- STEP 1: INPUTS -->
             <div id="inv-step-input">
                 <form onsubmit="event.preventDefault(); logic_generatePreview();" class="space-y-4">
                     <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
@@ -465,11 +446,9 @@
                         <button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-lg font-bold text-sm text-slate-500">Variable</button>
                     </div>
                     
-                    <!-- Items Area -->
                     <div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto"></div>
                     <button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2 rounded-xl text-sm">+ Add Item</button>
                     
-                    <!-- Attach Document -->
                     <div class="mt-4">
                         <label class="block text-sm font-bold text-slate-700 mb-1 brand-font">Attach Document</label>
                         <div class="flex items-center gap-2">
@@ -480,13 +459,11 @@
                         </div>
                     </div>
 
-                    <!-- Date Selection -->
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">Send Invoice On</label>
                         <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
                     </div>
 
-                    <!-- Recurring Options (Visible only for Fixed) -->
                     <div id="inv-recurring-options" class="p-4 bg-slate-50 rounded-xl border border-slate-200 hidden-section">
                         <label class="flex items-center gap-2 mb-3 cursor-pointer">
                             <input type="checkbox" id="inv-is-recurring" class="w-4 h-4 text-emerald-600 rounded">
@@ -505,7 +482,6 @@
                 </form>
             </div>
 
-            <!-- STEP 2: PREVIEW -->
             <div id="inv-step-preview" class="hidden-section">
                 <div class="bg-white border border-slate-200 rounded-xl p-6 mb-6 paper-shadow relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
@@ -521,7 +497,6 @@
                     </div>
                     
                     <div class="space-y-4">
-                        <!-- Account Summary -->
                         <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                             <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Previous Balance</span><span id="prev-bal-amt">$0.00</span></div>
                             <div class="flex justify-between text-xs text-emerald-600 mb-1"><span>Payments Received</span><span id="prev-pay-amt">-$0.00</span></div>
@@ -529,18 +504,15 @@
                             <div class="flex justify-between text-xs font-bold text-slate-700"><span>Forward Balance</span><span id="prev-fwd-amt">$0.00</span></div>
                         </div>
 
-                        <!-- Current Charges -->
                         <table class="w-full text-sm text-left">
                             <thead class="text-xs text-slate-400 uppercase border-b"><tr><th class="py-2">Description</th><th class="py-2 text-right">Amount</th></tr></thead>
                             <tbody id="prev-items-body" class="text-slate-700"></tbody>
                         </table>
                         
-                        <!-- Attachment Indicator -->
                         <div id="prev-attachment" class="hidden-section mt-2 text-xs text-slate-500 flex items-center gap-2">
                              <i class="fas fa-paperclip text-indigo-500"></i> <span>Attachment Included</span>
                         </div>
                         
-                        <!-- Total -->
                         <div class="border-t-2 border-slate-800 pt-3 mt-4 flex justify-between items-center">
                             <span class="font-bold text-lg brand-font">Total Due</span>
                             <span class="font-bold text-2xl text-indigo-700 brand-font" id="prev-total-due">$0.00</span>
@@ -561,7 +533,6 @@
         </div>
     </div>
 
-    <!-- EXPENSE MODAL -->
     <div id="modal-expense" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
             <button onclick="closeModal('modal-expense')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
@@ -574,7 +545,6 @@
                 <select id="ex-cat" class="w-full border p-3 rounded-xl bg-slate-50"><option>Repairs</option><option>Utilities</option><option>Tax</option><option>Insurance</option><option>Other</option></select>
                 <input id="ex-amount" type="number" step="0.01" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amount" required>
                 
-                <!-- Receipt Upload -->
                 <div class="mt-2">
                     <label class="block text-xs font-bold text-slate-500 mb-1">Receipt</label>
                     <div class="flex items-center gap-2">
@@ -590,7 +560,6 @@
         </div>
     </div>
 
-    <!-- PAYMENT MODAL -->
     <div id="modal-pay" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm relative">
             <h3 class="text-xl font-bold mb-4 brand-font">Record Payment</h3>
@@ -605,10 +574,8 @@
         </div>
     </div>
     
-    <!-- MAINT DETAIL MODAL -->
     <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1 brand-font"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">None</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-50 brand-font">Close</button></div></div>
 
-    <!-- SCREENING DETAIL MODAL -->
     <div id="modal-screening-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeModal('modal-screening-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
@@ -616,10 +583,8 @@
             <h4 id="sd-name" class="text-lg text-slate-600 mb-6"></h4>
 
             <div class="space-y-4">
-                <!-- Status Banner -->
                 <div id="sd-banner" class="p-4 rounded-xl border font-bold text-center"></div>
 
-                <!-- Financials -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <p class="text-xs font-bold text-slate-400 uppercase mb-3">Financials</p>
                     <div class="grid grid-cols-2 gap-4">
@@ -629,7 +594,6 @@
                     <div class="mt-2 text-xs text-slate-500">Rent Coverage: <span id="sd-ratio" class="font-bold text-slate-800"></span>x</div>
                 </div>
 
-                <!-- Employment (NEW SECTION) -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <p class="text-xs font-bold text-slate-400 uppercase mb-3">Employment</p>
                     <div class="flex justify-between items-center mb-1">
@@ -642,7 +606,6 @@
                     </div>
                 </div>
 
-                <!-- Background -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
                     <p class="text-xs font-bold text-slate-400 uppercase mb-3">Background Check</p>
                     <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2">
@@ -655,14 +618,12 @@
                     </div>
                 </div>
                 
-                <!-- ACTIONS CONTAINER -->
                 <div id="sd-actions" class="grid grid-cols-3 gap-2 mt-4">
                     <button onclick="act_screenDecision('Approved')" class="bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow">Approve</button>
                     <button onclick="act_screenDecision('Conditional')" class="bg-amber-400 text-white py-3 rounded-xl font-bold text-sm shadow">Conditional</button>
                     <button onclick="act_screenDecision('Deny')" class="bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow">Deny</button>
                 </div>
 
-                <!-- NEW: EMAIL APPLICANT BUTTON -->
                 <div id="sd-email-option" class="hidden-section mt-4 pt-4 border-t border-slate-100">
                     <a id="btn-email-applicant" href="#" class="block w-full bg-blue-600 text-white text-center py-3 rounded-xl font-bold shadow hover:bg-blue-700 transition">
                         <i class="fas fa-envelope mr-2"></i> Email Decision to Applicant
@@ -691,16 +652,15 @@
         notifications: { messages: 0, maintenance: 0, screening: 0 }
     };
     
-    // State Tracking for Diffing (Prevent Flashing)
+    // Persistent View Tracking
+    let viewedMaintIds = new Set(JSON.parse(localStorage.getItem('kozeyy_viewed_maint') || '[]').map(String));
+    let viewedAppIds = new Set(JSON.parse(localStorage.getItem('kozeyy_viewed_apps') || '[]').map(String));
+    let locallyReadMsgIds = new Set(JSON.parse(localStorage.getItem('kozeyy_read_msgs') || '[]').map(String));
+    let activeTab = 'dashboard';
+
+    // State Tracking for Diffing
     let lastRenderedState = {
-        dashboard: "",
-        tenants: "",
-        listings: "",
-        maint: "",
-        msgs: "",
-        invoices: "",
-        expenses: "",
-        screening: ""
+        dashboard: "", tenants: "", listings: "", maint: "", msgs: "", invoices: "", expenses: "", screening: ""
     };
 
     // Helper Functions
@@ -711,29 +671,20 @@
     // UI State Variables
     let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
     let editTenantId = null, editListingId = null, editExpenseId = null, currentAppId = null;
-    let draftInvoice = null, expandedExpId = null;
+    let draftInvoice = null;
 
     // --- 1. INIT & POLLING ---
     async function initSystem() {
         try {
             if(!supabaseClient) throw new Error("Supabase library not loaded.");
-
             await fetchData();
             renderAll();
             
-            // Start Polling for Real-time Notifications (every 4 seconds)
-            setInterval(async () => {
-                await fetchData();
-                renderAll(); 
-            }, 4000);
-
-        } catch (err) {
-            console.error("Initialization failed:", err);
-            renderAll();
-        }
+            // Start Polling (every 4 seconds)
+            setInterval(async () => { await fetchData(); renderAll(); }, 4000);
+        } catch (err) { console.error("Initialization failed:", err); renderAll(); }
     }
 
-    // Centralized Data Fetching
     async function fetchData() {
         const [t, l, i, p, e, m, msg, s, a] = await Promise.all([
             supabaseClient.from('tenants').select('*'),
@@ -753,94 +704,130 @@
         state.payments = p.data || [];
         state.expenses = e.data || [];
         state.maint = m.data || [];
-        state.msgs = msg.data || [];
         state.settings = s.data || { screening: { minScore: 650 } };
         state.apps = a.data || [];
+        
+        const serverMsgs = msg.data || [];
+        serverMsgs.forEach(x => { if(locallyReadMsgIds.has(String(x.id))) x.read_at = new Date().toISOString(); });
+        state.msgs = serverMsgs;
 
-        // UPDATE NOTIFICATION COUNTS
         state.notifications.messages = state.msgs.filter(x => x.from === 'Tenant' && !x.read_at).length;
-        state.notifications.maintenance = state.maint.filter(x => x.status === 'Active').length;
-        state.notifications.screening = state.apps.filter(x => x.status === 'Pending').length;
+        state.notifications.maintenance = state.maint.filter(x => x.status === 'Active' && !viewedMaintIds.has(String(x.id))).length;
+        state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
     }
 
-    // --- 2. RENDER LOGIC WITH DIFFING ---
+    // --- 2. RENDER LOGIC ---
     function renderAll() {
-        // Badges update is cheap, do it always
         updateBadge('messages', state.notifications.messages); 
         updateBadge('maintenance', state.notifications.maintenance); 
         updateBadge('screening', state.notifications.screening);
 
-        // Dashboard Stats
         const stats = calculateGlobalStats();
         const activeMaint = state.maint.filter(m=>m.status==='Active').length;
-        // ... (calc other stats)
+        
+        // OCCUPANCY FIX: Calculate occupancy percentage
+        const totalUnits = state.tenants.filter(t => t.status !== 'Archived').length;
+        const occupiedUnits = state.tenants.filter(t => t.status === 'Active').length;
+        const occupancyPct = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
+
         setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
         setText('dash-maintenance', activeMaint); 
         setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
+        setText('dash-occupancy', `${occupancyPct}%`);
         
-        // Chart Update
         if(chartInstance) {
-            // Check if chart data actually changed to avoid redraw flicker? ChartJS handles animation well usually.
-            // Simplified: just update
             chartInstance.data.datasets[0].data = [stats.revenue, 0, stats.overdue];
             chartInstance.update();
         } else if(document.getElementById('revenueChart')) {
             initChart(stats);
         }
 
-        // --- TENANTS RENDER ---
+        // Tenants
         const tenantHash = JSON.stringify(state.tenants);
-        if(tenantHash !== lastRenderedState.tenants) {
+        // We include the filter state in the hash check to ensure re-render on filter change
+        const statusFilter = document.getElementById('filter-tenant-status') ? document.getElementById('filter-tenant-status').value : 'Active';
+        const combinedHash = tenantHash + statusFilter;
+
+        if(combinedHash !== lastRenderedState.tenants) {
             const tbody = document.getElementById('table-tenants'); 
             if(tbody) {
                 tbody.innerHTML = '';
                 state.tenants
-                    .filter(t => t.status !== 'Archived')
-                    .sort((a, b) => getLastName(a.name || '').localeCompare(getLastName(b.name || ''))) 
+                    .filter(t => statusFilter === 'all' ? true : t.status === statusFilter)
+                    .sort((a, b) => getLastName(a.name||'').localeCompare(getLastName(b.name||'')))
                     .forEach(t => { 
                         const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
-                        tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td><td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td><td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button><button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
+                        const moveOutBtn = t.status === 'Active' ? `<button onclick="act_moveOut(${t.id})" class="text-amber-500 hover:text-amber-700" title="Move Out"><i class="fas fa-box-open"></i></button>` : '';
+                        
+                        tbody.innerHTML += `
+                        <tr class="border-b border-slate-100">
+                            <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">
+                                ${t.name}<br>
+                                <span class="text-xs text-slate-400 font-normal">${t.email}</span>
+                                <div class="text-xs text-slate-500 mt-0.5">${t.phone || ''}</div>
+                            </td>
+                            <td class="p-5 text-sm hidden md:table-cell">${t.address || '-'}</td>
+                            <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
+                            <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent_amount || 0).toLocaleString()}</td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
+                            <td class="p-5 text-right">
+                                <div class="flex justify-end gap-3">
+                                    <button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button>
+                                    ${moveOutBtn}
+                                    <button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>`; 
                 });
             }
-            lastRenderedState.tenants = tenantHash;
+            lastRenderedState.tenants = combinedHash;
         }
 
-        // --- MAINTENANCE RENDER ---
-        // Sort by ID or Date to ensure consistent hash order
+        // Screening
+        const screeningHash = JSON.stringify(state.apps);
+        if(screeningHash !== lastRenderedState.screening) {
+            const tbody = document.getElementById('table-screening');
+            if(tbody) {
+                tbody.innerHTML = '';
+                state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
+                    const eval = evalApplicant(app);
+                    tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewApp(${app.id})">${app.name}<br><span class="text-xs text-slate-400 font-normal">Income: $${app.income}</span></td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td><td class="p-5 text-right"><button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm">Review</button></td></tr>`;
+                });
+            }
+            lastRenderedState.screening = screeningHash;
+        }
+
+        // Maintenance
         const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
         if(maintHash !== lastRenderedState.maint) {
             const activeList = document.getElementById('list-maint-active'); 
             const histList = document.getElementById('list-maint-history'); 
-            
             if(activeList && histList) {
-                activeList.innerHTML = ''; 
-                histList.innerHTML = '';
+                activeList.innerHTML = ''; histList.innerHTML = '';
                 
-                const activeMaintItems = state.maint.filter(m => m.status === 'Active').sort((a,b) => new Date(b.date) - new Date(a.date));
+                // Sort by created_at (preferred) or date
+                const activeMaintItems = state.maint.filter(m => m.status === 'Active').sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
                 const completedMaintItems = state.maint.filter(m => m.status === 'Completed').sort((a,b) => new Date(b.completed_date) - new Date(a.completed_date));
 
-                if (activeMaintItems.length === 0) { 
-                    activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">No active requests</div>`; 
-                } else { 
-                    activeMaintItems.forEach(m => { 
-                        const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown', unit: '?'}; 
-                        activeList.innerHTML += `<div class="p-4 flex justify-between items-start bg-white border-b border-slate-100 hover:bg-slate-50 transition"><div><div class="flex items-center gap-2 mb-1"><span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Unit ${t.unit}</span><span class="text-xs font-bold text-slate-700">${t.name}</span></div><p class="font-bold text-slate-800 text-sm">${m.issue}</p><p class="text-xs text-slate-400 mt-1"><i class="far fa-clock"></i> ${new Date(m.date).toLocaleDateString()}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition shadow-sm">Mark Done</button></div>`; 
-                    }); 
-                }
+                if (activeMaintItems.length === 0) activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">No active requests</div>`; 
+                else activeMaintItems.forEach(m => { 
+                    const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown', unit: '?'}; 
+                    const displayDate = m.created_at ? new Date(m.created_at).toLocaleDateString() : (m.date ? new Date(m.date).toLocaleDateString() : 'Just now');
+                    activeList.innerHTML += `<div class="p-4 flex justify-between items-start bg-white border-b border-slate-100 hover:bg-slate-50 transition"><div><div class="flex items-center gap-2 mb-1"><span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Unit ${t.unit}</span><span class="text-xs font-bold text-slate-700">${t.name}</span></div><p class="font-bold text-slate-800 text-sm">${m.issue}</p><p class="text-xs text-slate-400 mt-1"><i class="far fa-clock"></i> ${displayDate}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition shadow-sm">Mark Done</button></div>`; 
+                }); 
 
                 completedMaintItems.forEach(m => { 
                     const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown'};
-                    histList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white opacity-75 hover:opacity-100 transition border-b border-slate-100"><div><p class="font-medium text-slate-600 text-sm line-through decoration-slate-400">${m.issue}</p><p class="text-xs text-slate-400">${t.name} • Completed: ${new Date(m.completed_date).toLocaleDateString()}</p></div><button onclick="viewMaintNote(${m.id})" class="text-indigo-500 text-xs font-bold hover:text-indigo-700">View Notes</button></div>`; 
+                    histList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white opacity-75 hover:opacity-100 transition border-b border-slate-100"><div><p class="font-medium text-slate-600 text-sm line-through decoration-slate-400">${m.issue}</p><p class="text-xs text-slate-400">${t.name} • Completed: ${m.completed_date ? new Date(m.completed_date).toLocaleDateString() : '-'}</p></div><button onclick="viewMaintNote(${m.id})" class="text-indigo-500 text-xs font-bold hover:text-indigo-700">View Notes</button></div>`; 
                 });
             }
             lastRenderedState.maint = maintHash;
         }
 
-        // --- MESSAGES RENDER ---
-        // Only if message panel is open
+        // Messages & Expenses
         if(currentChatId) renderMessages();
-        
-        // --- EXPENSES ---
+        if(activeTab === 'messages') renderChatList();
+
         const expHash = JSON.stringify(state.expenses);
         if(expHash !== lastRenderedState.expenses) {
             const exBody = document.getElementById('table-expenses'); 
@@ -850,11 +837,10 @@
                 let dEx = state.expenses;
                 if (fid !== 'all') dEx = dEx.filter(x => x.prop === fid);
                 dEx.forEach(x => { 
-                    const receiptIcon = x.doc ? `<i class="fas fa-paperclip text-slate-400" title="${x.doc}"></i>` : '-';
-                    exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${receiptIcon}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
+                    const fileLink = x.doc ? `<a href="${x.doc}" target="_blank" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-paperclip"></i> View</a>` : '-';
+                    exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${fileLink}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
                 });
-                const totalExp = dEx.reduce((a,b)=>a+b.amount,0);
-                if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${totalExp.toLocaleString()}`;
+                if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${dEx.reduce((a,b)=>a+b.amount,0).toLocaleString()}`;
             }
             lastRenderedState.expenses = expHash;
         }
@@ -863,17 +849,84 @@
         renderReports(); 
     }
 
-    // --- 3. HELPER FUNCTIONS & ACTIONS ---
+    // --- 3. MISSING FUNCTIONS ADDED ---
+
+    function renderReports() {
+        // Calculate Totals
+        const totalRev = state.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const totalExp = state.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const noi = totalRev - totalExp;
+
+        // Update DOM
+        setText('report-income', `$${totalRev.toLocaleString()}`);
+        setText('report-expense', `$${totalExp.toLocaleString()}`);
+        setText('report-noi', `$${noi.toLocaleString()}`);
+    }
+
+    // --- 4. ACTIONS ---
     
+    // UPLOAD HELPER FUNCTION
+    async function uploadFile(file, bucket) {
+        if (!file) return null;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        // Upload
+        const { error: uploadError } = await supabaseClient.storage.from(bucket).upload(filePath, file);
+        if (uploadError) {
+            console.error("Upload error:", uploadError);
+            alert(`Error uploading file to ${bucket}: ${uploadError.message}`);
+            return null;
+        }
+
+        // Get URL
+        const { data: { publicUrl } } = supabaseClient.storage.from(bucket).getPublicUrl(filePath);
+        return publicUrl;
+    }
+
+    async function act_completeMaint(id) { 
+        const n = prompt("Resolution Notes (Optional):") || "Completed"; 
+        
+        // 1. Optimistic UI update
+        const m = state.maint.find(x => x.id === id);
+        if(m) { 
+            m.status = 'Completed'; 
+            m.completed_date = new Date().toISOString(); 
+            m.notes = n; 
+            renderAll(); 
+        }
+        
+        // 2. Send to Server
+        const { data, error } = await supabaseClient
+            .from('maintenance')
+            .update({ 
+                status: 'Completed', 
+                completed_date: new Date().toISOString(), 
+                notes: n 
+            })
+            .eq('id', id)
+            .select();
+
+        // 3. Error Handling
+        if (error) {
+            console.error("Supabase Error:", error);
+            alert("Update failed: " + error.message + "\nCheck if 'completed_date' column exists in your table.");
+            await fetchData(); renderAll();
+        } else if (!data || data.length === 0) {
+            alert("Update failed: No rows found. Check if the ID matches or RLS policies.");
+            await fetchData(); renderAll();
+        }
+    }
+    
+    // --- STANDARD HELPER FUNCTIONS ---
+
     function updateBadge(id, count) { 
         const el = document.getElementById('badge-' + id); 
         if(!el) return;
-        if(count > 0) { 
-            el.innerText = count; 
-            el.classList.remove('hidden-section'); 
-        } else { 
-            el.classList.add('hidden-section'); 
-        } 
+        const isViewing = activeTab === id;
+        if(count > 0 && !isViewing) { el.innerText = count; el.classList.remove('hidden-section'); } 
+        else { el.classList.add('hidden-section'); } 
     }
 
     function calculateGlobalStats() {
@@ -886,8 +939,8 @@
         return { revenue, overdue };
     }
 
-    // Navigation
     function navTo(view) {
+        activeTab = view;
         document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
         document.getElementById('view-' + view).classList.remove('hidden-section');
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
@@ -897,9 +950,17 @@
         const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests' };
         setText('desktop-page-title', titles[view] || 'Dashboard');
         
-        if(window.innerWidth < 768) { 
-            document.getElementById('sidebar').classList.add('-translate-x-full'); 
-            document.getElementById('mobile-overlay').classList.add('hidden'); 
+        if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
+        
+        if(view === 'maintenance') {
+            state.maint.filter(m => m.status === 'Active').forEach(m => viewedMaintIds.add(String(m.id)));
+            localStorage.setItem('kozeyy_viewed_maint', JSON.stringify([...viewedMaintIds]));
+            updateBadge('maintenance', 0);
+        }
+        if(view === 'screening') {
+            state.apps.filter(a => a.status === 'Pending').forEach(a => viewedAppIds.add(String(a.id)));
+            localStorage.setItem('kozeyy_viewed_apps', JSON.stringify([...viewedAppIds]));
+            updateBadge('screening', 0);
         }
         
         if(view === 'financials') populateFinFilter();
@@ -908,35 +969,17 @@
         if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
     }
 
-    // Maintenance Actions
-    async function act_completeMaint(id) { 
-        const n = prompt("Resolution Notes (Optional):") || "Completed"; 
-        // Optimistic
-        const m = state.maint.find(x => x.id === id);
-        if(m) { m.status = 'Completed'; m.completed_date = new Date().toISOString(); m.notes = n; renderAll(); }
-        
-        await supabaseClient.from('maintenance').update({ 
-            status: 'Completed', 
-            completed_date: new Date().toISOString(), 
-            notes: n 
-        }).eq('id', id);
-        await fetchData(); // sync
-    }
-    
     function viewMaintNote(id) { 
         const m = state.maint.find(x => x.id == id); 
         setText('md-issue', m.issue); 
-        setText('md-meta', `Completed: ${new Date(m.completed_date).toLocaleDateString()}`); 
+        setText('md-meta', `Completed: ${m.completed_date ? new Date(m.completed_date).toLocaleDateString() : 'Unknown'}`); 
         setText('md-notes', m.notes || "No notes."); 
         openModal('modal-maint-detail'); 
     }
 
-    // Messages Logic
     function renderChatList() { 
         const l = document.getElementById('list-chats'); 
         if(!l) return;
-        
-        // Simple hash check for list can be added, but chat list is small. Rebuilding is fine.
         l.innerHTML = ''; 
         const sortedChats = state.tenants.filter(t => t.status !== 'Vacant').map(t => {
             const msgs = state.msgs.filter(m => m.tenant_id === t.id);
@@ -955,41 +998,31 @@
     async function openChat(id) { 
         currentChatId=id; 
         setText('chat-title', state.tenants.find(x=>x.id==id).name); 
-        renderMessages(true); // Force render
-        
+        renderMessages(true);
         const unreadIds = state.msgs.filter(m => m.tenant_id === id && m.from === 'Tenant' && !m.read_at).map(m => m.id);
         if(unreadIds.length > 0) {
+            unreadIds.forEach(uid => locallyReadMsgIds.add(String(uid)));
+            localStorage.setItem('kozeyy_read_msgs', JSON.stringify([...locallyReadMsgIds]));
             state.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
             await supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
             renderAll(); 
         }
-
-        if(window.innerWidth < 768) { 
-            document.getElementById('msg-list-panel').classList.add('hidden'); 
-            document.getElementById('msg-view-panel').classList.remove('hidden'); 
-            document.getElementById('msg-view-panel').classList.add('flex'); 
-        } 
+        if(window.innerWidth < 768) { document.getElementById('msg-list-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('hidden'); document.getElementById('msg-view-panel').classList.add('flex'); } 
     }
 
     function renderMessages(force = false) { 
         const b = document.getElementById('box-chat'); 
         if(!b) return;
-        
         const relevantMsgs = state.msgs.filter(m => m.tenant_id == currentChatId).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
         const hash = JSON.stringify(relevantMsgs);
         if(!force && hash === lastRenderedState.msgs) return;
-        
         lastRenderedState.msgs = hash;
         b.innerHTML = ''; 
-        
         relevantMsgs.forEach(m => { 
             const d = new Date(m.created_at);
-            const isToday = d.toDateString() === new Date().toDateString();
-            const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
+            const ts = d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
             const isOwner = m.from === 'Owner';
-            const align = isOwner ? 'items-end' : 'items-start';
-            const bubbleStyle = isOwner ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none';
-            b.innerHTML += `<div class="flex flex-col w-full ${align} mb-4 fade-in"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${bubbleStyle}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
+            b.innerHTML += `<div class="flex flex-col w-full ${isOwner ? 'items-end' : 'items-start'} mb-4 fade-in"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${isOwner ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none'}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
         }); 
         b.scrollTop = b.scrollHeight; 
     }
@@ -1000,25 +1033,21 @@
             const newMsg = {tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString(), created_at: new Date().toISOString() };
             state.msgs.push(newMsg);
             renderMessages(true);
-            const val = i.value;
-            i.value=''; 
-            
+            const val = i.value; i.value=''; 
             await supabaseClient.from('msgs').insert([newMsg]);
-            await fetchData(); // sync IDs
+            await fetchData(); 
         } 
     }
 
-    // --- STANDARD MODAL/CRUD FUNCTIONS ---
+    // Modal/CRUD
     function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
     function resetForms() { 
         editTenantId = null; editListingId = null; editExpenseId = null; 
         setText('btn-save-tenant',"Save Tenant"); setText('btn-save-listing',"Post Listing"); setText('btn-save-expense',"Save");
-        const inputs = ['ex-id','ex-amount','ex-vendor','ex-date','ex-doc','t-id','t-name','t-email','t-phone','t-unit','t-rent','t-start','t-end','t-addr','t-city','t-state','t-zip','l-addr','l-price','l-sqft','l-beds','l-baths','l-desc','l-amen','l-date','l-img'];
-        inputs.forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+        ['ex-id','ex-amount','ex-vendor','ex-date','ex-doc','t-id','t-name','t-email','t-phone','t-unit','t-rent','t-start','t-end','t-addr','t-city','t-state','t-zip','l-addr','l-price','l-sqft','l-beds','l-baths','l-desc','l-amen','l-date','l-img'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
         updateFileName('inv-doc', 'inv-doc-label'); updateFileName('ex-doc', 'ex-doc-label'); 
     }
-
     function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
     
     // Screening Logic
@@ -1033,19 +1062,157 @@
     }
     
     // CRUD Functions
-    async function act_saveTenant(e) { e.preventDefault(); const data = { name: document.getElementById('t-name').value, email: document.getElementById('t-email').value, phone: document.getElementById('t-phone').value, unit: document.getElementById('t-unit').value, rent: parseFloat(document.getElementById('t-rent').value)||0, start_date: document.getElementById('t-start').value||null, end_date: document.getElementById('t-end').value||null, status: document.getElementById('t-status').value, addr: document.getElementById('t-addr').value, city: document.getElementById('t-city').value, state: document.getElementById('t-state').value, zip: document.getElementById('t-zip').value }; if(editTenantId) await supabaseClient.from('tenants').update(data).eq('id', editTenantId); else await supabaseClient.from('tenants').insert([data]); closeModal('modal-tenant'); await fetchData(); renderAll(); }
-    function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id === id); setText('modal-tenant-title',"Edit Tenant"); setText('btn-save-tenant',"Update Tenant"); document.getElementById('t-id').value = t.id; document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone||''; document.getElementById('t-unit').value = t.unit||''; document.getElementById('t-rent').value = t.rent; document.getElementById('t-start').value = t.start_date||''; document.getElementById('t-end').value = t.end_date||''; document.getElementById('t-status').value = t.status; document.getElementById('t-addr').value = t.addr||''; document.getElementById('t-city').value = t.city||''; document.getElementById('t-state').value = t.state||''; document.getElementById('t-zip').value = t.zip||''; openModal('modal-tenant'); }
+    async function act_saveTenant(e) { 
+        e.preventDefault(); 
+        
+        const data = { 
+            name: document.getElementById('t-name').value, 
+            email: document.getElementById('t-email').value, 
+            phone: document.getElementById('t-phone').value, 
+            unit: document.getElementById('t-unit').value, 
+            
+            // CORRECTED COLUMN NAMES based on your database
+            rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
+            lease_start: document.getElementById('t-start').value || null,       
+            lease_end: document.getElementById('t-end').value || null,           
+            address: document.getElementById('t-addr').value,                    
+            
+            status: document.getElementById('t-status').value, 
+            city: document.getElementById('t-city').value, 
+            state: document.getElementById('t-state').value, 
+            zip: document.getElementById('t-zip').value 
+        }; 
+
+        let error = null;
+
+        if(editTenantId) {
+            const res = await supabaseClient.from('tenants').update(data).eq('id', editTenantId);
+            error = res.error;
+        } else {
+            const res = await supabaseClient.from('tenants').insert([data]);
+            error = res.error;
+        }
+
+        if (error) {
+            console.error("Save Tenant Failed:", error);
+            alert("Database Error: " + error.message);
+            return;
+        }
+
+        closeModal('modal-tenant'); 
+        await fetchData(); 
+        renderAll(); 
+    }
+    
+    // Handle Move Out logic
+    async function act_moveOut(id) {
+        if(!confirm("Move tenant out? This will archive their record and create a vacant unit.")) return;
+        
+        // 1. Get current data to clone property info
+        const t = state.tenants.find(x => x.id === id);
+        if(!t) return;
+
+        // 2. Archive current tenant
+        await supabaseClient.from('tenants').update({ status: 'Archived' }).eq('id', id);
+
+        // 3. Create new Vacant placeholder with same property info
+        const newUnit = {
+            name: '(Vacant)',
+            email: '',
+            phone: '',
+            // Copy property fields
+            address: t.address,
+            unit: t.unit,
+            city: t.city,
+            state: t.state,
+            zip: t.zip,
+            rent_amount: t.rent_amount,
+            // Set status
+            status: 'Vacant',
+            // Dates reset
+            lease_start: null,
+            lease_end: null
+        };
+        
+        await supabaseClient.from('tenants').insert([newUnit]);
+        
+        await fetchData();
+        renderAll();
+    }
+
+    function act_editTenant(id) { 
+        editTenantId = id; 
+        const t = state.tenants.find(x => x.id === id); 
+        setText('modal-tenant-title',"Edit Tenant"); 
+        setText('btn-save-tenant',"Update Tenant"); 
+        document.getElementById('t-id').value = t.id; 
+        document.getElementById('t-name').value = t.name; 
+        document.getElementById('t-email').value = t.email; 
+        document.getElementById('t-phone').value = t.phone||''; 
+        document.getElementById('t-unit').value = t.unit||''; 
+        // FIX: Map correct DB columns to form
+        document.getElementById('t-rent').value = t.rent_amount; 
+        document.getElementById('t-start').value = t.lease_start||''; 
+        document.getElementById('t-end').value = t.lease_end||''; 
+        document.getElementById('t-addr').value = t.address||''; 
+
+        document.getElementById('t-status').value = t.status; 
+        document.getElementById('t-city').value = t.city||''; 
+        document.getElementById('t-state').value = t.state||''; 
+        document.getElementById('t-zip').value = t.zip||''; 
+        openModal('modal-tenant'); 
+    }
     async function act_delTenant(id) { if(confirm("Delete tenant?")) { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); } }
     
     async function act_saveListing(e) { e.preventDefault(); const d = { addr: document.getElementById('l-addr').value, price: document.getElementById('l-price').value, sqft: document.getElementById('l-sqft').value, beds: document.getElementById('l-beds').value, baths: document.getElementById('l-baths').value, desc: document.getElementById('l-desc').value, amen: document.getElementById('l-amen').value, date: document.getElementById('l-date').value, img: document.getElementById('l-img').value }; if(editListingId) await supabaseClient.from('listings').update(d).eq('id', editListingId); else await supabaseClient.from('listings').insert([d]); closeModal('modal-listing'); await fetchData(); renderAll(); }
     function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.addr; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.desc; document.getElementById('l-amen').value = l.amen||''; document.getElementById('l-date').value = l.date; document.getElementById('l-img').value = l.img||''; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
     async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); await fetchData(); renderAll(); }
 
-    async function act_saveExpense(e) { e.preventDefault(); const data = { date: document.getElementById('ex-date').value, vendor: document.getElementById('ex-vendor').value, cat: document.getElementById('ex-cat').value, prop: document.getElementById('ex-prop').value, amount: parseFloat(document.getElementById('ex-amount').value)||0 }; if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); else await supabaseClient.from('expenses').insert([data]); closeModal('modal-expense'); await fetchData(); renderAll(); }
-    function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.cat; document.getElementById('ex-amount').value = e.amount; const s = document.getElementById('ex-prop'); s.innerHTML = ''; const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option ${p === e.prop ? 'selected' : ''}>${p}</option>`); openModal('modal-expense'); }
+    async function act_saveExpense(e) { 
+        e.preventDefault(); 
+        
+        // Handle file upload (Private/Receipts bucket)
+        const file = document.getElementById('ex-doc').files[0];
+        let docUrl = null;
+        if (file) {
+            docUrl = await uploadFile(file, 'receipts'); // Using generic 'receipts' bucket
+        }
+        
+        const data = { 
+            date: document.getElementById('ex-date').value, 
+            vendor: document.getElementById('ex-vendor').value, 
+            cat: document.getElementById('ex-cat').value, 
+            prop: document.getElementById('ex-prop').value, 
+            amount: parseFloat(document.getElementById('ex-amount').value)||0,
+            doc: docUrl // Save URL to database
+        }; 
+        
+        if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
+        else await supabaseClient.from('expenses').insert([data]); 
+        
+        closeModal('modal-expense'); 
+        await fetchData(); 
+        renderAll(); 
+    }
+
+    function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.cat; document.getElementById('ex-amount').value = e.amount; const s = document.getElementById('ex-prop'); s.innerHTML = ''; const props = new Set(); state.tenants.forEach(t => props.add(t.address)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option ${p === e.prop ? 'selected' : ''}>${p}</option>`); openModal('modal-expense'); }
     async function act_delExpense(id) { if(confirm("Delete expense?")) { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); } }
 
-    function act_viewTenant(id) { const t = state.tenants.find(x => x.id === id); if(!t) return; setText('vt-name', t.name); setText('vt-email', t.email); setText('vt-phone', t.phone||'-'); setText('vt-addr', `${t.addr||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); setText('vt-unit', t.unit||'-'); setText('vt-rent', `$${parseInt(t.rent).toLocaleString()}`); setText('vt-status', t.status); setText('vt-start', t.start_date||'-'); setText('vt-end', t.end_date||'-'); openModal('modal-view-tenant'); }
+    function act_viewTenant(id) { 
+        const t = state.tenants.find(x => x.id === id); 
+        if(!t) return; 
+        setText('vt-name', t.name); 
+        setText('vt-email', t.email); 
+        setText('vt-phone', t.phone||'-'); 
+        // FIX: Map correct DB columns
+        setText('vt-addr', `${t.address||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); 
+        setText('vt-unit', t.unit||'-'); 
+        setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); 
+        setText('vt-status', t.status); 
+        setText('vt-start', t.lease_start||'-'); 
+        setText('vt-end', t.lease_end||'-'); 
+        openModal('modal-view-tenant'); 
+    }
     function act_viewApp(id) { currentAppId = id; const app = state.apps.find(a => a.id === id); const eval = evalApplicant(app); setText('sd-name', app.name); setText('sd-score', app.score); setText('sd-income', `$${app.income.toLocaleString()}`); setText('sd-ratio', (app.income / app.rent).toFixed(1)); document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>'; document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>'; setText('sd-job', app.job||'Unemployed'); document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>'; const ban = document.getElementById('sd-banner'); const actions = document.getElementById('sd-actions'); const emailOpt = document.getElementById('sd-email-option'); if(app.status === 'Approved') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200"; ban.innerText = "Approved"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else if (app.status === 'Deny') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200"; ban.innerText = "Denied"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else { ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`; ban.innerText = eval.status; actions.classList.remove('hidden-section'); emailOpt.classList.add('hidden-section'); } openModal('modal-screening-detail'); }
     async function act_screenDecision(decision) { if(currentAppId) { await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId); await fetchData(); setTimeout(() => act_viewApp(currentAppId), 500); } }
     async function act_saveSettings(e) { e.preventDefault(); const screen = { minScore: parseInt(document.getElementById('set-min-score').value)||600, minIncome: parseFloat(document.getElementById('set-min-income').value)||2.5, noEvict: document.getElementById('set-no-evict').checked, noCrim: document.getElementById('set-no-crim').checked }; await supabaseClient.from('settings').update({ stripe_connect_id: document.getElementById('set-stripe-id').value, amount: document.getElementById('fee-amount').value, grace: document.getElementById('fee-grace').value, screening: screen }).eq('id', 1); alert("Configuration Saved"); }
@@ -1060,20 +1227,49 @@
     function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status !== 'Archived').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
     async function confirmPay() { let tid = document.getElementById('pay-tenant-id').value; const sel = document.getElementById('pay-tenant-select'); if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; tid = parseInt(tid); const amt = parseFloat(document.getElementById('pay-amount').value); if(tid && amt > 0) { await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]); closeModal('modal-pay'); initSystem(); } }
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; const uniqueTids = [...new Set(state.invoices.map(i => i.tenant_id))]; uniqueTids.forEach(tid => { const t = state.tenants.find(x => x.id === tid) || { name: 'Unknown' }; sel.innerHTML += `<option value="${tid}">${t.name}</option>`; }); sel.value = currentVal; }
-    function renderInvoices() { const filterVal = document.getElementById('filter-financials').value; const t = document.getElementById('table-invoices'); const sumContainer = document.getElementById('fin-summary-container'); t.innerHTML=''; if(filterVal === 'all') sumContainer.classList.add('hidden-section'); else sumContainer.classList.remove('hidden-section'); state.invoices.forEach(inv => { if(filterVal === 'all' || inv.tenant_id == filterVal) { const balance = inv.total - (inv.amount_paid || 0); let rowBg = '', status = 'Unpaid'; if (balance <= 0) { rowBg = 'bg-emerald-50/50'; status='Paid'; } t.innerHTML += `<tr class="border-b border-slate-100 ${rowBg}"><td class="p-5 text-sm font-medium text-slate-500">${inv.date}</td><td class="p-5 text-sm font-bold">${inv.tenant_name || 'Unknown'}</td><td class="p-5 text-sm text-slate-500">${(inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge'}</td><td class="p-5 text-right font-bold text-slate-800">$${inv.total.toLocaleString()}</td><td class="p-5 text-right font-medium text-slate-600">$${balance.toLocaleString()}</td><td class="p-5 text-right"><span class="text-xs font-bold uppercase ${status==='Paid'?'text-emerald-600':'text-rose-500'}">${status}</span></td></tr>`; } }); }
+    function renderInvoices() { const filterVal = document.getElementById('filter-financials').value; const t = document.getElementById('table-invoices'); const sumContainer = document.getElementById('fin-summary-container'); t.innerHTML=''; if(filterVal === 'all') sumContainer.classList.add('hidden-section'); else sumContainer.classList.remove('hidden-section'); state.invoices.forEach(inv => { if(filterVal === 'all' || inv.tenant_id == filterVal) { const balance = inv.total - (inv.amount_paid || 0); let rowBg = '', status = 'Unpaid'; if (balance <= 0) { rowBg = 'bg-emerald-50/50'; status='Paid'; } const fileLink = inv.doc_url ? `<a href="${inv.doc_url}" target="_blank" class="ml-2 text-indigo-500 hover:text-indigo-700" title="View Attachment"><i class="fas fa-paperclip"></i></a>` : ''; t.innerHTML += `<tr class="border-b border-slate-100 ${rowBg}"><td class="p-5 text-sm font-medium text-slate-500">${inv.date}</td><td class="p-5 text-sm font-bold">${inv.tenant_name || 'Unknown'}</td><td class="p-5 text-sm text-slate-500">${(inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge'} ${fileLink}</td><td class="p-5 text-right font-bold text-slate-800">$${inv.total.toLocaleString()}</td><td class="p-5 text-right font-medium text-slate-600">$${balance.toLocaleString()}</td><td class="p-5 text-right"><span class="text-xs font-bold uppercase ${status==='Paid'?'text-emerald-600':'text-rose-500'}">${status}</span></td></tr>`; } }); }
     function openInvoiceModal() { const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; state.tenants.filter(t => t.status !== 'Archived').forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); document.getElementById('inv-actions-create').classList.remove('hidden-section'); document.getElementById('inv-actions-create').classList.add('flex'); document.getElementById('inv-actions-view').classList.add('hidden-section'); document.getElementById('inv-date').valueAsDate = new Date(); document.getElementById('btn-confirm-inv').disabled = false; openModal('modal-invoice'); logic_invMode('fixed'); }
     function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
-    function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
+    function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
     function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
     function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
     function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); }
     function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
     function logic_generatePreview() { const tidSelect = document.getElementById('inv-tenant').value; if(!tidSelect) return alert("Please select a tenant"); const tid = parseInt(tidSelect); const tenant = state.tenants.find(t => t.id === tid); const date = document.getElementById('inv-date').value; const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); draftInvoice = { tenantId: tid, tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: date, }; setText('prev-name', tenant.name); setText('prev-date', new Date(date).toLocaleDateString()); setText('prev-total-due', `$${currentTotal.toLocaleString()}`); const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = ''; invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); document.getElementById('inv-step-input').classList.add('hidden-section'); document.getElementById('inv-step-preview').classList.remove('hidden-section'); setText('inv-modal-title',"Review Invoice"); }
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
-    async function logic_confirmInvoice() { if(!draftInvoice) return; document.getElementById('btn-confirm-inv').disabled = true; const stripeId = state.settings.stripe_connect_id; if(!stripeId) alert("Warning: You have not saved a Stripe Connect ID in settings. Tenant will not be able to pay this invoice."); await supabaseClient.from('invoices').insert([{ tenant_id: draftInvoice.tenantId, tenant_name: draftInvoice.tenantName, items: draftInvoice.items, total: draftInvoice.total, date: draftInvoice.date, status: 'Unpaid', landlord_stripe_id: stripeId }]); closeModal('modal-invoice'); initSystem(); }
+    
+    async function logic_confirmInvoice() { 
+        if(!draftInvoice) return; 
+        document.getElementById('btn-confirm-inv').disabled = true; 
+        
+        // Handle file upload (Public/Invoices bucket)
+        const file = document.getElementById('inv-doc').files[0];
+        let docUrl = null;
+        if (file) {
+            docUrl = await uploadFile(file, 'invoices'); // Using 'invoices' bucket
+        }
+
+        const stripeId = state.settings.stripe_connect_id; 
+        if(!stripeId) alert("Warning: You have not saved a Stripe Connect ID in settings. Tenant will not be able to pay this invoice."); 
+        
+        await supabaseClient.from('invoices').insert([{ 
+            tenant_id: draftInvoice.tenantId, 
+            tenant_name: draftInvoice.tenantName, 
+            items: draftInvoice.items, 
+            total: draftInvoice.total, 
+            date: draftInvoice.date, 
+            status: 'Unpaid', 
+            landlord_stripe_id: stripeId,
+            doc_url: docUrl // Save URL to DB
+        }]); 
+        
+        closeModal('modal-invoice'); 
+        initSystem(); 
+    }
+
     function updateFileName(inputId, labelId) { const input = document.getElementById(inputId); const label = document.getElementById(labelId); if(input.files && input.files[0]) { label.innerText = input.files[0].name; label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } else { label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File'; label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } }
-    function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
-    function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
+    function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => props.add(t.address)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
+    function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => props.add(t.address)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
     function loadUserProfile() { const savedProfile = localStorage.getItem('kozeyy_profile'); if (savedProfile) { const user = JSON.parse(savedProfile); if(user.role === 'owner') { const nameDisplay = user.username ? user.username : user.name; setText('owner-name-display', nameDisplay); const initialBox = document.getElementById('owner-initials-display'); if(initialBox) initialBox.innerText = user.initials; } } }
 
     loadUserProfile();
