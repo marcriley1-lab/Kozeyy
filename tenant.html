@@ -94,6 +94,7 @@
             <div class="flex items-center gap-6">
                 <div class="relative cursor-pointer hover:text-indigo-600 transition" onclick="switchTab('messages')">
                     <i class="fas fa-bell text-lg text-slate-400"></i>
+                    <!-- Added badge logic here later in script -->
                 </div>
             </div>
         </header>
@@ -284,7 +285,7 @@
                         <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in"><input type="checkbox" name="toggle" id="toggle-credit" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300" onclick="handleCreditToggle()"/><label for="toggle-credit" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div>
                     </div>
                 </div>
-                <div class="mt-8 text-center"><a href="login.html" class="text-red-500 text-sm font-medium hover:underline">Sign Out</a><p class="text-xs text-slate-300 mt-4">Version 3.6.0 (Calculated Balance)</p></div>
+                <div class="mt-8 text-center"><a href="login.html" class="text-red-500 text-sm font-medium hover:underline">Sign Out</a><p class="text-xs text-slate-300 mt-4">Version 3.8.0 (Live Chat)</p></div>
             </div>
         </div>
     </main>
@@ -381,11 +382,9 @@
     <script>
         // --- CONFIG ---
         const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
-        
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        
-        // ** IMPORTANT: REPLACE WITH YOUR STRIPE PUBLISHABLE KEY **
+        // ** REPLACE WITH LIVE KEY WHEN READY **
         const STRIPE_PK = 'pk_test_51Sjto1Pss9fRgCwA8IwK1oX4kY4jaAwsPKWE3hCVTCpuv0xmv1iQxOoJ0EFmU1JuKCSnfCYmn8UR1Ygxhp2d0Gyg001o4lzsne'; 
         
         let stripe = null;
@@ -394,8 +393,10 @@
         let supabaseClient = null;
         if(window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
+        // --- USER ID LOGIC (AUTO-DETECT OR DEFAULT) ---
         const USER_ID = localStorage.getItem('kozeyy_user_id') || 1; 
-        let globalData = { user: null, invoices: [] };
+        
+        let globalData = { user: null, invoices: [], msgs: [], maint: [] };
 
         async function render() {
             if(!supabaseClient) return;
@@ -414,6 +415,8 @@
             
             globalData.user = user;
             globalData.invoices = invoices;
+            globalData.msgs = msgs;
+            globalData.maint = maint;
 
             const savedProfile = localStorage.getItem('kozeyy_profile');
             let displayName = user.name;
@@ -525,23 +528,23 @@
                 hBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">No payment history</td></tr>';
             } else {
                 historyItems.forEach(i => { 
-                    // History just shows Total paid
                     const totalAmt = i.total; 
                     hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.id}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice(${i.id})" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
                     hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice(${i.id})"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.id}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
                 });
             }
 
-            const chatBox = document.getElementById('chat-messages'); 
-            if(msgs.length === 0) {
-                chatBox.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-sm">No messages yet</p></div>`;
+            // Messages & Notifications
+            renderMessages();
+            const unreadCount = msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
+            const dot = document.getElementById('desk-notif-dot');
+            const mobDot = document.getElementById('mob-notif-dot');
+            if(unreadCount > 0) {
+                dot.classList.remove('hidden-section');
+                mobDot.classList.remove('hidden-section');
             } else {
-                const newChatHTML = msgs.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at)).map(m => {
-                    const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; 
-                    const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
-                    return `<div class="flex ${align}"><div class="max-w-[80%] px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">${m.text}</div></div>`;
-                }).join('');
-                if (chatBox.innerHTML !== newChatHTML) { chatBox.innerHTML = newChatHTML; chatBox.scrollTop = chatBox.scrollHeight; }
+                dot.classList.add('hidden-section');
+                mobDot.classList.add('hidden-section');
             }
 
             const maintList = document.getElementById('maint-list'); 
@@ -553,34 +556,138 @@
             }
         }
 
-        // --- NEW: HANDLE URL RETURNS (UPDATE DB ON SUCCESS) ---
+        // --- UPDATED LIVE UPDATES ---
+        function startLiveUpdates() {
+            setInterval(async () => {
+                // We re-call render(), but check if we need to redraw messages to avoid flicker
+                // For 'Production Ready' simplicity, re-fetching and DOM diffing is complex without frameworks.
+                // We will re-fetch data and only update Chat + Maintenance parts.
+                
+                try {
+                    const [msg, m] = await Promise.all([
+                        supabaseClient.from('msgs').select('*').eq('tenant_id', USER_ID),
+                        supabaseClient.from('maintenance').select('*').eq('tenant_id', USER_ID)
+                    ]);
+                    
+                    if(msg.data) {
+                        const newCount = msg.data.length;
+                        const oldCount = globalData.msgs.length;
+                        globalData.msgs = msg.data;
+                        if(newCount !== oldCount) {
+                            renderMessages();
+                            // Update badges
+                            const unreadCount = msg.data.filter(x => x.from === 'Owner' && !x.read_at).length;
+                            const dot = document.getElementById('desk-notif-dot');
+                            const mobDot = document.getElementById('mob-notif-dot');
+                            if(unreadCount > 0) { dot.classList.remove('hidden-section'); mobDot.classList.remove('hidden-section'); } 
+                            else { dot.classList.add('hidden-section'); mobDot.classList.add('hidden-section'); }
+                        }
+                    }
+                    
+                    if(m.data) {
+                        // Check if status changed
+                        const oldActive = globalData.maint.filter(x=>x.status==='Active').length;
+                        const newActive = m.data.filter(x=>x.status==='Active').length;
+                        if(oldActive !== newActive || m.data.length !== globalData.maint.length) {
+                            globalData.maint = m.data;
+                            // Redraw maintenance list
+                            const maintList = document.getElementById('maint-list');
+                            maintList.innerHTML = '';
+                            globalData.maint.forEach(m => { const statusColor = m.status === 'Active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'; const notes = m.notes ? `<p class="text-xs text-slate-500 mt-1 italic border-l-2 border-slate-300 pl-2">"${m.notes}"</p>` : ''; maintList.innerHTML += `<div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100"><div class="flex justify-between items-start"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-wrench"></i></div><div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${m.date}</p></div></div><span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span></div>${notes}</div>`; });
+                        }
+                    }
+                } catch(e) { console.warn("Poll fail", e); }
+            }, 4000);
+        }
+
+        // --- UPDATED CHAT FUNCTIONALITY ---
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+
+            // 1. Optimistic UI
+            const b = document.getElementById('chat-messages');
+            const d = new Date();
+            const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+            b.innerHTML += `<div class="flex justify-end fade-in"><div class="max-w-[80%] px-4 py-2 rounded-2xl bg-indigo-600 text-white rounded-br-none text-sm shadow-sm">${text}</div></div>`;
+            b.scrollTop = b.scrollHeight;
+            input.value = '';
+
+            // 2. Send to DB
+            try {
+                await supabaseClient.from('msgs').insert([{ tenant_id: USER_ID, from: 'Tenant', text: text, time: new Date().toISOString() }]);
+            } catch(e) { console.error(e); }
+        }
+
+        function renderMessages() {
+            const chatBox = document.getElementById('chat-messages'); 
+            chatBox.innerHTML = '';
+            
+            const msgs = globalData.msgs.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
+            
+            if(msgs.length === 0) {
+                chatBox.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-sm">No messages yet</p></div>`;
+            } else {
+                msgs.forEach(m => {
+                    const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; 
+                    const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
+                    
+                    const d = new Date(m.created_at);
+                    const isToday = d.toDateString() === new Date().toDateString();
+                    const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
+
+                    chatBox.innerHTML += `
+                    <div class="flex ${align} mb-3 fade-in">
+                        <div class="flex flex-col ${m.from === 'Tenant' ? 'items-end' : 'items-start'} max-w-[85%]">
+                            <div class="px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">${m.text}</div>
+                            <span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span>
+                        </div>
+                    </div>`;
+                });
+                chatBox.scrollTop = chatBox.scrollHeight;
+                
+                // Mark Owner messages as read
+                const unreadIds = msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
+                if(unreadIds.length > 0) {
+                    supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
+                }
+            }
+        }
+
+        // --- HANDLE URL RETURNS (UPDATE DB ON SUCCESS) ---
         async function checkReturnParams() {
             const params = new URLSearchParams(window.location.search);
             
-            // 1. CREDIT SUBSCRIPTION SUCCESS
             if (params.get('sub') === 'active') {
-                toggleModal('processingModal'); // Briefly show loading
+                toggleModal('processingModal'); 
                 try {
-                    // Update Database
                     await supabaseClient.from('tenants').update({ credit_reporting: true }).eq('id', USER_ID);
-                    
-                    // Update Local State immediately for speed
                     if (globalData.user) globalData.user.credit_reporting = true;
-                    
-                    alert("Credit Reporting Activated Successfully! 🚀\nYour on-time payments will now be reported.");
-                    
-                    // Clean URL
+                    alert("Credit Reporting Activated Successfully! 🚀");
                     window.history.replaceState({}, document.title, window.location.pathname);
-                    
-                    // Refresh View
                     render();
                 } catch(e) { console.error(e); }
-                toggleModal('processingModal'); // Hide loading
+                toggleModal('processingModal'); 
             }
             
-            // 2. RENT PAYMENT SUCCESS
             if (params.get('success') === 'true') {
-                alert("Payment Successful! Thank you.");
+                const paidInvoiceId = params.get('invoice_id');
+                if(paidInvoiceId) {
+                    toggleModal('processingModal');
+                    try {
+                        const { data: inv } = await supabaseClient.from('invoices').select('total').eq('id', paidInvoiceId).single();
+                        if(inv) {
+                            await supabaseClient.from('invoices').update({ 
+                                status: 'Paid',
+                                amount_paid: inv.total,
+                                paid_date: new Date().toISOString()
+                            }).eq('id', paidInvoiceId);
+                            alert("Payment Successful! Thank you.");
+                        }
+                    } catch(e) { console.error("Update failed", e); }
+                    toggleModal('processingModal');
+                }
                 window.history.replaceState({}, document.title, window.location.pathname);
                 render();
             }
@@ -593,11 +700,10 @@
             document.getElementById('inv-id').innerText = inv.id;
             document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
             
-            const prevBal = 0; // Using 0 for simplicity if snapshot missing
+            const prevBal = 0; 
             const currentBalance = inv.total - (inv.amount_paid || 0);
             const stripeFee = 2.99; 
             
-            // Update Modal UI with calculated balance
             document.getElementById('inv-prev-bal').innerText = `$${prevBal.toLocaleString()}`;
             document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid || 0).toLocaleString()}`;
             document.getElementById('inv-fwd-bal').innerText = `$${currentBalance.toLocaleString()}`;
@@ -634,8 +740,6 @@
             toggleModal('invoiceModal');
         }
 
-        // --- REAL STRIPE ACTIONS (SUPABASE EDGE) ---
-
         async function initStripePayment(invoiceId, baseAmount) {
             toggleModal('invoiceModal');
             toggleModal('processingModal');
@@ -667,10 +771,9 @@
             }
         }
 
-       async function handleCreditToggle() {
+        async function handleCreditToggle() {
             const checkBox = document.getElementById('toggle-credit');
             
-            // CASE 1: TURNING ON (Subscribe)
             if (checkBox.checked) {
                 const msg = "Activate Credit Reporting ($10/mo)?\nProceed to secure payment?";
                 if(confirm(msg)) {
@@ -686,26 +789,21 @@
                         });
                         
                         const data = await response.json();
-
-                        // --- NEW: CATCH BACKEND ERRORS SPECIFICALLY ---
-                        if (data.error) {
-                            throw new Error(data.error);
-                        }
+                        
+                        if (data.error) throw new Error(data.error);
                         
                         if(data.url) window.location.href = data.url; 
                         else throw new Error("No URL returned from Stripe");
 
                     } catch(err) {
                         toggleModal('processingModal');
-                        alert("Error: " + err.message); // <--- THIS WILL NOW SHOW THE REAL REASON
-                        checkBox.checked = false; // Reset UI
+                        alert("Error: " + err.message);
+                        checkBox.checked = false; 
                     }
                 } else {
                     checkBox.checked = false; 
                 }
             } 
-            
-            // CASE 2: TURNING OFF (Cancel)
             else {
                 checkBox.checked = true; 
                 const msg = "To prevent accidental double-billing, please cancel directly in the Billing Portal.\n\nYour subscription will remain active until the end of the current billing period.";
@@ -715,7 +813,7 @@
             }
         }
 
-       async function openStripePortal() {
+        async function openStripePortal() {
             toggleModal('processingModal');
             try {
                 const response = await fetch(FUNCTION_URL, {
@@ -726,22 +824,15 @@
                     },
                     body: JSON.stringify({ action: 'create-portal-session', tenantId: USER_ID })
                 });
-                
                 const data = await response.json();
-                
-                // --- NEW: Check for backend errors specifically ---
-                if (data.error) throw new Error(data.error);
-
                 if(data.url) window.location.href = data.url;
-                else throw new Error("No URL returned (Unknown Error)");
+                else throw new Error("Failed to create portal session");
             } catch(err) {
                 toggleModal('processingModal');
-                alert("Portal Error: " + err.message); // <--- Now you will see the real reason
+                alert("Error: " + err.message);
             }
         }
         
-        // --- OTHER ACTIONS ---
-
         async function sendMessage() {
             const input = document.getElementById('chat-input');
             if(input.value.trim()) {
@@ -788,8 +879,9 @@
         render();
         // Check for returns from Stripe immediately
         checkReturnParams();
+        // Start polling for real-time updates
+        startLiveUpdates();
 
     </script>
 </body>
 </html>
-
