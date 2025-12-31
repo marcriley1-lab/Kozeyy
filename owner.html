@@ -899,8 +899,8 @@
                 let dEx = state.expenses;
                 if (fid !== 'all') dEx = dEx.filter(x => x.prop === fid);
                 dEx.forEach(x => { 
-                    const fileLink = x.doc ? `<a href="${x.doc}" target="_blank" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-paperclip"></i> View</a>` : '-';
-                    exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${fileLink}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
+                    const fileLink = x.receipt_url ? `<a href="${x.receipt_url}" target="_blank" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-paperclip"></i> View</a>` : '-';
+                    exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.property_address || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.category}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${fileLink}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
                 });
                 if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${dEx.reduce((a,b)=>a+b.amount,0).toLocaleString()}`;
             }
@@ -954,7 +954,7 @@
         promptCallback = null;
     }
 
-   // LISTING SHARE
+    // LISTING SHARE
     function showShareModal(id) {
         // REMOVED: const l = state.listings.find(x => x.id === id);
         // REMOVED: if(!l) return; <--- This was causing the "Nothing shows" bug
@@ -1229,14 +1229,21 @@
         let docUrl = null;
         if (file) docUrl = await uploadFile(file, 'receipts'); 
         
-        const data = { date: document.getElementById('ex-date').value, vendor: document.getElementById('ex-vendor').value, cat: document.getElementById('ex-cat').value, prop: document.getElementById('ex-prop').value, amount: parseFloat(document.getElementById('ex-amount').value)||0, doc: docUrl }; 
+        const data = { 
+            date: document.getElementById('ex-date').value, 
+            vendor: document.getElementById('ex-vendor').value, 
+            category: document.getElementById('ex-cat').value, 
+            property_address: document.getElementById('ex-prop').value, 
+            amount: parseFloat(document.getElementById('ex-amount').value)||0, 
+            receipt_url: docUrl 
+        }; 
         if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
         else await supabaseClient.from('expenses').insert([data]); 
         
         closeModal('modal-expense'); await fetchData(); renderAll(); showToast("Expense saved");
     }
 
-    function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.cat; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.prop; openModal('modal-expense'); }
+    function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.category; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.property_address; openModal('modal-expense'); }
     async function act_delExpense(id) { if(confirm("Delete expense?")) { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); } }
 
     function act_viewTenant(id) { 
@@ -1338,4 +1345,3 @@
 </script>
 </body>
 </html>
-
