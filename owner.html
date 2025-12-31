@@ -330,6 +330,17 @@
                         </div>
                         
                         <div class="pt-4 border-t border-slate-100">
+                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Payment Fees</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">ACH Convenience Fee ($)</label>
+                                    <input type="number" step="0.01" id="set-ach-fee" class="w-full border p-3 rounded-xl bg-slate-50" value="2.00">
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-2">This fixed amount will be charged to the tenant for bank transfers. Stripe processing fees (~$5) will be deducted from your payout.</p>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-slate-100">
                             <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Screening Criteria</h4>
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div><label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Min Credit Score</label><input type="number" id="set-min-score" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="e.g. 650"></div>
@@ -606,6 +617,20 @@
         </div>
     </div>
 
+    <div id="modal-pay" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm relative">
+            <h3 class="text-xl font-bold mb-4 brand-font">Record Payment</h3>
+            <select id="pay-tenant-select" class="w-full border p-3 rounded-xl mb-4 hidden-section"></select>
+            <input type="hidden" id="pay-tenant-id">
+            <input type="number" id="pay-amount" class="w-full border p-3 rounded-xl mb-4" placeholder="Amount Recieved">
+            <input type="date" id="pay-date" class="w-full border p-3 rounded-xl mb-4">
+            <div class="flex gap-2">
+                <button onclick="closeModal('modal-pay')" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">Cancel</button>
+                <button onclick="confirmPay()" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold">Save</button>
+            </div>
+        </div>
+    </div>
+    
     <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1 brand-font"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">None</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-50 brand-font">Close</button></div></div>
 
     <div id="modal-screening-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
@@ -737,7 +762,7 @@
         state.payments = p.data || [];
         state.expenses = e.data || [];
         state.maint = m.data || [];
-        state.settings = s.data || { screening: { minScore: 650 } };
+        state.settings = s.data || { screening: { minScore: 650 }, ach_fee: 2.00 }; // Default fee
         state.apps = a.data || [];
         
         const serverMsgs = msg.data || [];
@@ -1027,6 +1052,23 @@
         if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
         if(view === 'messages') { renderChatList(); backToChatList(); }
         if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
+        if(view === 'settings') { renderSettings(); } // NEW: Load settings on view
+    }
+
+    // NEW: Function to populate settings form
+    function renderSettings() {
+        const s = state.settings;
+        if(!s) return;
+        if(document.getElementById('set-stripe-id')) document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
+        if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.amount || 50;
+        if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace || 5;
+        if(document.getElementById('set-ach-fee')) document.getElementById('set-ach-fee').value = s.ach_fee || 2.00; // Load ACH Fee
+        
+        const sc = s.screening || {};
+        if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = sc.minScore || 650;
+        if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = sc.minIncome || 3.0;
+        if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!sc.noEvict;
+        if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!sc.noCrim;
     }
 
     function viewMaintNote(id) { 
@@ -1082,7 +1124,7 @@
             const d = new Date(m.created_at);
             const ts = d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
             const isOwner = m.from === 'Owner';
-            b.innerHTML += `<div class="flex flex-col w-full ${isOwner ? 'items-end' : 'items-start'} mb-4"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${isOwner ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none'}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
+            b.innerHTML += `<div class="flex flex-col w-full ${isOwner ? 'items-end' : 'items-start'} mb-4 fade-in"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${isOwner ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none'}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
         }); 
         b.scrollTop = b.scrollHeight; 
     }
@@ -1192,7 +1234,29 @@
     function act_viewTenant(id) { const t = state.tenants.find(x => x.id === id); if(!t) return; setText('vt-name', t.name); setText('vt-email', t.email); setText('vt-phone', t.phone||'-'); setText('vt-addr', `${t.address||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); setText('vt-unit', t.unit||'-'); setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); setText('vt-status', t.status); setText('vt-start', t.lease_start||'-'); setText('vt-end', t.lease_end||'-'); openModal('modal-view-tenant'); }
     function act_viewApp(id) { currentAppId = id; const app = state.apps.find(a => a.id === id); const eval = evalApplicant(app); setText('sd-name', app.name); setText('sd-score', app.score); setText('sd-income', `$${app.income.toLocaleString()}`); setText('sd-ratio', (app.income / app.rent).toFixed(1)); document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>'; document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>'; setText('sd-job', app.job||'Unemployed'); document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>'; const ban = document.getElementById('sd-banner'); const actions = document.getElementById('sd-actions'); const emailOpt = document.getElementById('sd-email-option'); if(app.status === 'Approved') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200"; ban.innerText = "Approved"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else if (app.status === 'Deny') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200"; ban.innerText = "Denied"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else { ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`; ban.innerText = eval.status; actions.classList.remove('hidden-section'); emailOpt.classList.add('hidden-section'); } openModal('modal-screening-detail'); }
     async function act_screenDecision(decision) { if(currentAppId) { await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId); await fetchData(); setTimeout(() => act_viewApp(currentAppId), 500); } }
-    async function act_saveSettings(e) { e.preventDefault(); const screen = { minScore: parseInt(document.getElementById('set-min-score').value)||600, minIncome: parseFloat(document.getElementById('set-min-income').value)||2.5, noEvict: document.getElementById('set-no-evict').checked, noCrim: document.getElementById('set-no-crim').checked }; await supabaseClient.from('settings').update({ stripe_connect_id: document.getElementById('set-stripe-id').value, amount: document.getElementById('fee-amount').value, grace: document.getElementById('fee-grace').value, screening: screen }).eq('id', 1); showToast("Configuration Saved"); }
+    
+    // UPDATED: Save ACH Fee
+    async function act_saveSettings(e) { 
+        e.preventDefault(); 
+        const screen = { 
+            minScore: parseInt(document.getElementById('set-min-score').value)||600, 
+            minIncome: parseFloat(document.getElementById('set-min-income').value)||2.5, 
+            noEvict: document.getElementById('set-no-evict').checked, 
+            noCrim: document.getElementById('set-no-crim').checked 
+        }; 
+        const achFee = parseFloat(document.getElementById('set-ach-fee').value) || 0;
+
+        await supabaseClient.from('settings').update({ 
+            stripe_connect_id: document.getElementById('set-stripe-id').value, 
+            amount: document.getElementById('fee-amount').value, 
+            grace: document.getElementById('fee-grace').value, 
+            screening: screen,
+            ach_fee: achFee // Saving new fee
+        }).eq('id', 1); 
+        
+        showToast("Configuration Saved"); 
+    }
+    
     function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
 
     // Charting
