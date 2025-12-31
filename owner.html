@@ -237,42 +237,44 @@
             </div>
 
             <div id="view-financials" class="view-section hidden-section fade-in-up">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-slate-800 brand-font">Records</h3>
-                    <div class="flex gap-2">
-                        <button onclick="act_openPayModal(null)" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-700 brand-font">+ Payment</button>
-                        <button onclick="openInvoiceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-emerald-700 brand-font">+ Invoice</button>
-                    </div>
-                </div>
+                <!-- REPLACE CONTENT INSIDE <div id="view-financials" ...> -->
+
+<div class="flex justify-between items-center mb-6">
+    <h3 class="text-xl font-bold text-slate-800 brand-font">Financial Records</h3>
+    <div class="flex gap-2">
+        <button onclick="act_openPayModal(null)" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-700 brand-font">+ Payment</button>
+        <button onclick="openInvoiceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-emerald-700 brand-font">+ Invoice</button>
+    </div>
+</div>
+
+<div id="fin-summary-container" class="mb-6 hidden-section">
+    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-xs">
+        <p class="text-xs text-slate-500 font-bold uppercase">Total Outstanding</p>
+        <h4 class="text-xl font-bold text-slate-800" id="fin-open-bal">$0.00</h4>
+    </div>
+</div>
+
+<div class="mb-4">
+    <select id="filter-financials" onchange="renderFinancials()" class="border p-2 rounded-lg text-sm bg-white"><option value="all">All Tenants</option></select>
+</div>
+
+<div class="bg-white rounded-3xl shadow-sm border border-slate-200 w-full overflow-x-auto">
+    <table class="w-full text-left whitespace-nowrap">
+        <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font">
+            <tr>
+                <th class="p-5">Date</th>
+                <th class="p-5">Tenant</th>
+                <th class="p-5">Type</th>
+                <th class="p-5">Description</th>
+                <th class="p-5 text-right">Amount</th>
+                <th class="p-5 text-right">Status</th>
+                <th class="p-5 text-right">Action</th>
+            </tr>
+        </thead>
+        <tbody id="table-financials" class="divide-y divide-slate-100"></tbody>
+    </table>
+</div>
                 
-                <div id="fin-summary-container" class="mb-6 hidden-section">
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-xs">
-                        <p class="text-xs text-slate-500 font-bold uppercase">Open Balance</p>
-                        <h4 class="text-xl font-bold text-slate-800" id="fin-open-bal">$0.00</h4>
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <select id="filter-financials" onchange="renderInvoices()" class="border p-2 rounded-lg text-sm bg-white"><option value="all">All Tenants</option></select>
-                </div>
-
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 w-full overflow-x-auto">
-                    <table class="w-full text-left whitespace-nowrap">
-                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font">
-                            <tr>
-                                <th class="p-5">Date</th>
-                                <th class="p-5">Tenant</th>
-                                <th class="p-5">Description</th>
-                                <th class="p-5 text-right">Amount</th>
-                                <th class="p-5 text-right">Balance</th>
-                                <th class="p-5 text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-invoices" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-            </div>
-
             <div id="view-expenses" class="view-section hidden-section fade-in-up">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <h3 class="text-xl font-bold text-slate-800 brand-font">Expenses</h3>
@@ -915,7 +917,7 @@
             lastRenderedState.expenses = expHash;
         }
 
-        renderInvoices();
+        renderFinancials();
         renderReports(); 
     }
 
@@ -1295,7 +1297,151 @@
     // UPDATED: Show Active AND Archived (but not Vacant)
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
-    function renderInvoices() { const filterVal = document.getElementById('filter-financials').value; const t = document.getElementById('table-invoices'); const sumContainer = document.getElementById('fin-summary-container'); t.innerHTML=''; if(filterVal === 'all') sumContainer.classList.add('hidden-section'); else sumContainer.classList.remove('hidden-section'); state.invoices.forEach(inv => { if(filterVal === 'all' || inv.tenant_id == filterVal) { const balance = inv.total - (inv.amount_paid || 0); let rowBg = '', status = 'Unpaid'; if (balance <= 0) { rowBg = 'bg-emerald-50/50'; status='Paid'; } const fileLink = inv.doc_url ? `<a href="${inv.doc_url}" target="_blank" class="ml-2 text-indigo-500 hover:text-indigo-700" title="View Attachment"><i class="fas fa-paperclip"></i></a>` : ''; t.innerHTML += `<tr class="border-b border-slate-100 ${rowBg}"><td class="p-5 text-sm font-medium text-slate-500">${inv.date}</td><td class="p-5 text-sm font-bold">${inv.tenant_name || 'Unknown'}</td><td class="p-5 text-sm text-slate-500">${(inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge'} ${fileLink}</td><td class="p-5 text-right font-bold text-slate-800">$${inv.total.toLocaleString()}</td><td class="p-5 text-right font-medium text-slate-600">$${balance.toLocaleString()}</td><td class="p-5 text-right"><span class="text-xs font-bold uppercase ${status==='Paid'?'text-emerald-600':'text-rose-500'}">${status}</span></td></tr>`; } }); }
+    // --- FINANCIALS VIEW CONTROLLER ---
+    
+    // --- UNIFIED FINANCIALS LOGIC ---
+
+    function renderFinancials() {
+        const filterVal = document.getElementById('filter-financials').value;
+        const tbody = document.getElementById('table-financials');
+        const sumContainer = document.getElementById('fin-summary-container');
+        const balanceDisplay = document.getElementById('fin-open-bal');
+
+        tbody.innerHTML = '';
+
+        // 1. Merge Invoices and Payments into one list
+        let transactions = [];
+
+        // Add Invoices
+        state.invoices.forEach(inv => {
+            if (filterVal === 'all' || inv.tenant_id == filterVal) {
+                transactions.push({
+                    type: 'invoice',
+                    data: inv,
+                    // Use due_date, fallback to date, fallback to created_at
+                    dateObj: new Date(inv.due_date || inv.date || inv.created_at)
+                });
+            }
+        });
+
+        // Add Payments
+        state.payments.forEach(pay => {
+            if (filterVal === 'all' || pay.tenant_id == filterVal) {
+                transactions.push({
+                    type: 'payment',
+                    data: pay,
+                    dateObj: new Date(pay.date || pay.created_at)
+                });
+            }
+        });
+
+        // 2. Sort by Date Descending (Newest first)
+        transactions.sort((a, b) => b.dateObj - a.dateObj);
+
+        // 3. Calculate Total Outstanding Balance (for the card)
+        let totalBalance = 0;
+        state.invoices.forEach(inv => {
+            if (filterVal === 'all' || inv.tenant_id == filterVal) {
+                const bal = (inv.total || 0) - (inv.amount_paid || 0);
+                if (bal > 0.01) totalBalance += bal;
+            }
+        });
+        
+        balanceDisplay.innerText = `$${totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        sumContainer.classList.remove('hidden-section');
+
+        // 4. Render Rows
+        transactions.forEach(item => {
+            const isInv = item.type === 'invoice';
+            const record = item.data;
+            const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
+            const dateStr = item.dateObj.toLocaleDateString();
+            
+            let rowHtml = '';
+
+            if (isInv) {
+                // INVOICE ROW
+                const balance = (record.total || 0) - (record.amount_paid || 0);
+                const status = balance <= 0.01 ? 'Paid' : 'Unpaid';
+                const statusColor = status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
+                const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
+                
+                rowHtml = `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
+                    <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td>
+                    <td class="p-5 text-sm text-slate-500">${desc}</td>
+                    <td class="p-5 text-right font-bold text-slate-800">$${(record.total||0).toLocaleString()}</td>
+                    <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${status}</span></td>
+                    <td class="p-5 text-right">
+                        <button onclick="act_viewInvoice(${record.id})" class="text-slate-400 hover:text-indigo-600 transition" title="View Details"><i class="fas fa-eye"></i></button>
+                    </td>
+                </tr>`;
+            } else {
+                // PAYMENT ROW
+                rowHtml = `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
+                    <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
+                    <td class="p-5 text-sm text-slate-400 italic">Payment Received</td>
+                    <td class="p-5 text-right font-bold text-emerald-600">+$${(record.amount||0).toLocaleString()}</td>
+                    <td class="p-5 text-right text-xs text-slate-400">-</td>
+                    <td class="p-5 text-right text-xs text-slate-400">-</td>
+                </tr>`;
+            }
+            tbody.innerHTML += rowHtml;
+        });
+
+        if (transactions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>';
+        }
+    }
+
+    // --- VIEW INVOICE (READ ONLY MODE) ---
+    function act_viewInvoice(id) {
+        const inv = state.invoices.find(i => i.id === id);
+        if (!inv) return;
+
+        // 1. Populate the Preview Section directly
+        const tenant = state.tenants.find(t => t.id == inv.tenant_id) || { name: 'Unknown' };
+        
+        setText('prev-name', tenant.name);
+        setText('prev-date', new Date(inv.due_date || inv.date).toLocaleDateString());
+        setText('prev-total-due', `$${(inv.total||0).toLocaleString()}`);
+        
+        // Populate Items
+        const tbody = document.getElementById('prev-items-body');
+        tbody.innerHTML = '';
+        if (inv.items && Array.isArray(inv.items)) {
+            inv.items.forEach(item => {
+                tbody.innerHTML += `
+                <tr class="border-b border-slate-100 last:border-0">
+                    <td class="py-2">${item.desc}</td>
+                    <td class="py-2 text-right font-medium">$${parseFloat(item.amount).toLocaleString()}</td>
+                </tr>`;
+            });
+        }
+
+        // Handle Balance Summary
+        document.getElementById('prev-bal-amt').innerText = `$${(inv.total).toLocaleString()}`;
+        document.getElementById('prev-pay-amt').innerText = `-$${(inv.amount_paid||0).toLocaleString()}`;
+        const balance = (inv.total - (inv.amount_paid||0));
+        document.getElementById('prev-fwd-amt').innerText = `$${balance.toLocaleString()}`;
+
+        // 2. Show Modal in "View" Mode
+        document.getElementById('inv-modal-title').innerText = "Invoice Details";
+        document.getElementById('inv-step-input').classList.add('hidden-section'); // Hide creation form
+        document.getElementById('inv-step-preview').classList.remove('hidden-section'); // Show preview
+        
+        // Hide "Create" buttons, Show "Close" button
+        document.getElementById('inv-actions-create').classList.add('hidden-section');
+        document.getElementById('inv-actions-create').classList.remove('flex');
+        document.getElementById('inv-actions-view').classList.remove('hidden-section');
+
+        openModal('modal-invoice');
+    }
     function openInvoiceModal() { const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); document.getElementById('inv-actions-create').classList.remove('hidden-section'); document.getElementById('inv-actions-create').classList.add('flex'); document.getElementById('inv-actions-view').classList.add('hidden-section'); document.getElementById('inv-date').valueAsDate = new Date(); document.getElementById('btn-confirm-inv').disabled = false; openModal('modal-invoice'); logic_invMode('fixed'); }
     function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
     function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
