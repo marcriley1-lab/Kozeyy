@@ -397,44 +397,64 @@
         const USER_ID = localStorage.getItem('kozeyy_user_id') || 1; 
         
         let globalData = { user: null, invoices: [], msgs: [], maint: [] };
+        
+        // State Tracking for Diffing (Prevent Flashing)
+        let lastRenderedState = {
+            invoices: "",
+            msgs: "",
+            maint: "",
+            user: ""
+        };
+        
+        let notifications = { messages: false, maintenance: false };
+        let lastMaintHash = "";
 
-        async function render() {
+        // --- MAIN RENDER FUNCTION ---
+        async function render(skipFetch = false) {
             if(!supabaseClient) return;
 
-            const [u, i, m, mt] = await Promise.all([
-               supabaseClient.from('tenants').select('*').eq('id', USER_ID).single(),
-               supabaseClient.from('invoices').select('*').eq('tenant_id', USER_ID),
-               supabaseClient.from('msgs').select('*').eq('tenant_id', USER_ID),
-               supabaseClient.from('maintenance').select('*').eq('tenant_id', USER_ID)
-            ]);
+            if(!skipFetch) {
+                const [u, i, m, mt] = await Promise.all([
+                   supabaseClient.from('tenants').select('*').eq('id', USER_ID).single(),
+                   supabaseClient.from('invoices').select('*').eq('tenant_id', USER_ID),
+                   supabaseClient.from('msgs').select('*').eq('tenant_id', USER_ID),
+                   supabaseClient.from('maintenance').select('*').eq('tenant_id', USER_ID)
+                ]);
 
-            let user = u.data || { name: "Guest User", email: "guest@example.com", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
-            const invoices = i.data || [];
-            const msgs = m.data || [];
-            const maint = mt.data || [];
-            
-            globalData.user = user;
-            globalData.invoices = invoices;
-            globalData.msgs = msgs;
-            globalData.maint = maint;
-
-            const savedProfile = localStorage.getItem('kozeyy_profile');
-            let displayName = user.name;
-            let displayInitials = user.name ? user.name.charAt(0) : 'U';
-
-            if (savedProfile) {
-                try {
-                    const profile = JSON.parse(savedProfile);
-                    if(profile.role === 'tenant') {
-                        displayName = profile.username || user.name;
-                        displayInitials = profile.initials || displayInitials;
-                    }
-                } catch(e) {}
+                globalData.user = u.data || { name: "Guest User", email: "", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
+                globalData.invoices = i.data || [];
+                globalData.msgs = m.data || [];
+                globalData.maint = mt.data || [];
             }
 
-            document.getElementById('user-name').innerText = displayName;
-            document.querySelectorAll('.display-name').forEach(el => el.innerText = displayName);
-            document.querySelectorAll('.display-initials').forEach(el => el.innerText = displayInitials);
+            const { user, invoices, msgs, maint } = globalData;
+
+            // --- UPDATE NOTIFICATIONS ---
+            // 1. Messages: Check for unread from Owner
+            const unreadMsgCount = msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
+            const activeTab = document.querySelector('.sidebar-active')?.id || '';
+            const isMsgTab = activeTab.includes('messages');
+            
+            // Only show badge if unread AND not currently looking at messages
+            notifications.messages = unreadMsgCount > 0 && !isMsgTab;
+            updateBadge('messages', notifications.messages);
+
+            // 2. Maintenance: Check if status changed
+            const currentMaintHash = JSON.stringify(maint.map(m => ({id: m.id, status: m.status})).sort((a,b)=>a.id-b.id));
+            if(lastMaintHash && lastMaintHash !== currentMaintHash) {
+                if(!activeTab.includes('maintenance')) {
+                    notifications.maintenance = true;
+                    updateBadge('maintenance', true);
+                }
+            }
+            lastMaintHash = currentMaintHash;
+
+            // --- RENDER UI (Diffing Applied) ---
+
+            // Profile (Only update if needed, but text updates are cheap and don't flash like innerHTML)
+            document.getElementById('user-name').innerText = user.name;
+            document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name);
+            document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name ? user.name.charAt(0) : 'U');
             document.getElementById('set-email').innerText = user.email || 'N/A';
             document.getElementById('set-phone').innerText = user.phone || 'N/A';
             
@@ -445,420 +465,106 @@
                 document.getElementById('unit-info-container').classList.add('hidden-section');
             }
 
-            if(user.insurance) {
-                 document.getElementById('insurance-missing').classList.add('hidden-section');
-                 document.getElementById('insurance-verified').classList.remove('hidden-section');
-            } else {
-                 document.getElementById('insurance-missing').classList.remove('hidden-section');
-                 document.getElementById('insurance-verified').classList.add('hidden-section');
-            }
-            
-            // --- UPDATED CREDIT LOGIC IN RENDER ---
-            document.getElementById('toggle-credit').checked = user.credit_reporting;
-            
-            if(user.credit_reporting) {
-                document.getElementById('credit-banner').classList.add('hidden-section');
-            } else {
-                document.getElementById('credit-banner').classList.remove('hidden-section');
-            }
-
-            // --- CALCULATE UNPAID BALANCE (TOTAL - AMOUNT_PAID) ---
-            const unpaid = invoices.filter(i => {
-                const bal = i.total - (i.amount_paid || 0);
-                return bal > 0 && i.status !== 'Paid';
-            });
-            const totalDue = unpaid.reduce((sum, i) => sum + (i.total - (i.amount_paid || 0)), 0);
-
-            document.getElementById('total-balance').innerText = `$${totalDue.toLocaleString()}`;
-            const badge = document.getElementById('payment-status-badge');
-            const uCont = document.getElementById('unpaid-container'); 
-            
-            if(totalDue > 0) { 
-                badge.className = "bg-rose-100 text-rose-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = `${unpaid.length} Due`; 
-                document.getElementById('payment-due-date').innerText = `Due: ${unpaid[0].date || 'Immediately'}`; 
+            // Payment Logic (Diffing)
+            const currentInvStr = JSON.stringify(invoices);
+            if (currentInvStr !== lastRenderedState.invoices) {
+                const unpaid = invoices.filter(i => { const bal = i.total - (i.amount_paid || 0); return bal > 0 && i.status !== 'Paid'; });
+                const totalDue = unpaid.reduce((sum, i) => sum + (i.total - (i.amount_paid || 0)), 0);
+                document.getElementById('total-balance').innerText = `$${totalDue.toLocaleString()}`;
                 
-                uCont.innerHTML = '';
-                unpaid.forEach(i => { 
-                    const currentBalance = i.total - (i.amount_paid || 0);
-                    
-                    let itemsHtml = `<ul class="text-xs text-slate-500 mt-2 space-y-1">`; 
-                    const items = i.items || [{desc: 'Balance', amount: i.total}]; 
-                    items.slice(0, 2).forEach(item => { itemsHtml += `<li class="flex justify-between w-full max-w-xs border-b border-dashed border-slate-200 pb-1"><span>${item.desc}</span> <span>$${item.amount}</span></li>`; });
-                    if (items.length > 2) itemsHtml += `<li class="text-[10px] text-slate-400 italic">+ ${items.length - 2} more items</li>`;
-                    itemsHtml += `</ul>`; 
-                    
-                    uCont.innerHTML += `
-                    <div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4">
-                        <div class="w-full md:w-auto">
-                            <div class="flex items-center gap-2">
-                                <p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p>
-                                <button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> View Details</button>
-                            </div>
-                            ${itemsHtml}
-                            <p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p>
-                        </div>
-                        <div class="flex items-center justify-between w-full md:w-auto gap-4">
-                            <div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${currentBalance.toLocaleString()}</span></div>
-                            <button onclick="initStripePayment(${i.id}, ${currentBalance})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2">
-                                <span>Pay Now</span>
-                                <i class="fas fa-lock text-[10px] opacity-70"></i>
-                            </button>
-                        </div>
-                    </div>`; 
-                });
-            } else { 
-                badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = "All Paid"; 
-                document.getElementById('payment-due-date').innerText = "No upcoming payments";
+                const badge = document.getElementById('payment-status-badge');
+                const uCont = document.getElementById('unpaid-container'); 
                 
-                uCont.innerHTML = `
-                <div class="p-8 text-center text-slate-400 flex flex-col items-center">
-                    <div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3">
-                        <i class="fas fa-check text-emerald-400 text-xl"></i>
-                    </div>
-                    <p class="text-sm font-medium text-slate-600">You're all caught up!</p>
-                    <p class="text-xs text-slate-400">No payments due.</p>
-                </div>`;
-            }
-
-            const hBody = document.getElementById('history-body'); const hMob = document.getElementById('history-mobile');
-            hBody.innerHTML = ''; hMob.innerHTML = '';
-            const historyItems = invoices.filter(i => i.status === 'Paid');
-            if(historyItems.length === 0) {
-                hMob.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No payment history</div>';
-                hBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">No payment history</td></tr>';
-            } else {
-                historyItems.forEach(i => { 
-                    const totalAmt = i.total; 
-                    hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.id}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice(${i.id})" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
-                    hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice(${i.id})"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.id}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
-                });
-            }
-
-            // Messages & Notifications
-            renderMessages();
-            const unreadCount = msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
-            const dot = document.getElementById('desk-notif-dot');
-            const mobDot = document.getElementById('mob-notif-dot');
-            if(unreadCount > 0) {
-                dot.classList.remove('hidden-section');
-                mobDot.classList.remove('hidden-section');
-            } else {
-                dot.classList.add('hidden-section');
-                mobDot.classList.add('hidden-section');
-            }
-
-            const maintList = document.getElementById('maint-list'); 
-            if (maint.length === 0) { 
-                maintList.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-100 mb-2"></i><p class="text-sm">No maintenance requests found</p></div>`; 
-            } else {
-                maintList.innerHTML = '';
-                maint.forEach(m => { const statusColor = m.status === 'Active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'; const notes = m.notes ? `<p class="text-xs text-slate-500 mt-1 italic border-l-2 border-slate-300 pl-2">"${m.notes}"</p>` : ''; maintList.innerHTML += `<div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100"><div class="flex justify-between items-start"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-wrench"></i></div><div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${m.date}</p></div></div><span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span></div>${notes}</div>`; });
-            }
-        }
-
-        // --- UPDATED LIVE UPDATES ---
-        function startLiveUpdates() {
-            setInterval(async () => {
-                // We re-call render(), but check if we need to redraw messages to avoid flicker
-                // For 'Production Ready' simplicity, re-fetching and DOM diffing is complex without frameworks.
-                // We will re-fetch data and only update Chat + Maintenance parts.
-                
-                try {
-                    const [msg, m] = await Promise.all([
-                        supabaseClient.from('msgs').select('*').eq('tenant_id', USER_ID),
-                        supabaseClient.from('maintenance').select('*').eq('tenant_id', USER_ID)
-                    ]);
-                    
-                    if(msg.data) {
-                        const newCount = msg.data.length;
-                        const oldCount = globalData.msgs.length;
-                        globalData.msgs = msg.data;
-                        if(newCount !== oldCount) {
-                            renderMessages();
-                            // Update badges
-                            const unreadCount = msg.data.filter(x => x.from === 'Owner' && !x.read_at).length;
-                            const dot = document.getElementById('desk-notif-dot');
-                            const mobDot = document.getElementById('mob-notif-dot');
-                            if(unreadCount > 0) { dot.classList.remove('hidden-section'); mobDot.classList.remove('hidden-section'); } 
-                            else { dot.classList.add('hidden-section'); mobDot.classList.add('hidden-section'); }
-                        }
-                    }
-                    
-                    if(m.data) {
-                        // Check if status changed
-                        const oldActive = globalData.maint.filter(x=>x.status==='Active').length;
-                        const newActive = m.data.filter(x=>x.status==='Active').length;
-                        if(oldActive !== newActive || m.data.length !== globalData.maint.length) {
-                            globalData.maint = m.data;
-                            // Redraw maintenance list
-                            const maintList = document.getElementById('maint-list');
-                            maintList.innerHTML = '';
-                            globalData.maint.forEach(m => { const statusColor = m.status === 'Active' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-600'; const notes = m.notes ? `<p class="text-xs text-slate-500 mt-1 italic border-l-2 border-slate-300 pl-2">"${m.notes}"</p>` : ''; maintList.innerHTML += `<div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100"><div class="flex justify-between items-start"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-wrench"></i></div><div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${m.date}</p></div></div><span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span></div>${notes}</div>`; });
-                        }
-                    }
-                } catch(e) { console.warn("Poll fail", e); }
-            }, 4000);
-        }
-
-        // --- UPDATED CHAT FUNCTIONALITY ---
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if(!text) return;
-
-            // 1. Optimistic UI
-            const b = document.getElementById('chat-messages');
-            const d = new Date();
-            const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
-            b.innerHTML += `<div class="flex justify-end fade-in"><div class="max-w-[80%] px-4 py-2 rounded-2xl bg-indigo-600 text-white rounded-br-none text-sm shadow-sm">${text}</div></div>`;
-            b.scrollTop = b.scrollHeight;
-            input.value = '';
-
-            // 2. Send to DB
-            try {
-                await supabaseClient.from('msgs').insert([{ tenant_id: USER_ID, from: 'Tenant', text: text, time: new Date().toISOString() }]);
-            } catch(e) { console.error(e); }
-        }
-
-        function renderMessages() {
-            const chatBox = document.getElementById('chat-messages'); 
-            chatBox.innerHTML = '';
-            
-            const msgs = globalData.msgs.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
-            
-            if(msgs.length === 0) {
-                chatBox.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-sm">No messages yet</p></div>`;
-            } else {
-                msgs.forEach(m => {
-                    const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; 
-                    const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
-                    
-                    const d = new Date(m.created_at);
-                    const isToday = d.toDateString() === new Date().toDateString();
-                    const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
-
-                    chatBox.innerHTML += `
-                    <div class="flex ${align} mb-3 fade-in">
-                        <div class="flex flex-col ${m.from === 'Tenant' ? 'items-end' : 'items-start'} max-w-[85%]">
-                            <div class="px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">${m.text}</div>
-                            <span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span>
-                        </div>
-                    </div>`;
-                });
-                chatBox.scrollTop = chatBox.scrollHeight;
-                
-                // Mark Owner messages as read
-                const unreadIds = msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
-                if(unreadIds.length > 0) {
-                    supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
+                if(totalDue > 0) { 
+                    badge.className = "bg-rose-100 text-rose-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = `${unpaid.length} Due`; 
+                    document.getElementById('payment-due-date').innerText = `Due: ${unpaid[0].date || 'Immediately'}`; 
+                    uCont.innerHTML = '';
+                    unpaid.forEach(i => { 
+                        const currentBalance = i.total - (i.amount_paid || 0);
+                        uCont.innerHTML += `<div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4"><div class="w-full md:w-auto"><div class="flex items-center gap-2"><p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p><button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button></div><p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p></div><div class="flex items-center justify-between w-full md:w-auto gap-4"><div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${currentBalance.toLocaleString()}</span></div><button onclick="initStripePayment(${i.id}, ${currentBalance})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2"><span>Pay Now</span><i class="fas fa-lock text-[10px] opacity-70"></i></button></div></div>`; 
+                    });
+                } else { 
+                    badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = "All Paid"; 
+                    document.getElementById('payment-due-date').innerText = "No upcoming payments";
+                    uCont.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3"><i class="fas fa-check text-emerald-400 text-xl"></i></div><p class="text-sm font-medium text-slate-600">You're all caught up!</p></div>`;
                 }
-            }
-        }
 
-        // --- HANDLE URL RETURNS (UPDATE DB ON SUCCESS) ---
-        async function checkReturnParams() {
-            const params = new URLSearchParams(window.location.search);
-            
-            if (params.get('sub') === 'active') {
-                toggleModal('processingModal'); 
-                try {
-                    await supabaseClient.from('tenants').update({ credit_reporting: true }).eq('id', USER_ID);
-                    if (globalData.user) globalData.user.credit_reporting = true;
-                    alert("Credit Reporting Activated Successfully! 🚀");
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    render();
-                } catch(e) { console.error(e); }
-                toggleModal('processingModal'); 
-            }
-            
-            if (params.get('success') === 'true') {
-                const paidInvoiceId = params.get('invoice_id');
-                if(paidInvoiceId) {
-                    toggleModal('processingModal');
-                    try {
-                        const { data: inv } = await supabaseClient.from('invoices').select('total').eq('id', paidInvoiceId).single();
-                        if(inv) {
-                            await supabaseClient.from('invoices').update({ 
-                                status: 'Paid',
-                                amount_paid: inv.total,
-                                paid_date: new Date().toISOString()
-                            }).eq('id', paidInvoiceId);
-                            alert("Payment Successful! Thank you.");
-                        }
-                    } catch(e) { console.error("Update failed", e); }
-                    toggleModal('processingModal');
-                }
-                window.history.replaceState({}, document.title, window.location.pathname);
-                render();
-            }
-        }
-
-        function viewInvoice(id) {
-            const inv = globalData.invoices.find(i => i.id === id);
-            if(!inv) return;
-
-            document.getElementById('inv-id').innerText = inv.id;
-            document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
-            
-            const prevBal = 0; 
-            const currentBalance = inv.total - (inv.amount_paid || 0);
-            const stripeFee = 2.99; 
-            
-            document.getElementById('inv-prev-bal').innerText = `$${prevBal.toLocaleString()}`;
-            document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid || 0).toLocaleString()}`;
-            document.getElementById('inv-fwd-bal').innerText = `$${currentBalance.toLocaleString()}`;
-            
-            const tbody = document.getElementById('inv-items-body');
-            tbody.innerHTML = '';
-            (inv.items || []).forEach(item => {
-                tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`;
-            });
-
-            const attEl = document.getElementById('inv-attachment');
-            if(inv.doc) {
-                attEl.classList.remove('hidden-section');
-                document.getElementById('inv-doc-name').innerText = inv.doc;
-            } else {
-                attEl.classList.add('hidden-section');
-            }
-
-            const feeSection = document.getElementById('inv-fees-section');
-            const totalEl = document.getElementById('inv-total');
-            
-            if(currentBalance <= 0 || inv.status === 'Paid') {
-                feeSection.classList.add('hidden-section');
-                totalEl.innerText = `$0.00`;
-                document.getElementById('inv-pay-btn-container').innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date || 'Unknown'}</div>`;
-            } else {
-                feeSection.classList.remove('hidden-section');
-                totalEl.innerText = `$${(currentBalance + stripeFee).toLocaleString()}`;
-                document.getElementById('inv-stripe-fee').innerText = `$${stripeFee.toFixed(2)}`;
-                document.getElementById('inv-pay-btn-container').innerHTML = `
-                <button onclick="initStripePayment(${inv.id}, ${currentBalance})" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold mt-4 hover:bg-indigo-700 shadow-lg flex items-center justify-center gap-2"><i class="fas fa-lock"></i> Pay with Stripe</button>
-                <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold mt-3 hover:text-slate-600">Cancel</button>`;
-            }
-            toggleModal('invoiceModal');
-        }
-
-        async function initStripePayment(invoiceId, baseAmount) {
-            toggleModal('invoiceModal');
-            toggleModal('processingModal');
-
-            try {
-                const response = await fetch(FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_KEY}` 
-                    },
-                    body: JSON.stringify({
-                        action: 'create-checkout-session',
-                        invoiceId: invoiceId,
-                        amount: baseAmount,
-                        tenantId: USER_ID
-                    })
-                });
-
-                const session = await response.json();
-                if(session.error) throw new Error(session.error);
-
-                const result = await stripe.redirectToCheckout({ sessionId: session.id });
-                if (result.error) throw new Error(result.error.message);
-
-            } catch (err) {
-                toggleModal('processingModal');
-                alert("Payment Error: " + err.message);
-            }
-        }
-
-        async function handleCreditToggle() {
-            const checkBox = document.getElementById('toggle-credit');
-            
-            if (checkBox.checked) {
-                const msg = "Activate Credit Reporting ($10/mo)?\nProceed to secure payment?";
-                if(confirm(msg)) {
-                    toggleModal('processingModal');
-                    try {
-                        const response = await fetch(FUNCTION_URL, {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${SUPABASE_KEY}` 
-                            },
-                            body: JSON.stringify({ action: 'subscribe', tenantId: USER_ID })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.error) throw new Error(data.error);
-                        
-                        if(data.url) window.location.href = data.url; 
-                        else throw new Error("No URL returned from Stripe");
-
-                    } catch(err) {
-                        toggleModal('processingModal');
-                        alert("Error: " + err.message);
-                        checkBox.checked = false; 
-                    }
+                // History (Diffing part of invoices)
+                const hBody = document.getElementById('history-body'); const hMob = document.getElementById('history-mobile');
+                hBody.innerHTML = ''; hMob.innerHTML = '';
+                const historyItems = invoices.filter(i => i.status === 'Paid');
+                if(historyItems.length === 0) {
+                    hMob.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No payment history</div>';
+                    hBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">No payment history</td></tr>';
                 } else {
-                    checkBox.checked = false; 
+                    historyItems.forEach(i => { 
+                        const totalAmt = i.total; 
+                        hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.id}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice(${i.id})" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
+                        hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice(${i.id})"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.id}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
+                    });
                 }
-            } 
-            else {
-                checkBox.checked = true; 
-                const msg = "To prevent accidental double-billing, please cancel directly in the Billing Portal.\n\nYour subscription will remain active until the end of the current billing period.";
-                if(confirm(msg)) {
-                    openStripePortal();
+                lastRenderedState.invoices = currentInvStr;
+            }
+
+            // --- RENDER MAINTENANCE LIST (Diffing) ---
+            const currentMaintStr = JSON.stringify(maint);
+            if(currentMaintStr !== lastRenderedState.maint) {
+                const maintList = document.getElementById('maint-list'); 
+                if (maint.length === 0) { 
+                    maintList.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-100 mb-2"></i><p class="text-sm">No maintenance requests found</p></div>`; 
+                } else {
+                    maintList.innerHTML = '';
+                    const sortedMaint = maint.sort((a,b) => {
+                        if(a.status === 'Active' && b.status !== 'Active') return -1;
+                        if(a.status !== 'Active' && b.status === 'Active') return 1;
+                        return new Date(b.date) - new Date(a.date);
+                    });
+                    sortedMaint.forEach(m => { 
+                        const isActive = m.status === 'Active';
+                        const statusColor = isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'; 
+                        const opacity = isActive ? '' : 'opacity-70';
+                        const notes = m.notes ? `<div class="mt-2 bg-slate-50 p-2 rounded text-xs text-slate-600 italic border-l-2 border-slate-300">" ${m.notes} "</div>` : ''; 
+                        
+                        maintList.innerHTML += `
+                        <div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100 ${opacity}">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-${isActive ? 'wrench' : 'check'}"></i></div>
+                                    <div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${new Date(m.date).toLocaleDateString()}</p></div>
+                                </div>
+                                <span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span>
+                            </div>
+                            ${notes}
+                        </div>`; 
+                    });
                 }
+                lastRenderedState.maint = currentMaintStr;
             }
+            
+            // --- MESSAGES RENDER ---
+            // Only re-render if we are in the messages tab to save performance, or if data changed
+            if (activeTab.includes('messages')) renderMessages();
         }
 
-        async function openStripePortal() {
-            toggleModal('processingModal');
-            try {
-                const response = await fetch(FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${SUPABASE_KEY}` 
-                    },
-                    body: JSON.stringify({ action: 'create-portal-session', tenantId: USER_ID })
-                });
-                const data = await response.json();
-                if(data.url) window.location.href = data.url;
-                else throw new Error("Failed to create portal session");
-            } catch(err) {
-                toggleModal('processingModal');
-                alert("Error: " + err.message);
+        // --- HELPER FUNCTIONS ---
+        function updateBadge(type, show) {
+            // Desktop
+            const mobBtn = document.getElementById(`mob-${type}`);
+            if(type === 'messages') {
+                const d = document.getElementById('desk-notif-dot');
+                const mDot = document.getElementById('mob-notif-dot'); 
+                if(show) { if(d) d.classList.remove('hidden-section'); if(mDot) mDot.classList.remove('hidden-section'); } 
+                else { if(d) d.classList.add('hidden-section'); if(mDot) mDot.classList.add('hidden-section'); }
             }
-        }
-        
-        async function sendMessage() {
-            const input = document.getElementById('chat-input');
-            if(input.value.trim()) {
-                await supabaseClient.from('msgs').insert([{ tenant_id: USER_ID, from: 'Tenant', text: input.value.trim(), time: new Date().toISOString() }]);
-                input.value = ''; render();
+            if(type === 'maintenance') {
+                const dLink = document.getElementById('nav-maintenance');
+                let dDot = dLink.querySelector('.maint-dot');
+                if(!dDot) { dDot = document.createElement('span'); dDot.className = "maint-dot w-2.5 h-2.5 bg-red-500 rounded-full ml-auto hidden-section"; dLink.appendChild(dDot); }
+                let mDot = mobBtn.querySelector('.maint-dot-mob');
+                if(!mDot) { mDot = document.createElement('span'); mDot.className = "maint-dot-mob absolute top-0 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white hidden-section"; mobBtn.classList.add('relative'); mobBtn.appendChild(mDot); }
+                if(show) { dDot.classList.remove('hidden-section'); mDot.classList.remove('hidden-section'); } 
+                else { dDot.classList.add('hidden-section'); mDot.classList.add('hidden-section'); }
             }
-        }
-
-        async function handleMaintSubmit(e) {
-            e.preventDefault();
-            const desc = document.getElementById('m-desc').value;
-            const cat = document.getElementById('m-cat').value;
-            if(desc) {
-                await supabaseClient.from('maintenance').insert([{ tenant_id: USER_ID, issue: `${cat}: ${desc}`, status: 'Active', date: new Date().toISOString(), notes: '' }]);
-                toggleModal('requestModal'); e.target.reset(); render();
-            }
-        }
-        
-        async function uploadInsurance() {
-            const input = document.createElement('input'); input.type = 'file'; 
-            input.onchange = async () => { await supabaseClient.from('tenants').update({ insurance: true }).eq('id', USER_ID); alert("Uploaded!"); render(); }; 
-            input.click();
-        }
-
-        async function resetInsurance() {
-            if(confirm("Remove policy?")) { await supabaseClient.from('tenants').update({ insurance: false }).eq('id', USER_ID); render(); }
         }
 
         function switchTab(t) { 
@@ -871,15 +577,169 @@
             const mobBtn = document.getElementById(`mob-${t}`); if(mobBtn) { mobBtn.classList.add('mobile-active'); mobBtn.classList.remove('text-slate-400'); }
             const titles = { home:'Resident Portal', payments:'Payments', messages:'Messages', maintenance:'Maintenance', insurance:'Insurance', settings:'Account Settings' };
             const titleEl = document.getElementById('page-title'); if(titleEl) titleEl.innerText = titles[t] || 'Kozeyy';
+            
+            if(t === 'messages') {
+                 notifications.messages = false;
+                 updateBadge('messages', false);
+                 const unreadIds = globalData.msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
+                 if(unreadIds.length > 0) {
+                     supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
+                     // Optimistic update locally so render loop doesn't re-show badge
+                     globalData.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
+                 }
+                 renderMessages(); // Ensure immediate view update
+            }
+            if(t === 'maintenance') {
+                notifications.maintenance = false;
+                updateBadge('maintenance', false);
+            }
         }
 
+        function startLiveUpdates() { setInterval(() => { render(false); }, 4000); }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+            
+            // Optimistic Add
+            const newMsg = { tenant_id: USER_ID, from: 'Tenant', text: text, time: new Date().toISOString(), created_at: new Date().toISOString() };
+            globalData.msgs.push(newMsg);
+            
+            const b = document.getElementById('chat-messages');
+            const d = new Date();
+            const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+            b.innerHTML += `<div class="flex justify-end fade-in"><div class="max-w-[80%] px-4 py-2 rounded-2xl bg-indigo-600 text-white rounded-br-none text-sm shadow-sm">${text}</div></div>`;
+            b.scrollTop = b.scrollHeight;
+            input.value = '';
+            
+            try { 
+                await supabaseClient.from('msgs').insert([newMsg]); 
+                // render(false); // No need to re-render immediately, let polling catch up, we already updated UI
+            } catch(e) { console.error(e); }
+        }
+
+        function renderMessages() {
+            const chatBox = document.getElementById('chat-messages'); 
+            if(!chatBox) return;
+            
+            // Diffing for chat to prevent scroll jumps
+            const msgs = globalData.msgs.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
+            const msgHash = JSON.stringify(msgs);
+            if(msgHash === lastRenderedState.msgs) return;
+            lastRenderedState.msgs = msgHash;
+
+            const wasAtBottom = chatBox.scrollHeight - chatBox.scrollTop === chatBox.clientHeight;
+            chatBox.innerHTML = '';
+            
+            if(msgs.length === 0) { chatBox.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-sm">No messages yet</p></div>`; } 
+            else {
+                msgs.forEach(m => {
+                    const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; 
+                    const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
+                    const d = new Date(m.created_at);
+                    const isToday = d.toDateString() === new Date().toDateString();
+                    const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
+                    chatBox.innerHTML += `<div class="flex ${align} mb-3 fade-in"><div class="flex flex-col ${m.from === 'Tenant' ? 'items-end' : 'items-start'} max-w-[85%]"><div class="px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div></div>`;
+                });
+                if(wasAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        }
+
+        async function handleMaintSubmit(e) {
+            e.preventDefault();
+            const desc = document.getElementById('m-desc').value;
+            const cat = document.getElementById('m-cat').value;
+            if(desc) { 
+                const newReq = { tenant_id: USER_ID, issue: `${cat}: ${desc}`, status: 'Active', date: new Date().toISOString(), notes: '' };
+                
+                // Optimistic Update
+                globalData.maint.push(newReq);
+                toggleModal('requestModal'); 
+                e.target.reset(); 
+                render(true); // Skip fetch, render immediately
+                
+                // Actual Insert
+                await supabaseClient.from('maintenance').insert([newReq]); 
+                // Let polling handle syncing ID later
+            }
+        }
+        
+        async function checkReturnParams() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('sub') === 'active') {
+                toggleModal('processingModal'); 
+                try { await supabaseClient.from('tenants').update({ credit_reporting: true }).eq('id', USER_ID); if (globalData.user) globalData.user.credit_reporting = true; alert("Credit Reporting Activated Successfully! 🚀"); window.history.replaceState({}, document.title, window.location.pathname); render(false); } catch(e) { console.error(e); } toggleModal('processingModal'); 
+            }
+            if (params.get('success') === 'true') {
+                const paidInvoiceId = params.get('invoice_id');
+                if(paidInvoiceId) {
+                    toggleModal('processingModal');
+                    try { const { data: inv } = await supabaseClient.from('invoices').select('total').eq('id', paidInvoiceId).single(); if(inv) { await supabaseClient.from('invoices').update({ status: 'Paid', amount_paid: inv.total, paid_date: new Date().toISOString() }).eq('id', paidInvoiceId); alert("Payment Successful! Thank you."); } } catch(e) { console.error("Update failed", e); } toggleModal('processingModal');
+                }
+                window.history.replaceState({}, document.title, window.location.pathname);
+                render(false);
+            }
+        }
+        
+        function viewInvoice(id) {
+            const inv = globalData.invoices.find(i => i.id === id);
+            if(!inv) return;
+            document.getElementById('inv-id').innerText = inv.id;
+            document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
+            const prevBal = 0; const currentBalance = inv.total - (inv.amount_paid || 0); const stripeFee = 2.99; 
+            document.getElementById('inv-prev-bal').innerText = `$${prevBal.toLocaleString()}`;
+            document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid || 0).toLocaleString()}`;
+            document.getElementById('inv-fwd-bal').innerText = `$${currentBalance.toLocaleString()}`;
+            const tbody = document.getElementById('inv-items-body'); tbody.innerHTML = '';
+            (inv.items || []).forEach(item => { tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; });
+            const attEl = document.getElementById('inv-attachment'); if(inv.doc) { attEl.classList.remove('hidden-section'); document.getElementById('inv-doc-name').innerText = inv.doc; } else { attEl.classList.add('hidden-section'); }
+            const feeSection = document.getElementById('inv-fees-section'); const totalEl = document.getElementById('inv-total');
+            if(currentBalance <= 0 || inv.status === 'Paid') { feeSection.classList.add('hidden-section'); totalEl.innerText = `$0.00`; document.getElementById('inv-pay-btn-container').innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date || 'Unknown'}</div>`; } 
+            else { feeSection.classList.remove('hidden-section'); totalEl.innerText = `$${(currentBalance + stripeFee).toLocaleString()}`; document.getElementById('inv-stripe-fee').innerText = `$${stripeFee.toFixed(2)}`; document.getElementById('inv-pay-btn-container').innerHTML = `<button onclick="initStripePayment(${inv.id}, ${currentBalance})" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold mt-4 hover:bg-indigo-700 shadow-lg flex items-center justify-center gap-2"><i class="fas fa-lock"></i> Pay with Stripe</button><button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold mt-3 hover:text-slate-600">Cancel</button>`; }
+            toggleModal('invoiceModal');
+        }
+
+        async function initStripePayment(invoiceId, baseAmount) {
+            toggleModal('invoiceModal'); toggleModal('processingModal');
+            try {
+                const response = await fetch(FUNCTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: JSON.stringify({ action: 'create-checkout-session', invoiceId: invoiceId, amount: baseAmount, tenantId: USER_ID }) });
+                const session = await response.json(); if(session.error) throw new Error(session.error);
+                const result = await stripe.redirectToCheckout({ sessionId: session.id }); if (result.error) throw new Error(result.error.message);
+            } catch (err) { toggleModal('processingModal'); alert("Payment Error: " + err.message); }
+        }
+
+        async function handleCreditToggle() {
+            const checkBox = document.getElementById('toggle-credit');
+            if (checkBox.checked) {
+                if(confirm("Activate Credit Reporting ($10/mo)?\nProceed to secure payment?")) {
+                    toggleModal('processingModal');
+                    try {
+                        const response = await fetch(FUNCTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: JSON.stringify({ action: 'subscribe', tenantId: USER_ID }) });
+                        const data = await response.json(); if (data.error) throw new Error(data.error); if(data.url) window.location.href = data.url; else throw new Error("No URL returned");
+                    } catch(err) { toggleModal('processingModal'); alert("Error: " + err.message); checkBox.checked = false; }
+                } else { checkBox.checked = false; }
+            } else {
+                checkBox.checked = true; 
+                if(confirm("To prevent accidental double-billing, please cancel directly in the Billing Portal.\n\nYour subscription will remain active until the end of the current billing period.")) { openStripePortal(); }
+            }
+        }
+
+        async function openStripePortal() {
+            toggleModal('processingModal');
+            try {
+                const response = await fetch(FUNCTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: JSON.stringify({ action: 'create-portal-session', tenantId: USER_ID }) });
+                const data = await response.json(); if(data.url) window.location.href = data.url; else throw new Error("Failed to create portal session");
+            } catch(err) { toggleModal('processingModal'); alert("Error: " + err.message); }
+        }
+        
+        async function uploadInsurance() { const input = document.createElement('input'); input.type = 'file'; input.onchange = async () => { await supabaseClient.from('tenants').update({ insurance: true }).eq('id', USER_ID); alert("Uploaded!"); render(false); }; input.click(); }
+        async function resetInsurance() { if(confirm("Remove policy?")) { await supabaseClient.from('tenants').update({ insurance: false }).eq('id', USER_ID); render(false); } }
         function toggleModal(id) { const el = document.getElementById(id); if(el) el.classList.toggle('hidden-section'); }
 
-        // Start App
-        render();
-        // Check for returns from Stripe immediately
+        // Init
+        render(false);
         checkReturnParams();
-        // Start polling for real-time updates
         startLiveUpdates();
 
     </script>
