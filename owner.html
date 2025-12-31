@@ -14,7 +14,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style> .rotate-180 { transform: rotate(180deg); }
+    <style> 
+        .rotate-180 { transform: rotate(180deg); }
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         h1, h2, h3, h4, .brand-font { font-family: 'Outfit', sans-serif; }
         .sidebar-active { background-color: #312e81; border-left: 4px solid #6366f1; color: white !important; }
@@ -52,42 +53,33 @@
             <a href="#" onclick="event.preventDefault(); navTo('dashboard')" id="link-dashboard" class="nav-item flex items-center justify-between px-6 py-3.5 transition sidebar-active">
                 <div class="flex items-center"><i class="fas fa-th-large w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Dashboard</span></div>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('tenants')" id="link-tenants" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-users w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Tenants</span></div>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('listings')" id="link-listings" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-sign w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Listings</span></div>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('screening')" id="link-screening" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-user-check w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Screening</span></div>
                 <span id="badge-screening" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('messages')" id="link-messages" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-comment-dots w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Messages</span></div>
                 <span id="badge-messages" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('maintenance')" id="link-maintenance" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-tools w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Maintenance</span></div>
                 <span id="badge-maintenance" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('financials')" id="link-financials" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-money-bill-wave w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Records</span></div>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('expenses')" id="link-expenses" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-receipt w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Expenses</span></div>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('reports')" id="link-reports" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-chart-pie w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Reports</span></div>
             </a>
-            
             <a href="#" onclick="event.preventDefault(); navTo('settings')" id="link-settings" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-sliders-h w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Settings</span></div>
             </a>
@@ -319,33 +311,27 @@
             <!-- 10. SETTINGS -->
             <div id="view-settings" class="view-section hidden-section fade-in">
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
-                    <h3 class="text-2xl font-bold mb-8 brand-font">Settings: Late Fees</h3>
+                    <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
                     <form onsubmit="act_saveSettings(event)" class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Apply To</label>
-                            <div class="flex gap-4">
-                                <label class="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-slate-50 transition"><input type="radio" name="feeTarget" value="all" checked onchange="toggleFeeTarget()" class="text-indigo-600"> <span class="text-sm font-medium">All Tenants</span></label>
-                                <label class="flex items-center gap-2 cursor-pointer p-3 border rounded-xl hover:bg-slate-50 transition"><input type="radio" name="feeTarget" value="select" onchange="toggleFeeTarget()" class="text-indigo-600"> <span class="text-sm font-medium">Specific Tenants</span></label>
+                        
+                        <!-- STRIPE CONNECT SECTION -->
+                        <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                            <h4 class="font-bold text-indigo-900 mb-2 brand-font flex items-center gap-2"><i class="fab fa-stripe text-xl"></i> Payments Integration</h4>
+                            <p class="text-xs text-indigo-700 mb-4">Enter your Stripe Connected Account ID to receive payments automatically from tenants.</p>
+                            <div>
+                                <label class="block text-xs font-bold text-indigo-800 uppercase mb-1">Stripe Account ID</label>
+                                <input type="text" id="set-stripe-id" class="w-full border border-indigo-200 p-3 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="acct_..." value="">
                             </div>
-                            <div id="fee-tenant-select" class="hidden-section mt-3 p-3 bg-slate-50 rounded-xl border border-slate-200 max-h-32 overflow-y-auto"></div>
                         </div>
+
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Charge Method</label>
-                            <select id="fee-method" class="w-full border p-3 rounded-xl bg-slate-50" onchange="toggleFeeInput()"><option value="flat">Manual Flat Fee ($)</option><option value="daily">Daily Charge ($/day)</option><option value="percent">Percentage of Rent (%)</option></select>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div><label class="block text-sm font-bold text-slate-700 mb-2 brand-font" id="fee-label">Amount ($)</label><input type="number" id="fee-amount" class="w-full border p-3 rounded-xl bg-slate-50" value="50"></div>
-                            <div><label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Grace Period (Days)</label><input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50" value="5"></div>
-                        </div>
-                        <div class="pt-4 border-t border-slate-100">
-                            <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Lease Requirements</h4>
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                <label class="flex items-center gap-3 cursor-pointer"><input type="checkbox" id="set-insurance" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300"><span class="font-medium text-slate-700 brand-font">Require Renter's Insurance</span></label>
-                                <p class="text-xs text-slate-500 mt-1 ml-8">If checked, tenants will see a requirement notice.</p>
+                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Late Fees</label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-xs font-bold text-slate-500 mb-1">Amount ($)</label><input type="number" id="fee-amount" class="w-full border p-3 rounded-xl bg-slate-50" value="50"></div>
+                                <div><label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label><input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50" value="5"></div>
                             </div>
                         </div>
                         
-                        <!-- NEW: SCREENING CRITERIA SECTION -->
                         <div class="pt-4 border-t border-slate-100">
                             <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Screening Criteria</h4>
                             <div class="grid grid-cols-2 gap-4 mb-4">
@@ -356,9 +342,7 @@
                                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-evict" class="text-indigo-600 rounded"><span class="text-sm font-medium">No Evictions</span></label></div>
                                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-crim" class="text-indigo-600 rounded"><span class="text-sm font-medium">No Criminal Hist.</span></label></div>
                             </div>
-                            <div class="mt-4 p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-req-job" class="text-indigo-600 rounded"><span class="text-sm font-medium">Require Verified Employment</span></label></div>
                         </div>
-                        <!-- END NEW SECTION -->
 
                         <button class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg brand-font">Save Configuration</button>
                     </form>
@@ -457,6 +441,8 @@
                 </div>
                 <textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24" placeholder="Description"></textarea>
                 <input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities (comma separated)">
+                <!-- Image URL Input -->
+                <input id="l-img" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Image URL (e.g. Unsplash link)">
                 <input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
                 <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-indigo-700 transition" id="btn-save-listing">Post Listing</button>
             </form>
@@ -669,10 +655,18 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-3 gap-2 mt-4">
-                    <button onclick="act_screenDecision('Approve')" class="bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow">Approve</button>
+                <!-- ACTIONS CONTAINER -->
+                <div id="sd-actions" class="grid grid-cols-3 gap-2 mt-4">
+                    <button onclick="act_screenDecision('Approved')" class="bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow">Approve</button>
                     <button onclick="act_screenDecision('Conditional')" class="bg-amber-400 text-white py-3 rounded-xl font-bold text-sm shadow">Conditional</button>
                     <button onclick="act_screenDecision('Deny')" class="bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow">Deny</button>
+                </div>
+
+                <!-- NEW: EMAIL APPLICANT BUTTON -->
+                <div id="sd-email-option" class="hidden-section mt-4 pt-4 border-t border-slate-100">
+                    <a id="btn-email-applicant" href="#" class="block w-full bg-blue-600 text-white text-center py-3 rounded-xl font-bold shadow hover:bg-blue-700 transition">
+                        <i class="fas fa-envelope mr-2"></i> Email Decision to Applicant
+                    </a>
                 </div>
             </div>
         </div>
@@ -681,10 +675,8 @@
     <script>
         // --- SUPABASE CONFIG ---
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
-        // FIXED: Added missing 'E' at the end of the key
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
         
-        // FIXED: Renamed variable to 'supabaseClient' to prevent "Identifier 'supabase' has already been declared" error
         let supabaseClient = null;
         try {
             if(window.supabase) {
@@ -696,11 +688,9 @@
         let state = {
             tenants: [], listings: [], invoices: [], payments: [], expenses: [],
             apps: [], msgs: [], maint: [], settings: {}, recurringInvoices: [],
-            lastVarItems: {},
             notifications: { messages: 0, maintenance: 0, screening: 0 }
         };
         
-        // Helper to parse SQL Date (YYYY-MM-DD) to JS Date Object for comparison
         function parseDateStr(str) {
             if(!str) return new Date();
             const parts = str.split('-');
@@ -717,21 +707,9 @@
             try {
                 if(!supabaseClient) throw new Error("Supabase library not loaded.");
 
-                // 1. Get Owner ID (Simulated - Assuming user ID 1 for now)
-                // In a real app, use: const { data: { user } } = await supabaseClient.auth.getUser();
-                const ownerId = 1;
-
-                // 2. Fetch Data (Attempt to filter by owner_id if column exists)
-                // Note: If 'owner_id' column is missing in DB, this filter is ignored or might error depending on config.
-                // We add .eq('owner_id', ownerId) to demonstrate intent.
-                
-                // Fetch Tenants owned by this user
-                let tQuery = supabaseClient.from('tenants').select('*');
-                // Uncomment this line once you add 'owner_id' column to 'tenants' table:
-                // tQuery = tQuery.eq('owner_id', ownerId); 
-                
+                // FETCH EVERYTHING
                 const [t, l, i, p, e, m, msg, s, a, r] = await Promise.all([
-                    tQuery,
+                    supabaseClient.from('tenants').select('*'),
                     supabaseClient.from('listings').select('*'),
                     supabaseClient.from('invoices').select('*'),
                     supabaseClient.from('payments').select('*'),
@@ -743,7 +721,6 @@
                     supabaseClient.from('recurring_invoices').select('*')
                 ]);
 
-                // Populate State
                 state.tenants = t.data || [];
                 state.listings = l.data || [];
                 state.invoices = i.data || [];
@@ -755,68 +732,43 @@
                 state.apps = a.data || [];
                 state.recurringInvoices = r.data || [];
 
-                // Calculate Notifications based on unread/active status
-                state.notifications.screening = state.apps.filter(x => x.status === 'Pending').length;
+                state.notifications.screening = state.apps.filter(x => x.status === 'Pending' || x.status === 'Paid').length;
                 state.notifications.maintenance = state.maint.filter(x => x.status === 'Active').length;
                 
-                // Initial Render
                 initChart();
                 renderAll();
             } catch (err) {
                 console.error("Initialization failed:", err);
-                // Fallback render to show empty state instead of broken UI
                 renderAll();
             }
         }
 
         // --- FINANCIAL ENGINE ---
         function getTenantFinancials(tenantId) {
-            let invoices = state.invoices.filter(i => i.tenant_id == tenantId).sort((a,b) => parseDateStr(a.date) - parseDateStr(b.date));
+            // Updated to handle partial payments logic similar to tenant.html
+            let invoices = state.invoices.filter(i => i.tenant_id == tenantId);
             let payments = state.payments.filter(p => p.tenant_id == tenantId);
+            
+            let totalInvoiced = invoices.reduce((sum, inv) => sum + inv.total, 0);
             let totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
+            let openBalance = totalInvoiced - totalPaid;
             
-            let paymentPool = totalPaid;
-            let processedInvoices = [];
-            
-            invoices.forEach(inv => {
-                let paidAmount = 0;
-                if (paymentPool > 0) {
-                    if (paymentPool >= inv.total) {
-                        paidAmount = inv.total;
-                        paymentPool -= inv.total;
-                    } else {
-                        paidAmount = paymentPool;
-                        paymentPool = 0;
-                    }
-                }
-                
-                let balance = inv.total - paidAmount;
-                let status = 'Unpaid';
-                if (paidAmount >= inv.total) status = 'Paid';
-                else if (paidAmount > 0) status = 'Partial';
-                
-                processedInvoices.push({ ...inv, paid: paidAmount, balance: balance, status: status });
-            });
-            
-            let openBalance = processedInvoices.reduce((sum, inv) => sum + inv.balance, 0);
-            let credit = paymentPool; 
-            let net = credit - openBalance;
-            
+            // Simple logic: if Open Balance > 0, they owe money.
             return {
-                invoices: processedInvoices,
-                summary: { openBalance, credit, netPosition: net }
+                invoices: invoices,
+                summary: { openBalance: Math.max(0, openBalance) }
             };
         }
 
         function calculateGlobalStats() {
             let revenue = 0; // Collected THIS MONTH
-            let outstanding = 0; // Unpaid Future
-            let overdue = 0; // Unpaid Past
+            let overdue = 0; // Unpaid Invoices
             
             const now = new Date();
             const currentMonth = now.getMonth();
             const currentYear = now.getFullYear();
             
+            // Calc Revenue (Payments this month)
             state.payments.forEach(p => {
                 const pDate = parseDateStr(p.date);
                 if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
@@ -824,20 +776,16 @@
                 }
             });
 
-            const distinctTenantIds = [...new Set(state.invoices.map(i => i.tenant_id))];
-            distinctTenantIds.forEach(tid => {
-                const fin = getTenantFinancials(tid);
-                fin.invoices.forEach(inv => {
-                    if (inv.balance > 0) {
-                        const d1 = parseDateStr(inv.date).setHours(0,0,0,0);
-                        const d2 = new Date().setHours(0,0,0,0);
-                        if (d1 < d2) overdue += inv.balance;
-                        else outstanding += inv.balance;
-                    }
-                });
+            // Calc Overdue (Invoices not marked Paid)
+            state.invoices.forEach(inv => {
+                if(inv.status !== 'Paid') {
+                    // Logic: Total - Amount Paid (if column exists)
+                    const bal = inv.total - (inv.amount_paid || 0);
+                    if(bal > 0) overdue += bal;
+                }
             });
 
-            return { revenue, outstanding, overdue };
+            return { revenue, overdue };
         }
 
         function getMonthlyFinancials() {
@@ -898,38 +846,26 @@
             
             document.getElementById('t-id').value = ""; document.getElementById('t-name').value = ""; document.getElementById('t-email').value = ""; document.getElementById('t-phone').value = ""; document.getElementById('t-unit').value = ""; document.getElementById('t-rent').value = ""; document.getElementById('t-start').value = ""; document.getElementById('t-end').value = ""; document.getElementById('t-addr').value = ""; document.getElementById('t-city').value = ""; document.getElementById('t-state').value = ""; document.getElementById('t-zip').value = "";
             
-            document.getElementById('l-addr').value = ""; document.getElementById('l-price').value = ""; document.getElementById('l-sqft').value = ""; document.getElementById('l-beds').value = ""; document.getElementById('l-baths').value = ""; document.getElementById('l-desc').value = ""; document.getElementById('l-amen').value = ""; document.getElementById('l-date').value = "";
+            document.getElementById('l-addr').value = ""; document.getElementById('l-price').value = ""; document.getElementById('l-sqft').value = ""; document.getElementById('l-beds').value = ""; document.getElementById('l-baths').value = ""; document.getElementById('l-desc').value = ""; document.getElementById('l-amen').value = ""; document.getElementById('l-date').value = ""; document.getElementById('l-img').value = "";
 
             updateFileName('inv-doc', 'inv-doc-label'); updateFileName('ex-doc', 'ex-doc-label'); 
         }
 
-        // Helper to get Last Name for Sorting
         function getLastName(fullName) {
             if(!fullName) return '';
             const parts = fullName.trim().split(' ');
             return parts.length > 1 ? parts[parts.length - 1] : parts[0];
         }
 
-        // --- NEW HELPER: Evaluate Applicant ---
         function evalApplicant(app) {
             const crit = state.settings.screening || { minScore: 600, minIncome: 2.5 };
             const incomeRatio = app.income / app.rent;
-            
-            // Red Flags (Automatic Fail based on boolean settings)
             if(crit.noEvict && app.evictions) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
             if(crit.noCrim && app.criminal) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
-            
-            // Employment Check
-            if(crit.requireJob && !app.employment) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
-
             if(app.score < (crit.minScore - 50)) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
-
-            // Conditional (Close call)
             if(app.score < crit.minScore || incomeRatio < crit.minIncome) {
                 return { status: 'Conditional', color: 'bg-amber-100 text-amber-700 border-amber-200' };
             }
-
-            // Green
             return { status: 'Meets Criteria', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
         }
 
@@ -941,8 +877,9 @@
             const stats = calculateGlobalStats();
             const validUnits = state.tenants.filter(t => t.status !== 'Archived');
             const activeTenants = validUnits.filter(t => t.status === 'Active').length;
-            const totalUnits = validUnits.length;
-            const occupancyRate = totalUnits === 0 ? 0 : Math.round((activeTenants / totalUnits) * 100);
+            // Occupancy = Tenants / (Tenants + Listings) usually, but simplified here
+            const totalCapacity = validUnits.length + state.listings.length;
+            const occupancyRate = totalCapacity === 0 ? 0 : Math.round((activeTenants / totalCapacity) * 100);
             const activeMaint = state.maint.filter(m=>m.status==='Active').length;
 
             document.getElementById('dash-revenue').innerText = `$${stats.revenue.toLocaleString()}`;
@@ -950,32 +887,22 @@
             document.getElementById('dash-overdue').innerText = `$${stats.overdue.toLocaleString()}`;
             document.getElementById('dash-occupancy').innerText = `${occupancyRate}%`;
             
-            // Performance Chart Logic (Restored)
             if(chartInstance) {
-                chartInstance.data.datasets[0].data = [stats.revenue, stats.outstanding, stats.overdue];
+                chartInstance.data.datasets[0].data = [stats.revenue, 0, stats.overdue];
                 chartInstance.update();
             } else if(document.getElementById('revenueChart')) {
-                // Initialize if exists but not created (page reload)
                 initChart();
-                if(chartInstance) {
-                    chartInstance.data.datasets[0].data = [stats.revenue, stats.outstanding, stats.overdue];
-                    chartInstance.update();
-                }
+                if(chartInstance) chartInstance.data.datasets[0].data = [stats.revenue, 0, stats.overdue];
             }
 
-            // Tables Render Logic - SORTED BY LAST NAME
             const tbody = document.getElementById('table-tenants'); tbody.innerHTML = '';
             state.tenants
                 .filter(t => t.status !== 'Archived')
-                .sort((a, b) => getLastName(a.name || '').localeCompare(getLastName(b.name || ''))) // ADDED SAFETY CHECK
+                .sort((a, b) => getLastName(a.name || '').localeCompare(getLastName(b.name || ''))) 
                 .forEach(t => { 
                     const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
                     tbody.innerHTML += `<tr class="border-b border-slate-100">
-                        <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">
-                            ${t.name}<br>
-                            <span class="text-xs text-slate-400 font-normal">${t.email}</span><br>
-                            <span class="text-xs text-slate-500 font-normal">${t.phone || '-'}</span>
-                        </td>
+                        <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td>
                         <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
                         <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent).toLocaleString()}</td>
                         <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
@@ -983,8 +910,23 @@
                     </tr>`; 
             });
 
+            // LISTINGS - NOW INCLUDES LINK GENERATION
             const grid = document.getElementById('grid-listings'); grid.innerHTML = '';
-            state.listings.forEach(l => { grid.innerHTML += `<div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 relative group"><div class="absolute top-4 right-4 flex gap-3"><button onclick="act_editListing(${l.id})" class="text-slate-400 hover:text-blue-600"><i class="fas fa-edit"></i></button><button onclick="act_delListing(${l.id})" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash"></i></button></div><h4 class="font-bold text-lg text-slate-800">${l.addr}</h4><p class="text-emerald-600 font-bold">$${parseInt(l.price).toLocaleString()}/mo</p><div class="mt-2 text-xs text-slate-400 flex gap-3"><span><i class="fas fa-bed"></i> ${l.beds}</span><span><i class="fas fa-bath"></i> ${l.baths}</span><span><i class="fas fa-ruler"></i> ${l.sqft}</span></div></div>`; });
+            state.listings.forEach(l => { 
+                const shareLink = `applicant.html?listing_id=${l.id}`;
+                grid.innerHTML += `
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 relative group">
+                    <div class="absolute top-4 right-4 flex gap-3">
+                        <button onclick="navigator.clipboard.writeText('${window.location.origin}/${shareLink}'); alert('Link Copied!')" class="text-slate-400 hover:text-emerald-600" title="Copy Apply Link"><i class="fas fa-link"></i></button>
+                        <button onclick="act_editListing(${l.id})" class="text-slate-400 hover:text-blue-600"><i class="fas fa-edit"></i></button>
+                        <button onclick="act_delListing(${l.id})" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <h4 class="font-bold text-lg text-slate-800">${l.addr}</h4>
+                    <p class="text-emerald-600 font-bold">$${parseInt(l.price).toLocaleString()}/mo</p>
+                    <div class="mt-2 text-xs text-slate-400 flex gap-3"><span><i class="fas fa-bed"></i> ${l.beds}</span><span><i class="fas fa-bath"></i> ${l.baths}</span></div>
+                    <a href="${shareLink}" target="_blank" class="block mt-4 text-center text-xs font-bold text-indigo-600 border border-indigo-200 rounded-lg py-2 hover:bg-indigo-50">View Public Page</a>
+                </div>`; 
+            });
 
             const activeList = document.getElementById('list-maint-active'); const histList = document.getElementById('list-maint-history'); activeList.innerHTML = ''; histList.innerHTML = '';
             const activeMaintItems = state.maint.filter(m => m.status === 'Active');
@@ -995,128 +937,46 @@
             state.apps.forEach(a => { 
                 const eval = evalApplicant(a);
                 const displayStatus = a.status === 'Pending' ? eval.status : a.status;
-                const displayColor = a.status === 'Pending' ? eval.color : 'bg-slate-100 text-slate-600';
-
-                sT.innerHTML += `
-                <tr class="border-b border-slate-100 hover:bg-slate-50 transition cursor-pointer" onclick="act_viewApp(${a.id})">
-                    <td class="p-5">
-                        <span class="font-bold text-slate-800">${a.name}</span>
-                        <div class="md:hidden flex items-center gap-1 mt-1 text-xs text-indigo-500 font-medium">
-                            <i class="fas fa-search"></i> Tap to view report
-                        </div>
-                    </td>
-                    <td class="p-5">
-                        <span class="${displayColor} px-3 py-1.5 rounded-lg text-xs font-bold uppercase border whitespace-nowrap">${displayStatus}</span>
-                    </td>
-                    <td class="p-5 text-right">
-                        <div class="flex gap-2 justify-end" onclick="event.stopPropagation()">
-                            <button onclick="act_quickDecide(${a.id}, 'Approve')" class="bg-emerald-50 text-emerald-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-emerald-100" title="Approve"><i class="fas fa-check"></i></button>
-                            <button onclick="act_quickDecide(${a.id}, 'Conditional')" class="bg-amber-50 text-amber-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-amber-100" title="Conditional"><i class="fas fa-exclamation"></i></button>
-                            <button onclick="act_quickDecide(${a.id}, 'Deny')" class="bg-rose-50 text-rose-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-rose-100" title="Deny"><i class="fas fa-times"></i></button>
-                        </div>
-                    </td>
-                </tr>`; 
+                const displayColor = a.status === 'Pending' ? eval.color : (a.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600');
+                // Only show if Paid or Pending (filter out Unpaid if you want)
+                if (a.payment_status === 'Paid') {
+                    sT.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition cursor-pointer" onclick="act_viewApp(${a.id})"><td class="p-5"><span class="font-bold text-slate-800">${a.name}</span></td><td class="p-5"><span class="${displayColor} px-3 py-1.5 rounded-lg text-xs font-bold uppercase border whitespace-nowrap">${displayStatus}</span></td><td class="p-5 text-right"><div class="flex gap-2 justify-end" onclick="event.stopPropagation()"><button onclick="act_viewApp(${a.id})" class="bg-slate-50 text-slate-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100"><i class="fas fa-eye"></i></button></div></td></tr>`; 
+                }
             });
 
-            // --- EXPENSES RENDER START ---
-            const exBody = document.getElementById('table-expenses'); 
-            exBody.innerHTML = '';
-            
+            // Expenses logic maintained...
+            const exBody = document.getElementById('table-expenses'); exBody.innerHTML = '';
             const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
             let dEx = state.expenses;
             if (fid !== 'all') dEx = dEx.filter(x => x.prop === fid);
-            
             dEx.forEach(x => { 
                 const receiptIcon = x.doc ? `<i class="fas fa-paperclip text-slate-400" title="${x.doc}"></i>` : '-';
-                const isExpanded = x.id === expandedExpId;
-                const detailClass = isExpanded ? '' : 'hidden-section'; 
-                const arrowClass = isExpanded ? 'rotate-180' : '';      
-
-                exBody.innerHTML += `
-                <tr class="border-b border-slate-100 hover:bg-slate-50 transition cursor-pointer md:cursor-default" onclick="toggleExpDetail(${x.id})">
-                    <td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td>
-                    <td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.prop || 'General'}</td>
-                    <td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td>
-                    <td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td>
-                    <td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td>
-                    <td class="p-5 text-center hidden md:table-cell">${receiptIcon}</td>
-                    <td class="p-5 text-right hidden md:table-cell">
-                        <div class="flex justify-end gap-3">
-                            <button onclick="act_editExpense(${x.id}); event.stopPropagation();" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button>
-                            <button onclick="act_delExpense(${x.id}); event.stopPropagation();" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </td>
-                    <td class="p-5 text-right md:hidden text-slate-400">
-                        <i class="fas fa-chevron-down transition-transform duration-300 ${arrowClass}"></i>
-                    </td>
-                </tr>
-                <tr class="${detailClass} bg-slate-50 md:hidden border-b border-slate-200">
-                    <td colspan="4" class="p-5">
-                        <div class="space-y-3">
-                            <div class="flex justify-between text-sm"><span class="text-slate-500">Property:</span> <span class="font-medium">${x.prop || 'General'}</span></div>
-                            <div class="flex justify-between text-sm"><span class="text-slate-500">Category:</span> <span class="bg-white border px-2 py-0.5 rounded text-xs font-bold">${x.cat}</span></div>
-                            <div class="pt-3 border-t border-slate-200 flex gap-3">
-                                <button onclick="act_editExpense(${x.id})" class="flex-1 py-2 bg-white border border-slate-300 rounded-lg text-sm font-bold text-slate-700">Edit</button>
-                                <button onclick="act_delExpense(${x.id})" class="flex-1 py-2 bg-rose-50 border border-rose-100 rounded-lg text-sm font-bold text-rose-600">Delete</button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>`; 
+                exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${receiptIcon}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
             });
-            // --- EXPENSES RENDER END ---
             const totalExp = dEx.reduce((a,b)=>a+b.amount,0);
             if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${totalExp.toLocaleString()}`;
 
             renderInvoices();
             renderReports(); 
             
-            // Ensure settings form populates correctly
-            if(document.getElementById('set-min-score') && state.settings.screening) {
-                 const scr = state.settings.screening;
+            // Populate Settings
+            if(document.getElementById('set-stripe-id') && state.settings) {
+                 document.getElementById('set-stripe-id').value = state.settings.stripe_connect_id || '';
+                 const scr = state.settings.screening || {};
                  document.getElementById('set-min-score').value = scr.minScore || 650;
-                 document.getElementById('set-min-income').value = scr.minIncome || 3.0;
-                 document.getElementById('set-no-evict').checked = scr.noEvict;
-                 document.getElementById('set-no-crim').checked = scr.noCrim;
-                 document.getElementById('set-req-job').checked = scr.requireJob;
-                 document.getElementById('fee-amount').value = state.settings.amount || 50;
-                 document.getElementById('fee-grace').value = state.settings.grace || 5;
-                 document.getElementById('fee-method').value = state.settings.method || 'flat';
             }
         }
 
-        function toggleExpDetail(id) {
-            if(window.innerWidth >= 768) return; 
-            if (expandedExpId === id) expandedExpId = null; else expandedExpId = id;
-            renderAll(); 
-        }
+        function toggleExpDetail(id) { if(window.innerWidth >= 768) return; if (expandedExpId === id) expandedExpId = null; else expandedExpId = id; renderAll(); }
 
         function renderReports() {
             const now = new Date();
             const currentYear = now.getFullYear();
-
-            // YTD Revenue (Payments)
-            let ytdRevenue = 0;
-            state.payments.forEach(p => {
-                const pd = parseDateStr(p.date);
-                if(pd.getFullYear() === currentYear) {
-                    ytdRevenue += p.amount;
-                }
-            });
-
-            // YTD Expenses
-            let ytdExpense = 0;
-            state.expenses.forEach(e => {
-                const ed = parseDateStr(e.date);
-                if(ed.getFullYear() === currentYear) {
-                    ytdExpense += e.amount;
-                }
-            });
-
-            const ytdNOI = ytdRevenue - ytdExpense;
-
+            let ytdRevenue = 0; state.payments.forEach(p => { if(parseDateStr(p.date).getFullYear() === currentYear) ytdRevenue += p.amount; });
+            let ytdExpense = 0; state.expenses.forEach(e => { if(parseDateStr(e.date).getFullYear() === currentYear) ytdExpense += e.amount; });
             document.getElementById('report-income').innerText = `$${ytdRevenue.toLocaleString()}`;
             document.getElementById('report-expense').innerText = `$${ytdExpense.toLocaleString()}`;
-            document.getElementById('report-noi').innerText = `$${ytdNOI.toLocaleString()}`;
+            document.getElementById('report-noi').innerText = `$${(ytdRevenue - ytdExpense).toLocaleString()}`;
         }
         
         function updateBadge(id, count) { const el = document.getElementById('badge-' + id); if(count > 0) { el.innerText = count; el.classList.remove('hidden-section'); } else { el.classList.add('hidden-section'); } }
@@ -1125,19 +985,8 @@
             document.getElementById('pay-amount').value = '';
             document.getElementById('pay-date').valueAsDate = new Date();
             const sel = document.getElementById('pay-tenant-select');
-            
-            if(tenantId) {
-                document.getElementById('pay-tenant-id').value = tenantId;
-                sel.classList.add('hidden-section');
-            } else {
-                // Populate and show select
-                sel.classList.remove('hidden-section');
-                sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>';
-                state.tenants.filter(t => t.status !== 'Archived').forEach(t => {
-                    sel.innerHTML += `<option value="${t.id}">${t.name}</option>`;
-                });
-                document.getElementById('pay-tenant-id').value = ""; // Reset
-            }
+            if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } 
+            else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status !== 'Archived').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; }
             openModal('modal-pay');
         }
 
@@ -1145,18 +994,8 @@
             let tid = document.getElementById('pay-tenant-id').value;
             const sel = document.getElementById('pay-tenant-select');
             if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value;
-            
-            tid = parseInt(tid);
-            const amt = parseFloat(document.getElementById('pay-amount').value);
-            const date = document.getElementById('pay-date').value;
-            
-            if(tid && amt > 0) {
-                await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: date }]);
-                closeModal('modal-pay'); 
-                initSystem(); 
-            } else {
-                alert("Please select a tenant and enter a valid amount.");
-            }
+            tid = parseInt(tid); const amt = parseFloat(document.getElementById('pay-amount').value);
+            if(tid && amt > 0) { await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]); closeModal('modal-pay'); initSystem(); }
         }
 
         function populateFinFilter() {
@@ -1164,7 +1003,6 @@
             const currentVal = sel.value;
             sel.innerHTML = '<option value="all">All Tenants</option>';
             const uniqueTids = [...new Set(state.invoices.map(i => i.tenant_id))];
-            state.tenants.forEach(t => { if(t.status === 'Active' && !uniqueTids.includes(t.id)) uniqueTids.push(t.id); });
             uniqueTids.forEach(tid => { const t = state.tenants.find(x => x.id === tid) || { name: 'Unknown' }; sel.innerHTML += `<option value="${tid}">${t.name}</option>`; });
             sel.value = currentVal;
         }
@@ -1178,157 +1016,31 @@
             if(filterVal === 'all') sumContainer.classList.add('hidden-section');
             else sumContainer.classList.remove('hidden-section');
 
-            // 2. Collect ALL Raw Ledger Items
-            let rawItems = [];
-            
             state.invoices.forEach(inv => {
                 if(filterVal === 'all' || inv.tenant_id == filterVal) {
-                    rawItems.push({
-                        type: 'charge',
-                        date: inv.date,
-                        amount: inv.total,
-                        desc: (inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge',
-                        tenant_id: inv.tenant_id,
-                        tenant_name: inv.tenant_name || 'Unknown',
-                        id: inv.id,
-                        doc: inv.doc,
-                        timestamp: new Date(inv.date).getTime()
-                    });
+                    const balance = inv.total - (inv.amount_paid || 0);
+                    let rowBg = '', status = 'Unpaid';
+                    if (balance <= 0) { rowBg = 'bg-emerald-50/50'; status='Paid'; }
+                    
+                    t.innerHTML += `
+                    <tr class="border-b border-slate-100 ${rowBg}">
+                        <td class="p-5 text-sm font-medium text-slate-500">${inv.date}</td>
+                        <td class="p-5 text-sm font-bold">${inv.tenant_name || 'Unknown'}</td>
+                        <td class="p-5 text-sm text-slate-500">${(inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge'}</td>
+                        <td class="p-5 text-right font-bold text-slate-800">$${inv.total.toLocaleString()}</td>
+                        <td class="p-5 text-right font-medium text-slate-600">$${balance.toLocaleString()}</td>
+                        <td class="p-5 text-right"><span class="text-xs font-bold uppercase ${status==='Paid'?'text-emerald-600':'text-rose-500'}">${status}</span></td>
+                    </tr>`;
                 }
-            });
-
-            state.payments.forEach(pay => {
-                if(filterVal === 'all' || pay.tenant_id == filterVal) {
-                    const tenant = state.tenants.find(x => x.id == pay.tenant_id);
-                    rawItems.push({
-                        type: 'payment',
-                        date: pay.date,
-                        amount: pay.amount,
-                        desc: 'Payment Received',
-                        tenant_id: pay.tenant_id,
-                        tenant_name: tenant ? tenant.name : 'Unknown',
-                        id: pay.id,
-                        timestamp: new Date(pay.date).getTime()
-                    });
-                }
-            });
-
-            // 3. Group by Tenant
-            let tenantGroups = {};
-            rawItems.forEach(item => {
-                if(!tenantGroups[item.tenant_id]) tenantGroups[item.tenant_id] = [];
-                tenantGroups[item.tenant_id].push(item);
-            });
-
-            // 4. Calculate Running Balance
-            let finalLedger = [];
-            Object.values(tenantGroups).forEach(group => {
-                group.sort((a,b) => a.timestamp - b.timestamp || a.id - b.id);
-                let runningBal = 0;
-                group.forEach(item => {
-                    if(item.type === 'charge') runningBal += item.amount;
-                    else runningBal -= item.amount;
-                    item.balance = runningBal; 
-                });
-                finalLedger = finalLedger.concat(group);
-            });
-
-            finalLedger.sort((a,b) => b.timestamp - a.timestamp || b.id - a.id);
-
-            if(filterVal !== 'all') {
-                const fin = getTenantFinancials(parseInt(filterVal));
-                if(fin && fin.summary) document.getElementById('fin-open-bal').innerText = `$${fin.summary.openBalance.toLocaleString()}`;
-            }
-
-            finalLedger.forEach(item => {
-                let amtDisplay = '', rowBg = '', actionBtn = '';
-                if(item.type === 'charge') {
-                    amtDisplay = `<span class="font-bold text-slate-800">$${item.amount.toLocaleString()}</span>`;
-                    const docIcon = item.doc ? `<i class="fas fa-paperclip text-slate-400 ml-2" title="${item.doc}"></i>` : '';
-                    item.desc += docIcon;
-                    actionBtn = `<button onclick="act_viewInvoice(${item.id})" class="text-slate-400 hover:text-slate-600" title="View Details"><i class="fas fa-eye"></i></button>`;
-                } else {
-                    amtDisplay = `<span class="font-bold text-emerald-600">-$${item.amount.toLocaleString()}</span>`;
-                    rowBg = 'bg-emerald-50/50';
-                    actionBtn = `<span class="text-xs text-emerald-600 font-bold uppercase">Paid</span>`;
-                }
-
-                t.innerHTML += `
-                <tr class="border-b border-slate-100 ${rowBg}">
-                    <td class="p-5 text-sm font-medium text-slate-500">${item.date}</td>
-                    <td class="p-5 text-sm font-bold">${item.tenant_name}</td>
-                    <td class="p-5 text-sm text-slate-500 flex items-center">${item.desc}</td>
-                    <td class="p-5 text-right">${amtDisplay}</td>
-                    <td class="p-5 text-right font-medium text-slate-600">$${item.balance.toLocaleString()}</td>
-                    <td class="p-5 text-right">
-                        <div class="flex gap-2 justify-end items-center">${actionBtn}</div>
-                    </td>
-                </tr>`;
             });
         }
 
-        // --- INVOICE WIZARD ---
         function openInvoiceModal() { 
             const s = document.getElementById('inv-tenant'); 
             s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; 
-            state.tenants.filter(t => t.status !== 'Archived' && t.status !== 'Vacant').forEach(t => { 
-                s.innerHTML += `<option value="${t.id}">${t.name}</option>`; 
-            }); 
-            
-            document.getElementById('inv-step-input').classList.remove('hidden-section');
-            document.getElementById('inv-step-preview').classList.add('hidden-section');
-            document.getElementById('inv-actions-create').classList.remove('hidden-section');
-            document.getElementById('inv-actions-create').classList.add('flex');
-            document.getElementById('inv-actions-view').classList.add('hidden-section');
-            document.getElementById('inv-modal-title').innerText = "Create Invoice";
-            document.getElementById('inv-date').valueAsDate = new Date();
-            document.getElementById('inv-doc').value = "";
-            document.getElementById('btn-confirm-inv').disabled = false;
-            updateFileName('inv-doc', 'inv-doc-label');
-            
-            document.getElementById('inv-is-recurring').checked = false;
-            document.getElementById('inv-rec-details').classList.add('hidden-section');
-            
-            openModal('modal-invoice'); 
-            logic_invMode('fixed'); 
-        }
-
-        function act_viewInvoice(id) {
-            const inv = state.invoices.find(x => x.id === id);
-            if(!inv) return;
-
-            const snapPrev = inv.snapshot ? inv.snapshot.prevBalance : 0;
-            const snapFwd = snapPrev + inv.total;
-            const totalDue = snapPrev + inv.total;
-
-            document.getElementById('prev-name').innerText = inv.tenant_name;
-            document.getElementById('prev-date').innerText = new Date(inv.date).toLocaleDateString();
-            document.getElementById('prev-bal-amt').innerText = `$${snapPrev.toLocaleString()}`;
-            document.getElementById('prev-pay-amt').innerText = `$0.00`;
-            document.getElementById('prev-fwd-amt').innerText = `$${snapFwd.toLocaleString()}`;
-            document.getElementById('prev-total-due').innerText = `$${totalDue.toLocaleString()}`;
-
-            const tbody = document.getElementById('prev-items-body');
-            tbody.innerHTML = '';
-            inv.items.forEach(i => {
-                tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`;
-            });
-
-            if(inv.doc) {
-                document.getElementById('prev-attachment').classList.remove('hidden-section');
-                document.getElementById('prev-attachment').innerHTML = `<i class="fas fa-paperclip text-indigo-500"></i> <span>${inv.doc}</span>`;
-            } else {
-                document.getElementById('prev-attachment').classList.add('hidden-section');
-            }
-
-            document.getElementById('inv-modal-title').innerText = "Invoice Details";
-            document.getElementById('inv-step-input').classList.add('hidden-section');
-            document.getElementById('inv-step-preview').classList.remove('hidden-section');
-            document.getElementById('inv-actions-create').classList.add('hidden-section');
-            document.getElementById('inv-actions-create').classList.remove('flex');
-            document.getElementById('inv-actions-view').classList.remove('hidden-section');
-
-            openModal('modal-invoice');
+            state.tenants.filter(t => t.status !== 'Archived').forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); 
+            document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); document.getElementById('inv-actions-create').classList.remove('hidden-section'); document.getElementById('inv-actions-create').classList.add('flex'); document.getElementById('inv-actions-view').classList.add('hidden-section'); document.getElementById('inv-date').valueAsDate = new Date(); document.getElementById('btn-confirm-inv').disabled = false;
+            openModal('modal-invoice'); logic_invMode('fixed'); 
         }
 
         function logic_invMode(m) { 
@@ -1336,23 +1048,13 @@
             document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
             document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
             document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed');
-            const recOpts = document.getElementById('inv-recurring-options');
-            if(m === 'fixed') recOpts.classList.remove('hidden-section');
-            else recOpts.classList.add('hidden-section');
             logic_resetInvoice(); 
         }
 
         function logic_resetInvoice() { 
-            const tid = document.getElementById('inv-tenant').value; 
-            invItems = []; 
-            if (tid) {
-                if (invMode === 'fixed') { 
-                    const t = state.tenants.find(x => x.id == tid); 
-                    if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; 
-                } else if (invMode === 'variable') { 
-                   logic_addRow(); 
-                } 
-            }
+            const tid = document.getElementById('inv-tenant').value; invItems = []; 
+            if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; } 
+            else if (invMode === 'variable') logic_addRow(); 
             renderInvItems(); 
         }
 
@@ -1376,37 +1078,20 @@
             const date = document.getElementById('inv-date').value;
             const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0);
             
-            const fin = getTenantFinancials(tid);
-            const prevBalance = fin.summary.openBalance; 
-            const totalDue = prevBalance + currentTotal;
-
-            const fileInput = document.getElementById('inv-doc');
-            const fileName = fileInput.files[0] ? fileInput.files[0].name : null;
-
             draftInvoice = {
                 tenantId: tid,
                 tenantName: tenant.name,
                 items: JSON.parse(JSON.stringify(invItems)),
                 total: currentTotal,
                 date: date,
-                isRecurring: document.getElementById('inv-is-recurring').checked,
-                recDay: document.getElementById('inv-rec-day').value,
-                recEnd: document.getElementById('inv-rec-end').value,
-                doc: fileName,
-                snapshot: { prevBalance: prevBalance }
             };
 
             document.getElementById('prev-name').innerText = tenant.name;
             document.getElementById('prev-date').innerText = new Date(date).toLocaleDateString();
-            document.getElementById('prev-bal-amt').innerText = `$${prevBalance.toLocaleString()}`;
-            document.getElementById('prev-pay-amt').innerText = `$0.00`;
-            document.getElementById('prev-fwd-amt').innerText = `$${prevBalance.toLocaleString()}`;
-            document.getElementById('prev-total-due').innerText = `$${totalDue.toLocaleString()}`;
+            document.getElementById('prev-total-due').innerText = `$${currentTotal.toLocaleString()}`;
 
             const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = '';
             invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; });
-
-            if(fileName) { document.getElementById('prev-attachment').classList.remove('hidden-section'); document.getElementById('prev-attachment').innerHTML = `<i class="fas fa-paperclip text-indigo-500"></i> <span>${fileName}</span>`; } else { document.getElementById('prev-attachment').classList.add('hidden-section'); }
 
             document.getElementById('inv-step-input').classList.add('hidden-section');
             document.getElementById('inv-step-preview').classList.remove('hidden-section');
@@ -1423,28 +1108,19 @@
             if(!draftInvoice) return;
             document.getElementById('btn-confirm-inv').disabled = true;
 
-            // Save Invoice
+            // --- PRODUCTION UPDATE: INJECT STRIPE ID FROM SETTINGS ---
+            const stripeId = state.settings.stripe_connect_id; 
+            if(!stripeId) alert("Warning: You have not saved a Stripe Connect ID in settings. Tenant will not be able to pay this invoice.");
+
             await supabaseClient.from('invoices').insert([{ 
                 tenant_id: draftInvoice.tenantId, 
                 tenant_name: draftInvoice.tenantName, 
                 items: draftInvoice.items, 
                 total: draftInvoice.total, 
-                balance: draftInvoice.total, 
                 date: draftInvoice.date,
-                doc: draftInvoice.doc,
-                snapshot: draftInvoice.snapshot 
+                status: 'Unpaid',
+                landlord_stripe_id: stripeId // Inserted here
             }]);
-
-            // Save Recurring if checked
-            if(invMode === 'fixed' && draftInvoice.isRecurring) {
-                await supabaseClient.from('recurring_invoices').insert([{
-                    tenant_id: draftInvoice.tenantId,
-                    amount: draftInvoice.total,
-                    day: parseInt(draftInvoice.recDay),
-                    end_date: draftInvoice.recEnd || null,
-                    last_run: draftInvoice.date
-                }]);
-            }
 
             closeModal('modal-invoice');
             initSystem();
@@ -1462,13 +1138,6 @@
             }
         }
 
-        // Toggle Recurring Details UI
-        document.getElementById('inv-is-recurring').addEventListener('change', function() {
-            const det = document.getElementById('inv-rec-details');
-            if(this.checked) det.classList.remove('hidden-section');
-            else det.classList.add('hidden-section');
-        });
-
         function populateExpenseModal() {
             const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>';
             const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr));
@@ -1482,26 +1151,20 @@
         
         async function act_saveExpense(e) {
             e.preventDefault();
-            const fileInput = document.getElementById('ex-doc');
             const data = {
                 date: document.getElementById('ex-date').value,
                 vendor: document.getElementById('ex-vendor').value,
                 cat: document.getElementById('ex-cat').value,
                 prop: document.getElementById('ex-prop').value,
-                amount: parseFloat(document.getElementById('ex-amount').value) || 0,
-                doc: fileInput.files[0] ? fileInput.files[0].name : null
+                amount: parseFloat(document.getElementById('ex-amount').value) || 0
             };
-            
             if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId);
             else await supabaseClient.from('expenses').insert([data]);
-            
-            closeModal('modal-expense'); 
-            initSystem();
+            closeModal('modal-expense'); initSystem();
         }
         
         function act_editExpense(id) {
-            editExpenseId = id;
-            const e = state.expenses.find(x => x.id === id);
+            editExpenseId = id; const e = state.expenses.find(x => x.id === id);
             document.getElementById('modal-expense-title').innerText = "Edit Expense";
             document.getElementById('ex-id').value = id;
             document.getElementById('ex-date').value = e.date;
@@ -1514,9 +1177,7 @@
             openModal('modal-expense');
         }
 
-        async function act_delExpense(id) {
-            if(confirm("Delete this expense?")) { await supabaseClient.from('expenses').delete().eq('id', id); initSystem(); }
-        }
+        async function act_delExpense(id) { if(confirm("Delete expense?")) { await supabaseClient.from('expenses').delete().eq('id', id); initSystem(); } }
 
         async function act_completeMaint(id) { 
             const n = prompt("Notes?")||"Done"; 
@@ -1526,13 +1187,11 @@
         function viewMaintNote(id) { const m = state.maint.find(x => x.id == id); document.getElementById('md-issue').innerText = m.issue; document.getElementById('md-meta').innerText = `Completed: ${m.completed_date}`; document.getElementById('md-notes').innerText = m.notes || "No notes."; openModal('modal-maint-detail'); }
         
         function act_viewTenant(id) {
-            const t = state.tenants.find(x => x.id === id);
-            if(!t) return;
+            const t = state.tenants.find(x => x.id === id); if(!t) return;
             document.getElementById('vt-name').innerText = t.name;
             document.getElementById('vt-email').innerText = t.email;
             document.getElementById('vt-phone').innerText = t.phone || '-';
-            const fullAddress = `${t.addr || ''}, ${t.city || ''} ${t.state || ''} ${t.zip || ''}`;
-            document.getElementById('vt-addr').innerText = fullAddress;
+            document.getElementById('vt-addr').innerText = `${t.addr || ''}, ${t.city || ''} ${t.state || ''} ${t.zip || ''}`;
             document.getElementById('vt-unit').innerText = t.unit || '-';
             document.getElementById('vt-rent').innerText = `$${parseInt(t.rent).toLocaleString()}`;
             document.getElementById('vt-status').innerText = t.status;
@@ -1541,32 +1200,60 @@
             openModal('modal-view-tenant');
         }
 
+        // --- UPDATED SCREENING LOGIC ---
         function act_viewApp(id) {
             currentAppId = id;
             const app = state.apps.find(a => a.id === id);
             const eval = evalApplicant(app);
-            const ratio = (app.income / app.rent).toFixed(1);
+            
             document.getElementById('sd-name').innerText = app.name;
             document.getElementById('sd-score').innerText = app.score;
             document.getElementById('sd-income').innerText = `$${app.income.toLocaleString()}`;
-            document.getElementById('sd-ratio').innerText = ratio;
-            const ban = document.getElementById('sd-banner');
-            ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`;
-            ban.innerText = eval.status;
+            document.getElementById('sd-ratio').innerText = (app.income / app.rent).toFixed(1);
+            
             document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>';
             document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>';
             document.getElementById('sd-job').innerText = app.job || 'Unemployed';
-            document.getElementById('sd-employ').innerHTML = app.employment ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Not Verified</span>';
+            document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>';
+
+            const ban = document.getElementById('sd-banner');
+            const actions = document.getElementById('sd-actions');
+            const emailOpt = document.getElementById('sd-email-option');
+
+            // Set Email Button State
+            const btnEmail = document.getElementById('btn-email-applicant');
+            const subject = app.status === 'Approved' ? "Application Update: Approved!" : "Application Status Update";
+            const body = app.status === 'Approved' 
+                ? `Dear ${app.name},\n\nWe are pleased to inform you that your application has been approved! We will be sending over the lease agreement shortly.\n\nBest,\nKozeyy Property Management`
+                : `Dear ${app.name},\n\nThank you for your application. After careful review, we are unable to proceed at this time.\n\nBest,\nKozeyy Property Management`;
+            
+            btnEmail.href = `mailto:${encodeURIComponent('applicant@example.com')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+            if(app.status === 'Approved') {
+                ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
+                ban.innerText = "Approved";
+                actions.classList.add('hidden-section');
+                emailOpt.classList.remove('hidden-section');
+            } else if (app.status === 'Deny') {
+                ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200";
+                ban.innerText = "Denied";
+                actions.classList.add('hidden-section');
+                emailOpt.classList.remove('hidden-section');
+            } else {
+                ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`;
+                ban.innerText = eval.status;
+                actions.classList.remove('hidden-section');
+                emailOpt.classList.add('hidden-section');
+            }
             openModal('modal-screening-detail');
         }
 
         async function act_screenDecision(decision) {
-            if(currentAppId) { await act_quickDecide(currentAppId, decision); closeModal('modal-screening-detail'); }
-        }
-
-        async function act_quickDecide(id, status) {
-            await supabaseClient.from('apps').update({ status: status }).eq('id', id);
-            initSystem();
+            if(currentAppId) { 
+                await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId);
+                initSystem();
+                setTimeout(() => act_viewApp(currentAppId), 500);
+            }
         }
 
         async function act_saveTenant(e) {
@@ -1596,7 +1283,6 @@
         function act_editTenant(id) {
             editTenantId = id;
             const t = state.tenants.find(x => x.id === id);
-            if(!t) return;
             document.getElementById('modal-tenant-title').innerText = "Edit Tenant";
             document.getElementById('btn-save-tenant').innerText = "Update Tenant";
             document.getElementById('t-id').value = t.id;
@@ -1615,9 +1301,7 @@
             openModal('modal-tenant');
         }
 
-        async function act_delTenant(id) {
-            if(confirm("Delete this tenant?")) { await supabaseClient.from('tenants').delete().eq('id', id); initSystem(); }
-        }
+        async function act_delTenant(id) { if(confirm("Delete tenant?")) { await supabaseClient.from('tenants').delete().eq('id', id); initSystem(); } }
         
         function act_editListing(id) { 
             editListingId = id; const l = state.listings.find(x => x.id == id); 
@@ -1629,6 +1313,7 @@
             document.getElementById('l-desc').value = l.desc; 
             document.getElementById('l-amen').value = l.amen || ''; 
             document.getElementById('l-date').value = l.date; 
+            document.getElementById('l-img').value = l.img || ''; 
             document.getElementById('btn-save-listing').innerText = "Update Listing"; 
             openModal('modal-listing'); 
         }
@@ -1643,7 +1328,8 @@
                 baths: document.getElementById('l-baths').value, 
                 desc: document.getElementById('l-desc').value, 
                 amen: document.getElementById('l-amen').value, 
-                date: document.getElementById('l-date').value 
+                date: document.getElementById('l-date').value,
+                img: document.getElementById('l-img').value 
             }; 
             if(editListingId) await supabaseClient.from('listings').update(d).eq('id', editListingId);
             else await supabaseClient.from('listings').insert([d]);
@@ -1656,26 +1342,17 @@
         
         async function act_saveSettings(e) { 
             e.preventDefault(); 
-            const tType = document.querySelector('input[name="feeTarget"]:checked').value; 
-            let tIds = []; 
-            // FIXED: Added parseInt to ensure type match
-            if(tType === 'select') { document.querySelectorAll('#fee-tenant-select input:checked').forEach(cb => tIds.push(parseInt(cb.value))); } 
-            
             const screen = {
                 minScore: parseInt(document.getElementById('set-min-score').value) || 600,
                 minIncome: parseFloat(document.getElementById('set-min-income').value) || 2.5,
                 noEvict: document.getElementById('set-no-evict').checked,
-                noCrim: document.getElementById('set-no-crim').checked,
-                requireJob: document.getElementById('set-req-job').checked
+                noCrim: document.getElementById('set-no-crim').checked
             };
 
             await supabaseClient.from('settings').update({
-                fee_target: tType,
-                targets: tIds,
-                method: document.getElementById('fee-method').value,
+                stripe_connect_id: document.getElementById('set-stripe-id').value,
                 amount: document.getElementById('fee-amount').value,
                 grace: document.getElementById('fee-grace').value,
-                require_insurance: document.getElementById('set-insurance').checked,
                 screening: screen
             }).eq('id', 1);
 
@@ -1686,7 +1363,6 @@
         function toggleFeeInput() { document.getElementById('fee-label').innerText = document.getElementById('fee-method').value === 'percent' ? "Percentage (%)" : "Amount ($)"; }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
 
-        // --- CHARTS & CHAT ---
         function initChart() { const ctx = document.getElementById('revenueChart').getContext('2d'); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
         
         function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart').getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(ctx, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
@@ -1702,8 +1378,7 @@
 
             sortedChats.forEach(item => { 
                 const t = item.tenant;
-                const statusIndicator = t.status === 'Archived' ? '<span class="text-[10px] bg-slate-100 px-1 rounded ml-2">Archived</span>' : ''; 
-                l.innerHTML += `<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name} ${statusIndicator}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`; 
+                l.innerHTML += `<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`; 
             }); 
         }
 
@@ -1714,14 +1389,11 @@
             const b = document.getElementById('box-chat'); b.innerHTML = ''; 
             state.msgs.filter(m => m.tenant_id == currentChatId).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at)).forEach(m => { 
                 const d = new Date(m.created_at);
-                const timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
                 const isToday = d.toDateString() === new Date().toDateString();
-                const ts = isToday ? timeStr : `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
-
+                const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
                 const isOwner = m.from === 'Owner';
                 const align = isOwner ? 'items-end' : 'items-start';
                 const bubbleStyle = isOwner ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none';
-
                 b.innerHTML += `<div class="flex flex-col w-full ${align} mb-4 fade-in"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${bubbleStyle}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
             }); 
             b.scrollTop = b.scrollHeight; 
@@ -1741,18 +1413,14 @@
             if (savedProfile) {
                 const user = JSON.parse(savedProfile);
                 if(user.role === 'owner') {
-                    // Update Name/Username in Header
                     const nameDisplay = user.username ? user.username : user.name;
-                    document.getElementById('owner-name-display').innerText = nameDisplay; // Header Name
-                    
-                    // Update Initials
+                    document.getElementById('owner-name-display').innerText = nameDisplay;
                     const initialBox = document.getElementById('owner-initials-display');
                     if(initialBox) initialBox.innerText = user.initials;
                 }
             }
         }
 
-        // Initialize Application
         loadUserProfile();
         initSystem();
     </script>
