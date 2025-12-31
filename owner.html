@@ -17,11 +17,13 @@
         .nav-item { color: #94a3b8; }
         .nav-item:hover { color: white; background-color: #312e81; }
         .hidden-section { display: none !important; }
+        /* Removed generic fade-in for messages to stop flashing */
         .fade-in-up { animation: fadeInUp 0.3s ease-out; }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 4px; }
         #mobile-overlay { background-color: rgba(0,0,0,0.5); }
+        .paper-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0,0,0,0.05); }
         
         /* Toast Notification Styles */
         #toast-container { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
@@ -749,7 +751,7 @@
         state.payments = p.data || [];
         state.expenses = e.data || [];
         state.maint = m.data || [];
-        state.settings = s.data || { screening: { minScore: 650 } }; // Default settings
+        state.settings = s.data || { }; // Default empty if missing
         state.apps = a.data || [];
         
         const serverMsgs = msg.data || [];
@@ -833,6 +835,7 @@
             if(grid) {
                 grid.innerHTML = '';
                 state.listings.forEach(l => {
+                    // Use uploaded image or fallback
                     const displayImg = l.image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994';
                     grid.innerHTML += `
                     <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
@@ -1046,14 +1049,14 @@
         const s = state.settings;
         if(!s) return;
         if(document.getElementById('set-stripe-id')) document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
-        if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.late_fee_amount || 50; // Corrected Column
-        if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 5; // Corrected Column
+        if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.late_fee_amount || 50; 
+        if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 5; 
         
-        const sc = s.screening || {};
-        if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = sc.minScore || 650;
-        if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = sc.minIncome || 3.0;
-        if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!sc.noEvict;
-        if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!sc.noCrim;
+        // Use direct columns instead of nested 'screening' object
+        if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = s.min_credit_score || 650;
+        if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
+        if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
+        if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
     }
 
     function viewMaintNote(id) { 
@@ -1220,21 +1223,19 @@
     function act_viewApp(id) { currentAppId = id; const app = state.apps.find(a => a.id === id); const eval = evalApplicant(app); setText('sd-name', app.name); setText('sd-score', app.score); setText('sd-income', `$${app.income.toLocaleString()}`); setText('sd-ratio', (app.income / app.rent).toFixed(1)); document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>'; document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>'; setText('sd-job', app.job||'Unemployed'); document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>'; const ban = document.getElementById('sd-banner'); const actions = document.getElementById('sd-actions'); const emailOpt = document.getElementById('sd-email-option'); if(app.status === 'Approved') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200"; ban.innerText = "Approved"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else if (app.status === 'Deny') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200"; ban.innerText = "Denied"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else { ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`; ban.innerText = eval.status; actions.classList.remove('hidden-section'); emailOpt.classList.add('hidden-section'); } openModal('modal-screening-detail'); }
     async function act_screenDecision(decision) { if(currentAppId) { await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId); await fetchData(); setTimeout(() => act_viewApp(currentAppId), 500); } }
     
-    // UPDATED: Save Settings with Correct Column Names
+    // UPDATED: Save Settings with Flattened Columns
     async function act_saveSettings(e) { 
         e.preventDefault(); 
-        const screen = { 
-            minScore: parseInt(document.getElementById('set-min-score').value)||600, 
-            minIncome: parseFloat(document.getElementById('set-min-income').value)||2.5, 
-            noEvict: document.getElementById('set-no-evict').checked, 
-            noCrim: document.getElementById('set-no-crim').checked 
-        }; 
-
+        
+        // We now save to individual columns to avoid JSON errors
         const { error } = await supabaseClient.from('settings').update({ 
             stripe_connect_id: document.getElementById('set-stripe-id').value, 
-            late_fee_amount: document.getElementById('fee-amount').value, // Corrected from 'amount'
-            grace_period: document.getElementById('fee-grace').value,     // Corrected from 'grace'
-            screening: screen
+            late_fee_amount: document.getElementById('fee-amount').value, // Corrected column
+            grace_period: document.getElementById('fee-grace').value,     // Corrected column
+            min_credit_score: parseInt(document.getElementById('set-min-score').value)||600,
+            min_income_ratio: parseFloat(document.getElementById('set-min-income').value)||2.5,
+            require_no_evictions: document.getElementById('set-no-evict').checked,
+            require_no_criminal_history: document.getElementById('set-no-crim').checked
         }).eq('id', 1); 
         
         if (error) {
