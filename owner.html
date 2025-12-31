@@ -781,10 +781,9 @@
                         state.maint = m.data;
                         state.notifications.maintenance = state.maint.filter(x => x.status === 'Active').length;
                         updateBadge('maintenance', state.notifications.maintenance);
-                        // Refresh Maintenance Lists if visible (simple DOM update handled by renderAll logic or specific function if needed)
-                        // For simplicity, we just update the specific view if we are on it
+                        // Refresh Maintenance Lists if visible
                         if(!document.getElementById('view-maintenance').classList.contains('hidden-section')) {
-                            // Re-render maintenance lists
+                            // Re-render maintenance logic directly here or call renderAll()
                             renderAll(); 
                         }
                     }
@@ -795,7 +794,7 @@
                         updateBadge('screening', state.notifications.screening);
                     }
 
-                } catch (e) { console.warn("Polling error", e); }
+                } catch (e) { console.warn("Poll fail", e); }
             }, 4000); // 4 seconds
         }
 
@@ -960,7 +959,10 @@
                     tbody.innerHTML += `<tr class="border-b border-slate-100">
                         <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td>
                         <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
-                        <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent).toLocaleString()}`;
+                        <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent).toLocaleString()}</td>
+                        <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
+                        <td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button><button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td>
+                    </tr>`; 
             });
 
             // LISTINGS - NOW INCLUDES LINK GENERATION
@@ -1467,9 +1469,6 @@
         
         function renderMessages() { 
             const b = document.getElementById('box-chat'); 
-            // Avoid full re-render if user is typing? No, user requested polling.
-            // A smarter way is needed if we don't want flicker.
-            // For now, simpler is better for "Production Ready" in a single file: just wipe and redraw.
             b.innerHTML = ''; 
             
             const msgs = state.msgs.filter(m => m.tenant_id == currentChatId).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
@@ -1493,6 +1492,54 @@
             }
         }
 
+        // --- REAL-TIME UPDATES (POLLING) ---
+        function startLiveUpdates() {
+            setInterval(async () => {
+                try {
+                    // Poll for messages and maintenance
+                    const [msg, m, a] = await Promise.all([
+                        supabaseClient.from('msgs').select('*'),
+                        supabaseClient.from('maintenance').select('*'),
+                        supabaseClient.from('apps').select('*')
+                    ]);
+                    
+                    if (msg.data) {
+                        const newCount = msg.data.length;
+                        const oldCount = state.msgs.length;
+                        state.msgs = msg.data;
+                        state.notifications.messages = state.msgs.filter(m => m.from === 'Tenant' && !m.read_at).length;
+                        updateBadge('messages', state.notifications.messages);
+                        
+                        // If chat is open, update messages
+                        if (currentChatId && newCount !== oldCount) {
+                            renderMessages();
+                        }
+                    }
+
+                    if (m.data) {
+                        const oldActive = state.maint.filter(x => x.status === 'Active').length;
+                        state.maint = m.data;
+                        const newActive = state.maint.filter(x => x.status === 'Active').length;
+                        
+                        state.notifications.maintenance = newActive;
+                        updateBadge('maintenance', state.notifications.maintenance);
+                        
+                        // If maintenance view is visible, refresh it
+                        if(!document.getElementById('view-maintenance').classList.contains('hidden-section') && oldActive !== newActive) {
+                            renderAll();
+                        }
+                    }
+                    
+                    if (a.data) {
+                        state.apps = a.data;
+                        state.notifications.screening = state.apps.filter(x => x.status === 'Pending' || x.status === 'Paid').length;
+                        updateBadge('screening', state.notifications.screening);
+                    }
+
+                } catch (e) { console.warn("Polling error", e); }
+            }, 4000); // 4 seconds
+        }
+
         // --- USER PROFILE LOAD ---
         function loadUserProfile() {
             const savedProfile = localStorage.getItem('kozeyy_profile');
@@ -1509,7 +1556,7 @@
 
         loadUserProfile();
         initSystem();
-        startLiveUpdates(); // Start the 4s polling loop
+        startLiveUpdates(); // START POLLING
     </script>
 </body>
 </html>
