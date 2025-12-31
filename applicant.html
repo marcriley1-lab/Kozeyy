@@ -19,25 +19,31 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .hidden-step { display: none; }
         .check-card:checked + div { border-color: #4f46e5; background-color: #eef2ff; color: #4338ca; }
-        
-        /* Error Styles */
         .input-error { border-color: #ef4444 !important; background-color: #fef2f2 !important; }
         .input-error:focus { ring-color: #ef4444 !important; }
+        /* Loader */
+        .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #4f46e5; width: 20px; height: 20px; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
 
     <!-- HEADER -->
     <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-20">
-        <a href="index.html" class="flex items-center gap-2 hover:opacity-80 transition">
+        <div class="flex items-center gap-2">
             <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="6" y="6" width="10" height="28" rx="2" fill="#6366f1" />
                 <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="#6366f1" fill-opacity="0.8" />
                 <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="#6366f1" fill-opacity="0.9" />
             </svg>
             <span class="text-xl font-bold text-slate-800 tracking-tight brand-font">Kozeyy</span>
-        </a>
-        <div class="text-xs font-semibold text-slate-400 uppercase tracking-wide">Secure Application</div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="hidden md:block text-xs font-semibold text-slate-400 uppercase tracking-wide">Secure Application</div>
+            <button onclick="cancelApp()" class="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wide border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition">
+                <i class="fas fa-times mr-1"></i> Cancel
+            </button>
+        </div>
     </header>
 
     <main class="flex-1 flex flex-col md:flex-row max-w-6xl mx-auto w-full p-4 md:p-8 gap-8">
@@ -46,7 +52,7 @@
         <div class="w-full md:w-1/3 order-1 md:order-2">
             <div class="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden sticky top-24">
                 <div class="h-48 bg-slate-200 relative">
-                    <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover">
+                    <img id="prop-img" src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover">
                     <div class="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-lg text-xs font-bold shadow text-slate-800">
                         <i class="fas fa-camera mr-1"></i> Gallery
                     </div>
@@ -54,8 +60,8 @@
                 <div class="p-6">
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <h2 class="text-xl font-bold text-slate-800 brand-font" id="prop-addr">Loading Property...</h2>
-                            <p class="text-sm text-slate-500" id="prop-city">Please wait</p>
+                            <h2 class="text-xl font-bold text-slate-800 brand-font" id="prop-addr">Loading...</h2>
+                            <p class="text-sm text-slate-500" id="prop-city">...</p>
                         </div>
                     </div>
                     <div class="flex items-end gap-1 mb-6">
@@ -103,23 +109,10 @@
             <!-- STEPS INDICATOR -->
             <div class="flex justify-between mb-8 relative" id="steps-container">
                 <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -z-10 -translate-y-1/2 rounded"></div>
-                
-                <button onclick="navigateToStep(1)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
-                    <div id="step-ind-1" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-indigo-600 border-indigo-600 text-white transition-all">1</div>
-                    <span class="text-xs font-bold text-slate-600">Contact</span>
-                </button>
-                <button onclick="navigateToStep(2)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
-                    <div id="step-ind-2" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">2</div>
-                    <span class="text-xs font-bold text-slate-400">Financial</span>
-                </button>
-                <button onclick="navigateToStep(3)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
-                    <div id="step-ind-3" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">3</div>
-                    <span class="text-xs font-bold text-slate-400">History</span>
-                </button>
-                <button onclick="navigateToStep(4)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
-                    <div id="step-ind-4" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">4</div>
-                    <span class="text-xs font-bold text-slate-400">Review</span>
-                </button>
+                <button onclick="navigateToStep(1)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer"><div id="step-ind-1" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-indigo-600 border-indigo-600 text-white transition-all">1</div><span class="text-xs font-bold text-slate-600">Contact</span></button>
+                <button onclick="navigateToStep(2)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer"><div id="step-ind-2" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">2</div><span class="text-xs font-bold text-slate-400">Financial</span></button>
+                <button onclick="navigateToStep(3)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer"><div id="step-ind-3" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">3</div><span class="text-xs font-bold text-slate-400">History</span></button>
+                <button onclick="navigateToStep(4)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer"><div id="step-ind-4" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">4</div><span class="text-xs font-bold text-slate-400">Review</span></button>
             </div>
 
             <!-- Error Banner -->
@@ -135,119 +128,39 @@
                 <div id="step-1" class="step-section fade-in">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Let's get started.</h2>
                     <p class="text-slate-500 mb-6">Create your applicant profile to begin.</p>
-                    
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">First Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="inp-fname" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Jane" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Last Name <span class="text-red-500">*</span></label>
-                            <input type="text" id="inp-lname" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Doe" required>
-                        </div>
+                        <div><label class="block text-sm font-bold text-slate-700 mb-2">First Name <span class="text-red-500">*</span></label><input type="text" id="inp-fname" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Jane" required></div>
+                        <div><label class="block text-sm font-bold text-slate-700 mb-2">Last Name <span class="text-red-500">*</span></label><input type="text" id="inp-lname" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Doe" required></div>
                     </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Email Address <span class="text-red-500">*</span></label>
-                        <input type="email" id="inp-email" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="jane@example.com" required>
-                    </div>
-                    <div class="mb-6">
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Phone Number <span class="text-red-500">*</span></label>
-                        <input type="tel" id="inp-phone" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="(555) 123-4567" required>
-                        <p class="text-[10px] text-slate-400 mt-1">10-digit number required. No letters.</p>
-                    </div>
-
-                    <div class="flex justify-end">
-                        <button type="button" onclick="navigateToStep(2)" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Next Step <i class="fas fa-arrow-right ml-2"></i></button>
-                    </div>
+                    <div class="mb-4"><label class="block text-sm font-bold text-slate-700 mb-2">Email Address <span class="text-red-500">*</span></label><input type="email" id="inp-email" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="jane@example.com" required></div>
+                    <div class="mb-6"><label class="block text-sm font-bold text-slate-700 mb-2">Phone Number <span class="text-red-500">*</span></label><input type="tel" id="inp-phone" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="(555) 123-4567" required><p class="text-[10px] text-slate-400 mt-1">10-digit number required.</p></div>
+                    <div class="flex justify-end"><button type="button" onclick="navigateToStep(2)" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Next Step <i class="fas fa-arrow-right ml-2"></i></button></div>
                 </div>
 
-                <!-- STEP 2: FINANCIAL & EMPLOYMENT -->
+                <!-- STEP 2: FINANCIAL -->
                 <div id="step-2" class="step-section hidden-step fade-in">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Employment & Income</h2>
                     <p class="text-slate-500 mb-6">This information helps verify your ability to pay rent.</p>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Current Employer <span class="text-red-500">*</span></label>
-                        <input type="text" id="inp-employer" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Company Name" required>
-                    </div>
-                    
+                    <div class="mb-4"><label class="block text-sm font-bold text-slate-700 mb-2">Current Employer <span class="text-red-500">*</span></label><input type="text" id="inp-employer" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Company Name" required></div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Job Title <span class="text-red-500">*</span></label>
-                            <input type="text" id="inp-job" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="e.g. Manager" required>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2">Monthly Income (Gross) <span class="text-red-500">*</span></label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-3 text-slate-400 font-bold">$</span>
-                                <input type="number" id="inp-income" class="w-full border border-slate-300 p-3 pl-8 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="4000" min="0" required>
-                            </div>
-                        </div>
+                        <div><label class="block text-sm font-bold text-slate-700 mb-2">Job Title <span class="text-red-500">*</span></label><input type="text" id="inp-job" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="e.g. Manager" required></div>
+                        <div><label class="block text-sm font-bold text-slate-700 mb-2">Monthly Income <span class="text-red-500">*</span></label><div class="relative"><span class="absolute left-3 top-3 text-slate-400 font-bold">$</span><input type="number" id="inp-income" class="w-full border border-slate-300 p-3 pl-8 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="4000" min="0" required></div></div>
                     </div>
-
-                    <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100 mb-6">
-                        <label class="flex items-start gap-3 cursor-pointer">
-                            <input type="checkbox" id="inp-verify" class="mt-1 w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" checked>
-                            <div class="text-sm">
-                                <span class="font-bold text-indigo-900">Employment Verification</span>
-                                <p class="text-indigo-700">I authorize Kozeyy to contact my employer to verify employment status and income.</p>
-                            </div>
-                        </label>
-                    </div>
-
-                    <div class="flex justify-between">
-                        <button type="button" onclick="navigateToStep(1)" class="text-slate-500 font-bold hover:text-slate-800 px-4">Back</button>
-                        <button type="button" onclick="navigateToStep(3)" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Next Step <i class="fas fa-arrow-right ml-2"></i></button>
-                    </div>
+                    <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100 mb-6"><label class="flex items-start gap-3 cursor-pointer"><input type="checkbox" id="inp-verify" class="mt-1 w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" checked><div class="text-sm"><span class="font-bold text-indigo-900">Employment Verification</span><p class="text-indigo-700">I authorize Kozeyy to contact my employer.</p></div></label></div>
+                    <div class="flex justify-between"><button type="button" onclick="navigateToStep(1)" class="text-slate-500 font-bold hover:text-slate-800 px-4">Back</button><button type="button" onclick="navigateToStep(3)" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Next Step <i class="fas fa-arrow-right ml-2"></i></button></div>
                 </div>
 
                 <!-- STEP 3: BACKGROUND -->
                 <div id="step-3" class="step-section hidden-step fade-in">
                     <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Background Check</h2>
                     <p class="text-slate-500 mb-6">We use a secure third-party service to process this data.</p>
-
-                    <div class="mb-6">
-                        <label class="block text-sm font-bold text-slate-700 mb-2">Social Security Number <span class="text-red-500">*</span></label>
-                        <input type="password" id="inp-ssn" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none tracking-widest transition" placeholder="XXX-XX-XXXX" maxlength="11">
-                        <p class="text-xs text-slate-400 mt-2"><i class="fas fa-lock text-green-500"></i> Encrypted with 256-bit SSL encryption. (9 Digits)</p>
-                    </div>
-
+                    <div class="mb-6"><label class="block text-sm font-bold text-slate-700 mb-2">Social Security Number <span class="text-red-500">*</span></label><input type="password" id="inp-ssn" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none tracking-widest transition" placeholder="XXX-XX-XXXX" maxlength="11"><p class="text-xs text-slate-400 mt-2"><i class="fas fa-lock text-green-500"></i> Encrypted with 256-bit SSL encryption. (9 Digits)</p></div>
                     <div class="space-y-4 mb-8">
                         <h4 class="font-bold text-slate-800 border-b pb-2">Self-Declaration</h4>
-                        
-                        <div>
-                            <p class="text-sm font-bold text-slate-700 mb-2">Have you ever been evicted? <span class="text-red-500">*</span></p>
-                            <div class="flex gap-4">
-                                <label class="flex-1 cursor-pointer">
-                                    <input type="radio" name="evict" value="no" class="hidden check-card" checked onchange="updateHistory('evict', false)">
-                                    <div class="border border-slate-200 p-3 rounded-xl text-center text-sm font-bold hover:bg-slate-50 transition">No</div>
-                                </label>
-                                <label class="flex-1 cursor-pointer">
-                                    <input type="radio" name="evict" value="yes" class="hidden check-card" onchange="updateHistory('evict', true)">
-                                    <div class="border border-slate-200 p-3 rounded-xl text-center text-sm font-bold hover:bg-slate-50 transition">Yes</div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div>
-                            <p class="text-sm font-bold text-slate-700 mb-2">Have you ever been convicted of a felony? <span class="text-red-500">*</span></p>
-                            <div class="flex gap-4">
-                                <label class="flex-1 cursor-pointer">
-                                    <input type="radio" name="crim" value="no" class="hidden check-card" checked onchange="updateHistory('crim', false)">
-                                    <div class="border border-slate-200 p-3 rounded-xl text-center text-sm font-bold hover:bg-slate-50 transition">No</div>
-                                </label>
-                                <label class="flex-1 cursor-pointer">
-                                    <input type="radio" name="crim" value="yes" class="hidden check-card" onchange="updateHistory('crim', true)">
-                                    <div class="border border-slate-200 p-3 rounded-xl text-center text-sm font-bold hover:bg-slate-50 transition">Yes</div>
-                                </label>
-                            </div>
-                        </div>
+                        <div><p class="text-sm font-bold text-slate-700 mb-2">Have you ever been evicted? <span class="text-red-500">*</span></p><div class="flex gap-4"><label class="flex-1 cursor-pointer"><input type="radio" name="evict" value="no" class="hidden check-card" checked onchange="updateHistory('evict', false)"><div class="border border-slate-200 p-3 rounded-xl text-center text-sm font-bold hover:bg-slate-50 transition">No</div></label><label class="flex-1 cursor-pointer"><input type="radio" name="evict" value="yes" class="hidden check-card" onchange="updateHistory('evict', true)"><div class="border border-slate-200 p-3 rounded-xl text-center text-sm font-bold hover:bg-slate-50 transition">Yes</div></label></div></div>
+                        <div><p class="text-sm font-bold text-slate-700 mb-2">Have you ever been convicted of a felony? <span class="text-red-500">*</span></p><div class="flex gap-4"><label class="flex-1 cursor-pointer"><input type="radio" name="crim" value="no" class="hidden check-card" checked onchange="updateHistory('crim', false)"><div class="border border-slate-200 p-3 rounded-xl text-center text-sm font-bold hover:bg-slate-50 transition">No</div></label><label class="flex-1 cursor-pointer"><input type="radio" name="crim" value="yes" class="hidden check-card" onchange="updateHistory('crim', true)"><div class="border border-slate-200 p-3 rounded-xl text-center text-sm font-bold hover:bg-slate-50 transition">Yes</div></label></div></div>
                     </div>
-
-                    <div class="flex justify-between">
-                        <button type="button" onclick="navigateToStep(2)" class="text-slate-500 font-bold hover:text-slate-800 px-4">Back</button>
-                        <button type="button" onclick="navigateToStep(4)" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Review & Pay</button>
-                    </div>
+                    <div class="flex justify-between"><button type="button" onclick="navigateToStep(2)" class="text-slate-500 font-bold hover:text-slate-800 px-4">Back</button><button type="button" onclick="navigateToStep(4)" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Review & Pay</button></div>
                 </div>
 
                 <!-- STEP 4: PAYMENT & SUBMIT -->
@@ -256,46 +169,27 @@
                     <p class="text-slate-500 mb-6">Review your details and pay the screening fee.</p>
 
                     <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-slate-600 font-medium">Applicant</span>
-                            <span class="font-bold text-slate-800" id="rev-name">Jane Doe</span>
-                        </div>
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-slate-600 font-medium">Income</span>
-                            <span class="font-bold text-slate-800" id="rev-income">$4,000/mo</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-600 font-medium">Property</span>
-                            <span class="font-bold text-indigo-600 truncate max-w-[150px]" id="rev-prop">...</span>
-                        </div>
+                        <div class="flex justify-between items-center mb-2"><span class="text-slate-600 font-medium">Applicant</span><span class="font-bold text-slate-800" id="rev-name">Jane Doe</span></div>
+                        <div class="flex justify-between items-center mb-2"><span class="text-slate-600 font-medium">Income</span><span class="font-bold text-slate-800" id="rev-income">$4,000/mo</span></div>
+                        <div class="flex justify-between items-center"><span class="text-slate-600 font-medium">Property</span><span class="font-bold text-indigo-600 truncate max-w-[150px]" id="rev-prop">...</span></div>
                     </div>
 
-                    <!-- MOCK CREDIT CARD FORM -->
-                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 mb-6 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 p-4 opacity-10">
-                            <i class="fab fa-cc-visa text-6xl"></i>
+                    <!-- STRIPE REDIRECT BLOCK -->
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 mb-6 relative overflow-hidden text-center">
+                        <div class="flex justify-center gap-4 mb-4 opacity-50 grayscale">
+                            <i class="fab fa-cc-visa text-3xl"></i>
+                            <i class="fab fa-cc-mastercard text-3xl"></i>
+                            <i class="fab fa-cc-amex text-3xl"></i>
+                            <i class="fab fa-cc-discover text-3xl"></i>
                         </div>
-                        <h4 class="font-bold text-slate-800 mb-4">Payment Method</h4>
-                        <div class="mb-4">
-                            <label class="text-xs font-bold text-slate-500 uppercase">Card Number <span class="text-red-500">*</span></label>
-                            <div class="flex items-center bg-white border border-slate-300 rounded-xl px-3 py-2 mt-1">
-                                <i class="far fa-credit-card text-slate-400 mr-2"></i>
-                                <input id="cc-num" class="w-full outline-none font-mono" placeholder="0000 0000 0000 0000" maxlength="19">
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-xs font-bold text-slate-500 uppercase">Expiry <span class="text-red-500">*</span></label>
-                                <input id="cc-exp" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 mt-1 outline-none font-mono" placeholder="MM/YY" maxlength="5">
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-500 uppercase">CVC <span class="text-red-500">*</span></label>
-                                <input id="cc-cvc" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 mt-1 outline-none font-mono" placeholder="123" maxlength="4">
-                            </div>
-                        </div>
-                        <button type="button" onclick="submitApplication()" id="btn-submit" class="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold mt-6 shadow hover:bg-emerald-700 transition flex items-center justify-center gap-2">
-                            <span>Pay $39.99 & Submit</span>
+                        <h4 class="font-bold text-slate-800 text-lg mb-2">Secure Payment Required</h4>
+                        <p class="text-sm text-slate-500 mb-6">You will be redirected to a secure Stripe Checkout page to pay the <strong>$39.99</strong> screening fee.</p>
+                        
+                        <button type="button" onclick="submitApplication()" id="btn-submit" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition flex items-center justify-center gap-3">
+                            <i class="fas fa-lock"></i>
+                            <span>Continue to Secure Payment</span>
                         </button>
+                        <p class="text-xs text-slate-400 mt-4"><i class="fas fa-shield-alt"></i> No credit card data is stored on our servers.</p>
                     </div>
 
                     <div class="flex justify-start">
@@ -305,12 +199,9 @@
 
                 <!-- SUCCESS VIEW -->
                 <div id="view-success" class="hidden-step fade-in text-center py-12">
-                    <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6 shadow-lg shadow-emerald-100">
-                        <i class="fas fa-check"></i>
-                    </div>
+                    <div class="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-6 shadow-lg shadow-emerald-100"><i class="fas fa-check"></i></div>
                     <h2 class="text-3xl font-bold text-slate-800 mb-2 brand-font">Application Received!</h2>
-                    <p class="text-slate-500 max-w-md mx-auto mb-8">Your application for <span id="success-addr" class="font-bold text-slate-700"></span> has been securely transmitted to the property owner.</p>
-                    
+                    <p class="text-slate-500 max-w-md mx-auto mb-8">Your application for <span id="success-addr" class="font-bold text-slate-700"></span> has been securely transmitted.</p>
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 max-w-sm mx-auto text-left">
                         <h4 class="font-bold text-slate-800 border-b pb-2 mb-2">Next Steps</h4>
                         <ul class="space-y-3">
@@ -318,7 +209,6 @@
                             <li class="flex gap-3 text-sm text-slate-600"><i class="fas fa-envelope text-indigo-500 mt-1"></i> You will be notified via email of the decision.</li>
                         </ul>
                     </div>
-                    
                     <a href="index.html" class="inline-block mt-8 text-indigo-600 font-bold hover:underline">Return to Home</a>
                 </div>
 
@@ -330,9 +220,18 @@
         <p>&copy; 2025 Kozeyy Property Management. Powered by TransUnion.</p>
     </footer>
 
+    <!-- Processing Modal -->
+    <div id="processingModal" class="hidden fixed inset-0 bg-slate-900/80 z-[60] flex flex-col items-center justify-center backdrop-blur-sm text-white">
+        <div class="loader mb-4 border-t-white"></div>
+        <h2 class="text-xl font-bold mb-2">Connecting to Stripe</h2>
+        <p class="text-sm opacity-80">Do not close this window...</p>
+    </div>
+
     <script>
-        // --- CREDENTIALS ---
+        // --- CONFIG ---
+        const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        // USE ANON KEY HERE (Public Safe)
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
         
         let supabaseClient = null;
@@ -343,6 +242,7 @@
         } catch(e) { console.error("Error initializing Supabase:", e); }
 
         // --- STATE & INIT ---
+        let currentListingId = null;
         let selectedProp = null;
         let appData = { evictions: false, criminal: false };
 
@@ -354,26 +254,48 @@
         }
 
         window.onload = async function() {
+            // Check Payment Success Return
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
+                const appId = urlParams.get('app_id');
+                if(appId) {
+                    // Optimistic update (Webhook does the real work)
+                    try {
+                        if(supabaseClient) {
+                            await supabaseClient.from('apps').update({ payment_status: 'Paid', status: 'Pending Screening' }).eq('id', appId);
+                        }
+                    } catch(e) {}
+                }
+                renderStep('success');
+                return;
+            }
+
+            // Normal Init
+            currentListingId = urlParams.get('listing_id');
+            if (!currentListingId) {
+                const storedLid = localStorage.getItem('pending_application_lid');
+                if (storedLid) {
+                    currentListingId = storedLid;
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('listing_id', currentListingId);
+                    window.history.replaceState({}, '', newUrl);
+                }
+            }
+
             loadSessionData();
             
             try {
-                if(supabaseClient) {
-                    const { data, error } = await supabaseClient.from('listings').select('*').limit(1);
-                    if (data && data.length > 0) selectedProp = data[0];
+                if(supabaseClient && currentListingId) {
+                    const { data, error } = await supabaseClient.from('listings').select('*').eq('id', currentListingId).single();
+                    if (data) {
+                        selectedProp = data;
+                        updatePropUI(selectedProp);
+                    }
                 }
             } catch (err) { console.warn("Supabase fetch error:", err); }
 
-            if (!selectedProp) {
-                selectedProp = {
-                    addr: "123 Demo St, Austin TX",
-                    price: 2400,
-                    beds: 3,
-                    baths: 2,
-                    sqft: 1500
-                };
-            }
-            updatePropUI(selectedProp);
             renderStep(getStepFromUrl());
+            
             window.addEventListener('popstate', (event) => {
                 const step = getStepFromUrl();
                 renderStep(step);
@@ -385,28 +307,40 @@
             const street = addrParts[0];
             const city = addrParts.length > 1 ? addrParts.slice(1).join(',') : prop.addr;
             
+            const imgEl = document.getElementById('prop-img');
+            const imgSrc = prop.img || prop.image || prop.image_url;
+            if(imgSrc && imgSrc.trim() !== "") {
+                imgEl.src = imgSrc;
+            }
+
             document.getElementById('prop-addr').innerText = street;
             document.getElementById('prop-city').innerText = city;
             document.getElementById('prop-price').innerText = `$${parseInt(prop.price).toLocaleString()}`;
-            document.getElementById('prop-beds').innerText = prop.beds;
-            document.getElementById('prop-baths').innerText = prop.baths;
-            document.getElementById('prop-sqft').innerText = prop.sqft;
+            document.getElementById('prop-beds').innerText = prop.beds || '-';
+            document.getElementById('prop-baths').innerText = prop.baths || '-';
+            document.getElementById('prop-sqft').innerText = prop.sqft ? prop.sqft.toLocaleString() : '-';
+            document.getElementById('rev-prop').innerText = street;
+            document.getElementById('success-addr').innerText = street;
+        }
+
+        // --- CANCEL LOGIC ---
+        function cancelApp() {
+            if(confirm("Are you sure you want to cancel? Your progress will be lost.")) {
+                localStorage.removeItem('pending_application_lid');
+                sessionStorage.removeItem('kozeyy_app_data');
+                window.location.href = 'index.html';
+            }
         }
 
         // --- VALIDATION & UTILS ---
-        
         function showError(msg, elId = null) {
             const banner = document.getElementById('error-banner');
             document.getElementById('error-text').innerText = msg;
             banner.classList.remove('hidden');
             banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
             if(elId) {
                 const el = document.getElementById(elId);
-                if(el) {
-                    el.classList.add('input-error');
-                    el.focus();
-                }
+                if(el) { el.classList.add('input-error'); el.focus(); }
             }
         }
 
@@ -415,61 +349,39 @@
             document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
         }
 
+        function toggleLoader(show) {
+            const el = document.getElementById('processingModal');
+            if(show) el.classList.remove('hidden');
+            else el.classList.add('hidden');
+        }
+
         function validateStep(step) {
             clearErrors();
-            
             if (step === 1) {
                 const fname = document.getElementById('inp-fname').value.trim();
                 const lname = document.getElementById('inp-lname').value.trim();
                 const email = document.getElementById('inp-email').value.trim();
                 const phone = document.getElementById('inp-phone').value.trim();
-
                 if (!fname) return showError("First Name is required.", 'inp-fname');
                 if (!lname) return showError("Last Name is required.", 'inp-lname');
-                
-                // Email Regex
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!email || !emailRegex.test(email)) return showError("Please enter a valid email address.", 'inp-email');
-
-                // Phone Regex (Digits only, min 10)
-                const phoneClean = phone.replace(/\D/g, '');
-                // Allow standard formats, reject letters
-                if (/[a-zA-Z]/.test(phone)) return showError("Phone number cannot contain letters.", 'inp-phone');
-                if (phoneClean.length < 10) return showError("Phone number must have at least 10 digits.", 'inp-phone');
-
+                if (!email.includes('@')) return showError("Valid email required.", 'inp-email');
+                if (phone.length < 10) return showError("Valid phone required.", 'inp-phone');
                 return true;
             }
-
             if (step === 2) {
                 const employer = document.getElementById('inp-employer').value.trim();
-                const job = document.getElementById('inp-job').value.trim();
                 const income = document.getElementById('inp-income').value;
-
-                if (!employer) return showError("Employer name is required.", 'inp-employer');
-                if (!job) return showError("Job title is required.", 'inp-job');
-                
-                if (!income || parseFloat(income) <= 0) return showError("Please enter a valid monthly income greater than 0.", 'inp-income');
-
+                if (!employer) return showError("Employer required.", 'inp-employer');
+                if (!income || parseFloat(income) <= 0) return showError("Valid income required.", 'inp-income');
                 return true;
             }
-
             if (step === 3) {
                 const ssn = document.getElementById('inp-ssn').value.replace(/\D/g, '');
-                
-                if (ssn.length !== 9) return showError("SSN must be exactly 9 digits.", 'inp-ssn');
-
-                // Radio buttons are checked by default in HTML so generally always valid, but good to ensure
-                const evict = document.querySelector('input[name="evict"]:checked');
-                const crim = document.querySelector('input[name="crim"]:checked');
-                if(!evict || !crim) return showError("Please answer all background declaration questions.");
-
+                if (ssn.length !== 9) return showError("SSN must be 9 digits.", 'inp-ssn');
                 return true;
             }
-
             return true;
         }
-
-        // --- NAVIGATION & SAVING ---
 
         function saveSessionData() {
             try {
@@ -479,12 +391,10 @@
                     if(input.type === 'radio' || input.type === 'checkbox') {
                         const key = input.id || (input.name + '-' + input.value);
                         data[key] = input.checked;
-                    } else {
-                        if(input.id) data[input.id] = input.value;
-                    }
+                    } else { if(input.id) data[input.id] = input.value; }
                 });
                 sessionStorage.setItem('kozeyy_app_data', JSON.stringify(data));
-            } catch(e) { console.log("Session Save Skipped"); }
+            } catch(e) {}
         }
 
         function loadSessionData() {
@@ -499,7 +409,7 @@
                         else el.value = data[key];
                     }
                 });
-            } catch(e) { console.log("Session Load Skipped"); }
+            } catch(e) {}
         }
 
         function renderStep(step) {
@@ -516,7 +426,6 @@
             const activeStepEl = document.getElementById(`step-${step}`);
             if(activeStepEl) activeStepEl.classList.remove('hidden-step');
 
-            // Update Indicators
             for(let i=1; i<=4; i++) {
                 const el = document.getElementById(`step-ind-${i}`);
                 if(!el) continue;
@@ -536,25 +445,20 @@
                  const income = document.getElementById('inp-income').value;
                  if(fname) document.getElementById('rev-name').innerText = `${fname} ${lname}`;
                  if(income) document.getElementById('rev-income').innerText = `$${parseInt(income).toLocaleString()}/mo`;
-                 document.getElementById('rev-prop').innerText = document.getElementById('prop-addr').innerText;
+                 if(selectedProp) document.getElementById('rev-prop').innerText = selectedProp.addr.split(',')[0];
             }
         }
 
         function navigateToStep(step) {
             const currentStep = getStepFromUrl();
-
-            // Validate ONLY if moving forward
-            if(step > currentStep) {
-                // Must validate current step before moving
+            if(step > currentStep && typeof currentStep === 'number') {
                 if(!validateStep(currentStep)) return; 
             }
-
             saveSessionData();
-            
             const newUrl = new URL(window.location);
             newUrl.searchParams.set('step', step);
+            if(currentListingId) newUrl.searchParams.set('listing_id', currentListingId);
             window.history.pushState({ step: step }, '', newUrl);
-            
             renderStep(step);
             window.scrollTo(0,0);
         }
@@ -564,23 +468,14 @@
             saveSessionData();
         }
 
+        // --- SUBMIT LOGIC (STRIPE INTEGRATED) ---
         async function submitApplication() {
             clearErrors();
-            
-            // Validate Payment Fields (Step 4 specific)
-            const ccNum = document.getElementById('cc-num').value.replace(/\D/g, '');
-            const ccExp = document.getElementById('cc-exp').value.trim();
-            const ccCVC = document.getElementById('cc-cvc').value.replace(/\D/g, '');
-
-            if(ccNum.length < 13) return showError("Please enter a valid card number.", 'cc-num');
-            if(ccExp.length < 5) return showError("Please enter expiry MM/YY.", 'cc-exp');
-            if(ccCVC.length < 3) return showError("Invalid CVC.", 'cc-cvc');
-
             const btn = document.getElementById('btn-submit');
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
-            btn.disabled = true;
-
+            
+            // Gather Data
             const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
+            const inputEmail = document.getElementById('inp-email').value;
             const inputIncome = parseFloat(document.getElementById('inp-income').value);
             const inputJob = document.getElementById('inp-job').value;
             const mockScore = Math.floor(Math.random() * (820 - 550 + 1) + 550);
@@ -589,29 +484,54 @@
                 name: inputName,
                 score: mockScore,
                 income: inputIncome,
+                listing_id: currentListingId ? parseInt(currentListingId) : null,
                 rent: selectedProp ? parseInt(selectedProp.price) : 0,
                 job: inputJob || 'Not Listed',
-                status: 'Pending'
+                status: 'Unpaid', // Start as Unpaid
+                payment_status: 'Unpaid',
+                evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
+                criminal: document.querySelector('input[name="crim"]:checked').value === 'yes'
             };
 
             try {
-                if(!supabaseClient) throw new Error("Database connection not ready.");
-                const { error } = await supabaseClient.from('apps').insert([newApp]);
-                if (error) throw error;
-
-                // Success
-                sessionStorage.removeItem('kozeyy_app_data');
+                toggleLoader(true);
                 
-                // Navigate to success "page"
-                const newUrl = new URL(window.location);
-                newUrl.searchParams.set('step', 'success');
-                window.history.pushState({ step: 'success' }, '', newUrl);
-                renderStep('success');
+                if(!supabaseClient) throw new Error("Database connection not ready.");
+                
+                // 1. Save Application to DB first
+                const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
+                if (error) throw error;
+                const savedAppId = data[0].id;
+
+                // 2. Call Backend to create Stripe Session
+                const response = await fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${SUPABASE_KEY}` 
+                    },
+                    body: JSON.stringify({ 
+                        action: 'pay-application-fee', 
+                        appId: savedAppId,
+                        applicantEmail: inputEmail,
+                        applicantName: inputName
+                    })
+                });
+
+                const session = await response.json();
+                if(session.error) throw new Error(session.error);
+
+                // 3. Redirect to Stripe
+                if(session.url) {
+                    window.location.href = session.url;
+                } else {
+                    throw new Error("Payment redirect failed.");
+                }
                 
             } catch (err) {
                 console.error(err);
-                showError("Submission Failed: " + err.message);
-                btn.innerHTML = `Try Again`;
+                toggleLoader(false);
+                showError("Error: " + err.message);
                 btn.disabled = false;
             }
         }
