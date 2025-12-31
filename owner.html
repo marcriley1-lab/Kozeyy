@@ -528,11 +528,26 @@
         invTable.innerHTML = '';
         state.invoices.forEach(inv => { 
             if(filterVal === 'all' || inv.tenant_id == filterVal) { 
+                // LOOKUP FIX: Find the tenant object using the ID from the invoice
+                const t = state.tenants.find(x => x.id == inv.tenant_id) || { name: 'Unknown' };
+                
                 const balance = inv.total - (inv.amount_paid || 0); 
                 let rowBg = '', status = 'Unpaid'; 
                 if (balance <= 0) { rowBg = 'bg-emerald-50/50'; status='Paid'; } 
+                
+                // Mapped 'date' to 'due_date' based on your DB schema
+                // Used t.name instead of inv.tenant_name
+                const displayDate = inv.due_date || inv.date || 'No Date'; 
                 const fileLink = inv.doc_url ? `<a href="${inv.doc_url}" target="_blank" class="ml-2 text-indigo-500 hover:text-indigo-700" title="View Attachment"><i class="fas fa-paperclip"></i></a>` : ''; 
-                invTable.innerHTML += `<tr class="border-b border-slate-100 ${rowBg}"><td class="p-5 text-sm font-medium text-slate-500">${inv.date}</td><td class="p-5 text-sm font-bold">${inv.tenant_name || 'Unknown'}</td><td class="p-5 text-sm text-slate-500">${(inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge'} ${fileLink}</td><td class="p-5 text-right font-bold text-slate-800">$${inv.total.toLocaleString()}</td><td class="p-5 text-right font-medium text-slate-600">$${balance.toLocaleString()}</td><td class="p-5 text-right"><span class="text-xs font-bold uppercase ${status==='Paid'?'text-emerald-600':'text-rose-500'}">${status}</span></td></tr>`; 
+                
+                invTable.innerHTML += `<tr class="border-b border-slate-100 ${rowBg}">
+                    <td class="p-5 text-sm font-medium text-slate-500">${displayDate}</td>
+                    <td class="p-5 text-sm font-bold">${t.name}</td>
+                    <td class="p-5 text-sm text-slate-500">${(inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge'} ${fileLink}</td>
+                    <td class="p-5 text-right font-bold text-slate-800">$${inv.total.toLocaleString()}</td>
+                    <td class="p-5 text-right font-medium text-slate-600">$${balance.toLocaleString()}</td>
+                    <td class="p-5 text-right"><span class="text-xs font-bold uppercase ${status==='Paid'?'text-emerald-600':'text-rose-500'}">${status}</span></td>
+                </tr>`; 
             } 
         });
 
@@ -642,3 +657,4 @@
 </script>
 </body>
 </html>
+
