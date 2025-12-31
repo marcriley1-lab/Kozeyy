@@ -672,757 +672,412 @@
         </div>
     </div>
 
-    <script>
-        // --- SUPABASE CONFIG ---
-        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        
-        let supabaseClient = null;
+<script>
+    // --- SUPABASE CONFIG ---
+    const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+    
+    let supabaseClient = null;
+    try {
+        if(window.supabase) {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+    } catch(e) { console.error("Error init Supabase:", e); }
+
+    // --- GLOBAL STATE ---
+    let state = {
+        tenants: [], listings: [], invoices: [], payments: [], expenses: [],
+        apps: [], msgs: [], maint: [], settings: {}, 
+        notifications: { messages: 0, maintenance: 0, screening: 0 }
+    };
+    
+    // State Tracking for Diffing (Prevent Flashing)
+    let lastRenderedState = {
+        dashboard: "",
+        tenants: "",
+        listings: "",
+        maint: "",
+        msgs: "",
+        invoices: "",
+        expenses: "",
+        screening: ""
+    };
+
+    // Helper Functions
+    function parseDateStr(str) { if(!str) return new Date(); const parts = str.split('-'); return new Date(parts[0], parts[1]-1, parts[2]); }
+    function getLastName(fullName) { if(!fullName) return ''; const parts = fullName.trim().split(' '); return parts.length > 1 ? parts[parts.length - 1] : parts[0]; }
+    function setText(id, text) { const el = document.getElementById(id); if(el && el.innerText !== text) el.innerText = text; }
+
+    // UI State Variables
+    let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
+    let editTenantId = null, editListingId = null, editExpenseId = null, currentAppId = null;
+    let draftInvoice = null, expandedExpId = null;
+
+    // --- 1. INIT & POLLING ---
+    async function initSystem() {
         try {
-            if(window.supabase) {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            }
-        } catch(e) { console.error("Error init Supabase:", e); }
+            if(!supabaseClient) throw new Error("Supabase library not loaded.");
 
-        // --- GLOBAL STATE ---
-        let state = {
-            tenants: [], listings: [], invoices: [], payments: [], expenses: [],
-            apps: [], msgs: [], maint: [], settings: {}, recurringInvoices: [],
-            notifications: { messages: 0, maintenance: 0, screening: 0 }
-        };
+            await fetchData();
+            renderAll();
+            
+            // Start Polling for Real-time Notifications (every 4 seconds)
+            setInterval(async () => {
+                await fetchData();
+                renderAll(); 
+            }, 4000);
+
+        } catch (err) {
+            console.error("Initialization failed:", err);
+            renderAll();
+        }
+    }
+
+    // Centralized Data Fetching
+    async function fetchData() {
+        const [t, l, i, p, e, m, msg, s, a] = await Promise.all([
+            supabaseClient.from('tenants').select('*'),
+            supabaseClient.from('listings').select('*'),
+            supabaseClient.from('invoices').select('*'),
+            supabaseClient.from('payments').select('*'),
+            supabaseClient.from('expenses').select('*'),
+            supabaseClient.from('maintenance').select('*'),
+            supabaseClient.from('msgs').select('*'),
+            supabaseClient.from('settings').select('*').single(),
+            supabaseClient.from('apps').select('*')
+        ]);
+
+        state.tenants = t.data || [];
+        state.listings = l.data || [];
+        state.invoices = i.data || [];
+        state.payments = p.data || [];
+        state.expenses = e.data || [];
+        state.maint = m.data || [];
+        state.msgs = msg.data || [];
+        state.settings = s.data || { screening: { minScore: 650 } };
+        state.apps = a.data || [];
+
+        // UPDATE NOTIFICATION COUNTS
+        state.notifications.messages = state.msgs.filter(x => x.from === 'Tenant' && !x.read_at).length;
+        state.notifications.maintenance = state.maint.filter(x => x.status === 'Active').length;
+        state.notifications.screening = state.apps.filter(x => x.status === 'Pending').length;
+    }
+
+    // --- 2. RENDER LOGIC WITH DIFFING ---
+    function renderAll() {
+        // Badges update is cheap, do it always
+        updateBadge('messages', state.notifications.messages); 
+        updateBadge('maintenance', state.notifications.maintenance); 
+        updateBadge('screening', state.notifications.screening);
+
+        // Dashboard Stats
+        const stats = calculateGlobalStats();
+        const activeMaint = state.maint.filter(m=>m.status==='Active').length;
+        // ... (calc other stats)
+        setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
+        setText('dash-maintenance', activeMaint); 
+        setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
         
-        function parseDateStr(str) {
-            if(!str) return new Date();
-            const parts = str.split('-');
-            return new Date(parts[0], parts[1]-1, parts[2]);
+        // Chart Update
+        if(chartInstance) {
+            // Check if chart data actually changed to avoid redraw flicker? ChartJS handles animation well usually.
+            // Simplified: just update
+            chartInstance.data.datasets[0].data = [stats.revenue, 0, stats.overdue];
+            chartInstance.update();
+        } else if(document.getElementById('revenueChart')) {
+            initChart(stats);
         }
 
-        let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
-        let editTenantId = null, editListingId = null, editExpenseId = null, currentAppId = null;
-        let draftInvoice = null; 
-	    let expandedExpId = null;
+        // --- TENANTS RENDER ---
+        const tenantHash = JSON.stringify(state.tenants);
+        if(tenantHash !== lastRenderedState.tenants) {
+            const tbody = document.getElementById('table-tenants'); 
+            if(tbody) {
+                tbody.innerHTML = '';
+                state.tenants
+                    .filter(t => t.status !== 'Archived')
+                    .sort((a, b) => getLastName(a.name || '').localeCompare(getLastName(b.name || ''))) 
+                    .forEach(t => { 
+                        const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
+                        tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td><td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td><td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent).toLocaleString()}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td><td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button><button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
+                });
+            }
+            lastRenderedState.tenants = tenantHash;
+        }
 
-        // --- INIT DATA FETCH ---
-        async function initSystem() {
-            try {
-                if(!supabaseClient) throw new Error("Supabase library not loaded.");
-
-                // FETCH EVERYTHING
-                const [t, l, i, p, e, m, msg, s, a, r] = await Promise.all([
-                    supabaseClient.from('tenants').select('*'),
-                    supabaseClient.from('listings').select('*'),
-                    supabaseClient.from('invoices').select('*'),
-                    supabaseClient.from('payments').select('*'),
-                    supabaseClient.from('expenses').select('*'),
-                    supabaseClient.from('maintenance').select('*'),
-                    supabaseClient.from('msgs').select('*'),
-                    supabaseClient.from('settings').select('*').single(),
-                    supabaseClient.from('apps').select('*'),
-                    supabaseClient.from('recurring_invoices').select('*')
-                ]);
-
-                state.tenants = t.data || [];
-                state.listings = l.data || [];
-                state.invoices = i.data || [];
-                state.payments = p.data || [];
-                state.expenses = e.data || [];
-                state.maint = m.data || [];
-                state.msgs = msg.data || [];
-                state.settings = s.data || { screening: { minScore: 650 } };
-                state.apps = a.data || [];
-                state.recurringInvoices = r.data || [];
-
-                state.notifications.screening = state.apps.filter(x => x.status === 'Pending' || x.status === 'Paid').length;
-                state.notifications.maintenance = state.maint.filter(x => x.status === 'Active').length;
+        // --- MAINTENANCE RENDER ---
+        // Sort by ID or Date to ensure consistent hash order
+        const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
+        if(maintHash !== lastRenderedState.maint) {
+            const activeList = document.getElementById('list-maint-active'); 
+            const histList = document.getElementById('list-maint-history'); 
+            
+            if(activeList && histList) {
+                activeList.innerHTML = ''; 
+                histList.innerHTML = '';
                 
-                initChart();
-                renderAll();
-            } catch (err) {
-                console.error("Initialization failed:", err);
-                renderAll();
-            }
-        }
+                const activeMaintItems = state.maint.filter(m => m.status === 'Active').sort((a,b) => new Date(b.date) - new Date(a.date));
+                const completedMaintItems = state.maint.filter(m => m.status === 'Completed').sort((a,b) => new Date(b.completed_date) - new Date(a.completed_date));
 
-        // --- FINANCIAL ENGINE ---
-        function getTenantFinancials(tenantId) {
-            // Updated to handle partial payments logic similar to tenant.html
-            let invoices = state.invoices.filter(i => i.tenant_id == tenantId);
-            let payments = state.payments.filter(p => p.tenant_id == tenantId);
-            
-            let totalInvoiced = invoices.reduce((sum, inv) => sum + inv.total, 0);
-            let totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-            let openBalance = totalInvoiced - totalPaid;
-            
-            // Simple logic: if Open Balance > 0, they owe money.
-            return {
-                invoices: invoices,
-                summary: { openBalance: Math.max(0, openBalance) }
-            };
-        }
-
-        function calculateGlobalStats() {
-            let revenue = 0; // Collected THIS MONTH
-            let overdue = 0; // Unpaid Invoices
-            
-            const now = new Date();
-            const currentMonth = now.getMonth();
-            const currentYear = now.getFullYear();
-            
-            // Calc Revenue (Payments this month)
-            state.payments.forEach(p => {
-                const pDate = parseDateStr(p.date);
-                if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
-                    revenue += p.amount;
+                if (activeMaintItems.length === 0) { 
+                    activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">No active requests</div>`; 
+                } else { 
+                    activeMaintItems.forEach(m => { 
+                        const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown', unit: '?'}; 
+                        activeList.innerHTML += `<div class="p-4 flex justify-between items-start bg-white border-b border-slate-100 hover:bg-slate-50 transition"><div><div class="flex items-center gap-2 mb-1"><span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Unit ${t.unit}</span><span class="text-xs font-bold text-slate-700">${t.name}</span></div><p class="font-bold text-slate-800 text-sm">${m.issue}</p><p class="text-xs text-slate-400 mt-1"><i class="far fa-clock"></i> ${new Date(m.date).toLocaleDateString()}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition shadow-sm">Mark Done</button></div>`; 
+                    }); 
                 }
-            });
 
-            // Calc Overdue (Invoices not marked Paid)
-            state.invoices.forEach(inv => {
-                if(inv.status !== 'Paid') {
-                    // Logic: Total - Amount Paid (if column exists)
-                    const bal = inv.total - (inv.amount_paid || 0);
-                    if(bal > 0) overdue += bal;
-                }
-            });
-
-            return { revenue, overdue };
-        }
-
-        function getMonthlyFinancials() {
-            const months = [];
-            const revenueData = [];
-            const expenseData = [];
-            
-            const today = new Date();
-            for(let i=5; i>=0; i--) {
-                const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-                const mKey = d.getMonth();
-                const yKey = d.getFullYear();
-                months.push(d.toLocaleString('default', { month: 'short' }));
-                
-                const monthRev = state.payments.reduce((sum, p) => {
-                    const pd = parseDateStr(p.date);
-                    return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum;
-                }, 0);
-                revenueData.push(monthRev);
-                
-                const monthExp = state.expenses.reduce((sum, e) => {
-                    const ed = parseDateStr(e.date);
-                    return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum;
-                }, 0);
-                expenseData.push(monthExp);
+                completedMaintItems.forEach(m => { 
+                    const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown'};
+                    histList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white opacity-75 hover:opacity-100 transition border-b border-slate-100"><div><p class="font-medium text-slate-600 text-sm line-through decoration-slate-400">${m.issue}</p><p class="text-xs text-slate-400">${t.name} • Completed: ${new Date(m.completed_date).toLocaleDateString()}</p></div><button onclick="viewMaintNote(${m.id})" class="text-indigo-500 text-xs font-bold hover:text-indigo-700">View Notes</button></div>`; 
+                });
             }
-            return { labels: months, revenue: revenueData, expenses: expenseData };
+            lastRenderedState.maint = maintHash;
         }
 
-        // --- NAVIGATION ---
-        function navTo(view) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
-            document.getElementById('view-' + view).classList.remove('hidden-section');
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
-            const link = document.getElementById('link-' + view);
-            if(link) link.classList.add('sidebar-active');
-            
-            const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests' };
-            document.getElementById('desktop-page-title').innerText = titles[view] || 'Dashboard';
-            if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
-            
-            if(view === 'financials') populateFinFilter();
-            if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
-            if(view === 'messages') { renderChatList(); backToChatList(); }
-            if(view === 'tenants' || view === 'listings' || view === 'expenses' || view === 'maintenance' || view === 'screening') renderAll();
-            if(view === 'reports') { renderAll(); setTimeout(renderMonthlyChart, 50); }
-        }
-
-        function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
-        function resetForms() { 
-            editTenantId = null; editListingId = null; editExpenseId = null; 
-            document.getElementById('btn-save-tenant').innerText="Save Tenant"; 
-            document.getElementById('btn-save-listing').innerText="Post Listing"; 
-            document.getElementById('btn-save-expense').innerText="Save"; 
-            
-            document.getElementById('ex-id').value = ""; document.getElementById('ex-amount').value = ""; document.getElementById('ex-vendor').value = ""; document.getElementById('ex-date').value = ""; document.getElementById('ex-doc').value = ""; 
-            
-            document.getElementById('t-id').value = ""; document.getElementById('t-name').value = ""; document.getElementById('t-email').value = ""; document.getElementById('t-phone').value = ""; document.getElementById('t-unit').value = ""; document.getElementById('t-rent').value = ""; document.getElementById('t-start').value = ""; document.getElementById('t-end').value = ""; document.getElementById('t-addr').value = ""; document.getElementById('t-city').value = ""; document.getElementById('t-state').value = ""; document.getElementById('t-zip').value = "";
-            
-            document.getElementById('l-addr').value = ""; document.getElementById('l-price').value = ""; document.getElementById('l-sqft').value = ""; document.getElementById('l-beds').value = ""; document.getElementById('l-baths').value = ""; document.getElementById('l-desc').value = ""; document.getElementById('l-amen').value = ""; document.getElementById('l-date').value = ""; document.getElementById('l-img').value = "";
-
-            updateFileName('inv-doc', 'inv-doc-label'); updateFileName('ex-doc', 'ex-doc-label'); 
-        }
-
-        function getLastName(fullName) {
-            if(!fullName) return '';
-            const parts = fullName.trim().split(' ');
-            return parts.length > 1 ? parts[parts.length - 1] : parts[0];
-        }
-
-        function evalApplicant(app) {
-            const crit = state.settings.screening || { minScore: 600, minIncome: 2.5 };
-            const incomeRatio = app.income / app.rent;
-            if(crit.noEvict && app.evictions) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
-            if(crit.noCrim && app.criminal) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
-            if(app.score < (crit.minScore - 50)) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
-            if(app.score < crit.minScore || incomeRatio < crit.minIncome) {
-                return { status: 'Conditional', color: 'bg-amber-100 text-amber-700 border-amber-200' };
+        // --- MESSAGES RENDER ---
+        // Only if message panel is open
+        if(currentChatId) renderMessages();
+        
+        // --- EXPENSES ---
+        const expHash = JSON.stringify(state.expenses);
+        if(expHash !== lastRenderedState.expenses) {
+            const exBody = document.getElementById('table-expenses'); 
+            if(exBody) {
+                exBody.innerHTML = '';
+                const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
+                let dEx = state.expenses;
+                if (fid !== 'all') dEx = dEx.filter(x => x.prop === fid);
+                dEx.forEach(x => { 
+                    const receiptIcon = x.doc ? `<i class="fas fa-paperclip text-slate-400" title="${x.doc}"></i>` : '-';
+                    exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${receiptIcon}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
+                });
+                const totalExp = dEx.reduce((a,b)=>a+b.amount,0);
+                if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${totalExp.toLocaleString()}`;
             }
-            return { status: 'Meets Criteria', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+            lastRenderedState.expenses = expHash;
         }
 
-        function renderAll() {
-            updateBadge('messages', state.notifications.messages); 
-            updateBadge('maintenance', state.notifications.maintenance); 
-            updateBadge('screening', state.notifications.screening);
+        renderInvoices();
+        renderReports(); 
+    }
 
-            const stats = calculateGlobalStats();
-            const validUnits = state.tenants.filter(t => t.status !== 'Archived');
-            const activeTenants = validUnits.filter(t => t.status === 'Active').length;
-            // Occupancy = Tenants / (Tenants + Listings) usually, but simplified here
-            const totalCapacity = validUnits.length + state.listings.length;
-            const occupancyRate = totalCapacity === 0 ? 0 : Math.round((activeTenants / totalCapacity) * 100);
-            const activeMaint = state.maint.filter(m=>m.status==='Active').length;
+    // --- 3. HELPER FUNCTIONS & ACTIONS ---
+    
+    function updateBadge(id, count) { 
+        const el = document.getElementById('badge-' + id); 
+        if(!el) return;
+        if(count > 0) { 
+            el.innerText = count; 
+            el.classList.remove('hidden-section'); 
+        } else { 
+            el.classList.add('hidden-section'); 
+        } 
+    }
 
-            document.getElementById('dash-revenue').innerText = `$${stats.revenue.toLocaleString()}`;
-            document.getElementById('dash-maintenance').innerText = activeMaint; 
-            document.getElementById('dash-overdue').innerText = `$${stats.overdue.toLocaleString()}`;
-            document.getElementById('dash-occupancy').innerText = `${occupancyRate}%`;
-            
-            if(chartInstance) {
-                chartInstance.data.datasets[0].data = [stats.revenue, 0, stats.overdue];
-                chartInstance.update();
-            } else if(document.getElementById('revenueChart')) {
-                initChart();
-                if(chartInstance) chartInstance.data.datasets[0].data = [stats.revenue, 0, stats.overdue];
-            }
+    function calculateGlobalStats() {
+        let revenue = 0, overdue = 0;
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        state.payments.forEach(p => { const pDate = parseDateStr(p.date); if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) revenue += p.amount; });
+        state.invoices.forEach(inv => { if(inv.status !== 'Paid') { const bal = inv.total - (inv.amount_paid || 0); if(bal > 0) overdue += bal; } });
+        return { revenue, overdue };
+    }
 
-            const tbody = document.getElementById('table-tenants'); tbody.innerHTML = '';
-            state.tenants
-                .filter(t => t.status !== 'Archived')
-                .sort((a, b) => getLastName(a.name || '').localeCompare(getLastName(b.name || ''))) 
-                .forEach(t => { 
-                    const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
-                    tbody.innerHTML += `<tr class="border-b border-slate-100">
-                        <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td>
-                        <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
-                        <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent).toLocaleString()}</td>
-                        <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
-                        <td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button><button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td>
-                    </tr>`; 
-            });
-
-            // LISTINGS - NOW INCLUDES LINK GENERATION
-            const grid = document.getElementById('grid-listings'); grid.innerHTML = '';
-            state.listings.forEach(l => { 
-                const shareLink = `applicant.html?listing_id=${l.id}`;
-                grid.innerHTML += `
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 relative group">
-                    <div class="absolute top-4 right-4 flex gap-3">
-                        <button onclick="navigator.clipboard.writeText('${window.location.origin}/${shareLink}'); alert('Link Copied!')" class="text-slate-400 hover:text-emerald-600" title="Copy Apply Link"><i class="fas fa-link"></i></button>
-                        <button onclick="act_editListing(${l.id})" class="text-slate-400 hover:text-blue-600"><i class="fas fa-edit"></i></button>
-                        <button onclick="act_delListing(${l.id})" class="text-slate-400 hover:text-red-600"><i class="fas fa-trash"></i></button>
-                    </div>
-                    <h4 class="font-bold text-lg text-slate-800">${l.addr}</h4>
-                    <p class="text-emerald-600 font-bold">$${parseInt(l.price).toLocaleString()}/mo</p>
-                    <div class="mt-2 text-xs text-slate-400 flex gap-3"><span><i class="fas fa-bed"></i> ${l.beds}</span><span><i class="fas fa-bath"></i> ${l.baths}</span></div>
-                    <a href="${shareLink}" target="_blank" class="block mt-4 text-center text-xs font-bold text-indigo-600 border border-indigo-200 rounded-lg py-2 hover:bg-indigo-50">View Public Page</a>
-                </div>`; 
-            });
-
-            const activeList = document.getElementById('list-maint-active'); const histList = document.getElementById('list-maint-history'); activeList.innerHTML = ''; histList.innerHTML = '';
-            const activeMaintItems = state.maint.filter(m => m.status === 'Active');
-            if (activeMaintItems.length === 0) { activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">None</div>`; } else { activeMaintItems.forEach(m => { const t = state.tenants.find(x=>x.id==m.tenant_id)||{name:'Unknown'}; activeList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white border-b border-slate-100"><div><p class="font-bold text-slate-800">${m.issue}</p><p class="text-xs text-slate-500">${t.name} • ${m.date}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-xs font-bold hover:bg-emerald-200">Done</button></div>`; }); }
-            state.maint.filter(m => m.status === 'Completed').forEach(m => { histList.innerHTML += `<div class="p-4 flex justify-between items-center opacity-70 border-b border-slate-100"><div><p class="font-medium line-through">${m.issue}</p><p class="text-xs text-slate-400">Completed: ${m.completed_date || 'N/A'}</p></div><button onclick="viewMaintNote(${m.id})" class="text-blue-500 text-xs hover:underline">View Notes</button></div>`; });
-
-            const sT = document.getElementById('table-screening'); sT.innerHTML = '';
-            state.apps.forEach(a => { 
-                const eval = evalApplicant(a);
-                const displayStatus = a.status === 'Pending' ? eval.status : a.status;
-                const displayColor = a.status === 'Pending' ? eval.color : (a.status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600');
-                // Only show if Paid or Pending (filter out Unpaid if you want)
-                if (a.payment_status === 'Paid') {
-                    sT.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition cursor-pointer" onclick="act_viewApp(${a.id})"><td class="p-5"><span class="font-bold text-slate-800">${a.name}</span></td><td class="p-5"><span class="${displayColor} px-3 py-1.5 rounded-lg text-xs font-bold uppercase border whitespace-nowrap">${displayStatus}</span></td><td class="p-5 text-right"><div class="flex gap-2 justify-end" onclick="event.stopPropagation()"><button onclick="act_viewApp(${a.id})" class="bg-slate-50 text-slate-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100"><i class="fas fa-eye"></i></button></div></td></tr>`; 
-                }
-            });
-
-            // Expenses logic maintained...
-            const exBody = document.getElementById('table-expenses'); exBody.innerHTML = '';
-            const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
-            let dEx = state.expenses;
-            if (fid !== 'all') dEx = dEx.filter(x => x.prop === fid);
-            dEx.forEach(x => { 
-                const receiptIcon = x.doc ? `<i class="fas fa-paperclip text-slate-400" title="${x.doc}"></i>` : '-';
-                exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.prop || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.cat}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${receiptIcon}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
-            });
-            const totalExp = dEx.reduce((a,b)=>a+b.amount,0);
-            if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${totalExp.toLocaleString()}`;
-
-            renderInvoices();
-            renderReports(); 
-            
-            // Populate Settings
-            if(document.getElementById('set-stripe-id') && state.settings) {
-                 document.getElementById('set-stripe-id').value = state.settings.stripe_connect_id || '';
-                 const scr = state.settings.screening || {};
-                 document.getElementById('set-min-score').value = scr.minScore || 650;
-            }
-        }
-
-        function toggleExpDetail(id) { if(window.innerWidth >= 768) return; if (expandedExpId === id) expandedExpId = null; else expandedExpId = id; renderAll(); }
-
-        function renderReports() {
-            const now = new Date();
-            const currentYear = now.getFullYear();
-            let ytdRevenue = 0; state.payments.forEach(p => { if(parseDateStr(p.date).getFullYear() === currentYear) ytdRevenue += p.amount; });
-            let ytdExpense = 0; state.expenses.forEach(e => { if(parseDateStr(e.date).getFullYear() === currentYear) ytdExpense += e.amount; });
-            document.getElementById('report-income').innerText = `$${ytdRevenue.toLocaleString()}`;
-            document.getElementById('report-expense').innerText = `$${ytdExpense.toLocaleString()}`;
-            document.getElementById('report-noi').innerText = `$${(ytdRevenue - ytdExpense).toLocaleString()}`;
+    // Navigation
+    function navTo(view) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
+        document.getElementById('view-' + view).classList.remove('hidden-section');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
+        const link = document.getElementById('link-' + view);
+        if(link) link.classList.add('sidebar-active');
+        
+        const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests' };
+        setText('desktop-page-title', titles[view] || 'Dashboard');
+        
+        if(window.innerWidth < 768) { 
+            document.getElementById('sidebar').classList.add('-translate-x-full'); 
+            document.getElementById('mobile-overlay').classList.add('hidden'); 
         }
         
-        function updateBadge(id, count) { const el = document.getElementById('badge-' + id); if(count > 0) { el.innerText = count; el.classList.remove('hidden-section'); } else { el.classList.add('hidden-section'); } }
+        if(view === 'financials') populateFinFilter();
+        if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
+        if(view === 'messages') { renderChatList(); backToChatList(); }
+        if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
+    }
 
-        function act_openPayModal(tenantId) {
-            document.getElementById('pay-amount').value = '';
-            document.getElementById('pay-date').valueAsDate = new Date();
-            const sel = document.getElementById('pay-tenant-select');
-            if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } 
-            else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status !== 'Archived').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; }
-            openModal('modal-pay');
+    // Maintenance Actions
+    async function act_completeMaint(id) { 
+        const n = prompt("Resolution Notes (Optional):") || "Completed"; 
+        // Optimistic
+        const m = state.maint.find(x => x.id === id);
+        if(m) { m.status = 'Completed'; m.completed_date = new Date().toISOString(); m.notes = n; renderAll(); }
+        
+        await supabaseClient.from('maintenance').update({ 
+            status: 'Completed', 
+            completed_date: new Date().toISOString(), 
+            notes: n 
+        }).eq('id', id);
+        await fetchData(); // sync
+    }
+    
+    function viewMaintNote(id) { 
+        const m = state.maint.find(x => x.id == id); 
+        setText('md-issue', m.issue); 
+        setText('md-meta', `Completed: ${new Date(m.completed_date).toLocaleDateString()}`); 
+        setText('md-notes', m.notes || "No notes."); 
+        openModal('modal-maint-detail'); 
+    }
+
+    // Messages Logic
+    function renderChatList() { 
+        const l = document.getElementById('list-chats'); 
+        if(!l) return;
+        
+        // Simple hash check for list can be added, but chat list is small. Rebuilding is fine.
+        l.innerHTML = ''; 
+        const sortedChats = state.tenants.filter(t => t.status !== 'Vacant').map(t => {
+            const msgs = state.msgs.filter(m => m.tenant_id === t.id);
+            const lastTime = msgs.length > 0 ? new Date(msgs[msgs.length - 1].created_at).getTime() : 0;
+            const unread = msgs.filter(m => m.from === 'Tenant' && !m.read_at).length;
+            return { tenant: t, time: lastTime, unread: unread };
+        }).sort((a, b) => b.time - a.time); 
+
+        sortedChats.forEach(item => { 
+            const t = item.tenant;
+            const badge = item.unread > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">${item.unread}</span>` : '';
+            l.innerHTML += `<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><div><span>${t.name}</span></div><div class="flex items-center gap-2">${badge}<i class="fas fa-chevron-right text-slate-300 text-xs"></i></div></div>`; 
+        }); 
+    }
+
+    async function openChat(id) { 
+        currentChatId=id; 
+        setText('chat-title', state.tenants.find(x=>x.id==id).name); 
+        renderMessages(true); // Force render
+        
+        const unreadIds = state.msgs.filter(m => m.tenant_id === id && m.from === 'Tenant' && !m.read_at).map(m => m.id);
+        if(unreadIds.length > 0) {
+            state.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
+            await supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
+            renderAll(); 
         }
 
-        async function confirmPay() {
-            let tid = document.getElementById('pay-tenant-id').value;
-            const sel = document.getElementById('pay-tenant-select');
-            if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value;
-            tid = parseInt(tid); const amt = parseFloat(document.getElementById('pay-amount').value);
-            if(tid && amt > 0) { await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]); closeModal('modal-pay'); initSystem(); }
-        }
+        if(window.innerWidth < 768) { 
+            document.getElementById('msg-list-panel').classList.add('hidden'); 
+            document.getElementById('msg-view-panel').classList.remove('hidden'); 
+            document.getElementById('msg-view-panel').classList.add('flex'); 
+        } 
+    }
 
-        function populateFinFilter() {
-            const sel = document.getElementById('filter-financials');
-            const currentVal = sel.value;
-            sel.innerHTML = '<option value="all">All Tenants</option>';
-            const uniqueTids = [...new Set(state.invoices.map(i => i.tenant_id))];
-            uniqueTids.forEach(tid => { const t = state.tenants.find(x => x.id === tid) || { name: 'Unknown' }; sel.innerHTML += `<option value="${tid}">${t.name}</option>`; });
-            sel.value = currentVal;
-        }
-
-        function renderInvoices() { 
-            const filterVal = document.getElementById('filter-financials').value;
-            const t = document.getElementById('table-invoices'); 
-            const sumContainer = document.getElementById('fin-summary-container');
-            t.innerHTML=''; 
+    function renderMessages(force = false) { 
+        const b = document.getElementById('box-chat'); 
+        if(!b) return;
+        
+        const relevantMsgs = state.msgs.filter(m => m.tenant_id == currentChatId).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
+        const hash = JSON.stringify(relevantMsgs);
+        if(!force && hash === lastRenderedState.msgs) return;
+        
+        lastRenderedState.msgs = hash;
+        b.innerHTML = ''; 
+        
+        relevantMsgs.forEach(m => { 
+            const d = new Date(m.created_at);
+            const isToday = d.toDateString() === new Date().toDateString();
+            const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
+            const isOwner = m.from === 'Owner';
+            const align = isOwner ? 'items-end' : 'items-start';
+            const bubbleStyle = isOwner ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none';
+            b.innerHTML += `<div class="flex flex-col w-full ${align} mb-4 fade-in"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${bubbleStyle}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
+        }); 
+        b.scrollTop = b.scrollHeight; 
+    }
+    
+    async function sendMsg() { 
+        const i=document.getElementById('input-chat'); 
+        if(i.value && currentChatId) { 
+            const newMsg = {tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString(), created_at: new Date().toISOString() };
+            state.msgs.push(newMsg);
+            renderMessages(true);
+            const val = i.value;
+            i.value=''; 
             
-            if(filterVal === 'all') sumContainer.classList.add('hidden-section');
-            else sumContainer.classList.remove('hidden-section');
+            await supabaseClient.from('msgs').insert([newMsg]);
+            await fetchData(); // sync IDs
+        } 
+    }
 
-            state.invoices.forEach(inv => {
-                if(filterVal === 'all' || inv.tenant_id == filterVal) {
-                    const balance = inv.total - (inv.amount_paid || 0);
-                    let rowBg = '', status = 'Unpaid';
-                    if (balance <= 0) { rowBg = 'bg-emerald-50/50'; status='Paid'; }
-                    
-                    t.innerHTML += `
-                    <tr class="border-b border-slate-100 ${rowBg}">
-                        <td class="p-5 text-sm font-medium text-slate-500">${inv.date}</td>
-                        <td class="p-5 text-sm font-bold">${inv.tenant_name || 'Unknown'}</td>
-                        <td class="p-5 text-sm text-slate-500">${(inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge'}</td>
-                        <td class="p-5 text-right font-bold text-slate-800">$${inv.total.toLocaleString()}</td>
-                        <td class="p-5 text-right font-medium text-slate-600">$${balance.toLocaleString()}</td>
-                        <td class="p-5 text-right"><span class="text-xs font-bold uppercase ${status==='Paid'?'text-emerald-600':'text-rose-500'}">${status}</span></td>
-                    </tr>`;
-                }
-            });
-        }
+    // --- STANDARD MODAL/CRUD FUNCTIONS ---
+    function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
+    function resetForms() { 
+        editTenantId = null; editListingId = null; editExpenseId = null; 
+        setText('btn-save-tenant',"Save Tenant"); setText('btn-save-listing',"Post Listing"); setText('btn-save-expense',"Save");
+        const inputs = ['ex-id','ex-amount','ex-vendor','ex-date','ex-doc','t-id','t-name','t-email','t-phone','t-unit','t-rent','t-start','t-end','t-addr','t-city','t-state','t-zip','l-addr','l-price','l-sqft','l-beds','l-baths','l-desc','l-amen','l-date','l-img'];
+        inputs.forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
+        updateFileName('inv-doc', 'inv-doc-label'); updateFileName('ex-doc', 'ex-doc-label'); 
+    }
 
-        function openInvoiceModal() { 
-            const s = document.getElementById('inv-tenant'); 
-            s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; 
-            state.tenants.filter(t => t.status !== 'Archived').forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); 
-            document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); document.getElementById('inv-actions-create').classList.remove('hidden-section'); document.getElementById('inv-actions-create').classList.add('flex'); document.getElementById('inv-actions-view').classList.add('hidden-section'); document.getElementById('inv-date').valueAsDate = new Date(); document.getElementById('btn-confirm-inv').disabled = false;
-            openModal('modal-invoice'); logic_invMode('fixed'); 
-        }
+    function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
+    
+    // Screening Logic
+    function evalApplicant(app) {
+        const crit = state.settings.screening || { minScore: 600, minIncome: 2.5 };
+        const incomeRatio = app.income / app.rent;
+        if(crit.noEvict && app.evictions) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
+        if(crit.noCrim && app.criminal) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
+        if(app.score < (crit.minScore - 50)) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
+        if(app.score < crit.minScore || incomeRatio < crit.minIncome) return { status: 'Conditional', color: 'bg-amber-100 text-amber-700 border-amber-200' };
+        return { status: 'Meets Criteria', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+    }
+    
+    // CRUD Functions
+    async function act_saveTenant(e) { e.preventDefault(); const data = { name: document.getElementById('t-name').value, email: document.getElementById('t-email').value, phone: document.getElementById('t-phone').value, unit: document.getElementById('t-unit').value, rent: parseFloat(document.getElementById('t-rent').value)||0, start_date: document.getElementById('t-start').value||null, end_date: document.getElementById('t-end').value||null, status: document.getElementById('t-status').value, addr: document.getElementById('t-addr').value, city: document.getElementById('t-city').value, state: document.getElementById('t-state').value, zip: document.getElementById('t-zip').value }; if(editTenantId) await supabaseClient.from('tenants').update(data).eq('id', editTenantId); else await supabaseClient.from('tenants').insert([data]); closeModal('modal-tenant'); await fetchData(); renderAll(); }
+    function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id === id); setText('modal-tenant-title',"Edit Tenant"); setText('btn-save-tenant',"Update Tenant"); document.getElementById('t-id').value = t.id; document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone||''; document.getElementById('t-unit').value = t.unit||''; document.getElementById('t-rent').value = t.rent; document.getElementById('t-start').value = t.start_date||''; document.getElementById('t-end').value = t.end_date||''; document.getElementById('t-status').value = t.status; document.getElementById('t-addr').value = t.addr||''; document.getElementById('t-city').value = t.city||''; document.getElementById('t-state').value = t.state||''; document.getElementById('t-zip').value = t.zip||''; openModal('modal-tenant'); }
+    async function act_delTenant(id) { if(confirm("Delete tenant?")) { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); } }
+    
+    async function act_saveListing(e) { e.preventDefault(); const d = { addr: document.getElementById('l-addr').value, price: document.getElementById('l-price').value, sqft: document.getElementById('l-sqft').value, beds: document.getElementById('l-beds').value, baths: document.getElementById('l-baths').value, desc: document.getElementById('l-desc').value, amen: document.getElementById('l-amen').value, date: document.getElementById('l-date').value, img: document.getElementById('l-img').value }; if(editListingId) await supabaseClient.from('listings').update(d).eq('id', editListingId); else await supabaseClient.from('listings').insert([d]); closeModal('modal-listing'); await fetchData(); renderAll(); }
+    function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.addr; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.desc; document.getElementById('l-amen').value = l.amen||''; document.getElementById('l-date').value = l.date; document.getElementById('l-img').value = l.img||''; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
+    async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); await fetchData(); renderAll(); }
 
-        function logic_invMode(m) { 
-            invMode = m; 
-            document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
-            document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
-            document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed');
-            logic_resetInvoice(); 
-        }
+    async function act_saveExpense(e) { e.preventDefault(); const data = { date: document.getElementById('ex-date').value, vendor: document.getElementById('ex-vendor').value, cat: document.getElementById('ex-cat').value, prop: document.getElementById('ex-prop').value, amount: parseFloat(document.getElementById('ex-amount').value)||0 }; if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); else await supabaseClient.from('expenses').insert([data]); closeModal('modal-expense'); await fetchData(); renderAll(); }
+    function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.cat; document.getElementById('ex-amount').value = e.amount; const s = document.getElementById('ex-prop'); s.innerHTML = ''; const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option ${p === e.prop ? 'selected' : ''}>${p}</option>`); openModal('modal-expense'); }
+    async function act_delExpense(id) { if(confirm("Delete expense?")) { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); } }
 
-        function logic_resetInvoice() { 
-            const tid = document.getElementById('inv-tenant').value; invItems = []; 
-            if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; } 
-            else if (invMode === 'variable') logic_addRow(); 
-            renderInvItems(); 
-        }
+    function act_viewTenant(id) { const t = state.tenants.find(x => x.id === id); if(!t) return; setText('vt-name', t.name); setText('vt-email', t.email); setText('vt-phone', t.phone||'-'); setText('vt-addr', `${t.addr||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); setText('vt-unit', t.unit||'-'); setText('vt-rent', `$${parseInt(t.rent).toLocaleString()}`); setText('vt-status', t.status); setText('vt-start', t.start_date||'-'); setText('vt-end', t.end_date||'-'); openModal('modal-view-tenant'); }
+    function act_viewApp(id) { currentAppId = id; const app = state.apps.find(a => a.id === id); const eval = evalApplicant(app); setText('sd-name', app.name); setText('sd-score', app.score); setText('sd-income', `$${app.income.toLocaleString()}`); setText('sd-ratio', (app.income / app.rent).toFixed(1)); document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>'; document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>'; setText('sd-job', app.job||'Unemployed'); document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>'; const ban = document.getElementById('sd-banner'); const actions = document.getElementById('sd-actions'); const emailOpt = document.getElementById('sd-email-option'); if(app.status === 'Approved') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200"; ban.innerText = "Approved"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else if (app.status === 'Deny') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200"; ban.innerText = "Denied"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else { ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`; ban.innerText = eval.status; actions.classList.remove('hidden-section'); emailOpt.classList.add('hidden-section'); } openModal('modal-screening-detail'); }
+    async function act_screenDecision(decision) { if(currentAppId) { await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId); await fetchData(); setTimeout(() => act_viewApp(currentAppId), 500); } }
+    async function act_saveSettings(e) { e.preventDefault(); const screen = { minScore: parseInt(document.getElementById('set-min-score').value)||600, minIncome: parseFloat(document.getElementById('set-min-income').value)||2.5, noEvict: document.getElementById('set-no-evict').checked, noCrim: document.getElementById('set-no-crim').checked }; await supabaseClient.from('settings').update({ stripe_connect_id: document.getElementById('set-stripe-id').value, amount: document.getElementById('fee-amount').value, grace: document.getElementById('fee-grace').value, screening: screen }).eq('id', 1); alert("Configuration Saved"); }
+    function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
 
-        function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
-        function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
-        function renderInvItems() { 
-            const c = document.getElementById('inv-items-container'); c.innerHTML=''; 
-            invItems.forEach((r,i) => { 
-                const ro = invMode==='fixed'?'readonly':''; 
-                const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; 
-                c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; 
-            }); 
-        }
-        function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
+    // Charting
+    function initChart(stats = {revenue:0, overdue:0}) { const ctx = document.getElementById('revenueChart'); if(!ctx) return; const context = ctx.getContext('2d'); chartInstance = new Chart(context, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [stats.revenue, 0, stats.overdue], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+    function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart'); if(!ctx) return; const context = ctx.getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(context, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
+    function getMonthlyFinancials() { const months = [], revenueData = [], expenseData = []; const today = new Date(); for(let i=5; i>=0; i--) { const d = new Date(today.getFullYear(), today.getMonth() - i, 1); const mKey = d.getMonth(); const yKey = d.getFullYear(); months.push(d.toLocaleString('default', { month: 'short' })); const monthRev = state.payments.reduce((sum, p) => { const pd = parseDateStr(p.date); return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum; }, 0); revenueData.push(monthRev); const monthExp = state.expenses.reduce((sum, e) => { const ed = parseDateStr(e.date); return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum; }, 0); expenseData.push(monthExp); } return { labels: months, revenue: revenueData, expenses: expenseData }; }
 
-        function logic_generatePreview() {
-            const tidSelect = document.getElementById('inv-tenant').value;
-            if(!tidSelect) return alert("Please select a tenant");
-            const tid = parseInt(tidSelect);
-            const tenant = state.tenants.find(t => t.id === tid);
-            const date = document.getElementById('inv-date').value;
-            const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0);
-            
-            draftInvoice = {
-                tenantId: tid,
-                tenantName: tenant.name,
-                items: JSON.parse(JSON.stringify(invItems)),
-                total: currentTotal,
-                date: date,
-            };
+    // Invoices logic
+    function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status !== 'Archived').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
+    async function confirmPay() { let tid = document.getElementById('pay-tenant-id').value; const sel = document.getElementById('pay-tenant-select'); if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; tid = parseInt(tid); const amt = parseFloat(document.getElementById('pay-amount').value); if(tid && amt > 0) { await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]); closeModal('modal-pay'); initSystem(); } }
+    function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; const uniqueTids = [...new Set(state.invoices.map(i => i.tenant_id))]; uniqueTids.forEach(tid => { const t = state.tenants.find(x => x.id === tid) || { name: 'Unknown' }; sel.innerHTML += `<option value="${tid}">${t.name}</option>`; }); sel.value = currentVal; }
+    function renderInvoices() { const filterVal = document.getElementById('filter-financials').value; const t = document.getElementById('table-invoices'); const sumContainer = document.getElementById('fin-summary-container'); t.innerHTML=''; if(filterVal === 'all') sumContainer.classList.add('hidden-section'); else sumContainer.classList.remove('hidden-section'); state.invoices.forEach(inv => { if(filterVal === 'all' || inv.tenant_id == filterVal) { const balance = inv.total - (inv.amount_paid || 0); let rowBg = '', status = 'Unpaid'; if (balance <= 0) { rowBg = 'bg-emerald-50/50'; status='Paid'; } t.innerHTML += `<tr class="border-b border-slate-100 ${rowBg}"><td class="p-5 text-sm font-medium text-slate-500">${inv.date}</td><td class="p-5 text-sm font-bold">${inv.tenant_name || 'Unknown'}</td><td class="p-5 text-sm text-slate-500">${(inv.items && inv.items[0]) ? inv.items[0].desc : 'Charge'}</td><td class="p-5 text-right font-bold text-slate-800">$${inv.total.toLocaleString()}</td><td class="p-5 text-right font-medium text-slate-600">$${balance.toLocaleString()}</td><td class="p-5 text-right"><span class="text-xs font-bold uppercase ${status==='Paid'?'text-emerald-600':'text-rose-500'}">${status}</span></td></tr>`; } }); }
+    function openInvoiceModal() { const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; state.tenants.filter(t => t.status !== 'Archived').forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); document.getElementById('inv-actions-create').classList.remove('hidden-section'); document.getElementById('inv-actions-create').classList.add('flex'); document.getElementById('inv-actions-view').classList.add('hidden-section'); document.getElementById('inv-date').valueAsDate = new Date(); document.getElementById('btn-confirm-inv').disabled = false; openModal('modal-invoice'); logic_invMode('fixed'); }
+    function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
+    function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
+    function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
+    function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
+    function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); }
+    function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
+    function logic_generatePreview() { const tidSelect = document.getElementById('inv-tenant').value; if(!tidSelect) return alert("Please select a tenant"); const tid = parseInt(tidSelect); const tenant = state.tenants.find(t => t.id === tid); const date = document.getElementById('inv-date').value; const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); draftInvoice = { tenantId: tid, tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: date, }; setText('prev-name', tenant.name); setText('prev-date', new Date(date).toLocaleDateString()); setText('prev-total-due', `$${currentTotal.toLocaleString()}`); const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = ''; invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); document.getElementById('inv-step-input').classList.add('hidden-section'); document.getElementById('inv-step-preview').classList.remove('hidden-section'); setText('inv-modal-title',"Review Invoice"); }
+    function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
+    async function logic_confirmInvoice() { if(!draftInvoice) return; document.getElementById('btn-confirm-inv').disabled = true; const stripeId = state.settings.stripe_connect_id; if(!stripeId) alert("Warning: You have not saved a Stripe Connect ID in settings. Tenant will not be able to pay this invoice."); await supabaseClient.from('invoices').insert([{ tenant_id: draftInvoice.tenantId, tenant_name: draftInvoice.tenantName, items: draftInvoice.items, total: draftInvoice.total, date: draftInvoice.date, status: 'Unpaid', landlord_stripe_id: stripeId }]); closeModal('modal-invoice'); initSystem(); }
+    function updateFileName(inputId, labelId) { const input = document.getElementById(inputId); const label = document.getElementById(labelId); if(input.files && input.files[0]) { label.innerText = input.files[0].name; label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } else { label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File'; label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } }
+    function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
+    function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr)); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
+    function loadUserProfile() { const savedProfile = localStorage.getItem('kozeyy_profile'); if (savedProfile) { const user = JSON.parse(savedProfile); if(user.role === 'owner') { const nameDisplay = user.username ? user.username : user.name; setText('owner-name-display', nameDisplay); const initialBox = document.getElementById('owner-initials-display'); if(initialBox) initialBox.innerText = user.initials; } } }
 
-            document.getElementById('prev-name').innerText = tenant.name;
-            document.getElementById('prev-date').innerText = new Date(date).toLocaleDateString();
-            document.getElementById('prev-total-due').innerText = `$${currentTotal.toLocaleString()}`;
-
-            const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = '';
-            invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; });
-
-            document.getElementById('inv-step-input').classList.add('hidden-section');
-            document.getElementById('inv-step-preview').classList.remove('hidden-section');
-            document.getElementById('inv-modal-title').innerText = "Review Invoice";
-        }
-
-        function logic_backToInput() {
-            document.getElementById('inv-step-input').classList.remove('hidden-section');
-            document.getElementById('inv-step-preview').classList.add('hidden-section');
-            document.getElementById('inv-modal-title').innerText = "Create Invoice";
-        }
-
-        async function logic_confirmInvoice() {
-            if(!draftInvoice) return;
-            document.getElementById('btn-confirm-inv').disabled = true;
-
-            // --- PRODUCTION UPDATE: INJECT STRIPE ID FROM SETTINGS ---
-            const stripeId = state.settings.stripe_connect_id; 
-            if(!stripeId) alert("Warning: You have not saved a Stripe Connect ID in settings. Tenant will not be able to pay this invoice.");
-
-            await supabaseClient.from('invoices').insert([{ 
-                tenant_id: draftInvoice.tenantId, 
-                tenant_name: draftInvoice.tenantName, 
-                items: draftInvoice.items, 
-                total: draftInvoice.total, 
-                date: draftInvoice.date,
-                status: 'Unpaid',
-                landlord_stripe_id: stripeId // Inserted here
-            }]);
-
-            closeModal('modal-invoice');
-            initSystem();
-        }
-
-        function updateFileName(inputId, labelId) {
-            const input = document.getElementById(inputId);
-            const label = document.getElementById(labelId);
-            if(input.files && input.files[0]) {
-                label.innerText = input.files[0].name;
-                label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
-            } else {
-                label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File';
-                label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
-            }
-        }
-
-        function populateExpenseModal() {
-            const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>';
-            const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr));
-            props.forEach(p => s.innerHTML += `<option>${p}</option>`);
-        }
-        function populateExpFilter() {
-            const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>';
-            const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr));
-            props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`);
-        }
-        
-        async function act_saveExpense(e) {
-            e.preventDefault();
-            const data = {
-                date: document.getElementById('ex-date').value,
-                vendor: document.getElementById('ex-vendor').value,
-                cat: document.getElementById('ex-cat').value,
-                prop: document.getElementById('ex-prop').value,
-                amount: parseFloat(document.getElementById('ex-amount').value) || 0
-            };
-            if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId);
-            else await supabaseClient.from('expenses').insert([data]);
-            closeModal('modal-expense'); initSystem();
-        }
-        
-        function act_editExpense(id) {
-            editExpenseId = id; const e = state.expenses.find(x => x.id === id);
-            document.getElementById('modal-expense-title').innerText = "Edit Expense";
-            document.getElementById('ex-id').value = id;
-            document.getElementById('ex-date').value = e.date;
-            document.getElementById('ex-vendor').value = e.vendor;
-            document.getElementById('ex-cat').value = e.cat;
-            document.getElementById('ex-amount').value = e.amount;
-            const s = document.getElementById('ex-prop'); s.innerHTML = '';
-            const props = new Set(); state.tenants.forEach(t => props.add(t.addr)); state.listings.forEach(l => props.add(l.addr));
-            props.forEach(p => s.innerHTML += `<option ${p === e.prop ? 'selected' : ''}>${p}</option>`);
-            openModal('modal-expense');
-        }
-
-        async function act_delExpense(id) { if(confirm("Delete expense?")) { await supabaseClient.from('expenses').delete().eq('id', id); initSystem(); } }
-
-        async function act_completeMaint(id) { 
-            const n = prompt("Notes?")||"Done"; 
-            await supabaseClient.from('maintenance').update({ status: 'Completed', completed_date: new Date().toISOString(), notes: n }).eq('id', id);
-            initSystem(); 
-        }
-        function viewMaintNote(id) { const m = state.maint.find(x => x.id == id); document.getElementById('md-issue').innerText = m.issue; document.getElementById('md-meta').innerText = `Completed: ${m.completed_date}`; document.getElementById('md-notes').innerText = m.notes || "No notes."; openModal('modal-maint-detail'); }
-        
-        function act_viewTenant(id) {
-            const t = state.tenants.find(x => x.id === id); if(!t) return;
-            document.getElementById('vt-name').innerText = t.name;
-            document.getElementById('vt-email').innerText = t.email;
-            document.getElementById('vt-phone').innerText = t.phone || '-';
-            document.getElementById('vt-addr').innerText = `${t.addr || ''}, ${t.city || ''} ${t.state || ''} ${t.zip || ''}`;
-            document.getElementById('vt-unit').innerText = t.unit || '-';
-            document.getElementById('vt-rent').innerText = `$${parseInt(t.rent).toLocaleString()}`;
-            document.getElementById('vt-status').innerText = t.status;
-            document.getElementById('vt-start').innerText = t.start_date || '-';
-            document.getElementById('vt-end').innerText = t.end_date || '-';
-            openModal('modal-view-tenant');
-        }
-
-        // --- UPDATED SCREENING LOGIC ---
-        function act_viewApp(id) {
-            currentAppId = id;
-            const app = state.apps.find(a => a.id === id);
-            const eval = evalApplicant(app);
-            
-            document.getElementById('sd-name').innerText = app.name;
-            document.getElementById('sd-score').innerText = app.score;
-            document.getElementById('sd-income').innerText = `$${app.income.toLocaleString()}`;
-            document.getElementById('sd-ratio').innerText = (app.income / app.rent).toFixed(1);
-            
-            document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>';
-            document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>';
-            document.getElementById('sd-job').innerText = app.job || 'Unemployed';
-            document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>';
-
-            const ban = document.getElementById('sd-banner');
-            const actions = document.getElementById('sd-actions');
-            const emailOpt = document.getElementById('sd-email-option');
-
-            // Set Email Button State
-            const btnEmail = document.getElementById('btn-email-applicant');
-            const subject = app.status === 'Approved' ? "Application Update: Approved!" : "Application Status Update";
-            const body = app.status === 'Approved' 
-                ? `Dear ${app.name},\n\nWe are pleased to inform you that your application has been approved! We will be sending over the lease agreement shortly.\n\nBest,\nKozeyy Property Management`
-                : `Dear ${app.name},\n\nThank you for your application. After careful review, we are unable to proceed at this time.\n\nBest,\nKozeyy Property Management`;
-            
-            btnEmail.href = `mailto:${encodeURIComponent('applicant@example.com')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-            if(app.status === 'Approved') {
-                ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
-                ban.innerText = "Approved";
-                actions.classList.add('hidden-section');
-                emailOpt.classList.remove('hidden-section');
-            } else if (app.status === 'Deny') {
-                ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200";
-                ban.innerText = "Denied";
-                actions.classList.add('hidden-section');
-                emailOpt.classList.remove('hidden-section');
-            } else {
-                ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`;
-                ban.innerText = eval.status;
-                actions.classList.remove('hidden-section');
-                emailOpt.classList.add('hidden-section');
-            }
-            openModal('modal-screening-detail');
-        }
-
-        async function act_screenDecision(decision) {
-            if(currentAppId) { 
-                await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId);
-                initSystem();
-                setTimeout(() => act_viewApp(currentAppId), 500);
-            }
-        }
-
-        async function act_saveTenant(e) {
-            e.preventDefault();
-            const data = {
-                name: document.getElementById('t-name').value,
-                email: document.getElementById('t-email').value,
-                phone: document.getElementById('t-phone').value,
-                unit: document.getElementById('t-unit').value,
-                rent: parseFloat(document.getElementById('t-rent').value) || 0,
-                start_date: document.getElementById('t-start').value || null,
-                end_date: document.getElementById('t-end').value || null,
-                status: document.getElementById('t-status').value,
-                addr: document.getElementById('t-addr').value,
-                city: document.getElementById('t-city').value,
-                state: document.getElementById('t-state').value,
-                zip: document.getElementById('t-zip').value
-            };
-            
-            if(editTenantId) await supabaseClient.from('tenants').update(data).eq('id', editTenantId);
-            else await supabaseClient.from('tenants').insert([data]);
-            
-            closeModal('modal-tenant'); 
-            initSystem();
-        }
-
-        function act_editTenant(id) {
-            editTenantId = id;
-            const t = state.tenants.find(x => x.id === id);
-            document.getElementById('modal-tenant-title').innerText = "Edit Tenant";
-            document.getElementById('btn-save-tenant').innerText = "Update Tenant";
-            document.getElementById('t-id').value = t.id;
-            document.getElementById('t-name').value = t.name;
-            document.getElementById('t-email').value = t.email;
-            document.getElementById('t-phone').value = t.phone || '';
-            document.getElementById('t-unit').value = t.unit || '';
-            document.getElementById('t-rent').value = t.rent;
-            document.getElementById('t-start').value = t.start_date || '';
-            document.getElementById('t-end').value = t.end_date || '';
-            document.getElementById('t-status').value = t.status;
-            document.getElementById('t-addr').value = t.addr || '';
-            document.getElementById('t-city').value = t.city || '';
-            document.getElementById('t-state').value = t.state || '';
-            document.getElementById('t-zip').value = t.zip || '';
-            openModal('modal-tenant');
-        }
-
-        async function act_delTenant(id) { if(confirm("Delete tenant?")) { await supabaseClient.from('tenants').delete().eq('id', id); initSystem(); } }
-        
-        function act_editListing(id) { 
-            editListingId = id; const l = state.listings.find(x => x.id == id); 
-            document.getElementById('l-addr').value = l.addr; 
-            document.getElementById('l-price').value = l.price; 
-            document.getElementById('l-sqft').value = l.sqft; 
-            document.getElementById('l-beds').value = l.beds; 
-            document.getElementById('l-baths').value = l.baths; 
-            document.getElementById('l-desc').value = l.desc; 
-            document.getElementById('l-amen').value = l.amen || ''; 
-            document.getElementById('l-date').value = l.date; 
-            document.getElementById('l-img').value = l.img || ''; 
-            document.getElementById('btn-save-listing').innerText = "Update Listing"; 
-            openModal('modal-listing'); 
-        }
-
-        async function act_saveListing(e) { 
-            e.preventDefault(); 
-            const d = { 
-                addr: document.getElementById('l-addr').value, 
-                price: document.getElementById('l-price').value, 
-                sqft: document.getElementById('l-sqft').value, 
-                beds: document.getElementById('l-beds').value, 
-                baths: document.getElementById('l-baths').value, 
-                desc: document.getElementById('l-desc').value, 
-                amen: document.getElementById('l-amen').value, 
-                date: document.getElementById('l-date').value,
-                img: document.getElementById('l-img').value 
-            }; 
-            if(editListingId) await supabaseClient.from('listings').update(d).eq('id', editListingId);
-            else await supabaseClient.from('listings').insert([d]);
-            
-            closeModal('modal-listing'); 
-            initSystem(); 
-        }
-        
-        async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); initSystem(); }
-        
-        async function act_saveSettings(e) { 
-            e.preventDefault(); 
-            const screen = {
-                minScore: parseInt(document.getElementById('set-min-score').value) || 600,
-                minIncome: parseFloat(document.getElementById('set-min-income').value) || 2.5,
-                noEvict: document.getElementById('set-no-evict').checked,
-                noCrim: document.getElementById('set-no-crim').checked
-            };
-
-            await supabaseClient.from('settings').update({
-                stripe_connect_id: document.getElementById('set-stripe-id').value,
-                amount: document.getElementById('fee-amount').value,
-                grace: document.getElementById('fee-grace').value,
-                screening: screen
-            }).eq('id', 1);
-
-            alert("Configuration Saved"); 
-        }
-
-        function toggleFeeTarget() { const v = document.querySelector('input[name="feeTarget"]:checked').value; const c = document.getElementById('fee-tenant-select'); if(v === 'select') { c.classList.remove('hidden-section'); c.innerHTML = ''; state.tenants.forEach(t => { c.innerHTML += `<label class="block mb-2"><input type="checkbox" class="mr-2" value="${t.id}"> ${t.name}</label>`; }); } else { c.classList.add('hidden-section'); } }
-        function toggleFeeInput() { document.getElementById('fee-label').innerText = document.getElementById('fee-method').value === 'percent' ? "Percentage (%)" : "Amount ($)"; }
-        function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
-
-        function initChart() { const ctx = document.getElementById('revenueChart').getContext('2d'); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
-        
-        function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart').getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(ctx, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
-
-        function renderChatList() { 
-            const l = document.getElementById('list-chats'); 
-            l.innerHTML = ''; 
-            const sortedChats = state.tenants.filter(t => t.status !== 'Vacant').map(t => {
-                const msgs = state.msgs.filter(m => m.tenant_id === t.id);
-                const lastTime = msgs.length > 0 ? new Date(msgs[msgs.length - 1].created_at).getTime() : 0;
-                return { tenant: t, time: lastTime };
-            }).sort((a, b) => b.time - a.time); 
-
-            sortedChats.forEach(item => { 
-                const t = item.tenant;
-                l.innerHTML += `<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`; 
-            }); 
-        }
-
-        function openChat(id) { currentChatId=id; document.getElementById('chat-title').innerText = state.tenants.find(x=>x.id==id).name; renderMessages(); if(window.innerWidth < 768) { document.getElementById('msg-list-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('hidden'); document.getElementById('msg-view-panel').classList.add('flex'); } }
-        function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
-        
-        function renderMessages() { 
-            const b = document.getElementById('box-chat'); b.innerHTML = ''; 
-            state.msgs.filter(m => m.tenant_id == currentChatId).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at)).forEach(m => { 
-                const d = new Date(m.created_at);
-                const isToday = d.toDateString() === new Date().toDateString();
-                const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
-                const isOwner = m.from === 'Owner';
-                const align = isOwner ? 'items-end' : 'items-start';
-                const bubbleStyle = isOwner ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none';
-                b.innerHTML += `<div class="flex flex-col w-full ${align} mb-4 fade-in"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${bubbleStyle}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
-            }); 
-            b.scrollTop = b.scrollHeight; 
-        }
-        
-        async function sendMsg() { 
-            const i=document.getElementById('input-chat'); 
-            if(i.value && currentChatId) { 
-                await supabaseClient.from('msgs').insert([{tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString()}]);
-                i.value=''; initSystem(); 
-            } 
-        }
-
-        // --- USER PROFILE LOAD ---
-        function loadUserProfile() {
-            const savedProfile = localStorage.getItem('kozeyy_profile');
-            if (savedProfile) {
-                const user = JSON.parse(savedProfile);
-                if(user.role === 'owner') {
-                    const nameDisplay = user.username ? user.username : user.name;
-                    document.getElementById('owner-name-display').innerText = nameDisplay;
-                    const initialBox = document.getElementById('owner-initials-display');
-                    if(initialBox) initialBox.innerText = user.initials;
-                }
-            }
-        }
-
-        loadUserProfile();
-        initSystem();
-    </script>
+    loadUserProfile();
+    initSystem();
+</script>
 </body>
 </html>
