@@ -954,13 +954,17 @@
         promptCallback = null;
     }
 
-    // LISTING SHARE
+   // LISTING SHARE
     function showShareModal(id) {
-        const l = state.listings.find(x => x.id === id);
-        if(!l) return;
+        // REMOVED: const l = state.listings.find(x => x.id === id);
+        // REMOVED: if(!l) return; <--- This was causing the "Nothing shows" bug
+        
+        // We know the ID is valid because it came directly from the DB insert response
         const url = `https://kozeyy.com/rentals/apply?id=${id}`;
+        
         document.getElementById('share-link-input').value = url;
         document.getElementById('public-link-btn').href = url;
+        
         document.getElementById('modal-share-listing').classList.remove('hidden-section');
         document.getElementById('modal-share-listing').classList.add('flex');
     }
@@ -1334,3 +1338,4 @@
 </script>
 </body>
 </html>
+
