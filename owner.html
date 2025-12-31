@@ -652,9 +652,122 @@
     function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
     function loadUserProfile() { const savedProfile = localStorage.getItem('kozeyy_profile'); if (savedProfile) { const user = JSON.parse(savedProfile); if(user.role === 'owner') { const nameDisplay = user.username ? user.username : user.name; setText('owner-name-display', nameDisplay); const initialBox = document.getElementById('owner-initials-display'); if(initialBox) initialBox.innerText = user.initials; } } }
 
+// --- CHART & REPORT FUNCTIONS ---
+
+    function initChart(stats) {
+        const ctx = document.getElementById('revenueChart');
+        if(!ctx) return;
+        
+        // Destroy existing to prevent overlap
+        if(chartInstance) chartInstance.destroy();
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Revenue', 'Target', 'Overdue'],
+                datasets: [{
+                    label: 'Financial Performance',
+                    data: [stats.revenue, (stats.revenue * 1.1), stats.overdue], // Target is dummy 110%
+                    backgroundColor: ['#10b981', '#cbd5e1', '#f43f5e'],
+                    borderRadius: 8,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: true, drawBorder: false } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    function renderMonthlyChart() {
+        const ctx = document.getElementById('monthlyChart');
+        if(!ctx) return;
+        
+        // aggregate last 6 months
+        const months = [];
+        const revData = [];
+        const expData = [];
+        
+        const today = new Date();
+        for(let i=5; i>=0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const monthName = d.toLocaleString('default', { month: 'short' });
+            months.push(monthName);
+            
+            // Filter payments for this month
+            const mRev = state.payments.filter(p => {
+                const pd = parseDateStr(p.date);
+                return pd.getMonth() === d.getMonth() && pd.getFullYear() === d.getFullYear();
+            }).reduce((a, b) => a + (b.amount || 0), 0);
+            revData.push(mRev);
+
+            // Filter expenses for this month
+            const mExp = state.expenses.filter(e => {
+                const ed = parseDateStr(e.date);
+                return ed.getMonth() === d.getMonth() && ed.getFullYear() === d.getFullYear();
+            }).reduce((a, b) => a + (b.amount || 0), 0);
+            expData.push(mExp);
+        }
+
+        if(monthlyChartInstance) monthlyChartInstance.destroy();
+
+        monthlyChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'Income',
+                        data: revData,
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Expenses',
+                        data: expData,
+                        borderColor: '#f43f5e',
+                        backgroundColor: 'rgba(244, 63, 94, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
+
+    // UPDATED: Robust Date Parsing
+    // Handles 'YYYY-MM-DD', ISO strings, and nulls without crashing
+    function parseDateStr(str) { 
+        if(!str) return new Date(); 
+        // If it's already a full ISO timestamp (e.g. 2023-10-24T12:00:00)
+        if(str.includes('T')) return new Date(str);
+        // If it's YYYY-MM-DD
+        const parts = str.split('-'); 
+        if(parts.length === 3) return new Date(parts[0], parts[1]-1, parts[2]);
+        return new Date(str); 
+    }
+    
     loadUserProfile();
     initSystem();
 </script>
 </body>
 </html>
+
 
