@@ -64,7 +64,7 @@
                 <span id="desk-notif-dot" class="hidden-section w-2.5 h-2.5 bg-red-500 rounded-full"></span>
             </a>
             <a href="#" onclick="switchTab('maintenance')" id="nav-maintenance" class="nav-item flex items-center px-6 py-3.5 transition">
-                <i class="fas fa-tools w-6"></i> <span class="font-medium ml-3">Maintenance</span>
+                <div class="flex items-center"><i class="fas fa-tools w-6"></i> <span class="font-medium ml-3">Maintenance</span></div>
             </a>
             <a href="#" onclick="switchTab('insurance')" id="nav-insurance" class="nav-item flex items-center px-6 py-3.5 transition">
                 <i class="fas fa-shield-alt w-6"></i> <span class="font-medium ml-3">Insurance</span>
@@ -94,7 +94,6 @@
             <div class="flex items-center gap-6">
                 <div class="relative cursor-pointer hover:text-indigo-600 transition" onclick="switchTab('messages')">
                     <i class="fas fa-bell text-lg text-slate-400"></i>
-                    <!-- Added badge logic here later in script -->
                 </div>
             </div>
         </header>
@@ -408,6 +407,7 @@
         
         let notifications = { messages: false, maintenance: false };
         let lastMaintHash = "";
+        let activeTab = "home"; // State to track active tab
 
         // --- MAIN RENDER FUNCTION ---
         async function render(skipFetch = false) {
@@ -429,20 +429,29 @@
 
             const { user, invoices, msgs, maint } = globalData;
 
+            // --- AUTO READ MESSAGES IF TAB ACTIVE ---
+            if(activeTab === 'messages') {
+                const unreadIds = msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
+                if(unreadIds.length > 0) {
+                    // Update DB in background
+                    supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
+                    // Immediately mark as read in local memory so badge logic below sees 0 unread
+                    globalData.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
+                }
+            }
+
             // --- UPDATE NOTIFICATIONS ---
             // 1. Messages: Check for unread from Owner
-            const unreadMsgCount = msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
-            const activeTab = document.querySelector('.sidebar-active')?.id || '';
-            const isMsgTab = activeTab.includes('messages');
+            const unreadMsgCount = globalData.msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
             
             // Only show badge if unread AND not currently looking at messages
-            notifications.messages = unreadMsgCount > 0 && !isMsgTab;
+            notifications.messages = unreadMsgCount > 0 && activeTab !== 'messages';
             updateBadge('messages', notifications.messages);
 
             // 2. Maintenance: Check if status changed
             const currentMaintHash = JSON.stringify(maint.map(m => ({id: m.id, status: m.status})).sort((a,b)=>a.id-b.id));
             if(lastMaintHash && lastMaintHash !== currentMaintHash) {
-                if(!activeTab.includes('maintenance')) {
+                if(activeTab !== 'maintenance') {
                     notifications.maintenance = true;
                     updateBadge('maintenance', true);
                 }
@@ -451,18 +460,39 @@
 
             // --- RENDER UI (Diffing Applied) ---
 
-            // Profile (Only update if needed, but text updates are cheap and don't flash like innerHTML)
-            document.getElementById('user-name').innerText = user.name;
-            document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name);
-            document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name ? user.name.charAt(0) : 'U');
-            document.getElementById('set-email').innerText = user.email || 'N/A';
-            document.getElementById('set-phone').innerText = user.phone || 'N/A';
+            // Profile
+            if(user.name && user.name !== document.getElementById('user-name').innerText) {
+                document.getElementById('user-name').innerText = user.name;
+                document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name);
+                document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name.charAt(0));
+            }
+            if(user.email && user.email !== document.getElementById('set-email').innerText) document.getElementById('set-email').innerText = user.email;
+            if(user.phone && user.phone !== document.getElementById('set-phone').innerText) document.getElementById('set-phone').innerText = user.phone;
             
             if(user.unit && user.unit.trim() !== '') {
                 document.getElementById('unit-info-container').classList.remove('hidden-section');
                 document.getElementById('display-unit').innerText = user.unit;
             } else {
                 document.getElementById('unit-info-container').classList.add('hidden-section');
+            }
+
+            // Insurance Logic
+            if(user.insurance) {
+                 document.getElementById('insurance-missing').classList.add('hidden-section');
+                 document.getElementById('insurance-verified').classList.remove('hidden-section');
+            } else {
+                 document.getElementById('insurance-missing').classList.remove('hidden-section');
+                 document.getElementById('insurance-verified').classList.add('hidden-section');
+            }
+            
+            // Credit Logic
+            const toggle = document.getElementById('toggle-credit');
+            if(toggle && toggle.checked !== user.credit_reporting) toggle.checked = user.credit_reporting;
+            
+            if(user.credit_reporting) {
+                document.getElementById('credit-banner').classList.add('hidden-section');
+            } else {
+                document.getElementById('credit-banner').classList.remove('hidden-section');
             }
 
             // Payment Logic (Diffing)
@@ -542,8 +572,8 @@
             }
             
             // --- MESSAGES RENDER ---
-            // Only re-render if we are in the messages tab to save performance, or if data changed
-            if (activeTab.includes('messages')) renderMessages();
+            // Only re-render DOM if we are in the messages tab to save performance
+            if (activeTab === 'messages') renderMessages();
         }
 
         // --- HELPER FUNCTIONS ---
@@ -568,6 +598,8 @@
         }
 
         function switchTab(t) { 
+            activeTab = t; // Track current tab state
+            
             document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden-section')); 
             document.getElementById(`view-${t}`).classList.remove('hidden-section'); 
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('sidebar-active')); 
@@ -581,12 +613,8 @@
             if(t === 'messages') {
                  notifications.messages = false;
                  updateBadge('messages', false);
-                 const unreadIds = globalData.msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
-                 if(unreadIds.length > 0) {
-                     supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
-                     // Optimistic update locally so render loop doesn't re-show badge
-                     globalData.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
-                 }
+                 // We don't mark DB read here immediately, we let the render() loop handle it on next pass or call render() now
+                 render(false); // Force check to mark read
                  renderMessages(); // Ensure immediate view update
             }
             if(t === 'maintenance') {
@@ -606,6 +634,7 @@
             const newMsg = { tenant_id: USER_ID, from: 'Tenant', text: text, time: new Date().toISOString(), created_at: new Date().toISOString() };
             globalData.msgs.push(newMsg);
             
+            // Immediately render optimistic
             const b = document.getElementById('chat-messages');
             const d = new Date();
             const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
@@ -615,7 +644,6 @@
             
             try { 
                 await supabaseClient.from('msgs').insert([newMsg]); 
-                // render(false); // No need to re-render immediately, let polling catch up, we already updated UI
             } catch(e) { console.error(e); }
         }
 
@@ -638,8 +666,7 @@
                     const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; 
                     const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
                     const d = new Date(m.created_at);
-                    const isToday = d.toDateString() === new Date().toDateString();
-                    const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
+                    const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
                     chatBox.innerHTML += `<div class="flex ${align} mb-3 fade-in"><div class="flex flex-col ${m.from === 'Tenant' ? 'items-end' : 'items-start'} max-w-[85%]"><div class="px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div></div>`;
                 });
                 if(wasAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
@@ -657,7 +684,7 @@
                 globalData.maint.push(newReq);
                 toggleModal('requestModal'); 
                 e.target.reset(); 
-                render(true); // Skip fetch, render immediately
+                render(true); // Skip fetch, render immediately to show new item
                 
                 // Actual Insert
                 await supabaseClient.from('maintenance').insert([newReq]); 
