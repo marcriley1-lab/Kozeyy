@@ -53,33 +53,42 @@
             <a href="#" onclick="event.preventDefault(); navTo('dashboard')" id="link-dashboard" class="nav-item flex items-center justify-between px-6 py-3.5 transition sidebar-active">
                 <div class="flex items-center"><i class="fas fa-th-large w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Dashboard</span></div>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('tenants')" id="link-tenants" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-users w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Tenants</span></div>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('listings')" id="link-listings" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-sign w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Listings</span></div>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('screening')" id="link-screening" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-user-check w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Screening</span></div>
                 <span id="badge-screening" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('messages')" id="link-messages" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-comment-dots w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Messages</span></div>
                 <span id="badge-messages" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('maintenance')" id="link-maintenance" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-tools w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Maintenance</span></div>
                 <span id="badge-maintenance" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('financials')" id="link-financials" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-money-bill-wave w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Records</span></div>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('expenses')" id="link-expenses" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-receipt w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Expenses</span></div>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('reports')" id="link-reports" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-chart-pie w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Reports</span></div>
             </a>
+            
             <a href="#" onclick="event.preventDefault(); navTo('settings')" id="link-settings" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-sliders-h w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Settings</span></div>
             </a>
@@ -675,7 +684,7 @@
     <script>
         // --- SUPABASE CONFIG ---
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
         
         let supabaseClient = null;
         try {
@@ -734,6 +743,7 @@
 
                 state.notifications.screening = state.apps.filter(x => x.status === 'Pending' || x.status === 'Paid').length;
                 state.notifications.maintenance = state.maint.filter(x => x.status === 'Active').length;
+                state.notifications.messages = state.msgs.filter(m => m.from === 'Tenant' && !m.read_at).length;
                 
                 initChart();
                 renderAll();
@@ -741,6 +751,52 @@
                 console.error("Initialization failed:", err);
                 renderAll();
             }
+        }
+
+        // --- REAL-TIME UPDATES (POLLING) ---
+        function startLiveUpdates() {
+            setInterval(async () => {
+                try {
+                    // Poll for messages and maintenance
+                    const [msg, m, a] = await Promise.all([
+                        supabaseClient.from('msgs').select('*'),
+                        supabaseClient.from('maintenance').select('*'),
+                        supabaseClient.from('apps').select('*')
+                    ]);
+                    
+                    if (msg.data) {
+                        const newCount = msg.data.length;
+                        const oldCount = state.msgs.length;
+                        state.msgs = msg.data;
+                        state.notifications.messages = state.msgs.filter(m => m.from === 'Tenant' && !m.read_at).length;
+                        updateBadge('messages', state.notifications.messages);
+                        
+                        // If chat is open, refresh conversation
+                        if (currentChatId && newCount !== oldCount) {
+                            renderMessages();
+                        }
+                    }
+
+                    if (m.data) {
+                        state.maint = m.data;
+                        state.notifications.maintenance = state.maint.filter(x => x.status === 'Active').length;
+                        updateBadge('maintenance', state.notifications.maintenance);
+                        // Refresh Maintenance Lists if visible (simple DOM update handled by renderAll logic or specific function if needed)
+                        // For simplicity, we just update the specific view if we are on it
+                        if(!document.getElementById('view-maintenance').classList.contains('hidden-section')) {
+                            // Re-render maintenance lists
+                            renderAll(); 
+                        }
+                    }
+                    
+                    if (a.data) {
+                        state.apps = a.data;
+                        state.notifications.screening = state.apps.filter(x => x.status === 'Pending' || x.status === 'Paid').length;
+                        updateBadge('screening', state.notifications.screening);
+                    }
+
+                } catch (e) { console.warn("Polling error", e); }
+            }, 4000); // 4 seconds
         }
 
         // --- FINANCIAL ENGINE ---
@@ -904,10 +960,7 @@
                     tbody.innerHTML += `<tr class="border-b border-slate-100">
                         <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">${t.name}<br><span class="text-xs text-slate-400 font-normal">${t.email}</span></td>
                         <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
-                        <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent).toLocaleString()}</td>
-                        <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
-                        <td class="p-5 text-right"><div class="flex justify-end gap-3"><button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button><button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td>
-                    </tr>`; 
+                        <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent).toLocaleString()}`;
             });
 
             // LISTINGS - NOW INCLUDES LINK GENERATION
@@ -1363,9 +1416,33 @@
         function toggleFeeInput() { document.getElementById('fee-label').innerText = document.getElementById('fee-method').value === 'percent' ? "Percentage (%)" : "Amount ($)"; }
         function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
 
-        function initChart() { const ctx = document.getElementById('revenueChart').getContext('2d'); chartInstance = new Chart(ctx, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [0,0,0], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
-        
-        function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart').getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(ctx, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
+        // --- UPDATED CHAT FUNCTIONALITY ---
+        // Optimistic Send & Immediate Display
+        async function sendMsg() { 
+            const i = document.getElementById('input-chat'); 
+            const text = i.value;
+            if(!text || !currentChatId) return;
+
+            // 1. Optimistic UI: Add bubble immediately
+            const b = document.getElementById('box-chat');
+            const d = new Date();
+            const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+            
+            b.innerHTML += `
+            <div class="flex flex-col w-full items-end mb-4 fade-in">
+                <div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] bg-indigo-600 text-white rounded-br-none">${text}</div>
+                <span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span>
+            </div>`; 
+            b.scrollTop = b.scrollHeight;
+            i.value = ''; // Clear input
+
+            // 2. Send to DB
+            try {
+                await supabaseClient.from('msgs').insert([
+                    {tenant_id: currentChatId, from: 'Owner', text: text, time: new Date().toISOString()}
+                ]);
+            } catch(e) { console.error("Send failed", e); }
+        }
 
         function renderChatList() { 
             const l = document.getElementById('list-chats'); 
@@ -1373,21 +1450,31 @@
             const sortedChats = state.tenants.filter(t => t.status !== 'Vacant').map(t => {
                 const msgs = state.msgs.filter(m => m.tenant_id === t.id);
                 const lastTime = msgs.length > 0 ? new Date(msgs[msgs.length - 1].created_at).getTime() : 0;
-                return { tenant: t, time: lastTime };
+                // Count unread
+                const unread = msgs.filter(m => m.from === 'Tenant' && !m.read_at).length;
+                return { tenant: t, time: lastTime, unread: unread };
             }).sort((a, b) => b.time - a.time); 
 
             sortedChats.forEach(item => { 
                 const t = item.tenant;
-                l.innerHTML += `<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`; 
+                const badge = item.unread > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-2 rounded-full font-bold ml-2">${item.unread}</span>` : '';
+                l.innerHTML += `<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><span>${t.name} ${badge}</span><i class="fas fa-chevron-right text-slate-300 text-xs"></i></div>`; 
             }); 
         }
 
         function openChat(id) { currentChatId=id; document.getElementById('chat-title').innerText = state.tenants.find(x=>x.id==id).name; renderMessages(); if(window.innerWidth < 768) { document.getElementById('msg-list-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('hidden'); document.getElementById('msg-view-panel').classList.add('flex'); } }
-        function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
+        function backToChatList() { currentChatId = null; if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
         
         function renderMessages() { 
-            const b = document.getElementById('box-chat'); b.innerHTML = ''; 
-            state.msgs.filter(m => m.tenant_id == currentChatId).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at)).forEach(m => { 
+            const b = document.getElementById('box-chat'); 
+            // Avoid full re-render if user is typing? No, user requested polling.
+            // A smarter way is needed if we don't want flicker.
+            // For now, simpler is better for "Production Ready" in a single file: just wipe and redraw.
+            b.innerHTML = ''; 
+            
+            const msgs = state.msgs.filter(m => m.tenant_id == currentChatId).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
+            
+            msgs.forEach(m => { 
                 const d = new Date(m.created_at);
                 const isToday = d.toDateString() === new Date().toDateString();
                 const ts = isToday ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
@@ -1397,14 +1484,13 @@
                 b.innerHTML += `<div class="flex flex-col w-full ${align} mb-4 fade-in"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${bubbleStyle}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
             }); 
             b.scrollTop = b.scrollHeight; 
-        }
-        
-        async function sendMsg() { 
-            const i=document.getElementById('input-chat'); 
-            if(i.value && currentChatId) { 
-                await supabaseClient.from('msgs').insert([{tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString()}]);
-                i.value=''; initSystem(); 
-            } 
+            
+            // Mark as read locally immediately
+            const unreadIds = msgs.filter(m => m.from === 'Tenant' && !m.read_at).map(m => m.id);
+            if(unreadIds.length > 0) {
+                // Async update DB
+                supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(() => {});
+            }
         }
 
         // --- USER PROFILE LOAD ---
@@ -1423,6 +1509,7 @@
 
         loadUserProfile();
         initSystem();
+        startLiveUpdates(); // Start the 4s polling loop
     </script>
 </body>
 </html>
