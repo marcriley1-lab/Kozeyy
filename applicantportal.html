@@ -134,7 +134,7 @@
         async function fetchApplication() {
             if(!supabaseClient) return;
             // Get app where tenant_id matches locally saved ID (ensure correct column name in DB)
-            const { data, error } = await supabaseClient.from('apps').select('*').eq('tenant_id', userId).order('created_at', {ascending:false}).limit(1).maybeSingle();
+            const { data, error } = await supabaseClient.from('apps').select('*').eq('user_id', userId).order('created_at', {ascending:false}).limit(1).maybeSingle();
             
             if(data) {
                 currentUserApp = data;
@@ -235,4 +235,5 @@
         }
     </script>
 </body>
+
 </html>
