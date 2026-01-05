@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -138,13 +139,7 @@
                     <button onclick="switchTab('settings')" class="w-full md:w-auto bg-white text-indigo-900 px-4 py-2 rounded-lg font-bold text-sm hover:bg-indigo-50 transition">Enable in Settings</button>
                 </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 class="font-bold text-slate-700 mb-4 brand-font">Recent Activity</h3>
-                    <div class="space-y-4" id="recent-activity-list">
-                        <div class="text-gray-400 text-sm italic">No recent activity</div>
-                    </div>
-                </div>
-            </div>
+                            </div>
 
             <div id="view-payments" class="view-section hidden-section fade-in pb-24">
                 <div class="flex justify-between items-center mb-4">
@@ -207,6 +202,7 @@
                             <p class="text-sm font-bold text-slate-600">Tap to Upload</p>
                         </div>
                     </div>
+                    
                     <div class="bg-indigo-950 p-6 rounded-2xl shadow-lg text-white">
                         <h3 class="text-xl font-bold mb-4 brand-font">Need coverage?</h3>
                         
@@ -223,8 +219,8 @@
                             * Disclosure: Kozeyy may receive a commission if you purchase a policy through these links. This helps support our platform.
                         </p>
                     </div>
-                    </div>
                 </div>
+                
                 <div id="insurance-verified" class="hidden-section bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
                     <div class="flex justify-between items-start mb-4"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600"><i class="fas fa-check"></i></div><div><h3 class="font-bold text-slate-800">Verified</h3><p class="text-xs text-slate-500" id="ins-date">Oct 12, 2023</p></div></div><span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-[10px] font-bold uppercase">Active</span></div>
                     <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-3"><i class="fas fa-file-pdf text-red-500 text-xl"></i><p class="text-sm font-medium text-slate-800">policy_doc.pdf</p></div>
@@ -313,46 +309,64 @@
 
     <div id="invoiceModal" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-            <button onclick="toggleModal('invoiceModal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
-            <h2 class="text-xl font-bold mb-1 brand-font">Invoice #<span id="inv-id"></span></h2>
-            <p class="text-sm text-slate-500 mb-6" id="inv-date">Oct 24, 2023</p>
+            <button onclick="toggleModal('invoiceModal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 z-10"><i class="fas fa-times text-xl"></i></button>
             
-            <div class="space-y-4">
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Rent / Fees</span><span id="inv-prev-bal">$0.00</span></div>
-                    <div class="flex justify-between text-xs text-emerald-600 mb-1"><span>Credits Applied</span><span id="inv-prev-pay">$0.00</span></div>
-                    <div class="border-t border-slate-200 my-2"></div>
-                    <div class="flex justify-between text-sm font-bold text-slate-700"><span>Subtotal</span><span id="inv-fwd-bal">$0.00</span></div>
-                </div>
-
-                <div class="border rounded-xl overflow-hidden">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase"><tr><th class="p-3">Description</th><th class="p-3 text-right">Amount</th></tr></thead>
-                        <tbody id="inv-items-body" class="divide-y divide-slate-100"></tbody>
-                    </table>
-                </div>
-
-                <div id="inv-attachment" class="hidden-section flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 p-3 rounded-lg border border-indigo-100">
-                    <i class="fas fa-paperclip"></i> <span id="inv-doc-name">Document.pdf</span>
+            <div id="invoice-paper" class="p-4">
+                <div class="flex justify-between items-start border-b border-slate-100 pb-4 mb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold brand-font text-slate-800">INVOICE</h2>
+                        <p class="text-xs text-slate-500 uppercase tracking-wide">Kozeyy Property Mgmt</p>
+                    </div>
+                    <div class="text-right">
+                        <h2 class="text-lg font-bold text-slate-600 mb-1">#<span id="inv-id"></span></h2>
+                        <p class="text-sm text-slate-500" id="inv-date">Oct 24, 2023</p>
+                    </div>
                 </div>
                 
-                <div id="inv-fees-section" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
-                     <div class="flex justify-between text-slate-500 font-bold border-b border-slate-200 pb-1">
-                         <span>Payment Options & Fees</span>
-                     </div>
-                     <div class="text-slate-500">
-                        <div class="flex justify-between"><span>• Bank Transfer (ACH)</span> <span>+$2.50</span></div>
-                        <div class="flex justify-between"><span>• Credit/Debit Card</span> <span>+2.9%</span></div>
-                     </div>
-                </div>
+                <div class="space-y-4">
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Total</span><span id="inv-prev-bal">$0.00</span></div>
+                        <div class="flex justify-between text-xs text-emerald-600 mb-1"><span>Paid</span><span id="inv-prev-pay">$0.00</span></div>
+                        <div class="border-t border-slate-200 my-2"></div>
+                        <div class="flex justify-between text-sm font-bold text-slate-700"><span>Due</span><span id="inv-fwd-bal">$0.00</span></div>
+                    </div>
 
-                <div class="flex justify-between items-center pt-2">
-                    <span class="font-bold text-lg text-slate-800">Base Amount</span>
-                    <span class="font-extrabold text-2xl text-slate-700" id="inv-total">$0.00</span>
+                    <div class="border rounded-xl overflow-hidden">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-slate-50 text-slate-500 text-xs uppercase"><tr><th class="p-3">Description</th><th class="p-3 text-right">Amount</th></tr></thead>
+                            <tbody id="inv-items-body" class="divide-y divide-slate-100"></tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-8 pt-4 border-t border-slate-100 text-center">
+                        <p class="text-xs text-slate-400">Thank you for your timely payment.</p>
+                    </div>
                 </div>
-                
-                <div id="inv-pay-btn-container"></div>
             </div>
+            <div id="inv-attachment" class="hidden-section flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 p-3 rounded-lg border border-indigo-100 mt-4">
+                <i class="fas fa-paperclip"></i> <span id="inv-doc-name">Document.pdf</span>
+            </div>
+            
+            <div id="inv-fees-section" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2 mt-4">
+                 <div class="flex justify-between text-slate-500 font-bold border-b border-slate-200 pb-1">
+                     <span>Payment Options & Fees</span>
+                 </div>
+                 <div class="text-slate-500">
+                    <div class="flex justify-between"><span>• Bank Transfer (ACH)</span> <span>+$2.50</span></div>
+                    <div class="flex justify-between"><span>• Credit/Debit Card</span> <span>+2.9%</span></div>
+                 </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-4 mt-2">
+                <span class="font-bold text-lg text-slate-800">Total Due</span>
+                <span class="font-extrabold text-2xl text-slate-700" id="inv-total">$0.00</span>
+            </div>
+            
+            <button onclick="downloadInvoicePDF()" class="w-full mt-3 border border-slate-300 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-50 flex items-center justify-center gap-2">
+                <i class="fas fa-download"></i> Download PDF
+            </button>
+
+            <div id="inv-pay-btn-container" class="mt-2"></div>
         </div>
     </div>
 
@@ -363,13 +377,13 @@
     </div>
 
     <script>
+        const storedId = localStorage.getItem('kozeyy_user_id');
+        const storedRole = localStorage.getItem('kozeyy_role');
 
-const storedId = localStorage.getItem('kozeyy_user_id');
-const storedRole = localStorage.getItem('kozeyy_role');
-
-if (!storedId || storedRole !== 'tenant') {
-    window.location.href = 'login.html';
-}
+        if (!storedId || storedRole !== 'tenant') {
+            window.location.href = 'login.html';
+        }
+        
         // --- CONFIG ---
         const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
@@ -383,28 +397,17 @@ if (!storedId || storedRole !== 'tenant') {
         let supabaseClient = null;
         if(window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        // --- USER ID LOGIC (AUTO-DETECT OR DEFAULT) ---
-        const USER_ID = localStorage.getItem('kozeyy_user_id') || 1; 
+        // --- USER ID LOGIC ---
+        const USER_ID = localStorage.getItem('kozeyy_user_id'); 
         
         let globalData = { user: null, invoices: [], msgs: [], maint: [] };
-        // Track IDs that we have read locally using LocalStorage map to survive refreshes and maintain STABLE timestamps
-        // Format: key=id, value=timestamp_string
         let locallyReadIds = new Map(JSON.parse(localStorage.getItem('kozeyy_read_map') || '[]'));
-        
-        // Track optimistic maintenance requests
         let optimisticMaint = JSON.parse(localStorage.getItem('kozeyy_opt_maint') || '[]');
         
-        // State Tracking for Diffing (Prevent Flashing)
-        let lastRenderedState = {
-            invoices: "",
-            msgs: "",
-            maint: "",
-            user: ""
-        };
-        
+        let lastRenderedState = { invoices: "", msgs: "", maint: "", user: "" };
         let notifications = { messages: false, maintenance: false };
         let lastMaintHash = "";
-        let activeTab = "home"; // State to track active tab
+        let activeTab = "home"; 
 
         // --- MAIN RENDER FUNCTION ---
         async function render(skipFetch = false) {
@@ -421,114 +424,67 @@ if (!storedId || storedRole !== 'tenant') {
                 globalData.user = u.data || { name: "Guest User", email: "", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
                 globalData.invoices = i.data || [];
                 
-                // --- MESSAGE MERGE LOGIC ---
+                // Message Merge
                 const serverMsgs = m.data || [];
                 serverMsgs.forEach(msg => {
                     if(locallyReadIds.has(msg.id)) {
-                        if(msg.read_at) { 
-                            // Server synced, remove from local storage to keep it clean
-                            locallyReadIds.delete(msg.id);
-                            localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds]));
-                        } else { 
-                            // Server lag, force local read using STABLE timestamp from Map
-                            msg.read_at = locallyReadIds.get(msg.id); 
-                        }
+                        if(msg.read_at) { locallyReadIds.delete(msg.id); localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds])); } 
+                        else { msg.read_at = locallyReadIds.get(msg.id); }
                     }
                 });
                 globalData.msgs = serverMsgs;
                 
-                // --- MAINTENANCE MERGE LOGIC ---
-                // Start with server data
+                // Maintenance Merge
                 globalData.maint = mt.data || [];
-                
-                // If we have optimistic items, clean up confirmed ones and append pending ones
                 if(optimisticMaint.length > 0) {
                      const serverDates = new Set(globalData.maint.map(m => m.created_at));
                      const serverIssues = new Set(globalData.maint.map(m => m.issue));
-                     
-                     // Filter out items that are now on the server
-                     const filteredOptimistic = optimisticMaint.filter(m => {
-                         // Simple check: if exact timestamp OR exact issue description exists, assume synced
-                         return !serverDates.has(m.created_at) && !serverIssues.has(m.issue);
-                     });
-                     
-                     // Update local storage if items were removed (synced)
+                     const filteredOptimistic = optimisticMaint.filter(m => !serverDates.has(m.created_at) && !serverIssues.has(m.issue));
                      if(filteredOptimistic.length !== optimisticMaint.length) {
                          optimisticMaint = filteredOptimistic;
                          localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
                      }
-                     
-                     // Add remaining pending items to the view
                      globalData.maint = [...globalData.maint, ...optimisticMaint];
                 }
             }
 
             const { user, invoices, msgs, maint } = globalData;
 
-            // --- AUTO READ MESSAGES IF TAB ACTIVE ---
             if(activeTab === 'messages') {
                 const unreadIds = msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
                 if(unreadIds.length > 0) {
                     supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
-                    
                     const now = new Date().toISOString();
                     let updatedMap = false;
-                    
-                    unreadIds.forEach(id => {
-                        // Only set if not already present to keep timestamp stable
-                        if(!locallyReadIds.has(id)) {
-                             locallyReadIds.set(id, now);
-                             updatedMap = true;
-                        }
-                    });
-                    
-                    if(updatedMap) {
-                        localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds]));
-                    }
-
-                    globalData.msgs.forEach(m => { 
-                        if(unreadIds.includes(m.id)) {
-                            // Apply stable timestamp from map
-                            m.read_at = locallyReadIds.get(m.id);
-                        }
-                    });
+                    unreadIds.forEach(id => { if(!locallyReadIds.has(id)) { locallyReadIds.set(id, now); updatedMap = true; } });
+                    if(updatedMap) localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds]));
+                    globalData.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = locallyReadIds.get(m.id); });
                 }
             }
 
-            // --- UPDATE NOTIFICATIONS ---
             const unreadMsgCount = globalData.msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
             notifications.messages = unreadMsgCount > 0 && activeTab !== 'messages';
             updateBadge('messages', notifications.messages);
 
-            // Maintenance: Check if status changed
             const currentMaintHash = JSON.stringify(maint.map(m => ({id: m.id, status: m.status})).sort((a,b)=>a.id-b.id));
             if(lastMaintHash && lastMaintHash !== currentMaintHash) {
-                if(activeTab !== 'maintenance') {
-                    notifications.maintenance = true;
-                    updateBadge('maintenance', true);
-                }
+                if(activeTab !== 'maintenance') { notifications.maintenance = true; updateBadge('maintenance', true); }
             }
             lastMaintHash = currentMaintHash;
 
-            // --- RENDER UI (Diffing Applied) ---
-
-            // Profile
             if(user.name && user.name !== document.getElementById('user-name').innerText) {
                 document.getElementById('user-name').innerText = user.name;
                 document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name);
                 document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name.charAt(0));
             }
-            if(user.email && user.email !== document.getElementById('set-email').innerText) document.getElementById('set-email').innerText = user.email;
-            if(user.phone && user.phone !== document.getElementById('set-phone').innerText) document.getElementById('set-phone').innerText = user.phone;
+            if(user.email) document.getElementById('set-email').innerText = user.email;
+            if(user.phone) document.getElementById('set-phone').innerText = user.phone;
             
             if(user.unit && user.unit.trim() !== '') {
                 document.getElementById('unit-info-container').classList.remove('hidden-section');
                 document.getElementById('display-unit').innerText = user.unit;
-            } else {
-                document.getElementById('unit-info-container').classList.add('hidden-section');
-            }
+            } else { document.getElementById('unit-info-container').classList.add('hidden-section'); }
 
-            // Insurance Logic
             if(user.insurance) {
                  document.getElementById('insurance-missing').classList.add('hidden-section');
                  document.getElementById('insurance-verified').classList.remove('hidden-section');
@@ -537,17 +493,12 @@ if (!storedId || storedRole !== 'tenant') {
                  document.getElementById('insurance-verified').classList.add('hidden-section');
             }
             
-            // Credit Logic
             const toggle = document.getElementById('toggle-credit');
             if(toggle && toggle.checked !== user.credit_reporting) toggle.checked = user.credit_reporting;
             
-            if(user.credit_reporting) {
-                document.getElementById('credit-banner').classList.add('hidden-section');
-            } else {
-                document.getElementById('credit-banner').classList.remove('hidden-section');
-            }
+            if(user.credit_reporting) document.getElementById('credit-banner').classList.add('hidden-section');
+            else document.getElementById('credit-banner').classList.remove('hidden-section');
 
-            // Payment Logic
             const currentInvStr = JSON.stringify(invoices);
             if (currentInvStr !== lastRenderedState.invoices) {
                 const unpaid = invoices.filter(i => { const bal = i.total - (i.amount_paid || 0); return bal > 0 && i.status !== 'Paid'; });
@@ -571,7 +522,6 @@ if (!storedId || storedRole !== 'tenant') {
                     uCont.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3"><i class="fas fa-check text-emerald-400 text-xl"></i></div><p class="text-sm font-medium text-slate-600">You're all caught up!</p></div>`;
                 }
 
-                // History
                 const hBody = document.getElementById('history-body'); const hMob = document.getElementById('history-mobile');
                 hBody.innerHTML = ''; hMob.innerHTML = '';
                 const historyItems = invoices.filter(i => i.status === 'Paid');
@@ -588,7 +538,6 @@ if (!storedId || storedRole !== 'tenant') {
                 lastRenderedState.invoices = currentInvStr;
             }
 
-            // --- RENDER MAINTENANCE LIST (Diffing) ---
             const currentMaintStr = JSON.stringify(maint);
             if(currentMaintStr !== lastRenderedState.maint) {
                 const maintList = document.getElementById('maint-list'); 
@@ -597,7 +546,6 @@ if (!storedId || storedRole !== 'tenant') {
                 } else {
                     maintList.innerHTML = '';
                     const sortedMaint = maint.sort((a,b) => {
-                        // Use created_at instead of date
                         if(a.status === 'Active' && b.status !== 'Active') return -1;
                         if(a.status !== 'Active' && b.status === 'Active') return 1;
                         return new Date(b.created_at) - new Date(a.created_at);
@@ -606,9 +554,7 @@ if (!storedId || storedRole !== 'tenant') {
                         const isActive = m.status === 'Active';
                         const statusColor = isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'; 
                         const opacity = isActive ? '' : 'opacity-70';
-                        // m.issue holds the summary/title
                         const displayDate = m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Just now';
-                        
                         maintList.innerHTML += `
                         <div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100 ${opacity}">
                             <div class="flex justify-between items-start">
@@ -623,14 +569,10 @@ if (!storedId || storedRole !== 'tenant') {
                 }
                 lastRenderedState.maint = currentMaintStr;
             }
-            
-            // --- MESSAGES RENDER ---
             if (activeTab === 'messages') renderMessages();
         }
 
-        // --- HELPER FUNCTIONS ---
         function updateBadge(type, show) {
-            // Desktop
             const mobBtn = document.getElementById(`mob-${type}`);
             if(type === 'messages') {
                 const d = document.getElementById('desk-notif-dot');
@@ -650,8 +592,7 @@ if (!storedId || storedRole !== 'tenant') {
         }
 
         function switchTab(t) { 
-            activeTab = t; // Track current tab state
-            
+            activeTab = t; 
             document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden-section')); 
             document.getElementById(`view-${t}`).classList.remove('hidden-section'); 
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('sidebar-active')); 
@@ -662,16 +603,8 @@ if (!storedId || storedRole !== 'tenant') {
             const titles = { home:'Resident Portal', payments:'Payments', messages:'Messages', maintenance:'Maintenance', insurance:'Insurance', settings:'Account Settings' };
             const titleEl = document.getElementById('page-title'); if(titleEl) titleEl.innerText = titles[t] || 'Kozeyy';
             
-            if(t === 'messages') {
-                 notifications.messages = false;
-                 updateBadge('messages', false);
-                 render(false);
-                 renderMessages();
-            }
-            if(t === 'maintenance') {
-                notifications.maintenance = false;
-                updateBadge('maintenance', false);
-            }
+            if(t === 'messages') { notifications.messages = false; updateBadge('messages', false); render(false); renderMessages(); }
+            if(t === 'maintenance') { notifications.maintenance = false; updateBadge('maintenance', false); }
         }
 
         function startLiveUpdates() { setInterval(() => { render(false); }, 4000); }
@@ -681,35 +614,26 @@ if (!storedId || storedRole !== 'tenant') {
             const text = input.value.trim();
             if(!text) return;
             
-            // Optimistic Add
             const newMsg = { tenant_id: USER_ID, from: 'Tenant', text: text, time: new Date().toISOString(), created_at: new Date().toISOString() };
             globalData.msgs.push(newMsg);
-            
-            // Immediately render optimistic
             const b = document.getElementById('chat-messages');
             const d = new Date();
             const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
             b.innerHTML += `<div class="flex justify-end fade-in"><div class="max-w-[80%] px-4 py-2 rounded-2xl bg-indigo-600 text-white rounded-br-none text-sm shadow-sm">${text}</div></div>`;
             b.scrollTop = b.scrollHeight;
             input.value = '';
-            
-            try { 
-                await supabaseClient.from('msgs').insert([newMsg]); 
-            } catch(e) { console.error(e); }
+            try { await supabaseClient.from('msgs').insert([newMsg]); } catch(e) { console.error(e); }
         }
 
-        function renderMessages() {
+        function renderMessages(force = false) {
             const chatBox = document.getElementById('chat-messages'); 
             if(!chatBox) return;
-            
             const msgs = globalData.msgs.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
             const msgHash = JSON.stringify(msgs);
             if(msgHash === lastRenderedState.msgs) return;
             lastRenderedState.msgs = msgHash;
-
             const wasAtBottom = chatBox.scrollHeight - chatBox.scrollTop === chatBox.clientHeight;
             chatBox.innerHTML = '';
-            
             if(msgs.length === 0) { chatBox.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-sm">No messages yet</p></div>`; } 
             else {
                 msgs.forEach(m => {
@@ -729,30 +653,11 @@ if (!storedId || storedRole !== 'tenant') {
             const cat = document.getElementById('m-cat').value;
             if(desc) { 
                 const dateIso = new Date().toISOString();
-                const newReq = { 
-                    tenant_id: USER_ID, 
-                    issue: `${cat}: ${desc}`, 
-                    category: cat,            
-                    description: desc,        
-                    status: 'Active',
-                    created_at: dateIso       
-                };
-                
+                const newReq = { tenant_id: USER_ID, issue: `${cat}: ${desc}`, category: cat, description: desc, status: 'Active', created_at: dateIso };
                 optimisticMaint.push(newReq);
                 localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-                
-                toggleModal('requestModal'); 
-                e.target.reset(); 
-                render(true); 
-                
-                const dbPayload = { 
-                    tenant_id: USER_ID, 
-                    issue: `${cat}: ${desc}`, 
-                    category: cat, 
-                    description: desc, 
-                    status: 'Active' 
-                };
-                
+                toggleModal('requestModal'); e.target.reset(); render(true); 
+                const dbPayload = { tenant_id: USER_ID, issue: `${cat}: ${desc}`, category: cat, description: desc, status: 'Active' };
                 await supabaseClient.from('maintenance').insert([dbPayload]); 
             }
         }
@@ -774,25 +679,32 @@ if (!storedId || storedRole !== 'tenant') {
             }
         }
         
-        // --- UPDATED VIEW INVOICE FUNCTION ---
         function viewInvoice(id) {
             const inv = globalData.invoices.find(i => i.id === id);
             if(!inv) return;
+            
             document.getElementById('inv-id').innerText = inv.id;
             document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
             
             const currentBalance = inv.total - (inv.amount_paid || 0);
             const alreadyPaid = inv.amount_paid || 0;
             
-            // Display Items
-            document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; // Assuming rent is total for simplicity in display logic
+            document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
             document.getElementById('inv-prev-pay').innerText = `$${alreadyPaid.toLocaleString()}`;
             document.getElementById('inv-fwd-bal').innerText = `$${currentBalance.toLocaleString()}`;
             
-            const tbody = document.getElementById('inv-items-body'); tbody.innerHTML = '';
-            (inv.items || []).forEach(item => { tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; });
+            const tbody = document.getElementById('inv-items-body'); 
+            tbody.innerHTML = '';
+            (inv.items || []).forEach(item => { 
+                tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; 
+            });
             
-            const attEl = document.getElementById('inv-attachment'); if(inv.doc) { attEl.classList.remove('hidden-section'); document.getElementById('inv-doc-name').innerText = inv.doc; } else { attEl.classList.add('hidden-section'); }
+            const attEl = document.getElementById('inv-attachment'); 
+            const docLink = inv.doc_url || inv.doc;
+            if(docLink) { 
+                attEl.classList.remove('hidden-section'); 
+                document.getElementById('inv-doc-name').innerHTML = `<a href="${docLink}" target="_blank" class="hover:underline">View Document</a>`;
+            } else { attEl.classList.add('hidden-section'); }
             
             const feeSection = document.getElementById('inv-fees-section'); 
             const totalEl = document.getElementById('inv-total');
@@ -801,59 +713,61 @@ if (!storedId || storedRole !== 'tenant') {
             if(currentBalance <= 0 || inv.status === 'Paid') { 
                 feeSection.classList.add('hidden-section'); 
                 totalEl.innerText = `$0.00`; 
-                payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date || 'Unknown'}</div>`; 
+                payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date ? new Date(inv.paid_date).toLocaleDateString() : 'Unknown'}</div>`; 
             } else { 
-                feeSection.classList.remove('hidden-section');
-                
-                // Show Base Amount as Total in Main View
                 totalEl.innerText = `$${currentBalance.toLocaleString()}`; 
-
-                // Fee Calculation for Buttons
-                const achFee = 2.50;
-                const cardFee = currentBalance * 0.029;
-                const achTotal = currentBalance + achFee;
-                const cardTotal = currentBalance + cardFee;
-
-                payBtnContainer.innerHTML = `
-                    <div class="space-y-3 mt-4">
-                        <button onclick="initStripePayment(${inv.id}, ${currentBalance}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
-                            <div class="flex items-center gap-2"><i class="fas fa-university"></i> Bank Transfer</div>
-                            <span class="text-sm group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                        </button>
-                        
-                        <button onclick="initStripePayment(${inv.id}, ${currentBalance}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
-                            <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card Payment</div>
-                            <span class="text-sm group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                        </button>
-                        
-                        <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600">Cancel</button>
-                    </div>
-                `;
+                if (inv.landlord_stripe_id) {
+                    feeSection.classList.remove('hidden-section');
+                    const achFee = 2.50;
+                    const cardFee = currentBalance * 0.029;
+                    const achTotal = currentBalance + achFee;
+                    const cardTotal = currentBalance + cardFee;
+                    payBtnContainer.innerHTML = `
+                        <div class="space-y-3 mt-4">
+                            <button onclick="initStripePayment(${inv.id}, ${currentBalance}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
+                                <div class="flex items-center gap-2"><i class="fas fa-university"></i> Bank Transfer</div>
+                                <span class="text-sm group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            </button>
+                            <button onclick="initStripePayment(${inv.id}, ${currentBalance}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
+                                <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card Payment</div>
+                                <span class="text-sm group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                            </button>
+                            <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600">Cancel</button>
+                        </div>`;
+                } else {
+                    feeSection.classList.add('hidden-section');
+                    payBtnContainer.innerHTML = `
+                        <div class="mt-6 p-4 bg-orange-50 border border-orange-100 rounded-xl text-center">
+                            <p class="text-orange-800 font-bold text-sm mb-1"><i class="fas fa-info-circle"></i> Online Payment Unavailable</p>
+                            <p class="text-orange-600 text-xs">The owner has not enabled online payments for this invoice. Please pay via check or your agreed method.</p>
+                        </div>
+                        <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600 mt-4">Close</button>
+                    `;
+                }
             }
             toggleModal('invoiceModal');
         }
 
-        // --- UPDATED PAYMENT INIT FUNCTION ---
         async function initStripePayment(invoiceId, baseAmount, method, fee) {
             toggleModal('invoiceModal'); 
             toggleModal('processingModal');
             try {
                 const totalAmount = baseAmount + fee;
-                
                 const response = await fetch(FUNCTION_URL, { 
                     method: 'POST', 
                     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, 
-                    body: JSON.stringify({ 
-                        action: 'create-checkout-session', 
-                        invoiceId: invoiceId, 
-                        amount: totalAmount, // Send full amount including fee
-                        tenantId: USER_ID,
-                        paymentMethod: method // 'card' or 'us_bank_account'
-                    }) 
+                    body: JSON.stringify({ action: 'create-checkout-session', invoiceId: invoiceId, amount: totalAmount, tenantId: USER_ID, paymentMethod: method }) 
                 });
                 const session = await response.json(); if(session.error) throw new Error(session.error);
                 const result = await stripe.redirectToCheckout({ sessionId: session.id }); if (result.error) throw new Error(result.error.message);
             } catch (err) { toggleModal('processingModal'); alert("Payment Error: " + err.message); }
+        }
+
+        function downloadInvoicePDF() {
+            const element = document.getElementById('invoice-paper');
+            const invId = document.getElementById('inv-id').innerText;
+            const opt = { margin: 0.5, filename: `Invoice_${invId}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+            html2pdf().set(opt).from(element).save();
         }
 
         async function handleCreditToggle() {
