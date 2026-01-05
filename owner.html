@@ -24,34 +24,9 @@
         #mobile-overlay { background-color: rgba(0,0,0,0.5); }
         .paper-shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 0 0 1px rgba(0,0,0,0.05); }
         
-        /* Toast Notification Styles - CENTERED */
-        #toast-container { 
-            position: fixed; 
-            top: 20px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            z-index: 100; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 10px; 
-            pointer-events: none;
-        }
-        .toast { 
-            background: white; 
-            padding: 16px 24px; 
-            border-radius: 12px; 
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15); 
-            border-left: 4px solid #6366f1; 
-            opacity: 0;
-            transform: translateY(-20px); 
-            transition: all 0.3s ease-out; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            min-width: 320px;
-            pointer-events: auto;
-        }
-        .toast.show { opacity: 1; transform: translateY(0); }
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border-left: 4px solid #6366f1; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; align-items: center; gap: 12px; min-width: 300px; }
+        .toast.show { transform: translateX(0); }
         .toast.error { border-left-color: #f43f5e; }
         .toast.success { border-left-color: #10b981; }
     </style>
@@ -171,7 +146,7 @@
                     <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
                         <h3 class="font-bold text-lg text-slate-800 mb-4 brand-font">Quick Actions</h3>
                         <div class="space-y-3">
-                            <button id="qa-tenant" onclick="act_addTenant()" class="w-full flex items-center justify-between p-4 bg-blue-50 text-blue-700 rounded-2xl hover:bg-blue-100 transition"><span class="font-bold text-sm brand-font">Add Tenant</span><i class="fas fa-user-plus bg-blue-200 p-2 rounded-full text-xs"></i></button>
+                            <button id="qa-tenant" onclick="openModal('modal-tenant')" class="w-full flex items-center justify-between p-4 bg-blue-50 text-blue-700 rounded-2xl hover:bg-blue-100 transition"><span class="font-bold text-sm brand-font">Add Tenant</span><i class="fas fa-user-plus bg-blue-200 p-2 rounded-full text-xs"></i></button>
                             <button id="qa-invoice" onclick="openInvoiceModal()" class="w-full flex items-center justify-between p-4 bg-emerald-50 text-emerald-700 rounded-2xl hover:bg-emerald-100 transition"><span class="font-bold text-sm brand-font">Create Invoice</span><i class="fas fa-plus bg-emerald-200 p-2 rounded-full text-xs"></i></button>
                             <button onclick="openModal('modal-listing')" class="w-full flex items-center justify-between p-4 bg-indigo-50 text-indigo-700 rounded-2xl hover:bg-indigo-100 transition"><span class="font-bold text-sm brand-font">Post Listing</span><i class="fas fa-home bg-indigo-200 p-2 rounded-full text-xs"></i></button>
                         </div>
@@ -188,7 +163,7 @@
                             <option value="Archived">Archived</option>
                             <option value="all">All Records</option>
                         </select>
-                        <button onclick="act_addTenant()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-700 brand-font">+ Add</button>
+                        <button onclick="openModal('modal-tenant')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-700 brand-font">+ Add</button>
                     </div>
                 </div>
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-x-auto w-full">
@@ -210,7 +185,7 @@
 
             <div id="view-listings" class="view-section hidden-section fade-in-up">
                 <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Listings</h3><button onclick="openModal('modal-listing')" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow hover:bg-indigo-700 brand-font">+ Post</button></div>
-                <div id="grid-listings" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                <div id="grid-listings" class="grid grid-cols-1 md:grid-cols-4 gap-6"></div>
             </div>
 
             <div id="view-screening" class="view-section hidden-section fade-in-up">
@@ -220,8 +195,9 @@
                         <thead class="bg-white text-slate-500 text-xs uppercase border-b border-slate-200 brand-font">
                             <tr>
                                 <th class="p-5">Applicant</th>
+                                <th class="p-5">Condition</th>
                                 <th class="p-5">Status</th>
-                                <th class="p-5 text-right">Actions</th>
+                                <th class="p-5 text-right">Action</th> 
                             </tr>
                         </thead>
                         <tbody id="table-screening" class="divide-y divide-slate-100"></tbody>
@@ -335,6 +311,7 @@
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
                     <form onsubmit="act_saveSettings(event)" class="space-y-6">
+                        
                         <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
                             <h4 class="font-bold text-indigo-900 mb-2 brand-font flex items-center gap-2"><i class="fab fa-stripe text-xl"></i> Payments Integration</h4>
                             <p class="text-xs text-indigo-700 mb-4">Enter your Stripe Connected Account ID to receive payments automatically from tenants.</p>
@@ -343,6 +320,7 @@
                                 <input type="text" id="set-stripe-id" class="w-full border border-indigo-200 p-3 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="acct_..." value="">
                             </div>
                         </div>
+
                         <div>
                             <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Late Fees</label>
                             <div class="grid grid-cols-2 gap-4">
@@ -350,6 +328,7 @@
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label><input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50" value="5"></div>
                             </div>
                         </div>
+                        
                         <div class="pt-4 border-t border-slate-100">
                             <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Screening Criteria</h4>
                             <div class="grid grid-cols-2 gap-4 mb-4">
@@ -361,6 +340,7 @@
                                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-crim" class="text-indigo-600 rounded"><span class="text-sm font-medium">No Criminal Hist.</span></label></div>
                             </div>
                         </div>
+
                         <button class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg brand-font">Save Configuration</button>
                     </form>
                 </div>
@@ -368,21 +348,22 @@
         </div>
     </main>
 
-    <div id="modal-confirm" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+    <!-- Generic Platform Confirmation Modal (replaces browser confirm) -->
+    <div id="modal-platform-confirm" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center">
-            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-xl">
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
                 <i class="fas fa-question"></i>
             </div>
-            <h3 class="text-lg font-bold mb-2 text-slate-800" id="confirm-title">Confirm Action</h3>
-            <p class="text-sm text-slate-500 mb-6" id="confirm-msg">Are you sure?</p>
+            <h3 class="text-lg font-bold mb-2 text-slate-900" id="plat-conf-title">Confirm Action</h3>
+            <p class="text-sm text-slate-500 mb-6" id="plat-conf-msg">Are you sure you want to proceed?</p>
             <div class="flex gap-3">
-                <button onclick="closeConfirm(false)" class="flex-1 py-3 border border-slate-200 text-slate-600 rounded-xl font-bold text-sm hover:bg-slate-50 transition">Cancel</button>
-                <button onclick="closeConfirm(true)" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 shadow-lg transition">Confirm</button>
+                <button onclick="closePlatformConfirm(false)" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition">Cancel</button>
+                <button onclick="closePlatformConfirm(true)" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition">Confirm</button>
             </div>
         </div>
     </div>
 
-    <div id="modal-prompt" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+    <div id="modal-prompt" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm">
             <h3 class="text-lg font-bold mb-4" id="prompt-title">Enter Value</h3>
             <input type="text" id="prompt-input" class="w-full border p-3 rounded-xl bg-slate-50 mb-4" placeholder="Type here...">
@@ -434,14 +415,6 @@
                     <div><label class="text-xs font-bold text-slate-500 ml-1">Lease Start</label><input type="date" id="t-start" class="w-full border p-3 rounded-xl bg-slate-50"></div>
                     <div><label class="text-xs font-bold text-slate-500 ml-1">Lease End</label><input type="date" id="t-end" class="w-full border p-3 rounded-xl bg-slate-50"></div>
                 </div>
-                
-                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="checkbox" id="t-send-invite" class="w-4 h-4 text-indigo-600 rounded">
-                        <span class="text-sm font-bold text-slate-700">Send Onboarding Email</span>
-                    </label>
-                </div>
-
                  <select id="t-status" class="w-full border p-3 rounded-xl bg-slate-50">
                     <option value="Active">Active</option>
                     <option value="Vacant">Vacant</option>
@@ -487,38 +460,43 @@
         </div>
     </div>
 
-    <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
-            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Property Listing</h3>
-            <form onsubmit="act_saveListing(event)" class="space-y-4">
-                <input id="l-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address" required>
-                <div class="grid grid-cols-2 gap-4">
-                    <input id="l-price" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Price" required>
-                    <input id="l-sqft" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Sq Ft">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <input id="l-beds" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Beds">
-                    <input id="l-baths" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Baths">
-                </div>
-                <textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24" placeholder="Description"></textarea>
-                <input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities (comma separated)">
-                
-                <div class="mt-2">
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Listing Image</label>
-                    <div class="flex items-center gap-2">
-                        <label for="l-img-file" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-300">
-                            <i class="fas fa-camera"></i> <span id="l-img-label">Upload Photo</span>
-                        </label>
-                        <input type="file" id="l-img-file" class="hidden" accept=".jpg, .jpeg, .png, .webp" onchange="updateFileName('l-img-file', 'l-img-label')">
-                    </div>
-                </div>
-
-                <input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
-                <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-indigo-700 transition" id="btn-save-listing">Post Listing</button>
-            </form>
-        </div>
+    <!-- Modal Listing -->
+<div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white p-8 rounded-3xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+        <h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Property Listing</h3>
+        <form onsubmit="act_saveListing(event)" class="space-y-4">
+            <input id="l-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address" required>
+            <div class="grid grid-cols-2 gap-4">
+                <input id="l-price" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Price" required>
+                <input id="l-sqft" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Sq Ft">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <input id="l-beds" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Beds">
+                <input id="l-baths" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Baths">
+            </div>
+            <textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24" placeholder="Description"></textarea>
+            <input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities (comma separated)">
+            
+            <!-- NEW CONTACT FIELD -->
+            <input id="l-contact" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Owner Contact (Email or Phone)">
+            
+            <div class="mt-2">
+    <label class="block text-xs font-bold text-slate-500 mb-1">Listing Images (Select Multiple)</label>
+    <div class="flex items-center gap-2">
+        <label for="l-img-file" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-300 w-full justify-center">
+            <i class="fas fa-camera"></i> <span id="l-img-label">Upload Photos</span>
+        </label>
+        <input type="file" id="l-img-file" class="hidden" accept=".jpg, .jpeg, .png, .webp" multiple onchange="updateFileCount()">
     </div>
+    <p class="text-[10px] text-slate-400 mt-1 text-center" id="l-file-count"></p>
+</div>
+
+            <input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
+            <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-indigo-700 transition" id="btn-save-listing">Post Listing</button>
+        </form>
+    </div>
+</div>
 
     <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
@@ -552,6 +530,20 @@
                         <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
                     </div>
 
+                    <div id="inv-recurring-options" class="p-4 bg-slate-50 rounded-xl border border-slate-200 hidden-section">
+                        <label class="flex items-center gap-2 mb-3 cursor-pointer">
+                            <input type="checkbox" id="inv-is-recurring" class="w-4 h-4 text-emerald-600 rounded">
+                            <span class="font-bold text-sm text-slate-700">Recurring Invoice?</span>
+                        </label>
+                        <div id="inv-rec-details" class="hidden-section space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="text-xs text-slate-500 block">Send Day (1-31)</label><input type="number" id="inv-rec-day" min="1" max="31" value="1" class="w-full border p-2 rounded-lg"></div>
+                                <div><label class="text-xs text-slate-500 block">End Date</label><input type="date" id="inv-rec-end" class="w-full border p-2 rounded-lg"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400">Invoice will automatically generate each month.</p>
+                        </div>
+                    </div>
+
                     <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font hover:bg-indigo-700 transition">Preview Invoice</button>
                 </form>
             </div>
@@ -571,10 +563,21 @@
                     </div>
                     
                     <div class="space-y-4">
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Previous Balance</span><span id="prev-bal-amt">$0.00</span></div>
+                            <div class="flex justify-between text-xs text-emerald-600 mb-1"><span>Payments Received</span><span id="prev-pay-amt">-$0.00</span></div>
+                            <div class="border-t border-slate-200 my-1"></div>
+                            <div class="flex justify-between text-xs font-bold text-slate-700"><span>Forward Balance</span><span id="prev-fwd-amt">$0.00</span></div>
+                        </div>
+
                         <table class="w-full text-sm text-left">
                             <thead class="text-xs text-slate-400 uppercase border-b"><tr><th class="py-2">Description</th><th class="py-2 text-right">Amount</th></tr></thead>
                             <tbody id="prev-items-body" class="text-slate-700"></tbody>
                         </table>
+                        
+                        <div id="prev-attachment" class="hidden-section mt-2 text-xs text-slate-500 flex items-center gap-2">
+                             <i class="fas fa-paperclip text-indigo-500"></i> <span>Attachment Included</span>
+                        </div>
                         
                         <div class="border-t-2 border-slate-800 pt-3 mt-4 flex justify-between items-center">
                             <span class="font-bold text-lg brand-font">Total Due</span>
@@ -682,15 +685,9 @@
                 </div>
                 
                 <div id="sd-actions" class="grid grid-cols-3 gap-2 mt-4">
-                    <button onclick="act_screenDecision('Approved')" class="bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow">Approve</button>
+                    <button onclick="act_initiateApproval()" class="bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow">Approve</button>
                     <button onclick="act_screenDecision('Conditional')" class="bg-amber-400 text-white py-3 rounded-xl font-bold text-sm shadow">Conditional</button>
                     <button onclick="act_screenDecision('Deny')" class="bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow">Deny</button>
-                </div>
-
-                <div id="sd-email-option" class="hidden-section mt-4 pt-4 border-t border-slate-100">
-                    <a id="btn-email-applicant" href="#" class="block w-full bg-blue-600 text-white text-center py-3 rounded-xl font-bold shadow hover:bg-blue-700 transition">
-                        <i class="fas fa-envelope mr-2"></i> Email Decision to Applicant
-                    </a>
                 </div>
             </div>
         </div>
@@ -730,54 +727,13 @@
     function parseDateStr(str) { if(!str) return new Date(); const parts = str.split('-'); return new Date(parts[0], parts[1]-1, parts[2]); }
     function getLastName(fullName) { if(!fullName) return ''; const parts = fullName.trim().split(' '); return parts.length > 1 ? parts[parts.length - 1] : parts[0]; }
     function setText(id, text) { const el = document.getElementById(id); if(el && el.innerText !== text) el.innerText = text; }
-    
-    // --- AUTH HELPER ---
-    function getOwnerId() {
-        return localStorage.getItem('kozeyy_user_id') || '1'; 
-    }
-
-    // --- EMAIL SIMULATION SERVICE ---
-    async function simulateEmailSend(email) {
-        return new Promise((resolve) => {
-            console.log(`Sending email to ${email}...`);
-            setTimeout(() => {
-                console.log("Email sent successfully.");
-                resolve(true);
-            }, 1000); 
-        });
-    }
-
-    // --- CUSTOM CONFIRMATION LOGIC ---
-    let confirmCallback = null;
-
-    function openConfirm(title, msg, callback) {
-        setText('confirm-title', title);
-        setText('confirm-msg', msg);
-        document.getElementById('modal-confirm').classList.remove('hidden-section');
-        document.getElementById('modal-confirm').classList.add('flex');
-        confirmCallback = callback;
-    }
-
-    function closeConfirm(result) {
-        document.getElementById('modal-confirm').classList.add('hidden-section');
-        document.getElementById('modal-confirm').classList.remove('flex');
-        if (confirmCallback) confirmCallback(result);
-        confirmCallback = null;
-    }
-
-    function waitForConfirm(title, msg) {
-        return new Promise((resolve) => {
-            openConfirm(title, msg, (result) => {
-                resolve(result);
-            });
-        });
-    }
 
     // UI State Variables
     let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
     let editTenantId = null, editListingId = null, editExpenseId = null, currentAppId = null;
     let draftInvoice = null;
     let promptCallback = null;
+    let platformConfirmCallback = null;
 
     // --- 1. INIT & POLLING ---
     async function initSystem() {
@@ -785,6 +741,16 @@
             if(!supabaseClient) throw new Error("Supabase library not loaded.");
             await fetchData();
             renderAll();
+            
+            // Check for upload redirect param
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('action') === 'lease_uploaded') {
+                navTo('screening');
+                showToast("Lease document saved successfully");
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // Start Polling
             setInterval(async () => { await fetchData(); renderAll(); }, 4000);
         } catch (err) { console.error("Initialization failed:", err); renderAll(); }
     }
@@ -808,7 +774,7 @@
         state.payments = p.data || [];
         state.expenses = e.data || [];
         state.maint = m.data || [];
-        state.settings = s.data || { }; 
+        state.settings = s.data || { }; // Default empty if missing
         state.apps = a.data || [];
         
         const serverMsgs = msg.data || [];
@@ -854,23 +820,13 @@
             const tbody = document.getElementById('table-tenants'); 
             if(tbody) {
                 tbody.innerHTML = '';
-                const filteredTenants = state.tenants
+                state.tenants
                     .filter(t => statusFilter === 'all' ? true : t.status === statusFilter)
-                    .sort((a, b) => getLastName(a.name||'').localeCompare(getLastName(b.name||'')));
-                    
-                if(filteredTenants.length === 0) {
-                     tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 italic">No tenants found with status: ${statusFilter}</td></tr>`;
-                }
-
-                filteredTenants.forEach(t => { 
-                        let stClass = 'bg-slate-100 text-slate-500';
-                        if(t.status === 'Active') stClass = 'bg-emerald-100 text-emerald-700';
-                        if(t.status === 'Invited') stClass = 'bg-blue-100 text-blue-700';
-                        if(t.status === 'Vacant') stClass = 'bg-orange-100 text-orange-700';
-                        
+                    .sort((a, b) => getLastName(a.name||'').localeCompare(getLastName(b.name||'')))
+                    .forEach(t => { 
+                        const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
                         const moveOutBtn = t.status === 'Active' ? `<button onclick="act_moveOut(${t.id})" class="text-amber-500 hover:text-amber-700" title="Move Out"><i class="fas fa-box-open"></i></button>` : '';
                         
-                        // UPDATED: Use t.address and t.rent_amount
                         tbody.innerHTML += `
                         <tr class="border-b border-slate-100">
                             <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">
@@ -881,7 +837,7 @@
                             <td class="p-5 text-sm hidden md:table-cell">${t.address || '-'}</td>
                             <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
                             <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent_amount || 0).toLocaleString()}</td>
-                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${stClass}">${t.status}</span></td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
                             <td class="p-5 text-right">
                                 <div class="flex justify-end gap-3">
                                     <button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button>
@@ -895,13 +851,14 @@
             lastRenderedState.tenants = combinedHash;
         }
 
-        // Listings
+        // Listings with Link Generation
         const listingHash = JSON.stringify(state.listings);
         if(listingHash !== lastRenderedState.listings) {
             const grid = document.getElementById('grid-listings');
             if(grid) {
                 grid.innerHTML = '';
                 state.listings.forEach(l => {
+                    // Use uploaded image or fallback
                     const displayImg = l.image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994';
                     grid.innerHTML += `
                     <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
@@ -923,7 +880,7 @@
             lastRenderedState.listings = listingHash;
         }
 
-        // Screening
+        // --- UPDATED SCREENING RENDER LOGIC ---
         const screeningHash = JSON.stringify(state.apps);
         if(screeningHash !== lastRenderedState.screening) {
             const tbody = document.getElementById('table-screening');
@@ -931,13 +888,64 @@
                 tbody.innerHTML = '';
                 state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
                     const eval = evalApplicant(app);
-                    tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewApp(${app.id})">${app.name}<br><span class="text-xs text-slate-400 font-normal">Income: $${app.income}</span></td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td><td class="p-5 text-right"><button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm">Review</button></td></tr>`;
+                    
+                    let actionButton = '';
+                    const status = app.status || 'Pending';
+                    
+                    // Workflow Logic
+                    if(status === 'Approved') {
+                        // Confirmed Approval -> Next step: Upload Lease
+                        actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700 block text-center w-full md:w-auto">Upload Lease</a>`;
+                    } 
+                    else if (status === 'Lease Uploaded') {
+                        // Lease Saved -> Next step: Send Lease (Show File Icon)
+                        actionButton = `
+                        <div class="flex items-center justify-end gap-2">
+                            <i class="fas fa-file-pdf text-slate-400 text-lg" title="Lease Attached"></i>
+                            <button onclick="act_initiateSendLease(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700">Send Lease</button>
+                        </div>`;
+                    } 
+                    else if (status === 'Lease Sent') {
+                        // Lease Sent -> Next step: Finalize
+                        actionButton = `<button onclick="act_initiateFinalize(${app.id})" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-purple-700">Finalize</button>`;
+                    } 
+                    else if (status === 'Completed' || status === 'Active') {
+                        actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Tenant Active</span>`;
+                    } 
+                    else if (status === 'Deny') {
+                        actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
+                    } 
+                    else {
+                        // Default Pending
+                        actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm">Review</button>`;
+                    }
+
+                    const statusColor = status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 
+                                      (status === 'Lease Uploaded' ? 'bg-blue-50 text-blue-700' : 
+                                      (status === 'Lease Sent' ? 'bg-purple-100 text-purple-700' : 
+                                      (status === 'Completed' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')));
+
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100">
+                            <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewApp(${app.id})">
+                                ${app.name}<br>
+                                <span class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</span>
+                            </td>
+                            <td class="p-5">
+                                <span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span>
+                            </td>
+                            <td class="p-5">
+                                <span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${status}</span>
+                            </td>
+                            <td class="p-5 text-right">
+                                ${actionButton}
+                            </td>
+                        </tr>`;
                 });
             }
             lastRenderedState.screening = screeningHash;
         }
 
-        // Maintenance
         const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
         if(maintHash !== lastRenderedState.maint) {
             const activeList = document.getElementById('list-maint-active'); 
@@ -963,7 +971,6 @@
         if(currentChatId) renderMessages();
         if(activeTab === 'messages') renderChatList();
 
-        // Expenses
         const expHash = JSON.stringify(state.expenses);
         if(expHash !== lastRenderedState.expenses) {
             const exBody = document.getElementById('table-expenses'); 
@@ -971,7 +978,7 @@
                 exBody.innerHTML = '';
                 const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
                 let dEx = state.expenses;
-                if (fid !== 'all') dEx = dEx.filter(x => x.property_address === fid);
+                if (fid !== 'all') dEx = dEx.filter(x => x.property_address === fid); // UPDATED to property_address
                 dEx.forEach(x => { 
                     const fileLink = x.receipt_url ? `<a href="${x.receipt_url}" target="_blank" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-paperclip"></i> View</a>` : '-';
                     exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.property_address || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.category}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${fileLink}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
@@ -1006,6 +1013,24 @@
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
+    // Generic Platform Modal Functions
+    function openPlatformConfirm(title, message, callback) {
+        setText('plat-conf-title', title);
+        setText('plat-conf-msg', message);
+        document.getElementById('modal-platform-confirm').classList.remove('hidden-section');
+        document.getElementById('modal-platform-confirm').classList.add('flex');
+        platformConfirmCallback = callback;
+    }
+
+    function closePlatformConfirm(confirmed) {
+        document.getElementById('modal-platform-confirm').classList.add('hidden-section');
+        document.getElementById('modal-platform-confirm').classList.remove('flex');
+        if(confirmed && platformConfirmCallback) {
+            platformConfirmCallback();
+        }
+        platformConfirmCallback = null;
+    }
+
     function openPrompt(title, callback) {
         setText('prompt-title', title);
         document.getElementById('prompt-input').value = '';
@@ -1024,12 +1049,23 @@
         promptCallback = null;
     }
 
+  // --- FIX: VIEW PUBLIC LISTING LINK ---
     function showShareModal(id) {
-        const url = `https://kozeyy.com/rentals/apply?id=${id}`;
+        // 1. Get the current folder path (removes 'owner.html' from URL)
+        // This ensures it works whether you are on localhost or a real domain
+        let currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        
+        // 2. Construct link to index.html with specific parameters
+        // page=rentals -> Opens the Rentals view
+        // highlight=id -> Scrolls to the specific card
+        const url = `${currentPath}/index.html?page=rentals&highlight=${id}`;
+        
+        // 3. Update the input field (for copying) and the button (for clicking)
         document.getElementById('share-link-input').value = url;
         document.getElementById('public-link-btn').href = url;
-        document.getElementById('modal-share-listing').classList.remove('hidden-section');
-        document.getElementById('modal-share-listing').classList.add('flex');
+        
+        // 4. Open the modal
+        openModal('modal-share-listing');
     }
 
     function copyListingLink() {
@@ -1062,361 +1098,75 @@
         });
     }
     
-    // --- UPDATED: ADD TENANT INIT (Resets form correctly) ---
-    function act_addTenant() {
-        editTenantId = null;
-        setText('modal-tenant-title', "Add Tenant");
-        setText('btn-save-tenant', "Save Tenant");
-        
-        // Reset all inputs
-        ['t-id','t-name','t-email','t-phone','t-unit','t-rent','t-start','t-end','t-addr','t-city','t-state','t-zip'].forEach(id => {
-            const el = document.getElementById(id); if(el) el.value = "";
-        });
-        
-        // Set defaults
-        document.getElementById('t-status').value = 'Active';
-        document.getElementById('t-send-invite').checked = true; // Default ON for add
-        
-        openModal('modal-tenant');
+    function updateBadge(id, count) { 
+        const el = document.getElementById('badge-' + id); 
+        if(!el) return;
+        const isViewing = activeTab === id;
+        if(count > 0 && !isViewing) { el.innerText = count; el.classList.remove('hidden-section'); } 
+        else { el.classList.add('hidden-section'); } 
     }
 
-    // --- UPDATED: SAVE TENANT LOGIC ---
-    async function act_saveTenant(e) { 
-        e.preventDefault(); 
+    function calculateGlobalStats() {
+        let revenue = 0, overdue = 0;
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+        state.payments.forEach(p => { const pDate = parseDateStr(p.date); if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) revenue += p.amount; });
+        state.invoices.forEach(inv => { if(inv.status !== 'Paid') { const bal = inv.total - (inv.amount_paid || 0); if(bal > 0) overdue += bal; } });
+        return { revenue, overdue };
+    }
+
+    function navTo(view) {
+        activeTab = view;
+        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
+        document.getElementById('view-' + view).classList.remove('hidden-section');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
+        const link = document.getElementById('link-' + view);
+        if(link) link.classList.add('sidebar-active');
         
-        const btn = document.getElementById('btn-save-tenant');
-        const originalText = btn.innerText;
-        btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Processing...`;
-        btn.disabled = true;
-
-        const ownerId = getOwnerId();
-        const emailInput = document.getElementById('t-email').value.toLowerCase();
-        const shouldInvite = document.getElementById('t-send-invite').checked;
+        const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests' };
+        setText('desktop-page-title', titles[view] || 'Dashboard');
         
-        // 1. Gather Data (Using 'address' and 'rent_amount')
-        const data = { 
-            owner_id: ownerId, 
-            name: document.getElementById('t-name').value, 
-            email: emailInput, 
-            phone: document.getElementById('t-phone').value, 
-            unit: document.getElementById('t-unit').value, 
-            rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
-            lease_start: document.getElementById('t-start').value||null, 
-            lease_end: document.getElementById('t-end').value||null, 
-            status: document.getElementById('t-status').value, // Start with form value
-            address: document.getElementById('t-addr').value, 
-            city: document.getElementById('t-city').value, 
-            state: document.getElementById('t-state').value, 
-            zip: document.getElementById('t-zip').value 
-        }; 
-
-        try {
-            let emailSent = false;
-            
-            // 2. Handle Invite Logic if checkbox checked
-            if (shouldInvite) {
-                const userConfirmed = await waitForConfirm("Send Invite?", `Send onboarding email to ${data.email}?`);
-                if (userConfirmed) {
-                    showToast("Sending invitation email...", "success");
-                    await simulateEmailSend(data.email);
-                    emailSent = true;
-                    // --- NEW REQUIREMENT: Set to ACTIVE after email sent ---
-                    data.status = 'Active';
-                }
-            }
-
-            // 3. Save to Database
-            if(editTenantId) {
-                await supabaseClient.from('tenants').update(data).eq('id', editTenantId);
-            } else {
-                // FIXED: Use .maybeSingle() to avoid 406 Error
-                const { data: existing } = await supabaseClient.from('tenants').select('id').eq('email', data.email).maybeSingle();
-                if(existing) throw new Error("A tenant with this email already exists.");
-                await supabaseClient.from('tenants').insert([data]);
-            }
-            
-            closeModal('modal-tenant'); 
-            await fetchData(); 
-            
-            // 4. Update Filter if needed so user sees the new tenant
-            if(data.status !== 'Active') {
-                const statusFilter = document.getElementById('filter-tenant-status');
-                if(statusFilter && statusFilter.value === 'Active') {
-                    statusFilter.value = 'all';
-                }
-            }
-            renderAll();
-            
-            if (emailSent) {
-                showToast("Tenant saved & invited successfully!");
-            } else {
-                showToast("Tenant saved.");
-            }
-
-        } catch(err) {
-            console.error(err);
-            showToast(err.message || "Error saving tenant", 'error');
-        } finally {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
+        if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
+        
+        if(view === 'maintenance') {
+            state.maint.filter(m => m.status === 'Active').forEach(m => viewedMaintIds.add(String(m.id)));
+            localStorage.setItem('kozeyy_viewed_maint', JSON.stringify([...viewedMaintIds]));
+            updateBadge('maintenance', 0);
         }
-    }
-    
-    async function act_moveOut(id) {
-        const confirmed = await waitForConfirm("Move Out", "Mark tenant as moved out? This will archive them and create a vacant unit.");
-        if(!confirmed) return;
-        
-        const t = state.tenants.find(x => x.id === id);
-        if(!t) return;
-        
-        // UPDATED: Using address and rent_amount
-        supabaseClient.from('tenants').update({ status: 'Archived' }).eq('id', id).then(async () => {
-             const newUnit = { name: '(Vacant)', email: '', phone: '', address: t.address, unit: t.unit, city: t.city, state: t.state, zip: t.zip, rent_amount: t.rent_amount, status: 'Vacant', lease_start: null, lease_end: null, owner_id: getOwnerId() };
-             await supabaseClient.from('tenants').insert([newUnit]);
-             await fetchData(); renderAll(); showToast("Tenant archived and unit marked Vacant");
-        });
-    }
-
-    function act_editTenant(id) { 
-        editTenantId = id; 
-        const t = state.tenants.find(x => x.id === id); 
-        setText('modal-tenant-title',"Edit Tenant"); 
-        setText('btn-save-tenant',"Update Tenant"); 
-        
-        document.getElementById('t-id').value = t.id; 
-        document.getElementById('t-name').value = t.name; 
-        document.getElementById('t-email').value = t.email; 
-        document.getElementById('t-phone').value = t.phone||''; 
-        document.getElementById('t-unit').value = t.unit||''; 
-        document.getElementById('t-rent').value = t.rent_amount; 
-        document.getElementById('t-start').value = t.lease_start||''; 
-        document.getElementById('t-end').value = t.lease_end||''; 
-        document.getElementById('t-addr').value = t.address||''; 
-        document.getElementById('t-status').value = t.status; 
-        document.getElementById('t-city').value = t.city||''; 
-        document.getElementById('t-state').value = t.state||''; 
-        document.getElementById('t-zip').value = t.zip||''; 
-        
-        // Default invite OFF when editing
-        document.getElementById('t-send-invite').checked = false; 
-        
-        openModal('modal-tenant'); 
-    }
-    
-    async function act_delTenant(id) { 
-        const confirmed = await waitForConfirm("Delete Tenant", "Are you sure? This cannot be undone.");
-        if(confirmed) { 
-            await supabaseClient.from('tenants').delete().eq('id', id); 
-            await fetchData(); 
-            renderAll(); 
-        } 
-    }
-    
-    async function act_saveListing(e) { 
-        e.preventDefault(); 
-        const file = document.getElementById('l-img-file').files[0];
-        let imgUrl = null;
-        if (file) imgUrl = await uploadFile(file, 'listings'); 
-
-        const d = { 
-            owner_id: getOwnerId(),
-            address: document.getElementById('l-addr').value, 
-            price: document.getElementById('l-price').value, 
-            sqft: document.getElementById('l-sqft').value, 
-            beds: document.getElementById('l-beds').value, 
-            baths: document.getElementById('l-baths').value, 
-            description: document.getElementById('l-desc').value, 
-            amenities: document.getElementById('l-amen').value, 
-            date_available: document.getElementById('l-date').value,
-            image_url: imgUrl 
-        }; 
-        
-        let res;
-        if(editListingId) res = await supabaseClient.from('listings').update(d).eq('id', editListingId).select(); 
-        else res = await supabaseClient.from('listings').insert([d]).select(); 
-        
-        if(res.error) { showToast("Error: " + res.error.message, 'error'); return; }
-        
-        closeModal('modal-listing'); await fetchData(); renderAll();
-        showShareModal(res.data[0].id); 
-    }
-    
-    function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.address; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.description; document.getElementById('l-amen').value = l.amenities||''; document.getElementById('l-date').value = l.date_available; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
-    async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); await fetchData(); renderAll(); }
-
-    async function act_saveExpense(e) { 
-        e.preventDefault(); 
-        const file = document.getElementById('ex-doc').files[0];
-        let docUrl = null;
-        if (file) docUrl = await uploadFile(file, 'receipts'); 
-        
-        const data = { date: document.getElementById('ex-date').value, vendor: document.getElementById('ex-vendor').value, category: document.getElementById('ex-cat').value, property_address: document.getElementById('ex-prop').value, amount: parseFloat(document.getElementById('ex-amount').value)||0, receipt_url: docUrl }; 
-        if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
-        else await supabaseClient.from('expenses').insert([data]); 
-        
-        closeModal('modal-expense'); await fetchData(); renderAll(); showToast("Expense saved");
-    }
-
-    function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.category; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.property_address; openModal('modal-expense'); }
-    
-    async function act_delExpense(id) { 
-        const confirmed = await waitForConfirm("Delete Expense", "Delete this expense record?");
-        if(confirmed) { 
-            await supabaseClient.from('expenses').delete().eq('id', id); 
-            await fetchData(); 
-            renderAll(); 
-        } 
-    }
-
-    // UPDATED: Using t.address and t.rent_amount
-    function act_viewTenant(id) { const t = state.tenants.find(x => x.id === id); if(!t) return; setText('vt-name', t.name); setText('vt-email', t.email); setText('vt-phone', t.phone||'-'); setText('vt-addr', `${t.address||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); setText('vt-unit', t.unit||'-'); setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); setText('vt-status', t.status); setText('vt-start', t.lease_start||'-'); setText('vt-end', t.lease_end||'-'); openModal('modal-view-tenant'); }
-    
-    function act_viewApp(id) { currentAppId = id; const app = state.apps.find(a => a.id === id); const eval = evalApplicant(app); setText('sd-name', app.name); setText('sd-score', app.score); setText('sd-income', `$${app.income.toLocaleString()}`); setText('sd-ratio', (app.income / app.rent).toFixed(1)); document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>'; document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>'; setText('sd-job', app.job||'Unemployed'); document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>'; const ban = document.getElementById('sd-banner'); const actions = document.getElementById('sd-actions'); const emailOpt = document.getElementById('sd-email-option'); if(app.status === 'Approved') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200"; ban.innerText = "Approved"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else if (app.status === 'Deny') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200"; ban.innerText = "Denied"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else { ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`; ban.innerText = eval.status; actions.classList.remove('hidden-section'); emailOpt.classList.add('hidden-section'); } openModal('modal-screening-detail'); }
-    
-    async function act_screenDecision(decision) { 
-        if(!currentAppId) return;
-        const ownerId = getOwnerId();
-
-        try {
-            await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId);
-
-            if(decision === 'Approved') {
-                const app = state.apps.find(a => a.id === currentAppId);
-                // Create invited record
-                const generatedEmail = `${app.name.split(' ')[0].toLowerCase()}@example.com`; 
-                
-                // Check if already exists (.maybeSingle() to prevent 406)
-                const { data: existing } = await supabaseClient.from('tenants').select('id').eq('email', generatedEmail).maybeSingle();
-                
-                if (!existing) {
-                    // UPDATED: Using rent_amount
-                    await supabaseClient.from('tenants').insert([{
-                        owner_id: ownerId,
-                        name: app.name,
-                        email: generatedEmail, 
-                        rent_amount: app.rent,
-                        status: 'Invited'
-                    }]);
-                }
-                showToast("Applicant approved & invited!");
-                // Switch filter to show the new invite
-                const f = document.getElementById('filter-tenant-status');
-                if(f && f.value === 'Active') f.value = 'all';
-            }
-
-            await fetchData(); 
-            closeModal('modal-screening-detail');
-            
-        } catch(err) {
-            console.error(err);
-            showToast("Error processing decision", 'error');
+        if(view === 'screening') {
+            state.apps.filter(a => a.status === 'Pending').forEach(a => viewedAppIds.add(String(a.id)));
+            localStorage.setItem('kozeyy_viewed_apps', JSON.stringify([...viewedAppIds]));
+            updateBadge('screening', 0);
         }
-    }
-    
-    async function act_saveSettings(e) { 
-        e.preventDefault(); 
-        const { error } = await supabaseClient.from('settings').update({ 
-            stripe_connect_id: document.getElementById('set-stripe-id').value, 
-            late_fee_amount: document.getElementById('fee-amount').value, 
-            grace_period: document.getElementById('fee-grace').value,     
-            min_credit_score: parseInt(document.getElementById('set-min-score').value)||600,
-            min_income_ratio: parseFloat(document.getElementById('set-min-income').value)||2.5,
-            require_no_evictions: document.getElementById('set-no-evict').checked,
-            require_no_criminal_history: document.getElementById('set-no-crim').checked
-        }).eq('id', 1); 
         
-        if (error) { showToast("Save Failed: " + error.message, 'error'); } 
-        else { showToast("Configuration Saved"); }
+        if(view === 'financials') populateFinFilter();
+        if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
+        if(view === 'messages') { renderChatList(); backToChatList(); }
+        if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
+        if(view === 'settings') { renderSettings(); } 
     }
-    
-    function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
 
-    function initChart(stats = {revenue:0, overdue:0}) { const ctx = document.getElementById('revenueChart'); if(!ctx) return; const context = ctx.getContext('2d'); chartInstance = new Chart(context, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [stats.revenue, 0, stats.overdue], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
-    function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart'); if(!ctx) return; const context = ctx.getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(context, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
-    function getMonthlyFinancials() { const months = [], revenueData = [], expenseData = []; const today = new Date(); for(let i=5; i>=0; i--) { const d = new Date(today.getFullYear(), today.getMonth() - i, 1); const mKey = d.getMonth(); const yKey = d.getFullYear(); months.push(d.toLocaleString('default', { month: 'short' })); const monthRev = state.payments.reduce((sum, p) => { const pd = parseDateStr(p.date); return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum; }, 0); revenueData.push(monthRev); const monthExp = state.expenses.reduce((sum, e) => { const ed = parseDateStr(e.date); return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum; }, 0); expenseData.push(monthExp); } return { labels: months, revenue: revenueData, expenses: expenseData }; }
-
-    function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
-    
-    async function confirmPay() { 
-        let tid = document.getElementById('pay-tenant-id').value; 
-        const sel = document.getElementById('pay-tenant-select'); 
-        if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
-        tid = parseInt(tid); 
-        let amt = parseFloat(document.getElementById('pay-amount').value); 
+    function renderSettings() {
+        const s = state.settings;
+        if(!s) return;
+        if(document.getElementById('set-stripe-id')) document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
+        if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.late_fee_amount || 50; 
+        if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 5; 
         
-        if(tid && amt > 0) { 
-            const { error } = await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]);
-            if (error) { showToast("Payment Failed: " + error.message, 'error'); return; }
-            const openInvoices = state.invoices.filter(i => i.tenant_id === tid && i.status !== 'Paid').sort((a,b) => new Date(a.date) - new Date(b.date)); 
-            for(const inv of openInvoices) { 
-                if (amt <= 0) break; 
-                const due = inv.total - (inv.amount_paid || 0); 
-                const pay = Math.min(amt, due); 
-                const newPaid = (inv.amount_paid || 0) + pay; 
-                const newStatus = newPaid >= inv.total ? 'Paid' : 'Unpaid'; 
-                await supabaseClient.from('invoices').update({ amount_paid: newPaid, status: newStatus }).eq('id', inv.id); 
-                amt -= pay; 
-            } 
-            closeModal('modal-pay'); initSystem(); showToast("Payment Recorded & Applied"); 
-        } 
-    }
-    
-    function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
-    
-    function renderFinancials() {
-        const filterVal = document.getElementById('filter-financials').value;
-        const tbody = document.getElementById('table-financials');
-        const sumContainer = document.getElementById('fin-summary-container');
-        const balanceDisplay = document.getElementById('fin-open-bal');
-
-        tbody.innerHTML = '';
-        let transactions = [];
-        state.invoices.forEach(inv => { if (filterVal === 'all' || inv.tenant_id == filterVal) { transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.created_at).toLocaleDateString() }); } });
-        state.payments.forEach(pay => { if (filterVal === 'all' || pay.tenant_id == filterVal) { transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() }); } });
-        transactions.sort((a, b) => b.sortTime - a.sortTime);
-
-        let totalInvoiced = 0, totalReceived = 0;
-        state.invoices.forEach(inv => { if (filterVal === 'all' || inv.tenant_id == filterVal) totalInvoiced += (inv.total || 0); });
-        state.payments.forEach(pay => { if (filterVal === 'all' || pay.tenant_id == filterVal) totalReceived += (pay.amount || 0); });
-        const totalBalance = totalInvoiced - totalReceived;
-        
-        if (totalBalance < 0) { balanceDisplay.innerText = `-$${Math.abs(totalBalance).toLocaleString(undefined, {minimumFractionDigits: 2})}`; balanceDisplay.className = "text-xl font-bold text-emerald-600"; 
-        } else { balanceDisplay.innerText = `$${totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}`; balanceDisplay.className = "text-xl font-bold text-slate-800"; }
-        sumContainer.classList.remove('hidden-section');
-
-        transactions.forEach(item => {
-            const record = item.data;
-            const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
-            if (item.type === 'invoice') {
-                const balance = (record.total || 0) - (record.amount_paid || 0);
-                const status = balance <= 0.01 ? 'Paid' : 'Unpaid';
-                const statusColor = status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
-                const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
-                tbody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${item.displayDate}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td><td class="p-5 text-sm text-slate-500">${desc}</td><td class="p-5 text-right font-bold text-slate-800">$${(record.total||0).toLocaleString()}</td><td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${status}</span></td><td class="p-5 text-right"><button onclick="act_viewInvoice(${record.id})" class="text-slate-400 hover:text-indigo-600 transition" title="View Details"><i class="fas fa-eye"></i></button></td></tr>`;
-            } else {
-                tbody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${item.displayDate}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td><td class="p-5 text-sm text-slate-400 italic">Payment Received</td><td class="p-5 text-right font-bold text-emerald-600">+$${(record.amount||0).toLocaleString()}</td><td class="p-5 text-right text-xs text-slate-400">-</td><td class="p-5 text-right text-xs text-slate-400">-</td></tr>`;
-            }
-        });
-        if (transactions.length === 0) tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>';
+        if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = s.min_credit_score || 650;
+        if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
+        if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
+        if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
     }
 
-    function openInvoiceModal() { const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); document.getElementById('inv-actions-create').classList.remove('hidden-section'); document.getElementById('inv-actions-create').classList.add('flex'); document.getElementById('inv-actions-view').classList.add('hidden-section'); document.getElementById('inv-date').valueAsDate = new Date(); document.getElementById('btn-confirm-inv').disabled = false; openModal('modal-invoice'); logic_invMode('fixed'); }
-    function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
-    function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
-    function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
-    function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
-    function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); }
-    function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
-    function logic_generatePreview() { const tidSelect = document.getElementById('inv-tenant').value; if(!tidSelect) return showToast("Please select a tenant", 'error'); const tid = parseInt(tidSelect); const tenant = state.tenants.find(t => t.id === tid); const date = document.getElementById('inv-date').value; const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); draftInvoice = { tenantId: tid, tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: date, }; setText('prev-name', tenant.name); setText('prev-date', new Date(date).toLocaleDateString()); setText('prev-total-due', `$${currentTotal.toLocaleString()}`); const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = ''; invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); document.getElementById('inv-step-input').classList.add('hidden-section'); document.getElementById('inv-step-preview').classList.remove('hidden-section'); setText('inv-modal-title',"Review Invoice"); }
-    function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
-    async function logic_confirmInvoice() { if(!draftInvoice) return; document.getElementById('btn-confirm-inv').disabled = true; const file = document.getElementById('inv-doc').files[0]; let docUrl = null; if (file) docUrl = await uploadFile(file, 'invoices'); const stripeId = state.settings.stripe_connect_id; if(!stripeId) showToast("Warning: Stripe ID missing in settings.", 'error'); await supabaseClient.from('invoices').insert([{ tenant_id: draftInvoice.tenantId, tenant_name: draftInvoice.tenantName, items: draftInvoice.items, total: draftInvoice.total, date: draftInvoice.date, status: 'Unpaid', landlord_stripe_id: stripeId, doc_url: docUrl }]); closeModal('modal-invoice'); initSystem(); showToast("Invoice Sent"); }
-
-    function updateFileName(inputId, labelId) { const input = document.getElementById(inputId); const label = document.getElementById(labelId); if(input.files && input.files[0]) { label.innerText = input.files[0].name; label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } else { label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File'; label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } }
-    
-    // UPDATED: Use t.address (not t.addr) and l.address (not l.addr)
-    function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
-    function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
-    function loadUserProfile() { const savedProfile = localStorage.getItem('kozeyy_profile'); if (savedProfile) { const user = JSON.parse(savedProfile); if(user.role === 'owner') { const nameDisplay = user.username ? user.username : user.name; setText('owner-name-display', nameDisplay); const initialBox = document.getElementById('owner-initials-display'); if(initialBox) initialBox.innerText = user.initials; } } }
+    function viewMaintNote(id) { 
+        const m = state.maint.find(x => x.id == id); 
+        setText('md-issue', m.issue); 
+        setText('md-meta', `Completed: ${m.completed_date ? new Date(m.completed_date).toLocaleDateString() : 'Unknown'}`); 
+        setText('md-notes', m.notes || "No notes."); 
+        openModal('modal-maint-detail'); 
+    }
 
     function renderChatList() { 
         const l = document.getElementById('list-chats'); 
@@ -1480,6 +1230,33 @@
         } 
     }
 
+    // Modal/CRUD
+    function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
+    function resetForms() {
+        editTenantId = null;
+        editListingId = null;
+        editExpenseId = null;
+
+        setText('btn-save-tenant', "Save Tenant");
+        setText('btn-save-listing', "Post Listing");
+        setText('btn-save-expense', "Save");
+
+        // Added 'l-contact' to the list of IDs to clear
+        ['ex-id', 'ex-amount', 'ex-vendor', 'ex-date', 'ex-doc',
+         't-id', 't-name', 't-email', 't-phone', 't-unit', 't-rent', 't-start', 't-end', 't-addr', 't-city', 't-state', 't-zip',
+         'l-addr', 'l-price', 'l-sqft', 'l-beds', 'l-baths', 'l-desc', 'l-amen', 'l-contact', 'l-date', 'l-img'
+        ].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+
+        updateFileName('inv-doc', 'inv-doc-label');
+        updateFileName('ex-doc', 'ex-doc-label');
+    }
+    function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
+    
+    // Screening Logic
     function evalApplicant(app) {
         const crit = state.settings.screening || { minScore: 600, minIncome: 2.5 };
         const incomeRatio = app.income / app.rent;
@@ -1489,82 +1266,330 @@
         if(app.score < crit.minScore || incomeRatio < crit.minIncome) return { status: 'Conditional', color: 'bg-amber-100 text-amber-700 border-amber-200' };
         return { status: 'Meets Criteria', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
     }
-
-    function viewMaintNote(id) { 
-        const m = state.maint.find(x => x.id == id); 
-        setText('md-issue', m.issue); 
-        setText('md-meta', `Completed: ${m.completed_date ? new Date(m.completed_date).toLocaleDateString() : 'Unknown'}`); 
-        setText('md-notes', m.notes || "No notes."); 
-        openModal('modal-maint-detail'); 
-    }
-
-    function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
-    function resetForms() { 
-        editTenantId = null; editListingId = null; editExpenseId = null; 
-        setText('btn-save-tenant',"Save Tenant"); setText('btn-save-listing',"Post Listing"); setText('btn-save-expense',"Save");
-        ['ex-id','ex-amount','ex-vendor','ex-date','ex-doc','t-id','t-name','t-email','t-phone','t-unit','t-rent','t-start','t-end','t-addr','t-city','t-state','t-zip','l-addr','l-price','l-sqft','l-beds','l-baths','l-desc','l-amen','l-date','l-img'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ""; });
-        updateFileName('inv-doc', 'inv-doc-label'); updateFileName('ex-doc', 'ex-doc-label'); 
-    }
-    function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
     
-    function navTo(view) {
-        activeTab = view;
-        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
-        document.getElementById('view-' + view).classList.remove('hidden-section');
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
-        const link = document.getElementById('link-' + view);
-        if(link) link.classList.add('sidebar-active');
-        
-        const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests' };
-        setText('desktop-page-title', titles[view] || 'Dashboard');
-        
-        if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
-        
-        if(view === 'maintenance') {
-            state.maint.filter(m => m.status === 'Active').forEach(m => viewedMaintIds.add(String(m.id)));
-            localStorage.setItem('kozeyy_viewed_maint', JSON.stringify([...viewedMaintIds]));
-            updateBadge('maintenance', 0);
+    // CRUD Functions
+    async function act_saveTenant(e) { e.preventDefault(); const data = { name: document.getElementById('t-name').value, email: document.getElementById('t-email').value, phone: document.getElementById('t-phone').value, unit: document.getElementById('t-unit').value, rent_amount: parseFloat(document.getElementById('t-rent').value)||0, lease_start: document.getElementById('t-start').value||null, lease_end: document.getElementById('t-end').value||null, status: document.getElementById('t-status').value, address: document.getElementById('t-addr').value, city: document.getElementById('t-city').value, state: document.getElementById('t-state').value, zip: document.getElementById('t-zip').value }; if(editTenantId) await supabaseClient.from('tenants').update(data).eq('id', editTenantId); else await supabaseClient.from('tenants').insert([data]); closeModal('modal-tenant'); await fetchData(); renderAll(); }
+    
+    async function act_moveOut(id) {
+        openPlatformConfirm("Archive Tenant?", "This will move the tenant to archives and mark the unit as Vacant.", async () => {
+            const t = state.tenants.find(x => x.id === id);
+            if(!t) return;
+            await supabaseClient.from('tenants').update({ status: 'Archived' }).eq('id', id);
+            const newUnit = { name: '(Vacant)', email: '', phone: '', address: t.address, unit: t.unit, city: t.city, state: t.state, zip: t.zip, rent_amount: t.rent_amount, status: 'Vacant', lease_start: null, lease_end: null };
+            await supabaseClient.from('tenants').insert([newUnit]);
+            await fetchData(); renderAll(); showToast("Tenant archived and unit marked Vacant");
+        });
+    }
+
+    function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id === id); setText('modal-tenant-title',"Edit Tenant"); setText('btn-save-tenant',"Update Tenant"); document.getElementById('t-id').value = t.id; document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone||''; document.getElementById('t-unit').value = t.unit||''; document.getElementById('t-rent').value = t.rent_amount; document.getElementById('t-start').value = t.lease_start||''; document.getElementById('t-end').value = t.lease_end||''; document.getElementById('t-addr').value = t.address||''; document.getElementById('t-status').value = t.status; document.getElementById('t-city').value = t.city||''; document.getElementById('t-state').value = t.state||''; document.getElementById('t-zip').value = t.zip||''; openModal('modal-tenant'); }
+    async function act_delTenant(id) { openPlatformConfirm("Delete Tenant?", "This cannot be undone.", async () => { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); }); }
+    
+    async function act_saveListing(e) { 
+    e.preventDefault(); 
+    const btn = document.getElementById('btn-save-listing');
+    const originalText = btn.innerText;
+    btn.innerText = "Uploading Images...";
+    btn.disabled = true;
+
+    // 1. Handle Multiple Image Uploads
+    const files = document.getElementById('l-img-file').files;
+    let imageUrls = [];
+    
+    try {
+        if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${i}.${fileExt}`; // Unique name per file
+                
+                const { error: uploadError } = await supabaseClient.storage.from('listings').upload(fileName, file);
+                if (uploadError) throw uploadError;
+                
+                const { data } = supabaseClient.storage.from('listings').getPublicUrl(fileName);
+                imageUrls.push(data.publicUrl);
+            }
         }
-        if(view === 'screening') {
-            state.apps.filter(a => a.status === 'Pending').forEach(a => viewedAppIds.add(String(a.id)));
-            localStorage.setItem('kozeyy_viewed_apps', JSON.stringify([...viewedAppIds]));
-            updateBadge('screening', 0);
+
+        // --- User ID Handling ---
+        let ownerId = localStorage.getItem('kozeyy_user_id');
+        if (!ownerId || ownerId.length < 36) {
+            ownerId = '00000000-0000-0000-0000-000000000001'; 
+            localStorage.setItem('kozeyy_user_id', ownerId);
+        }
+
+        // 2. Prepare Data Object (Saving both 'images' array AND 'image_url' for compatibility)
+        const listingData = { 
+            owner_id: ownerId, 
+            address: document.getElementById('l-addr').value, 
+            price: parseFloat(document.getElementById('l-price').value), 
+            sqft: parseInt(document.getElementById('l-sqft').value), 
+            beds: parseInt(document.getElementById('l-beds').value), 
+            baths: parseFloat(document.getElementById('l-baths').value), 
+            description: document.getElementById('l-desc').value, 
+            amenities: document.getElementById('l-amen').value, 
+            contact_info: document.getElementById('l-contact').value,
+            date_available: document.getElementById('l-date').value,
+            images: imageUrls, // NEW: Save the array
+            image_url: imageUrls.length > 0 ? imageUrls[0] : null // OLD: Save first image as main cover
+        }; 
+        
+        // 3. Send to Supabase
+        let res;
+        if(editListingId) {
+            // If editing, we generally want to append or replace. 
+            // For MVP simplicity, this overwrites images if new ones are selected.
+            if(imageUrls.length === 0) {
+                delete listingData.images;
+                delete listingData.image_url;
+            }
+            res = await supabaseClient.from('listings').update(listingData).eq('id', editListingId).select(); 
+        } else {
+            res = await supabaseClient.from('listings').insert([listingData]).select(); 
         }
         
-        if(view === 'financials') populateFinFilter();
-        if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
-        if(view === 'messages') { renderChatList(); backToChatList(); }
-        if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
-        if(view === 'settings') { renderSettings(); } 
+        if(res.error) throw res.error;
+        
+        // 4. Cleanup
+        closeModal('modal-listing'); 
+        await fetchData(); 
+        renderAll();
+        
+        if(res.data && res.data[0]) {
+            showShareModal(res.data[0].id);
+        } else {
+            showToast("Listing saved!");
+        }
+
+    } catch (err) {
+        console.error(err);
+        showToast("Error: " + err.message, 'error');
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
     }
-    function updateBadge(id, count) { 
-        const el = document.getElementById('badge-' + id); 
-        if(!el) return;
-        const isViewing = activeTab === id;
-        if(count > 0 && !isViewing) { el.innerText = count; el.classList.remove('hidden-section'); } 
-        else { el.classList.add('hidden-section'); } 
+}
+    
+    function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.address; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.description; document.getElementById('l-amen').value = l.amenities||''; document.getElementById('l-date').value = l.date_available; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
+    async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); await fetchData(); renderAll(); }
+
+    async function act_saveExpense(e) { 
+        e.preventDefault(); 
+        const file = document.getElementById('ex-doc').files[0];
+        let docUrl = null;
+        if (file) docUrl = await uploadFile(file, 'receipts'); 
+        
+        const data = { date: document.getElementById('ex-date').value, vendor: document.getElementById('ex-vendor').value, category: document.getElementById('ex-cat').value, property_address: document.getElementById('ex-prop').value, amount: parseFloat(document.getElementById('ex-amount').value)||0, receipt_url: docUrl }; 
+        if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
+        else await supabaseClient.from('expenses').insert([data]); 
+        
+        closeModal('modal-expense'); await fetchData(); renderAll(); showToast("Expense saved");
     }
-    function calculateGlobalStats() {
-        let revenue = 0, overdue = 0;
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        state.payments.forEach(p => { const pDate = parseDateStr(p.date); if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) revenue += p.amount; });
-        state.invoices.forEach(inv => { if(inv.status !== 'Paid') { const bal = inv.total - (inv.amount_paid || 0); if(bal > 0) overdue += bal; } });
-        return { revenue, overdue };
+
+    function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.category; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.property_address; openModal('modal-expense'); }
+    async function act_delExpense(id) { openPlatformConfirm("Delete Expense?", "Confirm deletion.", async () => { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); }); }
+
+    function act_viewTenant(id) { const t = state.tenants.find(x => x.id === id); if(!t) return; setText('vt-name', t.name); setText('vt-email', t.email); setText('vt-phone', t.phone||'-'); setText('vt-addr', `${t.address||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); setText('vt-unit', t.unit||'-'); setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); setText('vt-status', t.status); setText('vt-start', t.lease_start||'-'); setText('vt-end', t.lease_end||'-'); openModal('modal-view-tenant'); }
+    
+    function act_viewApp(id) { currentAppId = id; const app = state.apps.find(a => a.id === id); const eval = evalApplicant(app); setText('sd-name', app.name); setText('sd-score', app.score); setText('sd-income', `$${app.income.toLocaleString()}`); setText('sd-ratio', (app.income / app.rent).toFixed(1)); document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>'; document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>'; setText('sd-job', app.job||'Unemployed'); document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>'; const ban = document.getElementById('sd-banner'); const actions = document.getElementById('sd-actions'); const emailOpt = document.getElementById('sd-email-option'); if(app.status === 'Approved') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200"; ban.innerText = "Approved"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else if (app.status === 'Deny') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200"; ban.innerText = "Denied"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else { ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`; ban.innerText = eval.status; actions.classList.remove('hidden-section'); emailOpt.classList.add('hidden-section'); } openModal('modal-screening-detail'); }
+    
+    // Step 1: Approve Application
+    function act_initiateApproval() {
+        openPlatformConfirm("Approve Applicant?", "This will mark the applicant as approved and send them an email notification. The next step will be to upload the lease.", async () => {
+             act_screenDecision('Approved');
+             showToast("Approval email sent to applicant.");
+        });
     }
-    function renderSettings() {
-        const s = state.settings;
-        if(!s) return;
-        if(document.getElementById('set-stripe-id')) document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
-        if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.late_fee_amount || 50; 
-        if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 5; 
-        if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = s.min_credit_score || 650;
-        if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
-        if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
-        if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
+
+    async function act_screenDecision(decision) { 
+        if(currentAppId) { 
+            await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId); 
+            closeModal('modal-screening-detail');
+            await fetchData(); 
+            renderAll();
+        } 
     }
+
+    // Step 2: Send Lease (After Upload)
+    function act_initiateSendLease(appId) {
+        openPlatformConfirm("Send Lease?", "This will email the uploaded lease to the applicant for their signature.", async () => {
+            await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
+            // Also update any preliminary tenant record
+            const app = state.apps.find(a => a.id === appId);
+            if(app) {
+                const existing = state.tenants.find(t => t.email === app.email);
+                if(existing) await supabaseClient.from('tenants').update({ status: 'Lease Sent' }).eq('id', existing.id);
+            }
+            await fetchData();
+            renderAll();
+            showToast("Lease sent to applicant.");
+        });
+    }
+
+    // Step 3: Finalize Tenant
+    function act_initiateFinalize(appId) {
+        openPlatformConfirm("Finalize Tenant?", "Confirm the lease has been signed. This will convert the applicant to an Active tenant.", async () => {
+            const app = state.apps.find(a => a.id === appId);
+            if(!app) return;
+            
+            await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', appId);
+
+            const existing = state.tenants.find(t => t.email === app.email);
+            if(existing) {
+                await supabaseClient.from('tenants').update({ status: 'Active' }).eq('id', existing.id);
+            } else {
+                await supabaseClient.from('tenants').insert([{
+                    name: app.name,
+                    email: app.email,
+                    rent_amount: app.rent,
+                    status: 'Active'
+                }]);
+            }
+            
+            await fetchData();
+            renderAll();
+            showToast("Tenant finalized and active!");
+        });
+    }
+
+    async function act_saveSettings(e) { 
+        e.preventDefault(); 
+        const { error } = await supabaseClient.from('settings').update({ 
+            stripe_connect_id: document.getElementById('set-stripe-id').value, 
+            late_fee_amount: document.getElementById('fee-amount').value, 
+            grace_period: document.getElementById('fee-grace').value,     
+            min_credit_score: parseInt(document.getElementById('set-min-score').value)||600,
+            min_income_ratio: parseFloat(document.getElementById('set-min-income').value)||2.5,
+            require_no_evictions: document.getElementById('set-no-evict').checked,
+            require_no_criminal_history: document.getElementById('set-no-crim').checked
+        }).eq('id', 1); 
+        
+        if (error) { showToast("Save Failed: " + error.message, 'error'); } 
+        else { showToast("Configuration Saved"); }
+    }
+    
+    function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
+
+    function initChart(stats = {revenue:0, overdue:0}) { const ctx = document.getElementById('revenueChart'); if(!ctx) return; const context = ctx.getContext('2d'); chartInstance = new Chart(context, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [stats.revenue, 0, stats.overdue], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+    function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart'); if(!ctx) return; const context = ctx.getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(context, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
+    function getMonthlyFinancials() { const months = [], revenueData = [], expenseData = []; const today = new Date(); for(let i=5; i>=0; i--) { const d = new Date(today.getFullYear(), today.getMonth() - i, 1); const mKey = d.getMonth(); const yKey = d.getFullYear(); months.push(d.toLocaleString('default', { month: 'short' })); const monthRev = state.payments.reduce((sum, p) => { const pd = parseDateStr(p.date); return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum; }, 0); revenueData.push(monthRev); const monthExp = state.expenses.reduce((sum, e) => { const ed = parseDateStr(e.date); return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum; }, 0); expenseData.push(monthExp); } return { labels: months, revenue: revenueData, expenses: expenseData }; }
+
+    function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
+    
+    async function confirmPay() { 
+        let tid = document.getElementById('pay-tenant-id').value; 
+        const sel = document.getElementById('pay-tenant-select'); 
+        if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
+        tid = parseInt(tid); 
+        let amt = parseFloat(document.getElementById('pay-amount').value); 
+        
+        if(tid && amt > 0) { 
+            const { error } = await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]);
+            if (error) { showToast("Payment Failed: " + error.message, 'error'); return; }
+            const openInvoices = state.invoices.filter(i => i.tenant_id === tid && i.status !== 'Paid').sort((a,b) => new Date(a.date) - new Date(b.date)); 
+            for(const inv of openInvoices) { 
+                if (amt <= 0) break; 
+                const due = inv.total - (inv.amount_paid || 0); 
+                const pay = Math.min(amt, due); 
+                const newPaid = (inv.amount_paid || 0) + pay; 
+                const newStatus = newPaid >= inv.total ? 'Paid' : 'Unpaid'; 
+                await supabaseClient.from('invoices').update({ amount_paid: newPaid, status: newStatus }).eq('id', inv.id); 
+                amt -= pay; 
+            } 
+            closeModal('modal-pay'); initSystem(); showToast("Payment Recorded & Applied"); 
+        } 
+    }
+    
+    function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
+    
+  function renderFinancials() {
+        const filterVal = document.getElementById('filter-financials').value;
+        const tbody = document.getElementById('table-financials');
+        const sumContainer = document.getElementById('fin-summary-container');
+        const balanceDisplay = document.getElementById('fin-open-bal');
+
+        tbody.innerHTML = '';
+        let transactions = [];
+
+        state.invoices.forEach(inv => {
+            if (filterVal === 'all' || inv.tenant_id == filterVal) {
+                transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.created_at).toLocaleDateString() });
+            }
+        });
+
+        state.payments.forEach(pay => {
+            if (filterVal === 'all' || pay.tenant_id == filterVal) {
+                transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() });
+            }
+        });
+
+        transactions.sort((a, b) => b.sortTime - a.sortTime);
+
+        let totalInvoiced = 0;
+        let totalReceived = 0;
+
+        state.invoices.forEach(inv => { if (filterVal === 'all' || inv.tenant_id == filterVal) { totalInvoiced += (inv.total || 0); } });
+        state.payments.forEach(pay => { if (filterVal === 'all' || pay.tenant_id == filterVal) { totalReceived += (pay.amount || 0); } });
+
+        const totalBalance = totalInvoiced - totalReceived;
+        
+        if (totalBalance < 0) {
+            balanceDisplay.innerText = `-$${Math.abs(totalBalance).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            balanceDisplay.className = "text-xl font-bold text-emerald-600"; 
+        } else {
+            balanceDisplay.innerText = `$${totalBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            balanceDisplay.className = "text-xl font-bold text-slate-800";
+        }
+        
+        sumContainer.classList.remove('hidden-section');
+
+        transactions.forEach(item => {
+            const isInv = item.type === 'invoice';
+            const record = item.data;
+            const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
+            const dateStr = item.displayDate;
+            let rowHtml = '';
+
+            if (isInv) {
+                const balance = (record.total || 0) - (record.amount_paid || 0);
+                const status = balance <= 0.01 ? 'Paid' : 'Unpaid';
+                const statusColor = status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
+                const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
+                rowHtml = `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td><td class="p-5 text-sm text-slate-500">${desc}</td><td class="p-5 text-right font-bold text-slate-800">$${(record.total||0).toLocaleString()}</td><td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${status}</span></td><td class="p-5 text-right"><button class="text-slate-400 hover:text-indigo-600 transition" title="View Details"><i class="fas fa-eye"></i></button></td></tr>`;
+            } else {
+                rowHtml = `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td><td class="p-5 text-sm text-slate-400 italic">Payment Received</td><td class="p-5 text-right font-bold text-emerald-600">+$${(record.amount||0).toLocaleString()}</td><td class="p-5 text-right text-xs text-slate-400">-</td><td class="p-5 text-right text-xs text-slate-400">-</td></tr>`;
+            }
+            tbody.innerHTML += rowHtml;
+        });
+
+        if (transactions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>'; }
+    }
+    
+    function openInvoiceModal() { const s = document.getElementById('inv-tenant'); s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { s.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); document.getElementById('inv-actions-create').classList.remove('hidden-section'); document.getElementById('inv-actions-create').classList.add('flex'); document.getElementById('inv-actions-view').classList.add('hidden-section'); document.getElementById('inv-date').valueAsDate = new Date(); document.getElementById('btn-confirm-inv').disabled = false; openModal('modal-invoice'); logic_invMode('fixed'); }
+    function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
+    function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
+    function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
+    function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
+    function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); }
+    function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
+    function logic_generatePreview() { const tidSelect = document.getElementById('inv-tenant').value; if(!tidSelect) return showToast("Please select a tenant", 'error'); const tid = parseInt(tidSelect); const tenant = state.tenants.find(t => t.id === tid); const date = document.getElementById('inv-date').value; const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); draftInvoice = { tenantId: tid, tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: date, }; setText('prev-name', tenant.name); setText('prev-date', new Date(date).toLocaleDateString()); setText('prev-total-due', `$${currentTotal.toLocaleString()}`); const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = ''; invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); document.getElementById('inv-step-input').classList.add('hidden-section'); document.getElementById('inv-step-preview').classList.remove('hidden-section'); setText('inv-modal-title',"Review Invoice"); }
+    function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
+    async function logic_confirmInvoice() { if(!draftInvoice) return; document.getElementById('btn-confirm-inv').disabled = true; const file = document.getElementById('inv-doc').files[0]; let docUrl = null; if (file) docUrl = await uploadFile(file, 'invoices'); const stripeId = state.settings.stripe_connect_id; if(!stripeId) showToast("Warning: Stripe ID missing in settings.", 'error'); await supabaseClient.from('invoices').insert([{ tenant_id: draftInvoice.tenantId, tenant_name: draftInvoice.tenantName, items: draftInvoice.items, total: draftInvoice.total, date: draftInvoice.date, status: 'Unpaid', landlord_stripe_id: stripeId, doc_url: docUrl }]); closeModal('modal-invoice'); initSystem(); showToast("Invoice Sent"); }
+
+    function updateFileName(inputId, labelId) { const input = document.getElementById(inputId); const label = document.getElementById(labelId); if(input.files && input.files[0]) { label.innerText = input.files[0].name; label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } else { label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File'; label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } }
+    
+function updateFileCount() {
+    const input = document.getElementById('l-img-file');
+    const label = document.getElementById('l-file-count');
+    if (input.files && input.files.length > 0) {
+        label.innerText = `${input.files.length} file(s) selected`;
+    } else {
+        label.innerText = '';
+    }
+}
+
+    function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
+    function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
+    function loadUserProfile() { const savedProfile = localStorage.getItem('kozeyy_profile'); if (savedProfile) { const user = JSON.parse(savedProfile); if(user.role === 'owner') { const nameDisplay = user.username ? user.username : user.name; setText('owner-name-display', nameDisplay); const initialBox = document.getElementById('owner-initials-display'); if(initialBox) initialBox.innerText = user.initials; } } }
 
     loadUserProfile();
     initSystem();
