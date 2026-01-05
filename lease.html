@@ -1,0 +1,141 @@
+<!-- START OF FILE lease.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Lease | Kozeyy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="max-w-4xl w-full">
+        <a href="owner.html?tab=screening" class="inline-flex items-center text-slate-500 font-bold hover:text-indigo-600 mb-8 transition"><i class="fas fa-arrow-left mr-2"></i> Back to Dashboard</a>
+        
+        <h1 class="text-4xl font-extrabold text-slate-900 mb-2 brand-font">Lease Agreement</h1>
+        <p class="text-xl text-slate-500 mb-10">Prepare lease for <span id="applicant-name" class="text-slate-800 font-bold">Applicant</span></p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            
+            <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 hover:border-indigo-500 transition group relative overflow-hidden">
+                <div class="absolute top-0 right-0 bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-bl-xl">Recommended</div>
+                <div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 text-2xl mb-6">
+                    <i class="fas fa-file-signature"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">LawDepot Wizard</h3>
+                <p class="text-slate-500 mb-8 leading-relaxed">Create a state-specific lease agreement using LawDepot's legal templates. Automatic compliance.</p>
+                <a href="https://www.lawdepot.com" target="_blank" class="block w-full bg-slate-900 text-white text-center py-4 rounded-xl font-bold hover:bg-slate-800 transition">
+                    Go to LawDepot <i class="fas fa-external-link-alt ml-2 text-xs"></i>
+                </a>
+            </div>
+
+            <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 hover:border-emerald-500 transition group">
+                <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 text-2xl mb-6">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-900 mb-2">Upload Lease</h3>
+                <p class="text-slate-500 mb-6 leading-relaxed">Already have a PDF? Upload your signed lease or draft here to save it to the system.</p>
+                
+                <form onsubmit="saveLease(event)" class="space-y-4">
+                    <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition cursor-pointer relative" id="file-container">
+                        <input type="file" id="lease-file" required class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileUpload(this)">
+                        <span class="text-slate-400 font-bold text-sm pointer-events-none" id="file-label">Click to select PDF</span>
+                    </div>
+                    
+                    <input type="date" class="w-full border p-3 rounded-xl bg-slate-50" title="Start Date">
+                    <input type="number" required class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Rent" id="lease-rent">
+
+                    <button class="block w-full bg-emerald-600 text-white text-center py-4 rounded-xl font-bold hover:bg-emerald-700 transition">
+                        Save Lease
+                    </button>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+        
+        let supabaseClient = null;
+        try { if(window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const appId = urlParams.get('id');
+        const appName = urlParams.get('name');
+        const appEmail = urlParams.get('email');
+        const appRent = urlParams.get('rent');
+
+        if(appName) document.getElementById('applicant-name').innerText = appName;
+        if(appRent) document.getElementById('lease-rent').value = appRent;
+
+        function handleFileUpload(input) {
+            if(input.files && input.files[0]) {
+                document.getElementById('file-label').innerText = input.files[0].name;
+                document.getElementById('file-container').classList.add('bg-indigo-50', 'border-indigo-300');
+            }
+        }
+
+        async function saveLease(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const originalText = btn.innerText;
+            
+            const fileInput = document.getElementById('lease-file');
+            if(!fileInput.files || !fileInput.files[0]) { 
+                alert("Please upload the lease document PDF."); 
+                return; 
+            }
+
+            btn.innerText = "Saving...";
+            btn.disabled = true;
+
+            try {
+                // In a real app, upload file to Storage here
+                const rentVal = parseFloat(document.getElementById('lease-rent').value);
+
+                if(supabaseClient && appId) {
+                    // Update status to 'Lease Uploaded' (Owner needs to click "Send" next)
+                    const { error: appError } = await supabaseClient
+                        .from('apps')
+                        .update({ status: 'Lease Uploaded', rent: rentVal })
+                        .eq('id', appId);
+                    
+                    // Create/Update Tenant record with 'Lease Uploaded' status
+                    const { data: existing } = await supabaseClient.from('tenants').select('id').eq('email', appEmail).maybeSingle();
+                    const tenantData = {
+                        owner_id: localStorage.getItem('kozeyy_user_id') || '00000000-0000-0000-0000-000000000001',
+                        name: appName || "New Tenant",
+                        email: appEmail || "tenant@example.com",
+                        rent_amount: rentVal,
+                        status: 'Lease Uploaded'
+                    };
+
+                    if(existing) {
+                        await supabaseClient.from('tenants').update(tenantData).eq('id', existing.id);
+                    } else {
+                        await supabaseClient.from('tenants').insert([tenantData]);
+                    }
+                }
+                
+                // Redirect back to owner screening with query param
+                window.location.href = "owner.html?tab=screening&action=lease_uploaded";
+
+            } catch(err) {
+                console.error(err);
+                alert("Error: " + err.message);
+                btn.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
