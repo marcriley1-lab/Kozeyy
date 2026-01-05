@@ -1,117 +1,198 @@
-<!-- START OF FILE applicantportal.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Status | Kozeyy</title>
+    <title>Application Portal | Kozeyy</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; }
         h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
         .hidden-section { display: none !important; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .hidden-modal { display: none !important; }
+        
+        /* Glass Effect for Dashboard */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col bg-[url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2666&q=80')] bg-cover bg-center bg-fixed bg-no-repeat">
 
-    <nav class="bg-indigo-950 text-white p-4 px-6 flex justify-between items-center shadow-lg">
-        <div class="flex items-center gap-2">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center font-bold">K</div>
-            <span class="text-xl font-bold brand-font">Kozeyy Portal</span>
+    <div class="fixed inset-0 bg-slate-900/50 pointer-events-none z-0"></div>
+
+    <nav class="relative z-10 bg-slate-900/60 backdrop-blur-md border-b border-white/10 text-white p-4 px-6 md:px-10 flex justify-between items-center shadow-2xl">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/30">
+                <i class="fas fa-home"></i>
+            </div>
+            <div class="flex flex-col">
+                <span class="text-xl font-bold brand-font tracking-wide">Kozeyy</span>
+                <span class="text-[10px] uppercase tracking-widest text-indigo-200 font-bold">Application Portal</span>
+            </div>
         </div>
-        <div><span class="text-xs text-indigo-300">Applicant View</span></div>
+        
+        <button onclick="logout()" class="text-xs font-bold bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 rounded-lg transition flex items-center gap-2">
+            <span>Log Out</span> <i class="fas fa-sign-out-alt"></i>
+        </button>
     </nav>
 
-    <main class="flex-1 flex flex-col items-center justify-center p-6">
+    <main class="relative z-10 flex-1 flex flex-col items-center justify-center p-4 md:p-8">
         
-        <!-- Loading State -->
-        <div id="view-loading" class="text-center">
-            <i class="fas fa-circle-notch fa-spin text-4xl text-indigo-600 mb-4"></i>
-            <p class="text-slate-500">Loading your application...</p>
+        <div id="view-loading" class="text-center text-white">
+            <div class="w-16 h-16 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <h2 class="text-2xl font-bold mb-2">Accessing Portal...</h2>
+            <p class="text-indigo-200">Retrieving your application details securely.</p>
         </div>
 
-        <!-- Dashboard View -->
-        <div id="view-dashboard" class="hidden-section w-full max-w-2xl fade-in">
-            <div class="mb-6 flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900 brand-font">Welcome, <span id="dash-name">User</span></h1>
-                    <p class="text-sm text-slate-500">App ID: #<span id="dash-id">...</span></p>
-                </div>
-                <button onclick="logout()" class="text-slate-400 hover:text-slate-600 text-sm font-bold">Log Out</button>
-            </div>
-
-            <!-- Status Banner -->
-            <div id="status-banner" class="bg-white p-8 rounded-3xl shadow-md border-l-8 border-indigo-500 mb-6 relative overflow-hidden">
-                <div class="relative z-10">
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Current Status</p>
-                    <h2 class="text-3xl font-extrabold text-slate-800 brand-font mb-2" id="status-text">Processing</h2>
-                    <p class="text-slate-600" id="status-desc">Your application is currently under review.</p>
-                </div>
-                <div class="absolute right-0 top-0 h-full w-1/3 bg-gradient-to-l from-slate-50 to-transparent"></div>
-            </div>
-
-            <!-- Action Card (Lease Signing) -->
-            <div id="action-card" class="bg-white p-8 rounded-3xl shadow-lg border border-indigo-100 hidden-section">
-                <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-xl flex-shrink-0"><i class="fas fa-file-signature"></i></div>
+        <div id="view-dashboard" class="hidden-section w-full max-w-3xl glass-panel rounded-[2.5rem] shadow-2xl overflow-hidden fade-in">
+            
+            <div class="p-8 md:p-10 border-b border-slate-100 bg-white/50">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-1">Lease Agreement Ready</h3>
-                        <p class="text-slate-500 mb-6 text-sm">The property owner has approved your application and sent a lease. Please sign to finalize.</p>
-                        <button onclick="openSigningModal()" class="bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition w-full md:w-auto">Review & Sign Lease</button>
+                        <p class="text-slate-500 text-sm font-bold uppercase tracking-wider mb-1">Welcome Back</p>
+                        <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 brand-font flex items-center gap-2">
+                            <span id="dash-name">User</span> 
+                            <i class="fas fa-check-circle text-emerald-500 text-xl" title="Verified Applicant"></i>
+                        </h1>
+                    </div>
+                    <div class="bg-slate-100 px-4 py-2 rounded-xl border border-slate-200 text-right">
+                        <p class="text-[10px] text-slate-400 font-bold uppercase">Application ID</p>
+                        <p class="text-lg font-mono font-bold text-slate-700">#<span id="dash-id">...</span></p>
                     </div>
                 </div>
             </div>
-            
-            <!-- Confirmed Tenant View -->
-            <div id="tenant-card" class="bg-gradient-to-br from-emerald-600 to-teal-600 p-8 rounded-3xl shadow-lg text-white hidden-section">
-                <div class="flex items-center gap-4 mb-4">
-                    <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm"><i class="fas fa-home"></i></div>
-                    <h3 class="text-2xl font-bold brand-font">Welcome Home!</h3>
+
+            <div class="p-8 md:p-10 bg-white/60">
+                
+                <div id="status-banner" class="bg-white p-8 rounded-3xl shadow-lg border border-slate-100 mb-8 relative overflow-hidden group transition-all hover:shadow-xl">
+                    <div class="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-center">
+                        <div id="status-icon-bg" class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center flex-shrink-0 text-2xl text-slate-400">
+                            <i id="status-icon" class="fas fa-spinner fa-spin"></i>
+                        </div>
+                        
+                        <div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Current Status</p>
+                            <h2 class="text-3xl font-extrabold text-slate-800 brand-font mb-2" id="status-text">Processing</h2>
+                            <p class="text-slate-600 font-medium leading-relaxed max-w-md" id="status-desc">Your application is currently under review by our leasing team.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-gradient-to-br from-slate-50 to-transparent rounded-full opacity-50"></div>
                 </div>
-                <p class="mb-6 opacity-90">You are now an active tenant. Access the main tenant portal.</p>
-                <a href="tenant.html" class="inline-block bg-white text-emerald-700 px-6 py-3 rounded-xl font-bold shadow-lg">Go to Tenant Portal</a>
+
+                <div id="action-card" class="bg-indigo-600 text-white p-8 rounded-3xl shadow-xl shadow-indigo-200 hidden-section relative overflow-hidden">
+                    <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 justify-between">
+                        <div class="flex items-center gap-5">
+                            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl border border-white/20">
+                                <i class="fas fa-file-signature"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold mb-1">Lease Ready for Signature</h3>
+                                <p class="text-indigo-100 text-sm opacity-90">The owner has approved your application.</p>
+                            </div>
+                        </div>
+                        <button onclick="openSigningModal()" class="bg-white text-indigo-700 px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-indigo-50 hover:scale-105 transition w-full md:w-auto flex items-center justify-center gap-2">
+                            <span>Review Lease</span> <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="tenant-card" class="bg-gradient-to-br from-emerald-500 to-teal-600 p-8 rounded-3xl shadow-xl shadow-emerald-200 text-white hidden-section relative overflow-hidden">
+                    <div class="relative z-10 text-center py-4">
+                        <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm mx-auto mb-6 text-3xl shadow-inner">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <h3 class="text-3xl font-bold brand-font mb-2">Welcome Home!</h3>
+                        <p class="mb-8 text-emerald-50 font-medium text-lg">You are now an active tenant. Access your dashboard to pay rent and view details.</p>
+                        <a href="tenant.html" class="inline-block bg-white text-emerald-700 px-8 py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-50 transition transform hover:-translate-y-1">
+                            Go to Tenant Portal
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="bg-slate-50 border-t border-slate-200 p-6 text-center">
+                <p class="text-xs text-slate-400 font-medium">Need help? Contact support at <span class="text-indigo-500">help@kozeyy.com</span></p>
             </div>
         </div>
     </main>
 
-    <!-- Signing Modal -->
-    <div id="modal-sign" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white w-full max-w-2xl h-[80vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
-            <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-bold text-slate-700">Lease Agreement</h3>
-                <button onclick="closeSigningModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+    <div id="modal-sign" class="hidden-section fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center backdrop-blur-md p-4 fade-in">
+        <div class="bg-white w-full max-w-3xl h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/20">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-700">Lease Agreement Review</h3>
+                </div>
+                <button onclick="closeSigningModal()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 transition text-slate-400 hover:text-slate-600">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="flex-1 bg-slate-200 p-8 overflow-y-auto">
-                <div class="bg-white min-h-full p-8 shadow-sm mx-auto max-w-lg">
-                    <h2 class="text-center font-serif font-bold text-2xl mb-8">RESIDENTIAL LEASE AGREEMENT</h2>
-                    <p class="mb-4 text-xs text-slate-400">[... PDF Placeholder Content ...]</p>
-                    <div class="space-y-4 text-slate-600 text-sm leading-relaxed">
-                        <p>This Lease Agreement is made between <strong>Kozeyy Mgmt</strong> (Landlord) and <strong id="lease-name">Tenant</strong>.</p>
-                        <p>The Tenant agrees to pay rent in the amount of <strong id="lease-rent">$0.00</strong> per month.</p>
-                        <p class="h-64 bg-slate-50 border border-dashed rounded flex items-center justify-center text-slate-300">Legal Text Placeholder...</p>
+            
+            <div class="flex-1 bg-slate-100 p-4 md:p-8 overflow-y-auto">
+                <div class="bg-white min-h-full p-8 md:p-12 shadow-sm mx-auto max-w-2xl rounded-xl border border-slate-200">
+                    <h2 class="text-center font-serif font-bold text-3xl mb-1 text-slate-900">RESIDENTIAL LEASE AGREEMENT</h2>
+                    <p class="text-center text-slate-400 text-xs uppercase tracking-widest mb-10">State of Georgia</p>
+                    
+                    <div class="space-y-6 text-slate-700 text-sm leading-relaxed font-serif">
+                        <p>This Lease Agreement (the "Agreement") is made and entered into on this day by and between <strong>Kozeyy Property Management</strong> ("Landlord") and <strong id="lease-name" class="bg-yellow-100 px-1">Tenant Name</strong> ("Tenant").</p>
+                        
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 my-6 font-sans">
+                            <h4 class="font-bold text-slate-900 mb-4 border-b pb-2">Lease Summary</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><p class="text-xs text-slate-400 uppercase font-bold">Monthly Rent</p><p class="font-bold text-lg text-slate-800" id="lease-rent">$0.00</p></div>
+                                <div><p class="text-xs text-slate-400 uppercase font-bold">Lease Term</p><p class="font-bold text-lg text-slate-800">12 Months</p></div>
+                                <div><p class="text-xs text-slate-400 uppercase font-bold">Security Deposit</p><p class="font-bold text-lg text-slate-800">1 Month Rent</p></div>
+                                <div><p class="text-xs text-slate-400 uppercase font-bold">Start Date</p><p class="font-bold text-lg text-slate-800">Immediate</p></div>
+                            </div>
+                        </div>
+
+                        <p><strong>1. PREMISES.</strong> Landlord hereby leases to Tenant and Tenant hereby leases from Landlord the premises described in the application.</p>
+                        <p><strong>2. RENT.</strong> Tenant agrees to pay the Monthly Rent on the 1st day of each month.</p>
+                        <p><strong>3. UTILITIES.</strong> Tenant shall be responsible for all utilities and services connection to the Premises.</p>
+                        
+                        <div class="h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 my-8">
+                            <i class="fas fa-signature text-2xl mb-2 opacity-50"></i>
+                            <span class="text-xs font-bold uppercase">Digital Signature Required Below</span>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t bg-white flex justify-end gap-3">
-                <button onclick="closeSigningModal()" class="px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-50">Cancel</button>
-                <button onclick="signLease()" class="bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-700">Digital Sign & Submit</button>
+            
+            <div class="p-5 border-t bg-white flex justify-between items-center gap-4">
+                <div class="hidden md:block text-xs text-slate-400 font-medium">
+                    <i class="fas fa-lock text-emerald-500 mr-1"></i> Document secured by Kozeyy Sign™
+                </div>
+                <div class="flex gap-3 w-full md:w-auto">
+                    <button onclick="closeSigningModal()" class="flex-1 md:flex-none px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition">Cancel</button>
+                    <button onclick="signLease()" class="flex-1 md:flex-none bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition flex items-center justify-center gap-2">
+                        <i class="fas fa-pen-nib"></i> Sign Agreement
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Platform Modal -->
-    <div id="platform-modal" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center">
-            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl"><i class="fas fa-info-circle"></i></div>
-            <h3 class="text-lg font-bold mb-2 text-slate-900" id="modal-title">Info</h3>
-            <p class="text-sm text-slate-500 mb-6" id="modal-msg">Message.</p>
-            <button onclick="closeModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition">Okay</button>
+    <div id="platform-modal" class="hidden-modal fixed inset-0 bg-slate-900/80 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center transform scale-100 transition-all">
+            <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-6 text-2xl animate-bounce">
+                <i class="fas fa-check"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-2 text-slate-900 brand-font" id="modal-title">Info</h3>
+            <p class="text-slate-500 mb-8 leading-relaxed" id="modal-msg">Message.</p>
+            <button onclick="closeModal()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg transition">Got it, thanks!</button>
         </div>
     </div>
 
@@ -127,21 +208,24 @@
         window.onload = async function() {
             if(!userId) { window.location.href = 'login.html'; return; }
             await fetchApplication();
-            // Poll for status updates every 5 seconds
             setInterval(fetchApplication, 5000);
         };
 
         async function fetchApplication() {
             if(!supabaseClient) return;
-            // Get app where tenant_id matches locally saved ID (ensure correct column name in DB)
             const { data, error } = await supabaseClient.from('apps').select('*').eq('user_id', userId).order('created_at', {ascending:false}).limit(1).maybeSingle();
             
             if(data) {
                 currentUserApp = data;
                 renderDashboard();
             } else {
-                // If no app found, but user logged in, maybe direct to listings
-                document.getElementById('view-loading').innerHTML = '<p>No active application found.</p><a href="index.html" class="text-blue-600">Browse Listings</a>';
+                document.getElementById('view-loading').innerHTML = `
+                    <div class="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 inline-block">
+                        <i class="fas fa-search text-4xl text-white/50 mb-4"></i>
+                        <h2 class="text-xl font-bold text-white mb-2">No Application Found</h2>
+                        <p class="text-indigo-200 mb-6">We couldn't find an active application linked to this device.</p>
+                        <a href="index.html" class="bg-white text-indigo-900 px-6 py-3 rounded-xl font-bold hover:bg-indigo-50 transition">Browse Listings</a>
+                    </div>`;
             }
         }
 
@@ -152,12 +236,19 @@
             document.getElementById('dash-name').innerText = currentUserApp.name;
             document.getElementById('dash-id').innerText = currentUserApp.id;
             
-            document.getElementById('lease-name').innerText = currentUserApp.name;
-            document.getElementById('lease-rent').innerText = `$${currentUserApp.rent}`;
+            // Lease Modal Values
+            const leaseName = document.getElementById('lease-name');
+            if(leaseName) leaseName.innerText = currentUserApp.name;
+            
+            const leaseRent = document.getElementById('lease-rent');
+            if(leaseRent) leaseRent.innerText = `$${parseInt(currentUserApp.rent).toLocaleString()}`;
 
             const banner = document.getElementById('status-banner');
             const statusText = document.getElementById('status-text');
             const statusDesc = document.getElementById('status-desc');
+            const statusIcon = document.getElementById('status-icon');
+            const statusIconBg = document.getElementById('status-icon-bg');
+            
             const actionCard = document.getElementById('action-card');
             const tenantCard = document.getElementById('tenant-card');
 
@@ -168,35 +259,42 @@
 
             switch(currentUserApp.status) {
                 case 'Pending':
+                case 'Unpaid':
+                case 'Paid':
                     statusText.innerText = "Under Review";
                     statusText.className = "text-3xl font-extrabold text-slate-800 brand-font mb-2";
-                    statusDesc.innerText = "The property owner is currently reviewing your application.";
-                    banner.className = "bg-white p-8 rounded-3xl shadow-md border-l-8 border-slate-300 mb-6 relative overflow-hidden";
+                    statusDesc.innerText = "The property owner is currently reviewing your application details and background check.";
+                    statusIcon.className = "fas fa-sync fa-spin";
+                    statusIconBg.className = "w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
                     break;
                 case 'Approved':
                 case 'Lease Uploaded':
-                    statusText.innerText = "Application Approved!";
+                    statusText.innerText = "Approved!";
                     statusText.className = "text-3xl font-extrabold text-emerald-600 brand-font mb-2";
-                    statusDesc.innerText = "Congratulations! You have been approved. Waiting for owner to send lease.";
-                    banner.className = "bg-white p-8 rounded-3xl shadow-md border-l-8 border-emerald-500 mb-6 relative overflow-hidden";
+                    statusDesc.innerText = "Congratulations! Your application has been approved. Please wait while the owner prepares your lease.";
+                    statusIcon.className = "fas fa-check";
+                    statusIconBg.className = "w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
                     break;
                 case 'Lease Sent':
                     statusText.innerText = "Action Required";
                     statusText.className = "text-3xl font-extrabold text-indigo-600 brand-font mb-2";
-                    statusDesc.innerText = "A lease agreement has been sent to you. Please review and sign.";
-                    banner.className = "bg-white p-8 rounded-3xl shadow-md border-l-8 border-indigo-500 mb-6 relative overflow-hidden";
+                    statusDesc.innerText = "A lease agreement has been sent to you. Please review and sign to finalize your move-in.";
+                    statusIcon.className = "fas fa-exclamation";
+                    statusIconBg.className = "w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl animate-pulse";
                     actionCard.classList.remove('hidden-section');
                     break;
                 case 'Completed':
                 case 'Active':
-                    // Auto Redirect to Tenant Portal
-                    window.location.href = "tenant.html";
+                    // Hide main banner, show tenant card
+                    banner.classList.add('hidden-section');
+                    tenantCard.classList.remove('hidden-section');
                     break;
                 case 'Deny':
-                    statusText.innerText = "Application Declined";
+                    statusText.innerText = "Declined";
                     statusText.className = "text-3xl font-extrabold text-rose-600 brand-font mb-2";
-                    statusDesc.innerText = "We are unable to proceed with your application at this time.";
-                    banner.className = "bg-white p-8 rounded-3xl shadow-md border-l-8 border-rose-500 mb-6 relative overflow-hidden";
+                    statusDesc.innerText = "We are unable to proceed with your application at this time. An email with more details has been sent.";
+                    statusIcon.className = "fas fa-times";
+                    statusIconBg.className = "w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
                     break;
             }
         }
@@ -212,16 +310,14 @@
         }
 
         async function signLease() {
-            // No browser confirm, use logic directly or assume modal is the confirmation
             closeSigningModal();
-            showModal("Success", "Lease Signed! We have notified the owner. Please wait for them to finalize the process.");
-            
-            // In a real app, update DB status to "Signed" here. 
-            // For now, we wait for owner to "Finalize" which turns it Active.
+            // Optimistic UI Update - In a real app, this would be a DB call
+            showModal("Signature Received!", "You have successfully signed the lease. We have notified the owner to counter-sign and finalize.");
+            // Ideally: update status to 'Signed' in DB here
         }
 
         function logout() {
-            localStorage.clear();
+            localStorage.removeItem('kozeyy_user_id'); // Only clear ID, not all (preserve listing state if needed)
             window.location.href = 'index.html';
         }
 
@@ -235,5 +331,4 @@
         }
     </script>
 </body>
-
 </html>
