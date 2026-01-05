@@ -106,10 +106,10 @@
             <div class="flex items-center gap-4 md:gap-6">
                 <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
                     <div class="text-right hidden md:block">
-                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">James Dalton</p>
+                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Landlord</p>
                         <p class="text-xs text-slate-500">Property Owner</p>
                     </div>
-                    <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font" id="owner-initials-display">JD</div>
+                    <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font" id="owner-initials-display">LL</div>
                 </div>
             </div>
         </header>
@@ -348,7 +348,6 @@
         </div>
     </main>
 
-    <!-- Generic Platform Confirmation Modal (replaces browser confirm) -->
     <div id="modal-platform-confirm" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center">
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
@@ -460,43 +459,41 @@
         </div>
     </div>
 
-    <!-- Modal Listing -->
-<div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-    <div class="bg-white p-8 rounded-3xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-        <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
-        <h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Property Listing</h3>
-        <form onsubmit="act_saveListing(event)" class="space-y-4">
-            <input id="l-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address" required>
-            <div class="grid grid-cols-2 gap-4">
-                <input id="l-price" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Price" required>
-                <input id="l-sqft" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Sq Ft">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-                <input id="l-beds" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Beds">
-                <input id="l-baths" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Baths">
-            </div>
-            <textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24" placeholder="Description"></textarea>
-            <input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities (comma separated)">
-            
-            <!-- NEW CONTACT FIELD -->
-            <input id="l-contact" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Owner Contact (Email or Phone)">
-            
-            <div class="mt-2">
-    <label class="block text-xs font-bold text-slate-500 mb-1">Listing Images (Select Multiple)</label>
-    <div class="flex items-center gap-2">
-        <label for="l-img-file" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-300 w-full justify-center">
-            <i class="fas fa-camera"></i> <span id="l-img-label">Upload Photos</span>
-        </label>
-        <input type="file" id="l-img-file" class="hidden" accept=".jpg, .jpeg, .png, .webp" multiple onchange="updateFileCount()">
-    </div>
-    <p class="text-[10px] text-slate-400 mt-1 text-center" id="l-file-count"></p>
-</div>
+    <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Property Listing</h3>
+            <form onsubmit="act_saveListing(event)" class="space-y-4">
+                <input id="l-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address" required>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="l-price" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Price" required>
+                    <input id="l-sqft" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Sq Ft">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="l-beds" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Beds">
+                    <input id="l-baths" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Baths">
+                </div>
+                <textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24" placeholder="Description"></textarea>
+                <input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities (comma separated)">
+                
+                <input id="l-contact" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Owner Contact (Email or Phone)">
+                
+                <div class="mt-2">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Listing Images</label>
+                    <div class="flex items-center gap-2">
+                        <label for="l-img-file" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-300 w-full justify-center">
+                            <i class="fas fa-camera"></i> <span id="l-img-label">Upload Photos</span>
+                        </label>
+                        <input type="file" id="l-img-file" class="hidden" accept=".jpg, .jpeg, .png, .webp" multiple onchange="updateFileCount()">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1 text-center" id="l-file-count"></p>
+                </div>
 
-            <input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
-            <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-indigo-700 transition" id="btn-save-listing">Post Listing</button>
-        </form>
+                <input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
+                <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-indigo-700 transition" id="btn-save-listing">Post Listing</button>
+            </form>
+        </div>
     </div>
-</div>
 
     <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
@@ -530,20 +527,6 @@
                         <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
                     </div>
 
-                    <div id="inv-recurring-options" class="p-4 bg-slate-50 rounded-xl border border-slate-200 hidden-section">
-                        <label class="flex items-center gap-2 mb-3 cursor-pointer">
-                            <input type="checkbox" id="inv-is-recurring" class="w-4 h-4 text-emerald-600 rounded">
-                            <span class="font-bold text-sm text-slate-700">Recurring Invoice?</span>
-                        </label>
-                        <div id="inv-rec-details" class="hidden-section space-y-3">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div><label class="text-xs text-slate-500 block">Send Day (1-31)</label><input type="number" id="inv-rec-day" min="1" max="31" value="1" class="w-full border p-2 rounded-lg"></div>
-                                <div><label class="text-xs text-slate-500 block">End Date</label><input type="date" id="inv-rec-end" class="w-full border p-2 rounded-lg"></div>
-                            </div>
-                            <p class="text-[10px] text-slate-400">Invoice will automatically generate each month.</p>
-                        </div>
-                    </div>
-
                     <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font hover:bg-indigo-700 transition">Preview Invoice</button>
                 </form>
             </div>
@@ -564,25 +547,13 @@
                     
                     <div class="space-y-4">
                         <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
-                            <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Previous Balance</span><span id="prev-bal-amt">$0.00</span></div>
-                            <div class="flex justify-between text-xs text-emerald-600 mb-1"><span>Payments Received</span><span id="prev-pay-amt">-$0.00</span></div>
-                            <div class="border-t border-slate-200 my-1"></div>
-                            <div class="flex justify-between text-xs font-bold text-slate-700"><span>Forward Balance</span><span id="prev-fwd-amt">$0.00</span></div>
+                            <div class="flex justify-between text-xs font-bold text-slate-700"><span>Total Amount</span><span id="prev-total-due">$0.00</span></div>
                         </div>
 
                         <table class="w-full text-sm text-left">
                             <thead class="text-xs text-slate-400 uppercase border-b"><tr><th class="py-2">Description</th><th class="py-2 text-right">Amount</th></tr></thead>
                             <tbody id="prev-items-body" class="text-slate-700"></tbody>
                         </table>
-                        
-                        <div id="prev-attachment" class="hidden-section mt-2 text-xs text-slate-500 flex items-center gap-2">
-                             <i class="fas fa-paperclip text-indigo-500"></i> <span>Attachment Included</span>
-                        </div>
-                        
-                        <div class="border-t-2 border-slate-800 pt-3 mt-4 flex justify-between items-center">
-                            <span class="font-bold text-lg brand-font">Total Due</span>
-                            <span class="font-bold text-2xl text-indigo-700 brand-font" id="prev-total-due">$0.00</span>
-                        </div>
                     </div>
                 </div>
                 
@@ -689,6 +660,11 @@
                     <button onclick="act_screenDecision('Conditional')" class="bg-amber-400 text-white py-3 rounded-xl font-bold text-sm shadow">Conditional</button>
                     <button onclick="act_screenDecision('Deny')" class="bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow">Deny</button>
                 </div>
+                
+                <div id="sd-email-option" class="hidden-section text-center p-4 bg-slate-50 rounded-xl">
+                    <p class="text-sm text-slate-500 mb-2">Applicant Approved.</p>
+                    <button onclick="act_initiateSendLease(currentAppId)" class="text-indigo-600 font-bold text-sm hover:underline">Proceed to Lease</button>
+                </div>
             </div>
         </div>
     </div>
@@ -756,30 +732,46 @@
     }
 
     async function fetchData() {
+        // --- MULTI-TENANCY FILTERING ---
+        // Get the logged-in owner ID to ensure data isolation
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        if(!ownerId) {
+            console.warn("No owner ID found. Redirecting to login.");
+            window.location.href = 'login.html';
+            return;
+        }
+
         const [t, l, i, p, e, m, msg, s, a] = await Promise.all([
-            supabaseClient.from('tenants').select('*'),
-            supabaseClient.from('listings').select('*'),
-            supabaseClient.from('invoices').select('*'),
+            supabaseClient.from('tenants').select('*').eq('owner_id', ownerId), // Filtered
+            supabaseClient.from('listings').select('*').eq('owner_id', ownerId), // Filtered
+            supabaseClient.from('invoices').select('*'), // (Invoices/Payments filtered in memory by Tenant ID below)
             supabaseClient.from('payments').select('*'),
-            supabaseClient.from('expenses').select('*'),
+            supabaseClient.from('expenses').select('*').eq('owner_id', ownerId), // Filtered
             supabaseClient.from('maintenance').select('*'),
             supabaseClient.from('msgs').select('*'),
-            supabaseClient.from('settings').select('*').single(),
-            supabaseClient.from('apps').select('*')
+            supabaseClient.from('settings').select('*').eq('owner_id', ownerId).maybeSingle(), // Filtered
+            supabaseClient.from('apps').select('*').eq('owner_id', ownerId) // Filtered
         ]);
 
         state.tenants = t.data || [];
         state.listings = l.data || [];
-        state.invoices = i.data || [];
-        state.payments = p.data || [];
         state.expenses = e.data || [];
-        state.maint = m.data || [];
-        state.settings = s.data || { }; // Default empty if missing
+        state.settings = s.data || {};
         state.apps = a.data || [];
+
+        // --- ASSOCIATION FILTERING ---
+        // Since Maintenance, Invoices, and Messages are linked to Tenants, 
+        // we only keep records that match the Tenants we just fetched.
+        const myTenantIds = new Set(state.tenants.map(tn => tn.id));
+
+        state.invoices = (i.data || []).filter(x => myTenantIds.has(x.tenant_id));
+        state.payments = (p.data || []).filter(x => myTenantIds.has(x.tenant_id));
+        state.maint = (m.data || []).filter(x => myTenantIds.has(x.tenant_id));
         
+        // Messages: Keep if from my tenant OR from me (Owner) to my tenant
         const serverMsgs = msg.data || [];
-        serverMsgs.forEach(x => { if(locallyReadMsgIds.has(String(x.id))) x.read_at = new Date().toISOString(); });
-        state.msgs = serverMsgs;
+        state.msgs = serverMsgs.filter(x => myTenantIds.has(x.tenant_id));
+        state.msgs.forEach(x => { if(locallyReadMsgIds.has(String(x.id))) x.read_at = new Date().toISOString(); });
 
         state.notifications.messages = state.msgs.filter(x => x.from === 'Tenant' && !x.read_at).length;
         state.notifications.maintenance = state.maint.filter(x => x.status === 'Active' && !viewedMaintIds.has(String(x.id))).length;
@@ -858,8 +850,7 @@
             if(grid) {
                 grid.innerHTML = '';
                 state.listings.forEach(l => {
-                    // Use uploaded image or fallback
-                    const displayImg = l.image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994';
+                    const displayImg = (l.images && l.images.length > 0) ? l.images[0] : (l.image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994');
                     grid.innerHTML += `
                     <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                         <div class="h-32 bg-slate-200 relative">
@@ -880,7 +871,7 @@
             lastRenderedState.listings = listingHash;
         }
 
-        // --- UPDATED SCREENING RENDER LOGIC ---
+        // Screening
         const screeningHash = JSON.stringify(state.apps);
         if(screeningHash !== lastRenderedState.screening) {
             const tbody = document.getElementById('table-screening');
@@ -892,13 +883,10 @@
                     let actionButton = '';
                     const status = app.status || 'Pending';
                     
-                    // Workflow Logic
                     if(status === 'Approved') {
-                        // Confirmed Approval -> Next step: Upload Lease
                         actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700 block text-center w-full md:w-auto">Upload Lease</a>`;
                     } 
                     else if (status === 'Lease Uploaded') {
-                        // Lease Saved -> Next step: Send Lease (Show File Icon)
                         actionButton = `
                         <div class="flex items-center justify-end gap-2">
                             <i class="fas fa-file-pdf text-slate-400 text-lg" title="Lease Attached"></i>
@@ -906,7 +894,6 @@
                         </div>`;
                     } 
                     else if (status === 'Lease Sent') {
-                        // Lease Sent -> Next step: Finalize
                         actionButton = `<button onclick="act_initiateFinalize(${app.id})" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-purple-700">Finalize</button>`;
                     } 
                     else if (status === 'Completed' || status === 'Active') {
@@ -916,7 +903,6 @@
                         actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
                     } 
                     else {
-                        // Default Pending
                         actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm">Review</button>`;
                     }
 
@@ -946,6 +932,7 @@
             lastRenderedState.screening = screeningHash;
         }
 
+        // Maintenance
         const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
         if(maintHash !== lastRenderedState.maint) {
             const activeList = document.getElementById('list-maint-active'); 
@@ -971,6 +958,7 @@
         if(currentChatId) renderMessages();
         if(activeTab === 'messages') renderChatList();
 
+        // Expenses
         const expHash = JSON.stringify(state.expenses);
         if(expHash !== lastRenderedState.expenses) {
             const exBody = document.getElementById('table-expenses'); 
@@ -978,7 +966,7 @@
                 exBody.innerHTML = '';
                 const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
                 let dEx = state.expenses;
-                if (fid !== 'all') dEx = dEx.filter(x => x.property_address === fid); // UPDATED to property_address
+                if (fid !== 'all') dEx = dEx.filter(x => x.property_address === fid);
                 dEx.forEach(x => { 
                     const fileLink = x.receipt_url ? `<a href="${x.receipt_url}" target="_blank" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-paperclip"></i> View</a>` : '-';
                     exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.property_address || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.category}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${fileLink}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
@@ -1049,22 +1037,12 @@
         promptCallback = null;
     }
 
-  // --- FIX: VIEW PUBLIC LISTING LINK ---
+  // --- VIEW PUBLIC LISTING LINK ---
     function showShareModal(id) {
-        // 1. Get the current folder path (removes 'owner.html' from URL)
-        // This ensures it works whether you are on localhost or a real domain
         let currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
-        
-        // 2. Construct link to index.html with specific parameters
-        // page=rentals -> Opens the Rentals view
-        // highlight=id -> Scrolls to the specific card
         const url = `${currentPath}/index.html?page=rentals&highlight=${id}`;
-        
-        // 3. Update the input field (for copying) and the button (for clicking)
         document.getElementById('share-link-input').value = url;
         document.getElementById('public-link-btn').href = url;
-        
-        // 4. Open the modal
         openModal('modal-share-listing');
     }
 
@@ -1242,7 +1220,6 @@
         setText('btn-save-listing', "Post Listing");
         setText('btn-save-expense', "Save");
 
-        // Added 'l-contact' to the list of IDs to clear
         ['ex-id', 'ex-amount', 'ex-vendor', 'ex-date', 'ex-doc',
          't-id', 't-name', 't-email', 't-phone', 't-unit', 't-rent', 't-start', 't-end', 't-addr', 't-city', 't-state', 't-zip',
          'l-addr', 'l-price', 'l-sqft', 'l-beds', 'l-baths', 'l-desc', 'l-amen', 'l-contact', 'l-date', 'l-img'
@@ -1268,14 +1245,51 @@
     }
     
     // CRUD Functions
-    async function act_saveTenant(e) { e.preventDefault(); const data = { name: document.getElementById('t-name').value, email: document.getElementById('t-email').value, phone: document.getElementById('t-phone').value, unit: document.getElementById('t-unit').value, rent_amount: parseFloat(document.getElementById('t-rent').value)||0, lease_start: document.getElementById('t-start').value||null, lease_end: document.getElementById('t-end').value||null, status: document.getElementById('t-status').value, address: document.getElementById('t-addr').value, city: document.getElementById('t-city').value, state: document.getElementById('t-state').value, zip: document.getElementById('t-zip').value }; if(editTenantId) await supabaseClient.from('tenants').update(data).eq('id', editTenantId); else await supabaseClient.from('tenants').insert([data]); closeModal('modal-tenant'); await fetchData(); renderAll(); }
+    
+    // --- UPDATED SAVE TENANT FUNCTION (WITH OWNER ID) ---
+    async function act_saveTenant(e) { 
+        e.preventDefault(); 
+        
+        // 1. Get the Logged-in Owner ID
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
+
+        const data = { 
+            owner_id: ownerId, // Link tenant to this owner
+            name: document.getElementById('t-name').value, 
+            email: document.getElementById('t-email').value, 
+            phone: document.getElementById('t-phone').value, 
+            unit: document.getElementById('t-unit').value, 
+            rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
+            lease_start: document.getElementById('t-start').value||null, 
+            lease_end: document.getElementById('t-end').value||null, 
+            status: document.getElementById('t-status').value, 
+            address: document.getElementById('t-addr').value, 
+            city: document.getElementById('t-city').value, 
+            state: document.getElementById('t-state').value, 
+            zip: document.getElementById('t-zip').value 
+        }; 
+
+        if(editTenantId) {
+            await supabaseClient.from('tenants').update(data).eq('id', editTenantId); 
+        } else {
+            await supabaseClient.from('tenants').insert([data]); 
+        }
+        
+        closeModal('modal-tenant'); 
+        await fetchData(); 
+        renderAll(); 
+    }
     
     async function act_moveOut(id) {
         openPlatformConfirm("Archive Tenant?", "This will move the tenant to archives and mark the unit as Vacant.", async () => {
             const t = state.tenants.find(x => x.id === id);
             if(!t) return;
             await supabaseClient.from('tenants').update({ status: 'Archived' }).eq('id', id);
-            const newUnit = { name: '(Vacant)', email: '', phone: '', address: t.address, unit: t.unit, city: t.city, state: t.state, zip: t.zip, rent_amount: t.rent_amount, status: 'Vacant', lease_start: null, lease_end: null };
+            const newUnit = { 
+                owner_id: localStorage.getItem('kozeyy_user_id'), // Ensure new vacant unit is also linked
+                name: '(Vacant)', email: '', phone: '', address: t.address, unit: t.unit, city: t.city, state: t.state, zip: t.zip, rent_amount: t.rent_amount, status: 'Vacant', lease_start: null, lease_end: null 
+            };
             await supabaseClient.from('tenants').insert([newUnit]);
             await fetchData(); renderAll(); showToast("Tenant archived and unit marked Vacant");
         });
@@ -1284,101 +1298,97 @@
     function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id === id); setText('modal-tenant-title',"Edit Tenant"); setText('btn-save-tenant',"Update Tenant"); document.getElementById('t-id').value = t.id; document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone||''; document.getElementById('t-unit').value = t.unit||''; document.getElementById('t-rent').value = t.rent_amount; document.getElementById('t-start').value = t.lease_start||''; document.getElementById('t-end').value = t.lease_end||''; document.getElementById('t-addr').value = t.address||''; document.getElementById('t-status').value = t.status; document.getElementById('t-city').value = t.city||''; document.getElementById('t-state').value = t.state||''; document.getElementById('t-zip').value = t.zip||''; openModal('modal-tenant'); }
     async function act_delTenant(id) { openPlatformConfirm("Delete Tenant?", "This cannot be undone.", async () => { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); }); }
     
+    // --- UPDATED SAVE LISTING FUNCTION (WITH OWNER ID) ---
     async function act_saveListing(e) { 
-    e.preventDefault(); 
-    const btn = document.getElementById('btn-save-listing');
-    const originalText = btn.innerText;
-    btn.innerText = "Uploading Images...";
-    btn.disabled = true;
+        e.preventDefault(); 
+        const btn = document.getElementById('btn-save-listing');
+        const originalText = btn.innerText;
+        btn.innerText = "Uploading Images...";
+        btn.disabled = true;
 
-    // 1. Handle Multiple Image Uploads
-    const files = document.getElementById('l-img-file').files;
-    let imageUrls = [];
-    
-    try {
-        if (files && files.length > 0) {
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}_${i}.${fileExt}`; // Unique name per file
-                
-                const { error: uploadError } = await supabaseClient.storage.from('listings').upload(fileName, file);
-                if (uploadError) throw uploadError;
-                
-                const { data } = supabaseClient.storage.from('listings').getPublicUrl(fileName);
-                imageUrls.push(data.publicUrl);
+        const files = document.getElementById('l-img-file').files;
+        let imageUrls = [];
+        
+        try {
+            // Upload Logic
+            if (files && files.length > 0) {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}_${i}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabaseClient.storage.from('listings').upload(fileName, file);
+                    if (uploadError) throw uploadError;
+                    
+                    const { data } = supabaseClient.storage.from('listings').getPublicUrl(fileName);
+                    imageUrls.push(data.publicUrl);
+                }
             }
-        }
 
-        // --- User ID Handling ---
-        let ownerId = localStorage.getItem('kozeyy_user_id');
-        if (!ownerId || ownerId.length < 36) {
-            ownerId = '00000000-0000-0000-0000-000000000001'; 
-            localStorage.setItem('kozeyy_user_id', ownerId);
-        }
+            // Get Owner ID
+            let ownerId = localStorage.getItem('kozeyy_user_id');
+            if (!ownerId) throw new Error("No owner logged in");
 
-        // 2. Prepare Data Object (Saving both 'images' array AND 'image_url' for compatibility)
-        const listingData = { 
-            owner_id: ownerId, 
-            address: document.getElementById('l-addr').value, 
-            price: parseFloat(document.getElementById('l-price').value), 
-            sqft: parseInt(document.getElementById('l-sqft').value), 
-            beds: parseInt(document.getElementById('l-beds').value), 
-            baths: parseFloat(document.getElementById('l-baths').value), 
-            description: document.getElementById('l-desc').value, 
-            amenities: document.getElementById('l-amen').value, 
-            contact_info: document.getElementById('l-contact').value,
-            date_available: document.getElementById('l-date').value,
-            images: imageUrls, // NEW: Save the array
-            image_url: imageUrls.length > 0 ? imageUrls[0] : null // OLD: Save first image as main cover
-        }; 
-        
-        // 3. Send to Supabase
-        let res;
-        if(editListingId) {
-            // If editing, we generally want to append or replace. 
-            // For MVP simplicity, this overwrites images if new ones are selected.
-            if(imageUrls.length === 0) {
-                delete listingData.images;
-                delete listingData.image_url;
+            const listingData = { 
+                owner_id: ownerId, // Link listing to owner
+                address: document.getElementById('l-addr').value, 
+                price: parseFloat(document.getElementById('l-price').value), 
+                sqft: parseInt(document.getElementById('l-sqft').value), 
+                beds: parseInt(document.getElementById('l-beds').value), 
+                baths: parseFloat(document.getElementById('l-baths').value), 
+                description: document.getElementById('l-desc').value, 
+                amenities: document.getElementById('l-amen').value, 
+                contact_info: document.getElementById('l-contact').value,
+                date_available: document.getElementById('l-date').value,
+                images: imageUrls, 
+                image_url: imageUrls.length > 0 ? imageUrls[0] : null
+            }; 
+            
+            if(editListingId) {
+                if(imageUrls.length === 0) { delete listingData.images; delete listingData.image_url; }
+                const { error } = await supabaseClient.from('listings').update(listingData).eq('id', editListingId);
+                if(error) throw error;
+            } else {
+                const { data, error } = await supabaseClient.from('listings').insert([listingData]).select(); 
+                if(error) throw error;
+                if(data && data[0]) showShareModal(data[0].id);
             }
-            res = await supabaseClient.from('listings').update(listingData).eq('id', editListingId).select(); 
-        } else {
-            res = await supabaseClient.from('listings').insert([listingData]).select(); 
-        }
-        
-        if(res.error) throw res.error;
-        
-        // 4. Cleanup
-        closeModal('modal-listing'); 
-        await fetchData(); 
-        renderAll();
-        
-        if(res.data && res.data[0]) {
-            showShareModal(res.data[0].id);
-        } else {
-            showToast("Listing saved!");
-        }
+            
+            closeModal('modal-listing'); 
+            await fetchData(); 
+            renderAll();
+            if(!editListingId) showToast("Listing saved!");
 
-    } catch (err) {
-        console.error(err);
-        showToast("Error: " + err.message, 'error');
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
+        } catch (err) {
+            console.error(err);
+            showToast("Error: " + err.message, 'error');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
     }
-}
     
     function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.address; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.description; document.getElementById('l-amen').value = l.amenities||''; document.getElementById('l-date').value = l.date_available; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
     async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); await fetchData(); renderAll(); }
 
+    // --- UPDATED SAVE EXPENSE FUNCTION (WITH OWNER ID) ---
     async function act_saveExpense(e) { 
         e.preventDefault(); 
+        const ownerId = localStorage.getItem('kozeyy_user_id');
         const file = document.getElementById('ex-doc').files[0];
         let docUrl = null;
         if (file) docUrl = await uploadFile(file, 'receipts'); 
         
-        const data = { date: document.getElementById('ex-date').value, vendor: document.getElementById('ex-vendor').value, category: document.getElementById('ex-cat').value, property_address: document.getElementById('ex-prop').value, amount: parseFloat(document.getElementById('ex-amount').value)||0, receipt_url: docUrl }; 
+        const data = { 
+            owner_id: ownerId, // Link to owner
+            date: document.getElementById('ex-date').value, 
+            vendor: document.getElementById('ex-vendor').value, 
+            category: document.getElementById('ex-cat').value, 
+            property_address: document.getElementById('ex-prop').value, 
+            amount: parseFloat(document.getElementById('ex-amount').value)||0, 
+            receipt_url: docUrl 
+        }; 
+        
         if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
         else await supabaseClient.from('expenses').insert([data]); 
         
@@ -1433,15 +1443,19 @@
             
             await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', appId);
 
+            // Fetch owner ID again just to be safe
+            const ownerId = localStorage.getItem('kozeyy_user_id');
+
             const existing = state.tenants.find(t => t.email === app.email);
             if(existing) {
-                await supabaseClient.from('tenants').update({ status: 'Active' }).eq('id', existing.id);
+                await supabaseClient.from('tenants').update({ status: 'Active', owner_id: ownerId }).eq('id', existing.id);
             } else {
                 await supabaseClient.from('tenants').insert([{
                     name: app.name,
                     email: app.email,
                     rent_amount: app.rent,
-                    status: 'Active'
+                    status: 'Active',
+                    owner_id: ownerId
                 }]);
             }
             
