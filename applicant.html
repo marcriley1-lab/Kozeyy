@@ -392,40 +392,42 @@
         }
 
         // --- SUBMIT LOGIC (STRIPE INTEGRATED) ---
-     // --- SUBMIT LOGIC (STRIPE INTEGRATED) ---
-        async function submitApplication() {
+    async function submitApplication() {
             clearErrors();
             const btn = document.getElementById('btn-submit');
             
-            // ==========================================================
-            // 🛑 NEW CODE: GENERATE & SAVE USER ID
-            // ==========================================================
+            // 1. Get or Create ID
             let userId = localStorage.getItem('kozeyy_user_id');
             if (!userId) {
-                // Generate a random ID if they don't have one
                 userId = crypto.randomUUID(); 
                 localStorage.setItem('kozeyy_user_id', userId);
             }
-            // ==========================================================
-            
+
             // Gather Data
             const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
             const inputEmail = document.getElementById('inp-email').value;
+            
+            // 🛑 NEW: Capture the phone number
+            const inputPhone = document.getElementById('inp-phone').value;
+
             const inputIncome = parseFloat(document.getElementById('inp-income').value);
             const inputJob = document.getElementById('inp-job').value;
             const mockScore = Math.floor(Math.random() * (820 - 550 + 1) + 550);
 
             const newApp = {
-                // 🛑 NEW FIELD: Link this app to the user ID
-                user_id: userId, 
-                
+                user_id: userId,
                 name: inputName,
+                
+                // 🛑 NEW: Add these two lines to save them to Supabase
+                email: inputEmail,
+                phone: inputPhone,
+
                 score: mockScore,
                 income: inputIncome,
                 listing_id: currentListingId ? parseInt(currentListingId) : null,
                 rent: selectedProp ? parseInt(selectedProp.price) : 0,
                 job: inputJob || 'Not Listed',
-                status: 'Unpaid', // Start as Unpaid
+                status: 'Unpaid',
                 payment_status: 'Unpaid',
                 evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
                 criminal: document.querySelector('input[name="crim"]:checked').value === 'yes'
@@ -436,12 +438,12 @@
                 
                 if(!supabaseClient) throw new Error("Database connection not ready.");
                 
-                // 1. Save Application to DB first
+                // 1. Save Application to DB
                 const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
                 if (error) throw error;
                 const savedAppId = data[0].id;
 
-                // 2. Call Backend to create Stripe Session
+                // 2. Call Backend for Stripe
                 const response = await fetch(FUNCTION_URL, {
                     method: 'POST',
                     headers: { 
@@ -459,7 +461,6 @@
                 const session = await response.json();
                 if(session.error) throw new Error(session.error);
 
-                // 3. Redirect to Stripe
                 if(session.url) {
                     window.location.href = session.url;
                 } else {
