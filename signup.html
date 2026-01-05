@@ -183,13 +183,25 @@
                     }
 
                 } else {
-                    // Owner (Mock ID for demo)
-                    await new Promise(r => setTimeout(r, 800));
-                    localStorage.setItem('kozeyy_user_id', '00000000-0000-0000-0000-000000000001');
-                    localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
-                    localStorage.setItem('kozeyy_role', 'owner');
-                    window.location.href = 'owner.html';
-                }
+    // 1. Insert into 'owners' table
+    const { data, error } = await supabaseClient.from('owners').insert([{
+        name: `${fname} ${lname}`,
+        email: email,
+        phone: phone
+        // Add other fields if your table has them
+    }])
+    .select()
+    .single(); // This returns the new row with the auto-generated UUID
+
+    if (error) throw error;
+
+    // 2. Use the REAL ID from the database
+    localStorage.setItem('kozeyy_user_id', data.id);
+    
+    localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
+    localStorage.setItem('kozeyy_role', 'owner');
+    window.location.href = 'owner.html';
+}
 
             } catch(err) {
                 console.error(err);
@@ -210,3 +222,4 @@
     </script>
 </body>
 </html>
+
