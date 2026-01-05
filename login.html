@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log In | Kozeyy</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -32,18 +28,14 @@
 </head>
 <body class="bg-image min-h-screen flex items-center justify-center p-4 relative">
 
-    <!-- Soft Overlay for readability -->
     <div class="absolute inset-0 bg-indigo-950/40 backdrop-blur-[2px]"></div>
 
-    <!-- Main Card -->
     <div class="glass-panel w-full max-w-[400px] rounded-3xl shadow-2xl relative z-10 overflow-hidden min-h-[420px]">
         
-        <!-- Decorative Top Bar -->
         <div class="h-2 w-full bg-gradient-to-r from-blue-500 to-indigo-600"></div>
 
         <div class="p-8 md:p-10">
             
-            <!-- Header -->
             <div class="text-center mb-8">
                 <div class="inline-flex items-center justify-center gap-2 mb-4 bg-white/50 p-2 pr-4 rounded-full border border-slate-100 shadow-sm">
                     <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center">
@@ -59,10 +51,8 @@
                 <p class="text-sm text-slate-500 mt-2" id="view-subtitle">Sign in to manage your property</p>
             </div>
 
-            <!-- VIEW 1: LOGIN FORM -->
             <div id="view-login" class="fade-in">
                 
-                <!-- Error Message Container (Hidden by default) -->
                 <div id="login-error" class="hidden-section mb-5 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
                     <i class="fas fa-exclamation-circle text-rose-500 mt-0.5 text-sm"></i>
                     <div>
@@ -97,9 +87,7 @@
                 </form>
             </div>
 
-            <!-- VIEW 2: FORGOT PASSWORD -->
             <div id="view-forgot" class="hidden-section fade-in">
-                <!-- Success Message Container -->
                 <div id="forgot-success" class="hidden-section mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
                     <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-2">
                         <i class="fas fa-check"></i>
@@ -135,7 +123,7 @@
     <script>
         // --- SUPABASE CONFIG ---
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE'.trim();
         
         let supabaseClient = null;
         try {
@@ -145,7 +133,7 @@
         } catch(e) { console.error("Error initializing Supabase:", e); }
 
         // --- STATE ---
-        let failedAttempts = 0; // Track incorrect logins
+        let failedAttempts = 0; 
 
         // --- UI UTILITIES ---
         function showError(title, msg, isActionable = false) {
@@ -156,7 +144,6 @@
             errTitle.innerText = title;
             
             if(isActionable) {
-                // If 3+ failures, inject the link
                 errText.innerHTML = `${msg} <button onclick="switchView('forgot')" class="underline font-bold hover:text-rose-800 ml-1">Reset Password?</button>`;
             } else {
                 errText.innerText = msg;
@@ -164,7 +151,6 @@
 
             errDiv.classList.remove('hidden-section');
             
-            // Shake animation
             errDiv.animate([
                 { transform: 'translateX(0)' },
                 { transform: 'translateX(-4px)' },
@@ -179,8 +165,6 @@
 
         function switchView(view) {
             hideError(); 
-            // Reset attempts when switching manually to Forgot Password, 
-            // but usually we keep it to prevent brute force. For UI purposes, we just hide error.
             document.getElementById('forgot-success').classList.add('hidden-section');
             document.getElementById('form-forgot').classList.remove('hidden-section'); 
 
@@ -206,7 +190,6 @@
 
             hideError(); 
 
-            // UI Loading State
             const originalText = btn.innerHTML;
             btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Checking...`;
             btn.disabled = true;
@@ -216,9 +199,10 @@
                 // 1. CHECK FOR ADMIN (OWNER)
                 if(email === 'admin@kozeyy.com') {
                     if(password === 'admin') {
-                        await new Promise(r => setTimeout(r, 800)); // Fake delay
+                        await new Promise(r => setTimeout(r, 800)); 
                         localStorage.setItem('kozeyy_role', 'owner');
-                        localStorage.setItem('kozeyy_user_id', '1');
+                        // FIXED: Use proper UUID for owner ID
+                        localStorage.setItem('kozeyy_user_id', '00000000-0000-0000-0000-000000000001');
                         window.location.href = 'owner.html';
                         return;
                     } else {
@@ -229,60 +213,68 @@
                 // 2. CHECK FOR TENANT (DATABASE LOOKUP)
                 if(!supabaseClient) throw new Error("Database connection failed.");
 
-                const { data: tenant, error } = await supabaseClient
+                console.log("Checking DB for:", email); 
+                
+                // Use .select().limit(1) to avoid 406 on 0 rows
+                const { data: tenants, error } = await supabaseClient
                     .from('tenants')
                     .select('*')
                     .ilike('email', email)
-                    .single();
+                    .limit(1);
 
-                if (error || !tenant) {
+                if (error) {
+                    console.error("Login DB Error Details:", error);
+                    throw new Error(`System Error: ${error.message} (${error.code})`); 
+                }
+
+                if (!tenants || tenants.length === 0) {
+                    console.log("User not found.");
                     throw new Error("Incorrect email or password.");
                 }
+
+                const tenant = tenants[0];
 
                 // Success
                 localStorage.setItem('kozeyy_role', 'tenant');
                 localStorage.setItem('kozeyy_user_id', tenant.id);
-                window.location.href = 'tenant.html';
+                
+                const pendingListing = localStorage.getItem('pending_application_lid');
+                if(pendingListing) {
+                    window.location.href = `applicant.html?listing_id=${pendingListing}`;
+                } else {
+                    window.location.href = 'tenant.html';
+                }
 
             } catch (err) {
-                failedAttempts++; // Increment failure counter
+                failedAttempts++;
+                console.error("Login Logic Error:", err); 
                 
-                // --- FAILURE LOGIC ---
+                const msg = err.message.includes("System Error") ? err.message : "Incorrect email or password.";
+                
                 if (failedAttempts >= 3) {
-                    // Show "Did you forget?" message with link
                     showError("Having trouble?", "Did you forget your password?", true);
                 } else {
-                    // Show standard error
-                    showError("Login Failed", "Incorrect email or password.", false);
+                    showError("Login Failed", msg, false);
                 }
 
             } finally {
-                // Reset Button
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 btn.classList.remove('opacity-75');
             }
         }
 
-        // --- PASSWORD RECOVERY LOGIC ---
         async function handleForgot(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-forgot');
-            
-            // Reset state if they recover password
             failedAttempts = 0;
-
-            // UI Loading
             const originalText = btn.innerText;
             btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Sending...`;
             btn.disabled = true;
 
-            // Simulate API Call
             setTimeout(() => {
                 btn.innerHTML = originalText;
                 btn.disabled = false;
-                
-                // Show Success State
                 document.getElementById('form-forgot').classList.add('hidden-section');
                 document.getElementById('forgot-success').classList.remove('hidden-section');
             }, 1500);
