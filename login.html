@@ -182,11 +182,12 @@
         }
 
         // --- AUTH LOGIC ---
+        // --- AUTH LOGIC ---
         async function handleLogin(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-login');
             const email = document.getElementById('email').value.trim().toLowerCase();
-            const password = document.getElementById('password').value.trim();
+            const password = document.getElementById('password').value.trim(); // Note: In a real app, verify password hash here
 
             hideError(); 
 
@@ -196,60 +197,74 @@
             btn.classList.add('opacity-75');
 
             try {
-                // 1. CHECK FOR ADMIN (OWNER)
-                if(email === 'admin@kozeyy.com') {
-                    if(password === 'admin') {
-                        await new Promise(r => setTimeout(r, 800)); 
-                        localStorage.setItem('kozeyy_role', 'owner');
-                        // FIXED: Use proper UUID for owner ID
-                        localStorage.setItem('kozeyy_user_id', '00000000-0000-0000-0000-000000000001');
-                        window.location.href = 'owner.html';
-                        return;
-                    } else {
-                        throw new Error("Incorrect password.");
-                    }
-                }
-
-                // 2. CHECK FOR TENANT (DATABASE LOOKUP)
                 if(!supabaseClient) throw new Error("Database connection failed.");
 
                 console.log("Checking DB for:", email); 
                 
-                // Use .select().limit(1) to avoid 406 on 0 rows
-                const { data: tenants, error } = await supabaseClient
+                // ---------------------------------------------------------
+                // 1. CHECK OWNERS TABLE FIRST
+                // ---------------------------------------------------------
+                const { data: owners, error: ownerError } = await supabaseClient
+                    .from('owners')
+                    .select('*')
+                    .ilike('email', email)
+                    .limit(1);
+
+                if (ownerError) console.error("Owner lookup error:", ownerError);
+
+                if (owners && owners.length > 0) {
+                    // OWNER FOUND
+                    const owner = owners[0];
+                    localStorage.setItem('kozeyy_role', 'owner');
+                    localStorage.setItem('kozeyy_user_id', owner.id); // Save the Real UUID
+                    
+                    // Optional: Save profile data for the dashboard header
+                    const profile = { name: owner.name, email: owner.email, initials: owner.name.substring(0,2).toUpperCase() };
+                    localStorage.setItem('kozeyy_profile', JSON.stringify(profile));
+
+                    window.location.href = 'owner.html';
+                    return; // Stop here, we are done
+                }
+
+                // ---------------------------------------------------------
+                // 2. IF NOT OWNER, CHECK TENANTS TABLE
+                // ---------------------------------------------------------
+                const { data: tenants, error: tenantError } = await supabaseClient
                     .from('tenants')
                     .select('*')
                     .ilike('email', email)
                     .limit(1);
 
-                if (error) {
-                    console.error("Login DB Error Details:", error);
-                    throw new Error(`System Error: ${error.message} (${error.code})`); 
+                if (tenantError) {
+                    console.error("Tenant lookup error:", tenantError);
+                    throw new Error("System Error"); 
                 }
 
-                if (!tenants || tenants.length === 0) {
-                    console.log("User not found.");
-                    throw new Error("Incorrect email or password.");
+                if (tenants && tenants.length > 0) {
+                    // TENANT FOUND
+                    const tenant = tenants[0];
+                    localStorage.setItem('kozeyy_role', 'tenant');
+                    localStorage.setItem('kozeyy_user_id', tenant.id);
+                    
+                    const pendingListing = localStorage.getItem('pending_application_lid');
+                    if(pendingListing) {
+                        window.location.href = `applicant.html?listing_id=${pendingListing}`;
+                    } else {
+                        window.location.href = 'tenant.html';
+                    }
+                    return;
                 }
 
-                const tenant = tenants[0];
-
-                // Success
-                localStorage.setItem('kozeyy_role', 'tenant');
-                localStorage.setItem('kozeyy_user_id', tenant.id);
-                
-                const pendingListing = localStorage.getItem('pending_application_lid');
-                if(pendingListing) {
-                    window.location.href = `applicant.html?listing_id=${pendingListing}`;
-                } else {
-                    window.location.href = 'tenant.html';
-                }
+                // ---------------------------------------------------------
+                // 3. NO MATCH FOUND
+                // ---------------------------------------------------------
+                throw new Error("Incorrect email or password.");
 
             } catch (err) {
                 failedAttempts++;
                 console.error("Login Logic Error:", err); 
                 
-                const msg = err.message.includes("System Error") ? err.message : "Incorrect email or password.";
+                const msg = err.message.includes("System Error") ? "System Error" : "Incorrect email or password.";
                 
                 if (failedAttempts >= 3) {
                     showError("Having trouble?", "Did you forget your password?", true);
@@ -282,3 +297,4 @@
     </script>
 </body>
 </html>
+
