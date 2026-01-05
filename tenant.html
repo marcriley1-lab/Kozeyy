@@ -4,15 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Resident Portal | Kozeyy</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Stripe JS -->
     <script src="https://js.stripe.com/v3/"></script>
     
     <style>
@@ -41,7 +36,6 @@
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800 bg-slate-50">
 
-    <!-- DESKTOP SIDEBAR -->
     <aside class="w-64 bg-indigo-950 flex-col transition-all duration-300 hidden md:flex shadow-xl z-20">
         <div class="h-20 flex items-center px-6 border-b border-indigo-900 bg-indigo-950 gap-3">
             <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -86,9 +80,7 @@
         </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col overflow-hidden relative pb-20 md:pb-0 h-[100dvh]">
-        <!-- Desktop Header -->
         <header class="hidden md:flex h-20 bg-white border-b border-slate-200 items-center justify-between px-8 shadow-sm z-10">
             <h2 class="text-xl font-bold text-slate-800 brand-font" id="page-title">Resident Portal</h2>
             <div class="flex items-center gap-6">
@@ -98,7 +90,6 @@
             </div>
         </header>
 
-        <!-- Mobile Header -->
         <header class="md:hidden h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sticky top-0 z-30 flex-none">
             <div class="flex items-center gap-2">
                 <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -113,10 +104,8 @@
             </div>
         </header>
 
-        <!-- Scrollable Content Area -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth no-scrollbar">
             
-            <!-- 1. HOME TAB -->
             <div id="view-home" class="view-section fade-in pb-24">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                     <div>
@@ -157,7 +146,6 @@
                 </div>
             </div>
 
-            <!-- 2. PAYMENTS TAB -->
             <div id="view-payments" class="view-section hidden-section fade-in pb-24">
                 <div class="flex justify-between items-center mb-4">
                     <h1 class="text-2xl font-bold brand-font">Payments</h1>
@@ -169,8 +157,7 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-6">
                     <div class="p-4 border-b border-slate-100 bg-slate-50/50"><h3 class="font-bold text-slate-700">Due Now</h3></div>
                     <div id="unpaid-container" class="divide-y divide-slate-100">
-                        <!-- JS INJECTS HERE -->
-                    </div>
+                        </div>
                 </div>
                 <h2 class="text-lg font-bold mb-3 brand-font text-slate-700">History</h2>
                 <div class="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -182,7 +169,6 @@
                 <div class="md:hidden space-y-3" id="history-mobile"></div>
             </div>
 
-            <!-- 3. MESSAGES TAB -->
             <div id="view-messages" class="view-section hidden-section absolute inset-0 pt-16 pb-20 md:pt-0 md:pb-0 z-0 bg-slate-50 flex flex-col fade-in">
                 <div class="flex flex-col h-full bg-white md:rounded-xl shadow-sm border-0 md:border border-slate-200 overflow-hidden relative">
                     <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 flex justify-between items-center shadow-sm z-10 flex-none">
@@ -190,8 +176,7 @@
                         <span class="text-xs text-emerald-600 bg-emerald-100 px-2 py-1 rounded-full font-bold">Online</span>
                     </div>
                     <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-slate-50 space-y-3">
-                        <!-- JS INJECTS HERE -->
-                    </div>
+                        </div>
                     <div class="p-3 border-t border-slate-200 bg-white flex gap-2 flex-none">
                         <input type="text" id="chat-input" class="flex-1 border border-slate-300 p-3 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Type a message...">
                         <button onclick="sendMessage()" class="bg-indigo-600 text-white w-12 h-12 rounded-full font-bold hover:bg-indigo-700 transition flex items-center justify-center shadow-lg"><i class="fas fa-paper-plane"></i></button>
@@ -199,7 +184,6 @@
                 </div>
             </div>
 
-            <!-- 4. MAINTENANCE TAB -->
             <div id="view-maintenance" class="view-section hidden-section fade-in pb-24">
                 <div class="flex justify-between items-center mb-6">
                     <h1 class="text-2xl font-bold brand-font">Maintenance</h1>
@@ -208,12 +192,10 @@
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                     <div class="p-4 border-b border-slate-100 bg-slate-50/50 font-bold text-slate-700">History</div>
                     <div id="maint-list" class="divide-y divide-slate-100">
-                        <!-- JS INJECTS HERE -->
-                    </div>
+                        </div>
                 </div>
             </div>
 
-            <!-- 5. INSURANCE TAB -->
             <div id="view-insurance" class="view-section hidden-section fade-in pb-24">
                 <h1 class="text-2xl font-bold mb-4 brand-font">Insurance</h1>
                 <div id="insurance-missing" class="space-y-6">
@@ -226,12 +208,21 @@
                         </div>
                     </div>
                     <div class="bg-indigo-950 p-6 rounded-2xl shadow-lg text-white">
-                        <div class="flex items-center gap-2 mb-3"><span class="bg-indigo-500/30 text-indigo-200 text-xs font-bold px-2 py-1 rounded uppercase">Partner</span></div>
-                        <h3 class="text-xl font-bold mb-2 brand-font">Need coverage?</h3>
+                        <h3 class="text-xl font-bold mb-4 brand-font">Need coverage?</h3>
+                        
                         <div class="space-y-3">
-                            <a href="https://www.lemonade.com" target="_blank" class="block w-full bg-[#FF0083] text-white text-center py-3 rounded-xl font-bold hover:bg-[#D5006D] transition">Get Lemonade Quote</a>
-                            <a href="https://www.insurify.com" target="_blank" class="block w-full bg-blue-500 text-white text-center py-3 rounded-xl font-bold hover:bg-blue-600 transition">Compare on Insurify</a>
+                            <a href="https://www.lemonade.com" target="_blank" class="block w-full bg-[#FF0083] text-white text-center py-3 rounded-xl font-bold hover:bg-[#D5006D] transition">
+                                Get Lemonade Quote
+                            </a>
+                            <a href="https://www.insurify.com" target="_blank" class="block w-full bg-blue-500 text-white text-center py-3 rounded-xl font-bold hover:bg-blue-600 transition">
+                                Compare on Insurify
+                            </a>
                         </div>
+
+                        <p class="text-[10px] text-indigo-300 mt-4 text-center opacity-70 leading-tight">
+                            * Disclosure: Kozeyy may receive a commission if you purchase a policy through these links. This helps support our platform.
+                        </p>
+                    </div>
                     </div>
                 </div>
                 <div id="insurance-verified" class="hidden-section bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-l-4 border-l-emerald-500">
@@ -241,7 +232,6 @@
                 </div>
             </div>
 
-            <!-- 6. SETTINGS TAB -->
             <div id="view-settings" class="view-section hidden-section fade-in pb-24">
                 <h1 class="text-2xl font-bold mb-6 brand-font">Account Settings</h1>
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
@@ -289,7 +279,6 @@
         </div>
     </main>
 
-    <!-- MOBILE BOTTOM NAVIGATION -->
     <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-slate-200 flex justify-around py-3 z-40 pb-safe">
         <button onclick="switchTab('home')" id="mob-home" class="flex flex-col items-center gap-1 text-slate-400 mobile-active">
             <i class="fas fa-home text-xl"></i><span class="text-[10px] font-medium">Home</span>
@@ -309,7 +298,6 @@
         </button>
     </nav>
 
-    <!-- Maintenance Modal -->
     <div id="requestModal" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md relative">
             <button onclick="toggleModal('requestModal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
@@ -323,7 +311,6 @@
         </div>
     </div>
 
-    <!-- INVOICE DETAILS MODAL -->
     <div id="invoiceModal" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
             <button onclick="toggleModal('invoiceModal')" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600"><i class="fas fa-times text-xl"></i></button>
@@ -331,7 +318,6 @@
             <p class="text-sm text-slate-500 mb-6" id="inv-date">Oct 24, 2023</p>
             
             <div class="space-y-4">
-                <!-- Balance Summary -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <div class="flex justify-between text-xs text-slate-500 mb-1"><span>Rent / Fees</span><span id="inv-prev-bal">$0.00</span></div>
                     <div class="flex justify-between text-xs text-emerald-600 mb-1"><span>Credits Applied</span><span id="inv-prev-pay">$0.00</span></div>
@@ -339,7 +325,6 @@
                     <div class="flex justify-between text-sm font-bold text-slate-700"><span>Subtotal</span><span id="inv-fwd-bal">$0.00</span></div>
                 </div>
 
-                <!-- Line Items -->
                 <div class="border rounded-xl overflow-hidden">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-slate-50 text-slate-500 text-xs uppercase"><tr><th class="p-3">Description</th><th class="p-3 text-right">Amount</th></tr></thead>
@@ -347,23 +332,23 @@
                     </table>
                 </div>
 
-                <!-- Attachment -->
                 <div id="inv-attachment" class="hidden-section flex items-center gap-2 text-sm text-indigo-600 bg-indigo-50 p-3 rounded-lg border border-indigo-100">
                     <i class="fas fa-paperclip"></i> <span id="inv-doc-name">Document.pdf</span>
                 </div>
                 
-                <!-- Fees Breakdown for Stripe -->
-                <div id="inv-fees-section" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1">
-                     <div class="flex justify-between text-slate-500">
-                         <span>Payment Processing (Stripe)</span>
-                         <span id="inv-stripe-fee">$2.99</span>
+                <div id="inv-fees-section" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
+                     <div class="flex justify-between text-slate-500 font-bold border-b border-slate-200 pb-1">
+                         <span>Payment Options & Fees</span>
+                     </div>
+                     <div class="text-slate-500">
+                        <div class="flex justify-between"><span>• Bank Transfer (ACH)</span> <span>+$2.50</span></div>
+                        <div class="flex justify-between"><span>• Credit/Debit Card</span> <span>+2.9%</span></div>
                      </div>
                 </div>
 
-                <!-- Total -->
                 <div class="flex justify-between items-center pt-2">
-                    <span class="font-bold text-lg text-slate-800">Total Due</span>
-                    <span class="font-extrabold text-2xl text-indigo-700" id="inv-total">$0.00</span>
+                    <span class="font-bold text-lg text-slate-800">Base Amount</span>
+                    <span class="font-extrabold text-2xl text-slate-700" id="inv-total">$0.00</span>
                 </div>
                 
                 <div id="inv-pay-btn-container"></div>
@@ -371,7 +356,6 @@
         </div>
     </div>
 
-    <!-- Processing Modal -->
     <div id="processingModal" class="hidden-section fixed inset-0 bg-slate-900/80 z-[60] flex flex-col items-center justify-center backdrop-blur-sm text-white">
         <div class="loader mb-4 border-t-white"></div>
         <h2 class="text-xl font-bold mb-2">Connecting to Stripe</h2>
@@ -379,6 +363,13 @@
     </div>
 
     <script>
+
+const storedId = localStorage.getItem('kozeyy_user_id');
+const storedRole = localStorage.getItem('kozeyy_role');
+
+if (!storedId || storedRole !== 'tenant') {
+    window.location.href = 'login.html';
+}
         // --- CONFIG ---
         const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
@@ -396,6 +387,12 @@
         const USER_ID = localStorage.getItem('kozeyy_user_id') || 1; 
         
         let globalData = { user: null, invoices: [], msgs: [], maint: [] };
+        // Track IDs that we have read locally using LocalStorage map to survive refreshes and maintain STABLE timestamps
+        // Format: key=id, value=timestamp_string
+        let locallyReadIds = new Map(JSON.parse(localStorage.getItem('kozeyy_read_map') || '[]'));
+        
+        // Track optimistic maintenance requests
+        let optimisticMaint = JSON.parse(localStorage.getItem('kozeyy_opt_maint') || '[]');
         
         // State Tracking for Diffing (Prevent Flashing)
         let lastRenderedState = {
@@ -423,8 +420,47 @@
 
                 globalData.user = u.data || { name: "Guest User", email: "", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
                 globalData.invoices = i.data || [];
-                globalData.msgs = m.data || [];
+                
+                // --- MESSAGE MERGE LOGIC ---
+                const serverMsgs = m.data || [];
+                serverMsgs.forEach(msg => {
+                    if(locallyReadIds.has(msg.id)) {
+                        if(msg.read_at) { 
+                            // Server synced, remove from local storage to keep it clean
+                            locallyReadIds.delete(msg.id);
+                            localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds]));
+                        } else { 
+                            // Server lag, force local read using STABLE timestamp from Map
+                            msg.read_at = locallyReadIds.get(msg.id); 
+                        }
+                    }
+                });
+                globalData.msgs = serverMsgs;
+                
+                // --- MAINTENANCE MERGE LOGIC ---
+                // Start with server data
                 globalData.maint = mt.data || [];
+                
+                // If we have optimistic items, clean up confirmed ones and append pending ones
+                if(optimisticMaint.length > 0) {
+                     const serverDates = new Set(globalData.maint.map(m => m.created_at));
+                     const serverIssues = new Set(globalData.maint.map(m => m.issue));
+                     
+                     // Filter out items that are now on the server
+                     const filteredOptimistic = optimisticMaint.filter(m => {
+                         // Simple check: if exact timestamp OR exact issue description exists, assume synced
+                         return !serverDates.has(m.created_at) && !serverIssues.has(m.issue);
+                     });
+                     
+                     // Update local storage if items were removed (synced)
+                     if(filteredOptimistic.length !== optimisticMaint.length) {
+                         optimisticMaint = filteredOptimistic;
+                         localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
+                     }
+                     
+                     // Add remaining pending items to the view
+                     globalData.maint = [...globalData.maint, ...optimisticMaint];
+                }
             }
 
             const { user, invoices, msgs, maint } = globalData;
@@ -433,22 +469,38 @@
             if(activeTab === 'messages') {
                 const unreadIds = msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
                 if(unreadIds.length > 0) {
-                    // Update DB in background
                     supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
-                    // Immediately mark as read in local memory so badge logic below sees 0 unread
-                    globalData.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
+                    
+                    const now = new Date().toISOString();
+                    let updatedMap = false;
+                    
+                    unreadIds.forEach(id => {
+                        // Only set if not already present to keep timestamp stable
+                        if(!locallyReadIds.has(id)) {
+                             locallyReadIds.set(id, now);
+                             updatedMap = true;
+                        }
+                    });
+                    
+                    if(updatedMap) {
+                        localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds]));
+                    }
+
+                    globalData.msgs.forEach(m => { 
+                        if(unreadIds.includes(m.id)) {
+                            // Apply stable timestamp from map
+                            m.read_at = locallyReadIds.get(m.id);
+                        }
+                    });
                 }
             }
 
             // --- UPDATE NOTIFICATIONS ---
-            // 1. Messages: Check for unread from Owner
             const unreadMsgCount = globalData.msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
-            
-            // Only show badge if unread AND not currently looking at messages
             notifications.messages = unreadMsgCount > 0 && activeTab !== 'messages';
             updateBadge('messages', notifications.messages);
 
-            // 2. Maintenance: Check if status changed
+            // Maintenance: Check if status changed
             const currentMaintHash = JSON.stringify(maint.map(m => ({id: m.id, status: m.status})).sort((a,b)=>a.id-b.id));
             if(lastMaintHash && lastMaintHash !== currentMaintHash) {
                 if(activeTab !== 'maintenance') {
@@ -495,7 +547,7 @@
                 document.getElementById('credit-banner').classList.remove('hidden-section');
             }
 
-            // Payment Logic (Diffing)
+            // Payment Logic
             const currentInvStr = JSON.stringify(invoices);
             if (currentInvStr !== lastRenderedState.invoices) {
                 const unpaid = invoices.filter(i => { const bal = i.total - (i.amount_paid || 0); return bal > 0 && i.status !== 'Paid'; });
@@ -511,7 +563,7 @@
                     uCont.innerHTML = '';
                     unpaid.forEach(i => { 
                         const currentBalance = i.total - (i.amount_paid || 0);
-                        uCont.innerHTML += `<div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4"><div class="w-full md:w-auto"><div class="flex items-center gap-2"><p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p><button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button></div><p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p></div><div class="flex items-center justify-between w-full md:w-auto gap-4"><div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${currentBalance.toLocaleString()}</span></div><button onclick="initStripePayment(${i.id}, ${currentBalance})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2"><span>Pay Now</span><i class="fas fa-lock text-[10px] opacity-70"></i></button></div></div>`; 
+                        uCont.innerHTML += `<div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4"><div class="w-full md:w-auto"><div class="flex items-center gap-2"><p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p><button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button></div><p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p></div><div class="flex items-center justify-between w-full md:w-auto gap-4"><div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${currentBalance.toLocaleString()}</span></div><button onclick="viewInvoice(${i.id})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2"><span>Pay Now</span><i class="fas fa-lock text-[10px] opacity-70"></i></button></div></div>`; 
                     });
                 } else { 
                     badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = "All Paid"; 
@@ -519,7 +571,7 @@
                     uCont.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3"><i class="fas fa-check text-emerald-400 text-xl"></i></div><p class="text-sm font-medium text-slate-600">You're all caught up!</p></div>`;
                 }
 
-                // History (Diffing part of invoices)
+                // History
                 const hBody = document.getElementById('history-body'); const hMob = document.getElementById('history-mobile');
                 hBody.innerHTML = ''; hMob.innerHTML = '';
                 const historyItems = invoices.filter(i => i.status === 'Paid');
@@ -545,26 +597,27 @@
                 } else {
                     maintList.innerHTML = '';
                     const sortedMaint = maint.sort((a,b) => {
+                        // Use created_at instead of date
                         if(a.status === 'Active' && b.status !== 'Active') return -1;
                         if(a.status !== 'Active' && b.status === 'Active') return 1;
-                        return new Date(b.date) - new Date(a.date);
+                        return new Date(b.created_at) - new Date(a.created_at);
                     });
                     sortedMaint.forEach(m => { 
                         const isActive = m.status === 'Active';
                         const statusColor = isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'; 
                         const opacity = isActive ? '' : 'opacity-70';
-                        const notes = m.notes ? `<div class="mt-2 bg-slate-50 p-2 rounded text-xs text-slate-600 italic border-l-2 border-slate-300">" ${m.notes} "</div>` : ''; 
+                        // m.issue holds the summary/title
+                        const displayDate = m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Just now';
                         
                         maintList.innerHTML += `
                         <div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100 ${opacity}">
                             <div class="flex justify-between items-start">
                                 <div class="flex items-center gap-3">
                                     <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-${isActive ? 'wrench' : 'check'}"></i></div>
-                                    <div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${new Date(m.date).toLocaleDateString()}</p></div>
+                                    <div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${displayDate}</p></div>
                                 </div>
                                 <span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span>
                             </div>
-                            ${notes}
                         </div>`; 
                     });
                 }
@@ -572,7 +625,6 @@
             }
             
             // --- MESSAGES RENDER ---
-            // Only re-render DOM if we are in the messages tab to save performance
             if (activeTab === 'messages') renderMessages();
         }
 
@@ -613,9 +665,8 @@
             if(t === 'messages') {
                  notifications.messages = false;
                  updateBadge('messages', false);
-                 // We don't mark DB read here immediately, we let the render() loop handle it on next pass or call render() now
-                 render(false); // Force check to mark read
-                 renderMessages(); // Ensure immediate view update
+                 render(false);
+                 renderMessages();
             }
             if(t === 'maintenance') {
                 notifications.maintenance = false;
@@ -651,7 +702,6 @@
             const chatBox = document.getElementById('chat-messages'); 
             if(!chatBox) return;
             
-            // Diffing for chat to prevent scroll jumps
             const msgs = globalData.msgs.sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
             const msgHash = JSON.stringify(msgs);
             if(msgHash === lastRenderedState.msgs) return;
@@ -678,17 +728,32 @@
             const desc = document.getElementById('m-desc').value;
             const cat = document.getElementById('m-cat').value;
             if(desc) { 
-                const newReq = { tenant_id: USER_ID, issue: `${cat}: ${desc}`, status: 'Active', date: new Date().toISOString(), notes: '' };
+                const dateIso = new Date().toISOString();
+                const newReq = { 
+                    tenant_id: USER_ID, 
+                    issue: `${cat}: ${desc}`, 
+                    category: cat,            
+                    description: desc,        
+                    status: 'Active',
+                    created_at: dateIso       
+                };
                 
-                // Optimistic Update
-                globalData.maint.push(newReq);
+                optimisticMaint.push(newReq);
+                localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
+                
                 toggleModal('requestModal'); 
                 e.target.reset(); 
-                render(true); // Skip fetch, render immediately to show new item
+                render(true); 
                 
-                // Actual Insert
-                await supabaseClient.from('maintenance').insert([newReq]); 
-                // Let polling handle syncing ID later
+                const dbPayload = { 
+                    tenant_id: USER_ID, 
+                    issue: `${cat}: ${desc}`, 
+                    category: cat, 
+                    description: desc, 
+                    status: 'Active' 
+                };
+                
+                await supabaseClient.from('maintenance').insert([dbPayload]); 
             }
         }
         
@@ -709,28 +774,83 @@
             }
         }
         
+        // --- UPDATED VIEW INVOICE FUNCTION ---
         function viewInvoice(id) {
             const inv = globalData.invoices.find(i => i.id === id);
             if(!inv) return;
             document.getElementById('inv-id').innerText = inv.id;
             document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
-            const prevBal = 0; const currentBalance = inv.total - (inv.amount_paid || 0); const stripeFee = 2.99; 
-            document.getElementById('inv-prev-bal').innerText = `$${prevBal.toLocaleString()}`;
-            document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid || 0).toLocaleString()}`;
+            
+            const currentBalance = inv.total - (inv.amount_paid || 0);
+            const alreadyPaid = inv.amount_paid || 0;
+            
+            // Display Items
+            document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; // Assuming rent is total for simplicity in display logic
+            document.getElementById('inv-prev-pay').innerText = `$${alreadyPaid.toLocaleString()}`;
             document.getElementById('inv-fwd-bal').innerText = `$${currentBalance.toLocaleString()}`;
+            
             const tbody = document.getElementById('inv-items-body'); tbody.innerHTML = '';
             (inv.items || []).forEach(item => { tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; });
+            
             const attEl = document.getElementById('inv-attachment'); if(inv.doc) { attEl.classList.remove('hidden-section'); document.getElementById('inv-doc-name').innerText = inv.doc; } else { attEl.classList.add('hidden-section'); }
-            const feeSection = document.getElementById('inv-fees-section'); const totalEl = document.getElementById('inv-total');
-            if(currentBalance <= 0 || inv.status === 'Paid') { feeSection.classList.add('hidden-section'); totalEl.innerText = `$0.00`; document.getElementById('inv-pay-btn-container').innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date || 'Unknown'}</div>`; } 
-            else { feeSection.classList.remove('hidden-section'); totalEl.innerText = `$${(currentBalance + stripeFee).toLocaleString()}`; document.getElementById('inv-stripe-fee').innerText = `$${stripeFee.toFixed(2)}`; document.getElementById('inv-pay-btn-container').innerHTML = `<button onclick="initStripePayment(${inv.id}, ${currentBalance})" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold mt-4 hover:bg-indigo-700 shadow-lg flex items-center justify-center gap-2"><i class="fas fa-lock"></i> Pay with Stripe</button><button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold mt-3 hover:text-slate-600">Cancel</button>`; }
+            
+            const feeSection = document.getElementById('inv-fees-section'); 
+            const totalEl = document.getElementById('inv-total');
+            const payBtnContainer = document.getElementById('inv-pay-btn-container');
+
+            if(currentBalance <= 0 || inv.status === 'Paid') { 
+                feeSection.classList.add('hidden-section'); 
+                totalEl.innerText = `$0.00`; 
+                payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date || 'Unknown'}</div>`; 
+            } else { 
+                feeSection.classList.remove('hidden-section');
+                
+                // Show Base Amount as Total in Main View
+                totalEl.innerText = `$${currentBalance.toLocaleString()}`; 
+
+                // Fee Calculation for Buttons
+                const achFee = 2.50;
+                const cardFee = currentBalance * 0.029;
+                const achTotal = currentBalance + achFee;
+                const cardTotal = currentBalance + cardFee;
+
+                payBtnContainer.innerHTML = `
+                    <div class="space-y-3 mt-4">
+                        <button onclick="initStripePayment(${inv.id}, ${currentBalance}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
+                            <div class="flex items-center gap-2"><i class="fas fa-university"></i> Bank Transfer</div>
+                            <span class="text-sm group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </button>
+                        
+                        <button onclick="initStripePayment(${inv.id}, ${currentBalance}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
+                            <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card Payment</div>
+                            <span class="text-sm group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </button>
+                        
+                        <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600">Cancel</button>
+                    </div>
+                `;
+            }
             toggleModal('invoiceModal');
         }
 
-        async function initStripePayment(invoiceId, baseAmount) {
-            toggleModal('invoiceModal'); toggleModal('processingModal');
+        // --- UPDATED PAYMENT INIT FUNCTION ---
+        async function initStripePayment(invoiceId, baseAmount, method, fee) {
+            toggleModal('invoiceModal'); 
+            toggleModal('processingModal');
             try {
-                const response = await fetch(FUNCTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: JSON.stringify({ action: 'create-checkout-session', invoiceId: invoiceId, amount: baseAmount, tenantId: USER_ID }) });
+                const totalAmount = baseAmount + fee;
+                
+                const response = await fetch(FUNCTION_URL, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, 
+                    body: JSON.stringify({ 
+                        action: 'create-checkout-session', 
+                        invoiceId: invoiceId, 
+                        amount: totalAmount, // Send full amount including fee
+                        tenantId: USER_ID,
+                        paymentMethod: method // 'card' or 'us_bank_account'
+                    }) 
+                });
                 const session = await response.json(); if(session.error) throw new Error(session.error);
                 const result = await stripe.redirectToCheckout({ sessionId: session.id }); if (result.error) throw new Error(result.error.message);
             } catch (err) { toggleModal('processingModal'); alert("Payment Error: " + err.message); }
