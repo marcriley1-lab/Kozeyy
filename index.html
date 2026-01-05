@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kozeyy | Streamlined Property Management</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -28,26 +24,25 @@
             z-index: -1;
             opacity: 0.5;
         }
-        .hidden-page { display: none; }
+        .hidden-page { display: none !important; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modal Styles */
+        .hidden-modal { display: none !important; }
     </style>
 </head>
 <body class="bg-white text-slate-900 scroll-smooth">
 
-    <!-- Navigation -->
     <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-xl border-b border-slate-100 transition-all duration-300">
         <div class="w-full px-6 lg:px-12">
             <div class="flex justify-between items-center h-20">
                 
-                <!-- LOGO -->
-                <div class="flex items-center gap-3 cursor-pointer group" onclick="showPage('home')">
+                <div class="flex items-center gap-3 cursor-pointer group" onclick="window.showPage('home')">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="transform group-hover:rotate-3 transition duration-500">
                         <defs>
                             <linearGradient id="brand-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                                <stop offset="0%" stop-color="#4F46E5" /> <!-- Indigo -->
-                                <stop offset="100%" stop-color="#0EA5E9" /> <!-- Sky Blue -->
-                            </linearGradient>
+                                <stop offset="0%" stop-color="#4F46E5" /> <stop offset="100%" stop-color="#0EA5E9" /> </linearGradient>
                         </defs>
                         <rect x="6" y="6" width="10" height="28" rx="2" fill="url(#brand-grad)" />
                         <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="url(#brand-grad)" fill-opacity="0.8" />
@@ -58,30 +53,26 @@
                     </span>
                 </div>
                 
-                <!-- Desktop Menu -->
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="javascript:void(0)" onclick="showPage('rentals')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Rentals</a>
-                    <a href="javascript:void(0)" onclick="showPage('home', 'features')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Features</a>
-                    <a href="javascript:void(0)" onclick="showPage('home', 'pricing')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition">Pricing</a>
+                    <button onclick="window.showPage('rentals')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition bg-transparent border-none cursor-pointer">Rentals</button>
+                    <button onclick="window.showPage('home', 'features')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition bg-transparent border-none cursor-pointer">Features</button>
+                    <button onclick="window.showPage('home', 'pricing')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition bg-transparent border-none cursor-pointer">Pricing</button>
                     
-                    <!-- NEW SINGLE LOGIN BUTTON -->
                     <a href="login.html" class="bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">
                         Log In
                     </a>
                 </div>
 
-                <div class="md:hidden">
-                    <a href="login.html" class="text-blue-600 font-bold mr-4">Log In</a>
+                <div class="md:hidden flex items-center">
+                    <a href="login.html" class="text-blue-600 font-bold mr-4 text-sm">Log In</a>
                     <button class="text-slate-600 hover:text-blue-600"><i class="fas fa-bars text-xl"></i></button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- MAIN LANDING PAGE CONTENT -->
-    <div id="page-home">
+    <div id="page-home" class="fade-in">
         
-        <!-- Hero Section -->
         <section class="hero-bg min-h-screen flex items-center relative pt-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
                 
@@ -104,9 +95,11 @@
                     <a href="signup.html" class="bg-blue-600 text-white px-12 py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-1">
                         Claim Free Account
                     </a>
+                    <button onclick="window.showPage('rentals')" class="bg-white/10 backdrop-blur border border-white/30 text-white px-12 py-4 rounded-xl text-lg font-bold hover:bg-white/20 transition cursor-pointer">
+                        View Rentals
+                    </button>
                 </div>
                 
-                <!-- Trust Section -->
                 <div class="mt-16 text-slate-400 text-sm font-medium">
                     <p class="mb-6 uppercase tracking-widest text-xs opacity-70">Secured & Powered By</p>
                     <div class="flex justify-center gap-10 items-center opacity-70 grayscale transition hover:grayscale-0">
@@ -119,7 +112,6 @@
             </div>
         </section>
 
-        <!-- Features Grid -->
         <section id="features" class="py-24 bg-slate-50 relative overflow-hidden">
             <div class="blob bg-blue-200 w-96 h-96 rounded-full top-0 left-0"></div>
             
@@ -130,7 +122,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <!-- Feature 1 -->
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
                         <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
                             <i class="fas fa-money-bill-wave"></i>
@@ -139,7 +130,6 @@
                         <p class="text-slate-600 leading-relaxed">Direct deposit ACH payments. Auto-late fees. Financial reporting.</p>
                     </div>
 
-                    <!-- Feature 2 -->
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
                         <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
                             <i class="fas fa-user-check"></i>
@@ -148,7 +138,6 @@
                         <p class="text-slate-600 leading-relaxed">Full credit, criminal, and eviction reports paid for by the applicant.</p>
                     </div>
 
-                    <!-- Feature 3 -->
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
                         <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
                             <i class="fas fa-tools"></i>
@@ -157,7 +146,6 @@
                         <p class="text-slate-600 leading-relaxed">Digital ticketing system. Keep specific records of every repair and expense.</p>
                     </div>
 
-                    <!-- Feature 4 -->
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
                         <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
                             <i class="fas fa-comments"></i>
@@ -166,7 +154,6 @@
                         <p class="text-slate-600 leading-relaxed">Centralized chat. Keep your personal phone number private.</p>
                     </div>
 
-                    <!-- Feature 5 -->
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
                         <div class="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
                             <i class="fas fa-mobile-screen"></i>
@@ -175,19 +162,17 @@
                         <p class="text-slate-600 leading-relaxed">Give tenants a professional app to pay rent, request repairs, and view history.</p>
                     </div>
 
-                    <!-- Feature 6 -->
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
-                        <div class="w-14 h-14 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
-                            <i class="fas fa-bullhorn"></i>
+                        <div class="w-14 h-14 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-receipt"></i>
                         </div>
-                        <h3 class="text-xl font-bold text-slate-900 mb-3">Marketing</h3>
-                        <p class="text-slate-600 leading-relaxed">Syndicate listings to major rental sites with one click.</p>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Expense Tracking</h3>
+                        <p class="text-slate-600 leading-relaxed">Log receipts, track repairs, and generate financial reports for tax season.</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Pricing Section -->
         <section id="pricing" class="py-24 bg-white border-t border-slate-100">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
@@ -197,7 +182,6 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
                     
-                    <!-- Landlord Card -->
                     <div class="bg-slate-900 rounded-3xl p-10 text-white relative shadow-2xl overflow-hidden transform hover:-translate-y-2 transition duration-300 border-2 border-amber-500/50">
                         <div class="absolute top-0 right-0 bg-amber-500 text-black text-xs font-bold px-4 py-2 rounded-bl-xl uppercase tracking-wider">Early Access</div>
                         <h3 class="text-2xl font-bold mb-2">Founder's Plan</h3>
@@ -220,7 +204,6 @@
                         <a href="signup.html" class="block w-full bg-amber-500 text-slate-900 text-center py-4 rounded-xl font-bold hover:bg-amber-400 transition">Lock In Free Rate</a>
                     </div>
 
-                    <!-- Tenant Card -->
                     <div class="bg-white rounded-3xl p-10 border border-slate-200 text-slate-900 hover:border-blue-200 transition duration-300 shadow-sm">
                         <h3 class="text-2xl font-bold mb-2">Transaction Fees</h3>
                         <div class="flex items-baseline mb-6">
@@ -235,7 +218,7 @@
                             </li>
                             <li class="flex justify-between items-center">
                                 <span class="font-bold flex items-center"><i class="fas fa-university text-slate-400 mr-3"></i> ACH Bank Transfer</span>
-                                <span class="text-blue-600 font-bold">$2.00</span>
+                                <span class="text-blue-600 font-bold">$2.50</span>
                             </li>
                             <li class="flex justify-between items-center">
                                 <span class="font-bold flex items-center"><i class="fas fa-credit-card text-slate-400 mr-3"></i> Credit Card</span>
@@ -252,7 +235,6 @@
             </div>
         </section>
 
-        <!-- Final CTA -->
         <section class="py-20 bg-blue-600">
             <div class="max-w-4xl mx-auto px-4 text-center text-white">
                 <h2 class="text-3xl md:text-5xl font-extrabold mb-6 brand-font">Don't miss the Founder's Window</h2>
@@ -261,25 +243,22 @@
         </section>
     </div>
 
-    <!-- 0. PUBLIC RENTALS (Dynamic) -->
     <div id="page-rentals" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
         <div class="max-w-6xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold text-slate-900 mb-4 brand-font">Available Rentals</h1>
             <p class="text-slate-500 mb-8 max-w-2xl">Browse our current listings. Apply online in minutes.</p>
             
             <div id="listings-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Content injected via JS -->
                 <div class="col-span-full text-center py-12">
                     <i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i>
                     <p class="text-slate-500">Loading properties...</p>
                 </div>
             </div>
             
-            <button onclick="showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer"><i class="fas fa-arrow-left"></i> Back to Home</button>
         </div>
     </div>
 
-    <!-- 1. HELP CENTER -->
     <div id="page-help" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
         <div class="max-w-4xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold text-slate-900 mb-8 brand-font">Help Center</h1>
@@ -289,84 +268,67 @@
                     <p class="text-slate-600 leading-relaxed mb-4">Go to your Owner Portal, click on the "Listings" tab, and select "Post Listing". Fill out the address and details to get started.</p>
                     <a href="owner.html" class="text-blue-600 font-bold text-sm hover:underline">Go to Dashboard &rarr;</a>
                 </div>
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-xl mb-3 text-slate-800">Is Kozeyy really free?</h3>
-                    <p class="text-slate-600 leading-relaxed">Yes! If you join our Founder's Club, your account is free forever. We operate on a SaaS model where tenants pay small convenience fees.</p>
                 </div>
-                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-xl mb-3 text-slate-800">How do payouts work?</h3>
-                    <p class="text-slate-600 leading-relaxed">We use Stripe Connect for bank-level security. Once a tenant pays rent, the funds are routed to your linked bank account within 2-3 business days.</p>
-                </div>
-            </div>
-            <button onclick="showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer"><i class="fas fa-arrow-left"></i> Back to Home</button>
         </div>
     </div>
 
-    <!-- 2. RENTAL LAWS -->
     <div id="page-laws" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
         <div class="max-w-4xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold text-slate-900 mb-4 brand-font">Rental Laws & Compliance</h1>
             <p class="text-slate-500 mb-8 max-w-2xl">Disclaimer: Kozeyy provides this for informational purposes only. Landlord-tenant laws vary significantly by state and municipality. Please consult a local attorney for legal advice.</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <a href="https://www.nolo.com/legal-encyclopedia/landlord-tenant-law" target="_blank" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 transition group">
-                    <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4"><i class="fas fa-scale-balanced text-xl"></i></div>
-                    <h3 class="font-bold text-lg mb-2 text-slate-800 group-hover:text-blue-600 transition">Fair Housing Act</h3>
-                    <p class="text-sm text-slate-600 leading-relaxed">Learn about federal laws prohibiting discrimination in housing based on race, color, national origin, religion, sex, familial status, and disability.</p>
-                </a>
-                <a href="https://www.hud.gov/topics/rental_assistance/tenantrights" target="_blank" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 transition group">
-                    <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4"><i class="fas fa-map-location-dot text-xl"></i></div>
-                    <h3 class="font-bold text-lg mb-2 text-slate-800 group-hover:text-blue-600 transition">Tenant Rights by State</h3>
-                    <p class="text-sm text-slate-600 leading-relaxed">View specific regulations regarding security deposits, evictions, and lease terminations for your specific state.</p>
-                </a>
-                <a href="https://www.irs.gov/businesses/small-businesses-self-employed/tips-on-rental-real-estate-income-deductions-and-recordkeeping" target="_blank" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-500 transition group">
-                    <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 mb-4"><i class="fas fa-file-invoice-dollar text-xl"></i></div>
-                    <h3 class="font-bold text-lg mb-2 text-slate-800 group-hover:text-blue-600 transition">Tax Deductions</h3>
-                    <p class="text-sm text-slate-600 leading-relaxed">A guide to what you can deduct as a landlord: mortgage interest, property tax, operating expenses, depreciation, and repairs.</p>
-                </a>
-            </div>
-            <button onclick="showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer"><i class="fas fa-arrow-left"></i> Back to Home</button>
         </div>
     </div>
 
-    <!-- 3. PRIVACY POLICY -->
     <div id="page-privacy" class="hidden-page pt-24 bg-white min-h-screen fade-in">
         <div class="max-w-3xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold mb-6 brand-font text-slate-900">Privacy Policy</h1>
-            <p class="text-slate-500 text-sm mb-8 border-b border-slate-100 pb-8">Last Updated: Dec 12, 2025</p>
             <div class="prose text-slate-700 leading-relaxed space-y-8">
-                <section>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">1. Information We Collect</h3>
-                    <p>We collect information you provide directly to us, such as when you create an account, post a listing, or communicate with other users.</p>
-                </section>
-                <section>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">2. Data Security</h3>
-                    <p>We use Stripe for payment processing. We do not store your credit card information on our servers. All traffic is encrypted via SSL technology.</p>
-                </section>
-            </div>
-            <button onclick="showPage('home')" class="mt-12 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+                </div>
+            <button onclick="window.showPage('home')" class="mt-12 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer"><i class="fas fa-arrow-left"></i> Back to Home</button>
         </div>
     </div>
 
-    <!-- 4. TERMS OF SERVICE -->
     <div id="page-terms" class="hidden-page pt-24 bg-white min-h-screen fade-in">
         <div class="max-w-3xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold mb-6 brand-font text-slate-900">Terms of Service</h1>
-            <p class="text-slate-500 text-sm mb-8 border-b border-slate-100 pb-8">Last Updated: Dec 12, 2025</p>
             <div class="prose text-slate-700 leading-relaxed space-y-8">
-                <section>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">1. Role of Kozeyy</h3>
-                    <p>Kozeyy is a platform provider. We are not a party to any rental agreement between landlords and tenants. We do not own or manage properties directly.</p>
-                </section>
-                <section>
-                    <h3 class="text-xl font-bold text-slate-900 mb-2">2. Fees</h3>
-                    <p>Landlord accounts are free under the Founder's Club plan. Tenant transaction fees (ACH, Credit Card, Background Checks) are non-refundable.</p>
-                </section>
-            </div>
-            <button onclick="showPage('home')" class="mt-12 text-blue-600 font-bold hover:underline flex items-center gap-2"><i class="fas fa-arrow-left"></i> Back to Home</button>
+                </div>
+            <button onclick="window.showPage('home')" class="mt-12 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer"><i class="fas fa-arrow-left"></i> Back to Home</button>
         </div>
     </div>
 
-    <!-- Footer -->
+    <div id="page-contact" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-8 brand-font">Contact Us</h1>
+            
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-2xl">
+                <div class="mb-8">
+                    <h3 class="font-bold text-xl mb-2 text-slate-800">Support</h3>
+                    <p class="text-slate-600 mb-2">For account assistance, billing inquiries, or technical support.</p>
+                    <a href="mailto:support@kozeyy.com" class="text-blue-600 font-bold hover:underline flex items-center gap-2 text-lg">
+                        <i class="fas fa-envelope"></i> support@kozeyy.com
+                    </a>
+                </div>
+
+                <div class="border-t border-slate-100 pt-8">
+                    <h3 class="font-bold text-xl mb-2 text-slate-800">Mailing Address</h3>
+                    <p class="text-slate-600 mb-3 text-sm">Official correspondence may be sent to our office:</p>
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-slate-700 font-medium">
+                        <p class="font-bold text-slate-900">Kozeyy Technologies Inc.</p>
+                        <p>250 Pharr Rd NE, Apt 309</p>
+                        <p>Atlanta, GA 30305</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </button>
+        </div>
+    </div>
+
     <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div class="col-span-1 md:col-span-1">
@@ -384,22 +346,23 @@
             <div>
                 <h4 class="text-white font-bold mb-4 brand-font">Product</h4>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="javascript:void(0)" onclick="showPage('home', 'features')" class="hover:text-blue-400 transition">Features</a></li>
-                    <li><a href="javascript:void(0)" onclick="showPage('home', 'pricing')" class="hover:text-blue-400 transition">Pricing</a></li>
+                    <li><button onclick="window.showPage('home', 'features')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Features</button></li>
+                    <li><button onclick="window.showPage('home', 'pricing')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Pricing</button></li>
                 </ul>
             </div>
             <div>
                 <h4 class="text-white font-bold mb-4 brand-font">Resources</h4>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="javascript:void(0)" onclick="showPage('help')" class="hover:text-blue-400 transition">Help Center</a></li>
-                    <li><a href="javascript:void(0)" onclick="showPage('laws')" class="hover:text-blue-400 transition">Rental Laws</a></li>
+                    <li><button onclick="window.showPage('help')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Help Center</button></li>
+                    <li><button onclick="window.showPage('laws')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Rental Laws</button></li>
+                    <li><button onclick="window.showPage('contact')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Contact Us</button></li>
                 </ul>
             </div>
             <div>
                 <h4 class="text-white font-bold mb-4 brand-font">Legal</h4>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="javascript:void(0)" onclick="showPage('privacy')" class="hover:text-blue-400 transition">Privacy Policy</a></li>
-                    <li><a href="javascript:void(0)" onclick="showPage('terms')" class="hover:text-blue-400 transition">Terms of Service</a></li>
+                    <li><button onclick="window.showPage('privacy')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Privacy Policy</button></li>
+                    <li><button onclick="window.showPage('terms')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Terms of Service</button></li>
                 </ul>
             </div>
         </div>
@@ -408,129 +371,284 @@
         </div>
     </footer>
 
-   <!-- Router & Supabase Logic -->
+    <div id="platform-modal" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-all scale-100">
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl"><i class="fas fa-info-circle"></i></div>
+            <h3 class="text-lg font-bold mb-2 text-slate-900" id="modal-title">Notification</h3>
+            <p class="text-sm text-slate-500 mb-6" id="modal-msg">Message goes here.</p>
+            <button onclick="window.closeModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition cursor-pointer">Okay</button>
+        </div>
+    </div>
+
     <script>
-        // --- SUPABASE CONFIG ---
-        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
-        // FIXED: Added missing 'EE'
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmEE';
-        
-        // FIXED: Renamed to supabaseClient
-        let supabaseClient = null;
-        let isDemoMode = false;
+        // Define navigation functions GLOBALLY first
+        window.showPage = function(pageId, scrollToId = null) {
+            // 1. Hide all main page containers
+            const allPages = document.querySelectorAll('[id^="page-"]');
+            allPages.forEach(el => el.classList.add('hidden-page'));
 
-        // Initialize Supabase
-        try {
-            if (!window.supabase) throw new Error("Supabase Library not loaded");
-            
-            if (SUPABASE_URL.includes('YOUR_SUPABASE') || SUPABASE_URL === '') {
-                throw new Error("No API Keys");
-            }
-            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-            console.log("✅ Supabase Connected");
-        } catch (e) {
-            console.warn("⚠️ Running in DEMO MODE:", e.message);
-            isDemoMode = true;
-        }
-
-        // --- NAVIGATION ---
-        function showPage(pageId, scrollToId = null) {
-            // 1. Hide all pages
-            const pages = ['page-home', 'page-rentals', 'page-help', 'page-laws', 'page-privacy', 'page-terms'];
-            pages.forEach(id => {
-                const el = document.getElementById(id);
-                if(el) el.classList.add('hidden-page');
-            });
-
-            // 2. Show target page
-            const target = document.getElementById('page-' + pageId);
-            if(target) {
-                target.classList.remove('hidden-page');
+            // 2. Show the specific target page
+            const targetPage = document.getElementById('page-' + pageId);
+            if (targetPage) {
+                targetPage.classList.remove('hidden-page');
             } else {
-                console.error("Target page not found:", pageId);
+                console.error("Page not found: " + pageId);
             }
-            
-            // 3. Special Logic
-            if(pageId === 'rentals') {
+
+            // 3. Logic for specific pages
+            if (pageId === 'rentals') {
                 fetchListings();
             }
 
-            // 4. Scroll
+            // 4. Handle Scrolling
             if (scrollToId) {
-                const el = document.getElementById(scrollToId);
-                if(el) el.scrollIntoView();
+                setTimeout(() => {
+                    const scrollTarget = document.getElementById(scrollToId);
+                    if (scrollTarget) {
+                        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 50);
             } else {
-                window.scrollTo(0,0);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
+        };
+
+        window.closeModal = function() {
+            document.getElementById('platform-modal').classList.add('hidden-modal');
+        };
+
+        window.showModal = function(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('platform-modal').classList.remove('hidden-modal');
+        };
+
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+        
+       let supabaseClient = null;
+    try { 
+        if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); 
+    } catch(e) { console.error("Supabase Init Error:", e); }
+
+    // --- MAIN NAVIGATION LOGIC ---
+    window.showPage = function(pageId, scrollToId = null) {
+        // 1. Hide all pages
+        document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden-page'));
+        
+        // 2. Show target
+        const target = document.getElementById('page-' + pageId);
+        if (target) target.classList.remove('hidden-page');
+        
+        // 3. Special Actions
+        if (pageId === 'rentals') {
+            fetchListings();
         }
+        
+        // 4. Scroll Handling
+        if (scrollToId) {
+            setTimeout(() => {
+                const el = document.getElementById(scrollToId);
+                if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        } else if (!window.location.search.includes('highlight')) {
+            // Only scroll to top if we AREN'T trying to highlight a specific listing
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
 
-        // --- RENTALS LOGIC ---
-        async function fetchListings() {
-            const container = document.getElementById('listings-container');
-            if(!container) return;
+    // --- MODAL UTILS ---
+    window.closeModal = function() {
+        document.getElementById('platform-modal').classList.add('hidden-modal');
+    };
+    window.showModal = function(title, msg) {
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-msg').innerText = msg;
+        document.getElementById('platform-modal').classList.remove('hidden-modal');
+    };
+
+    // --- RENTALS & LISTINGS LOGIC ---
+    async function fetchListings() {
+        const container = document.getElementById('listings-container');
+        if(!container) return;
+        
+        // Loading State
+        container.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i><p class="text-slate-500">Loading properties...</p></div>`;
+        
+        try {
+            // Fetch Data
+            const { data, error } = await supabaseClient
+                .from('listings')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if(error) throw error;
             
-            container.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i><p class="text-slate-500">Loading properties...</p></div>`;
-            
-            let listings = [];
-
-            if(isDemoMode) {
-                // Fake Data for Demo
-                await new Promise(r => setTimeout(r, 800)); 
-                listings = [
-                    { addr: '123 Demo St, Austin TX', price: 2400, beds: 3, baths: 2, sqft: 1500, desc: 'Beautiful home with pool.' },
-                    { addr: '500 Market St, San Francisco CA', price: 4200, beds: 2, baths: 2, sqft: 1100, desc: 'Downtown luxury apartment.' }
-                ];
-            } else {
-                // Real Data
-                try {
-                    const { data, error } = await supabaseClient.from('listings').select('*');
-                    if(error) throw error;
-                    listings = data || [];
-                } catch (err) {
-                    console.error("Error fetching listings:", err);
-                    container.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Error loading rentals.</div>`;
-                    return;
-                }
-            }
-
-            if(listings.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No rentals currently available.</div>`;
+            if(!data || data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No rentals currently available. Check back soon!</div>`;
                 return;
             }
 
-            // Render Listings
+            // Clear Loading
             container.innerHTML = '';
-            listings.forEach(l => {
-                container.innerHTML += `
-                <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group">
-                    <div class="h-48 bg-slate-200 relative overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow">
-                            For Rent
+
+            // --- DEFINE DETAIL MODAL OPENER ---
+           window.openListingDetail = function(listingId) {
+                const l = data.find(x => x.id == listingId);
+                if(!l) return;
+                
+                // Remove existing modal if open
+                const existing = document.getElementById('listing-detail-modal');
+                if(existing) existing.remove();
+
+                // --- NEW IMAGE LOGIC START ---
+                // 1. Consolidate images into an array
+                let images = l.images || []; 
+                if (images.length === 0 && l.image_url) {
+                    images = [l.image_url]; // Fallback to old single image
+                }
+                if (images.length === 0) {
+                    images = ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80']; // Default fallback
+                }
+
+                // 2. Build Gallery HTML
+                let galleryHtml = '';
+                if (images.length === 1) {
+                    // Single Image Mode
+                    galleryHtml = `<img src="${images[0]}" class="w-full h-full object-cover">`;
+                } else {
+                    // Gallery Mode (Main Image + Vertical Scrolling Grid)
+                    galleryHtml = `
+                        <div class="h-2/3 w-full bg-slate-200">
+                            <img src="${images[0]}" class="w-full h-full object-cover" id="detail-main-img">
+                        </div>
+                        <div class="h-1/3 w-full grid grid-cols-3 gap-2 p-2 overflow-y-auto bg-slate-100 border-t border-slate-200 content-start">
+                            ${images.map(img => `
+                                <img src="${img}" 
+                                     class="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-80 transition border-2 border-transparent hover:border-indigo-500" 
+                                     onclick="document.getElementById('detail-main-img').src = '${img}'">
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                // --- NEW IMAGE LOGIC END ---
+
+                const amenitiesHtml = (l.amenities || '').split(',').map(a => `<span class="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">${a.trim()}</span>`).join('');
+                const contactHtml = l.contact_info ? `<div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100"><h3 class="font-bold text-blue-900 text-sm mb-1">Contact Owner</h3><p class="text-blue-700 text-sm select-all">${l.contact_info}</p></div>` : '';
+
+                const modalHTML = `
+                    <div id="listing-detail-modal" class="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 fade-in" onclick="if(event.target === this) this.remove()">
+                        <div class="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
+                            <button onclick="document.getElementById('listing-detail-modal').remove()" class="absolute top-4 right-4 z-20 bg-white/20 hover:bg-white/40 backdrop-blur text-white md:text-slate-500 md:bg-slate-100 md:hover:bg-slate-200 w-10 h-10 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+                            
+                            <div class="w-full md:w-1/2 h-96 md:h-auto bg-slate-200 relative flex flex-col">
+                                ${galleryHtml}
+                            </div>
+
+                            <div class="w-full md:w-1/2 p-8 overflow-y-auto bg-white flex flex-col">
+                                <div class="mb-1">
+                                    <h2 class="text-3xl font-bold text-slate-900 leading-tight">${l.address}</h2>
+                                    <p class="text-xl font-bold text-indigo-600 mt-2">$${parseInt(l.price).toLocaleString()}<span class="text-sm text-slate-400 font-medium">/mo</span></p>
+                                </div>
+
+                                <div class="flex gap-4 border-y border-slate-100 py-4 my-6">
+                                    <div class="text-center px-4 border-r border-slate-100"><i class="fas fa-bed text-slate-400 mb-1"></i><p class="font-bold text-sm">${l.beds} Beds</p></div>
+                                    <div class="text-center px-4 border-r border-slate-100"><i class="fas fa-bath text-slate-400 mb-1"></i><p class="font-bold text-sm">${l.baths} Baths</p></div>
+                                    <div class="text-center px-4"><i class="fas fa-ruler-combined text-slate-400 mb-1"></i><p class="font-bold text-sm">${l.sqft} SqFt</p></div>
+                                </div>
+
+                                <div class="mb-6 flex-1">
+                                    <h3 class="font-bold text-slate-800 mb-2 text-sm uppercase tracking-wide">Description</h3>
+                                    <p class="text-slate-600 text-sm leading-relaxed">${l.description || 'No description provided.'}</p>
+                                </div>
+
+                                <div class="mb-6">
+                                    <h3 class="font-bold text-slate-800 mb-2 text-sm uppercase tracking-wide">Amenities</h3>
+                                    <div class="flex flex-wrap gap-2">${amenitiesHtml}</div>
+                                </div>
+                                
+                                ${contactHtml}
+
+                                <div class="mt-auto pt-4 border-t border-slate-100">
+                                    <a href="applicant.html?listing_id=${l.id}" class="block w-full bg-slate-900 text-white text-center py-4 rounded-xl font-bold hover:bg-indigo-600 transition shadow-lg text-lg">
+                                        Apply Now
+                                    </a>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="p-6">
-                        <h3 class="font-bold text-lg text-slate-900 mb-1 truncate">${l.addr}</h3>
-                        <p class="text-slate-500 text-sm mb-4 truncate">${l.desc || 'Contact for details'}</p>
-                        
-                        <div class="flex items-center gap-4 text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider">
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            };
+
+            // --- RENDER CARDS ---
+            data.forEach(l => {
+                const img = l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                
+                container.innerHTML += `
+                <div id="listing-${l.id}" class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group flex flex-col cursor-pointer" onclick="openListingDetail(${l.id})">
+                    <div class="h-48 bg-slate-200 relative overflow-hidden">
+                        <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow">For Rent</div>
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition flex items-center justify-center">
+                            <span class="bg-white text-slate-900 px-4 py-2 rounded-full font-bold text-sm opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition duration-300 shadow-xl">View Details</span>
+                        </div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="font-bold text-lg text-slate-900 mb-1 truncate">${l.address}</h3>
+                        <p class="text-slate-500 text-sm mb-4 truncate line-clamp-2">${l.description || 'Contact for details'}</p>
+                        <div class="flex items-center gap-4 text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider mt-auto">
                             <span><i class="fas fa-bed mr-1"></i> ${l.beds} Beds</span>
                             <span><i class="fas fa-bath mr-1"></i> ${l.baths} Baths</span>
                             <span><i class="fas fa-ruler mr-1"></i> ${l.sqft} SqFt</span>
                         </div>
-
                         <div class="flex items-center justify-between border-t border-slate-100 pt-4">
-                            <div>
-                                <span class="text-2xl font-extrabold text-indigo-600 brand-font">$${parseInt(l.price).toLocaleString()}</span>
-                                <span class="text-xs text-slate-400 font-bold">/mo</span>
-                            </div>
-                            <a href="applicant.html" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-600 transition shadow-lg">Apply Now</a>
+                            <div><span class="text-2xl font-extrabold text-indigo-600 brand-font">$${parseInt(l.price).toLocaleString()}</span><span class="text-xs text-slate-400 font-bold">/mo</span></div>
+                            <span class="text-indigo-600 font-bold text-sm hover:underline">View & Apply &rarr;</span>
                         </div>
                     </div>
                 </div>`;
             });
-        }
-    </script>
 
+            // --- AUTO-SCROLL & AUTO-OPEN LOGIC ---
+            const urlParams = new URLSearchParams(window.location.search);
+            const highlightId = urlParams.get('highlight');
+            
+            if (highlightId) {
+                // We use a slight delay to ensure DOM insertion is complete
+                setTimeout(() => {
+                    const el = document.getElementById(`listing-${highlightId}`);
+                    if (el) {
+                        // 1. Scroll to card
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // 2. Add visual highlight effect
+                        el.classList.add('highlight-listing');
+                        setTimeout(() => el.classList.remove('highlight-listing'), 3000);
+                        
+                        // 3. AUTOMATICALLY OPEN THE DETAIL MODAL
+                        openListingDetail(highlightId);
+                    }
+                }, 500);
+            }
+
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Error loading rentals. <br><span class="text-xs text-slate-400">${err.message}</span></div>`;
+        }
+    }
+
+    // --- INITIALIZATION ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page');
+        
+        if (page === 'rentals') {
+            showPage('rentals');
+        }
+    });
+
+</script>
 </body>
 </html>
