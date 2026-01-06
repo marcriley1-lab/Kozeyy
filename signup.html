@@ -1,4 +1,3 @@
-<!-- START OF FILE signup.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -87,7 +86,6 @@
         </div>
     </div>
 
-    <!-- Modal -->
     <div id="platform-modal" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center">
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl"><i class="fas fa-info-circle"></i></div>
@@ -154,13 +152,25 @@
                 if(role === 'tenant') {
                     // Check if already exists
                     const { data: existing } = await supabaseClient.from('tenants').select('*').eq('email', email).maybeSingle();
+                    
                     if(existing) {
-                        showModal("Account Exists", "An account with this email already exists. Please log in.");
-                        btn.innerHTML = originalText; btn.disabled = false;
-                        return;
+                        // 🟢 FIXED: If tenant is Active (added by owner), log them in and go to Dashboard
+                        if (existing.status === 'Active') {
+                            localStorage.setItem('kozeyy_user_id', existing.id);
+                            localStorage.setItem('kozeyy_role', 'tenant');
+                            localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
+                            
+                            showModal("Welcome", "We found your existing tenant account. Logging you in...");
+                            setTimeout(() => { window.location.href = 'tenant.html'; }, 1500);
+                            return;
+                        } else {
+                            showModal("Account Exists", "An application with this email already exists. Please log in to check status.");
+                            btn.innerHTML = originalText; btn.disabled = false;
+                            return;
+                        }
                     }
 
-                    // Insert new Tenant
+                    // Insert new Tenant (Applicant)
                     const { data, error } = await supabaseClient.from('tenants').insert([{
                         name: userProfile.name,
                         email: email,
@@ -183,25 +193,21 @@
                     }
 
                 } else {
-    // 1. Insert into 'owners' table
-    const { data, error } = await supabaseClient.from('owners').insert([{
-        name: `${fname} ${lname}`,
-        email: email,
-        phone: phone
-        // Add other fields if your table has them
-    }])
-    .select()
-    .single(); // This returns the new row with the auto-generated UUID
+                    // 🟢 FIXED: Create REAL Owner row instead of using Mock ID
+                    const { data, error } = await supabaseClient.from('owners').insert([{
+                        name: `${fname} ${lname}`,
+                        email: email,
+                        phone: phone
+                    }]).select().single();
 
-    if (error) throw error;
+                    if(error) throw error;
 
-    // 2. Use the REAL ID from the database
-    localStorage.setItem('kozeyy_user_id', data.id);
-    
-    localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
-    localStorage.setItem('kozeyy_role', 'owner');
-    window.location.href = 'owner.html';
-}
+                    // Use the REAL ID
+                    localStorage.setItem('kozeyy_user_id', data.id);
+                    localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
+                    localStorage.setItem('kozeyy_role', 'owner');
+                    window.location.href = 'owner.html';
+                }
 
             } catch(err) {
                 console.error(err);
@@ -222,4 +228,3 @@
     </script>
 </body>
 </html>
-
