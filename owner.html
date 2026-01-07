@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,7 +108,7 @@
             <div class="flex items-center gap-4 md:gap-6">
                 <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
                     <div class="text-right hidden md:block">
-                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Loading...</p>
+                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Landlord</p>
                         <p class="text-xs text-slate-500">Property Owner</p>
                     </div>
                     <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font" id="owner-initials-display">LL</div>
@@ -532,7 +533,7 @@
             </div>
 
             <div id="inv-step-preview" class="hidden-section">
-                <div id="invoice-preview-paper" class="bg-white border border-slate-200 rounded-xl p-6 mb-6 paper-shadow relative overflow-hidden">
+                <div class="bg-white border border-slate-200 rounded-xl p-6 mb-6 paper-shadow relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
                     <div class="flex justify-between items-start mb-6">
                         <div>
@@ -668,8 +669,9 @@
             </div>
         </div>
     </div>
+
 <script>
-// --- SUPABASE CONFIG ---
+    // --- SUPABASE CONFIG ---
     const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
     
@@ -714,7 +716,6 @@
     async function initSystem() {
         try {
             if(!supabaseClient) throw new Error("Supabase library not loaded.");
-            loadUserProfile(); // Load Name in Top Right
             await fetchData();
             renderAll();
             
@@ -731,19 +732,6 @@
         } catch (err) { console.error("Initialization failed:", err); renderAll(); }
     }
 
-    function loadUserProfile() { 
-        const savedProfile = localStorage.getItem('kozeyy_profile'); 
-        if (savedProfile) { 
-            const user = JSON.parse(savedProfile); 
-            if(user.role === 'owner') { 
-                const nameDisplay = user.username ? user.username : (user.name || "Owner"); 
-                setText('owner-name-display', nameDisplay); 
-                const initialBox = document.getElementById('owner-initials-display'); 
-                if(initialBox) initialBox.innerText = user.initials || "LL"; 
-            } 
-        } 
-    }
-
     async function fetchData() {
         // --- MULTI-TENANCY FILTERING ---
         // Get the logged-in owner ID to ensure data isolation
@@ -757,7 +745,7 @@
         const [t, l, i, p, e, m, msg, s, a] = await Promise.all([
             supabaseClient.from('tenants').select('*').eq('owner_id', ownerId), // Filtered
             supabaseClient.from('listings').select('*').eq('owner_id', ownerId), // Filtered
-            supabaseClient.from('invoices').select('*').eq('owner_id', ownerId), // Filtered
+            supabaseClient.from('invoices').select('*'), // (Invoices/Payments filtered in memory by Tenant ID below)
             supabaseClient.from('payments').select('*'),
             supabaseClient.from('expenses').select('*').eq('owner_id', ownerId), // Filtered
             supabaseClient.from('maintenance').select('*'),
@@ -768,16 +756,16 @@
 
         state.tenants = t.data || [];
         state.listings = l.data || [];
-        state.invoices = i.data || [];
         state.expenses = e.data || [];
         state.settings = s.data || {};
         state.apps = a.data || [];
 
         // --- ASSOCIATION FILTERING ---
-        // Since Maintenance, Payments, and Messages are linked to Tenants, 
+        // Since Maintenance, Invoices, and Messages are linked to Tenants, 
         // we only keep records that match the Tenants we just fetched.
         const myTenantIds = new Set(state.tenants.map(tn => tn.id));
 
+        state.invoices = (i.data || []).filter(x => myTenantIds.has(x.tenant_id));
         state.payments = (p.data || []).filter(x => myTenantIds.has(x.tenant_id));
         state.maint = (m.data || []).filter(x => myTenantIds.has(x.tenant_id));
         
@@ -1102,21 +1090,8 @@
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
-        
-        state.payments.forEach(p => { 
-            const pDate = new Date(p.date || p.created_at); 
-            if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) revenue += p.amount; 
-        });
-        
-        state.invoices.forEach(inv => { 
-            if(inv.status !== 'Paid') { 
-                const dueDate = new Date(inv.date);
-                if (dueDate < now) { // Overdue logic: due date in past
-                    const bal = inv.total - (inv.amount_paid || 0); 
-                    if(bal > 0) overdue += bal; 
-                }
-            } 
-        });
+        state.payments.forEach(p => { const pDate = parseDateStr(p.date); if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) revenue += p.amount; });
+        state.invoices.forEach(inv => { if(inv.status !== 'Paid') { const bal = inv.total - (inv.amount_paid || 0); if(bal > 0) overdue += bal; } });
         return { revenue, overdue };
     }
 
@@ -1225,16 +1200,8 @@
     async function sendMsg() { 
         const i=document.getElementById('input-chat'); 
         if(i.value && currentChatId) { 
-            const ownerId = localStorage.getItem('kozeyy_user_id');
-            const newMsg = {
-                owner_id: ownerId, 
-                tenant_id: currentChatId, 
-                from:'Owner', 
-                text:i.value, 
-                time: new Date().toISOString()
-            };
-            // Optimistic update
-            state.msgs.push({ ...newMsg, created_at: new Date().toISOString() });
+            const newMsg = {tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString(), created_at: new Date().toISOString() };
+            state.msgs.push(newMsg);
             renderMessages(true);
             const val = i.value; i.value=''; 
             await supabaseClient.from('msgs').insert([newMsg]);
@@ -1499,32 +1466,18 @@
         });
     }
 
-    // --- FIX #6: SETTINGS SAVE ---
     async function act_saveSettings(e) { 
         e.preventDefault(); 
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        
-        const payload = { 
-            owner_id: ownerId,
+        const { error } = await supabaseClient.from('settings').update({ 
             stripe_connect_id: document.getElementById('set-stripe-id').value, 
-            late_fee_amount: parseFloat(document.getElementById('fee-amount').value), 
-            grace_period: parseInt(document.getElementById('fee-grace').value),     
+            late_fee_amount: document.getElementById('fee-amount').value, 
+            grace_period: document.getElementById('fee-grace').value,     
             min_credit_score: parseInt(document.getElementById('set-min-score').value)||600,
             min_income_ratio: parseFloat(document.getElementById('set-min-income').value)||2.5,
             require_no_evictions: document.getElementById('set-no-evict').checked,
             require_no_criminal_history: document.getElementById('set-no-crim').checked
-        };
+        }).eq('id', 1); 
         
-        const { data: existing } = await supabaseClient.from('settings').select('id').eq('owner_id', ownerId).maybeSingle();
-        let error;
-        if (existing) {
-             const res = await supabaseClient.from('settings').update(payload).eq('owner_id', ownerId);
-             error = res.error;
-        } else {
-             const res = await supabaseClient.from('settings').insert([payload]);
-             error = res.error;
-        }
-
         if (error) { showToast("Save Failed: " + error.message, 'error'); } 
         else { showToast("Configuration Saved"); }
     }
@@ -1537,7 +1490,6 @@
 
     function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
     
-    // --- FIX #8: PAID_DATE ---
     async function confirmPay() { 
         let tid = document.getElementById('pay-tenant-id').value; 
         const sel = document.getElementById('pay-tenant-select'); 
@@ -1548,24 +1500,14 @@
         if(tid && amt > 0) { 
             const { error } = await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]);
             if (error) { showToast("Payment Failed: " + error.message, 'error'); return; }
-            
             const openInvoices = state.invoices.filter(i => i.tenant_id === tid && i.status !== 'Paid').sort((a,b) => new Date(a.date) - new Date(b.date)); 
             for(const inv of openInvoices) { 
                 if (amt <= 0) break; 
                 const due = inv.total - (inv.amount_paid || 0); 
                 const pay = Math.min(amt, due); 
                 const newPaid = (inv.amount_paid || 0) + pay; 
-                
                 const newStatus = newPaid >= inv.total ? 'Paid' : 'Unpaid'; 
-                
-                // --- FIX #8 LOGIC START ---
-                const updatePayload = { amount_paid: newPaid, status: newStatus };
-                if (newStatus === 'Paid') {
-                    updatePayload.paid_date = new Date().toISOString();
-                }
-                // --- FIX #8 LOGIC END ---
-
-                await supabaseClient.from('invoices').update(updatePayload).eq('id', inv.id); 
+                await supabaseClient.from('invoices').update({ amount_paid: newPaid, status: newStatus }).eq('id', inv.id); 
                 amt -= pay; 
             } 
             closeModal('modal-pay'); initSystem(); showToast("Payment Recorded & Applied"); 
@@ -1627,6 +1569,7 @@
                 const status = balance <= 0.01 ? 'Paid' : 'Unpaid';
                 const statusColor = status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50';
                 const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
+                // Note: The eye icon now calls act_viewInvoice()
                 rowHtml = `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td><td class="p-5 text-sm text-slate-500">${desc}</td><td class="p-5 text-right font-bold text-slate-800">$${(record.total||0).toLocaleString()}</td><td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${status}</span></td><td class="p-5 text-right"><button onclick="act_viewInvoice(${record.id})" class="text-slate-400 hover:text-indigo-600 transition" title="View Details"><i class="fas fa-eye"></i></button></td></tr>`;
             } else {
                 rowHtml = `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td><td class="p-5 text-sm text-slate-400 italic">Payment Received</td><td class="p-5 text-right font-bold text-emerald-600">+$${(record.amount||0).toLocaleString()}</td><td class="p-5 text-right text-xs text-slate-400">-</td><td class="p-5 text-right text-xs text-slate-400">-</td></tr>`;
@@ -1666,6 +1609,7 @@
         const inv = state.invoices.find(i => i.id === id);
         if(!inv) return;
 
+        // 1. Populate Data
         setText('prev-name', inv.tenant_name || 'Unknown');
         setText('prev-date', new Date(inv.date).toLocaleDateString());
         setText('prev-total-due', `$${(inv.total || 0).toLocaleString()}`);
@@ -1683,18 +1627,18 @@
             });
         }
 
-        // Switch Modal View (Hide Inputs, Show Preview)
+        // 2. Switch Modal View (Hide Inputs, Show Preview)
         document.getElementById('inv-step-input').classList.add('hidden-section');
         document.getElementById('inv-step-preview').classList.remove('hidden-section');
         
-        // Toggle Actions (Hide "Send", Show "Close" AND "Download")
+        // 3. Toggle Actions (Hide "Send", Show "Close" AND "Download")
         document.getElementById('inv-actions-create').classList.remove('flex');
         document.getElementById('inv-actions-create').classList.add('hidden-section');
         
         const viewActions = document.getElementById('inv-actions-view');
         viewActions.classList.remove('hidden-section');
         
-        // --- FIX #4: PDF DOWNLOAD BUTTON ---
+        // Inject Download Button dynamically
         viewActions.innerHTML = `
             <div class="flex gap-2">
                 <button onclick="downloadOwnerInvoicePDF('Invoice_${id}')" class="flex-1 py-3 border border-slate-300 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50">
@@ -1709,9 +1653,8 @@
         openModal('modal-invoice');
     }
 
-    // --- FIX #4: PDF DOWNLOAD FUNCTION ---
     function downloadOwnerInvoicePDF(filename) {
-        const element = document.getElementById('invoice-preview-paper'); 
+        const element = document.querySelector('#inv-step-preview .bg-white'); 
         const opt = {
             margin:       0.5,
             filename:     `${filename}.pdf`,
@@ -1728,32 +1671,7 @@
     function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
     function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); }
     function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
-    
-    // --- FIX #3: DATE LOGIC ---
-    function logic_generatePreview() { 
-        const tidSelect = document.getElementById('inv-tenant').value; 
-        if(!tidSelect) return showToast("Please select a tenant", 'error'); 
-        const tid = parseInt(tidSelect); 
-        const tenant = state.tenants.find(t => t.id === tid); 
-        
-        // Use the user-selected date
-        const dateInput = document.getElementById('inv-date').value; 
-        
-        const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); 
-        draftInvoice = { tenantId: tid, tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: dateInput }; 
-        
-        setText('prev-name', tenant.name); 
-        setText('prev-date', new Date(dateInput).toLocaleDateString()); 
-        setText('prev-total-due', `$${currentTotal.toLocaleString()}`); 
-        
-        const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = ''; 
-        invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); 
-        
-        document.getElementById('inv-step-input').classList.add('hidden-section'); 
-        document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
-        setText('inv-modal-title',"Review Invoice"); 
-    }
-    
+    function logic_generatePreview() { const tidSelect = document.getElementById('inv-tenant').value; if(!tidSelect) return showToast("Please select a tenant", 'error'); const tid = parseInt(tidSelect); const tenant = state.tenants.find(t => t.id === tid); const date = document.getElementById('inv-date').value; const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); draftInvoice = { tenantId: tid, tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: date, }; setText('prev-name', tenant.name); setText('prev-date', new Date(date).toLocaleDateString()); setText('prev-total-due', `$${currentTotal.toLocaleString()}`); const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = ''; invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); document.getElementById('inv-step-input').classList.add('hidden-section'); document.getElementById('inv-step-preview').classList.remove('hidden-section'); setText('inv-modal-title',"Review Invoice"); }
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
     
     async function logic_confirmInvoice() { 
@@ -1763,24 +1681,25 @@
         btn.innerText = "Sending...";
 
         try {
+            // 1. Get IDs
             const ownerId = localStorage.getItem('kozeyy_user_id');
-            const stripeId = state.settings.stripe_connect_id || null; 
+            const stripeId = state.settings.stripe_connect_id || null; // Optional now!
 
-            // Upload Document (if any)
+            // 2. Upload Document (if any)
             const file = document.getElementById('inv-doc').files[0]; 
             let docUrl = null; 
             if (file) docUrl = await uploadFile(file, 'invoices'); 
 
-            // Fix #3: Save Date Correctly
+            // 3. Save Invoice (Using Owner ID as the link)
             const { error } = await supabaseClient.from('invoices').insert([{ 
-                owner_id: ownerId,
+                owner_id: ownerId,          // <--- THE NEW LINK
                 tenant_id: draftInvoice.tenantId, 
                 tenant_name: draftInvoice.tenantName, 
                 items: draftInvoice.items, 
                 total: draftInvoice.total, 
-                date: draftInvoice.date, // <--- Correct Date
+                date: draftInvoice.date, 
                 status: 'Unpaid', 
-                landlord_stripe_id: stripeId,
+                landlord_stripe_id: stripeId, // Can be null now
                 doc_url: docUrl 
             }]); 
 
@@ -1812,7 +1731,9 @@ function updateFileCount() {
 
     function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
     function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
+    function loadUserProfile() { const savedProfile = localStorage.getItem('kozeyy_profile'); if (savedProfile) { const user = JSON.parse(savedProfile); if(user.role === 'owner') { const nameDisplay = user.username ? user.username : user.name; setText('owner-name-display', nameDisplay); const initialBox = document.getElementById('owner-initials-display'); if(initialBox) initialBox.innerText = user.initials; } } }
 
+    loadUserProfile();
     initSystem();
 </script>
 </body>
