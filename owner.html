@@ -1354,13 +1354,30 @@ function toggleFeeVisibility() {
     }
     
     async function sendMsg() { 
-        const i=document.getElementById('input-chat'); 
-        if(i.value && currentChatId) { 
-            const newMsg = {tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString(), created_at: new Date().toISOString() };
+        const i = document.getElementById('input-chat'); 
+        const ownerId = localStorage.getItem('kozeyy_user_id'); // Get Owner ID
+
+        if(i.value && currentChatId && ownerId) { 
+            const newMsg = {
+                owner_id: ownerId,      // ADDED: Owner ID
+                tenant_id: currentChatId, 
+                from: 'Owner', 
+                text: i.value, 
+                time: new Date().toISOString(), 
+                created_at: new Date().toISOString() 
+            };
+            
+            // Optimistic UI Update
             state.msgs.push(newMsg);
             renderMessages(true);
-            const val = i.value; i.value=''; 
-            await supabaseClient.from('msgs').insert([newMsg]);
+            
+            const val = i.value; 
+            i.value = ''; 
+            
+            // Send to Backend
+            const { error } = await supabaseClient.from('msgs').insert([newMsg]);
+            if(error) console.error("Message send failed:", error);
+            
             await fetchData(); 
         } 
     }
@@ -1663,27 +1680,53 @@ function toggleFeeVisibility() {
 
     function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
     
-    async function confirmPay() { 
+   async function confirmPay() { 
         let tid = document.getElementById('pay-tenant-id').value; 
         const sel = document.getElementById('pay-tenant-select'); 
+        const ownerId = localStorage.getItem('kozeyy_user_id'); // Get Owner ID
+
+        // Handle Tenant Selection Logic
         if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
         tid = parseInt(tid); 
         let amt = parseFloat(document.getElementById('pay-amount').value); 
         
-        if(tid && amt > 0) { 
-            const { error } = await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]);
-            if (error) { showToast("Payment Failed: " + error.message, 'error'); return; }
-            const openInvoices = state.invoices.filter(i => i.tenant_id === tid && i.status !== 'Paid').sort((a,b) => new Date(a.date) - new Date(b.date)); 
+        if(tid && amt > 0 && ownerId) { 
+            // 1. Insert Payment Record with Owner ID
+            const { error } = await supabaseClient.from('payments').insert([{ 
+                owner_id: ownerId,      // ADDED: Owner ID
+                tenant_id: tid, 
+                amount: amt, 
+                date: document.getElementById('pay-date').value 
+            }]);
+
+            if (error) { 
+                showToast("Payment Failed: " + error.message, 'error'); 
+                return; 
+            }
+
+            // 2. Auto-apply to oldest open invoices
+            const openInvoices = state.invoices
+                .filter(i => i.tenant_id === tid && i.status !== 'Paid')
+                .sort((a,b) => new Date(a.date) - new Date(b.date)); 
+            
             for(const inv of openInvoices) { 
                 if (amt <= 0) break; 
                 const due = inv.total - (inv.amount_paid || 0); 
                 const pay = Math.min(amt, due); 
                 const newPaid = (inv.amount_paid || 0) + pay; 
                 const newStatus = newPaid >= inv.total ? 'Paid' : 'Unpaid'; 
-                await supabaseClient.from('invoices').update({ amount_paid: newPaid, status: newStatus }).eq('id', inv.id); 
+                
+                await supabaseClient.from('invoices').update({ 
+                    amount_paid: newPaid, 
+                    status: newStatus 
+                }).eq('id', inv.id); 
+                
                 amt -= pay; 
             } 
-            closeModal('modal-pay'); initSystem(); showToast("Payment Recorded & Applied"); 
+            
+            closeModal('modal-pay'); 
+            await initSystem(); 
+            showToast("Payment Recorded & Applied"); 
         } 
     }
     
@@ -2061,6 +2104,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
