@@ -504,9 +504,14 @@
             if(user.email) document.getElementById('set-email').innerText = user.email;
             if(user.phone) document.getElementById('set-phone').innerText = user.phone;
             
-            // Pre-fill edit modal inputs
-            document.getElementById('edit-email').value = user.email || '';
-            document.getElementById('edit-phone').value = user.phone || '';
+            // PRE-FILL EDIT MODAL INPUTS (CONDITIONAL UPDATE)
+            const settingsModal = document.getElementById('settingsModal');
+            // Only update the input fields if the modal is CLOSED.
+            // This prevents overwriting what the user is typing if the modal is currently open.
+            if (settingsModal && settingsModal.classList.contains('hidden-section')) {
+                document.getElementById('edit-email').value = user.email || '';
+                document.getElementById('edit-phone').value = user.phone || '';
+            }
             
             if(user.unit && user.unit.trim() !== '') {
                 document.getElementById('unit-info-container').classList.remove('hidden-section');
