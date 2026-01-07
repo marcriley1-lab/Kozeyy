@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Owner Dashboard | Kozeyy</title>
-    <!-- Tailwind CSS for modern utility-first styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for professional iconography -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts: Inter for UI, Outfit for branding -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
-    <!-- External Libraries for Charts, Backend, and PDF generation -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
@@ -38,14 +34,10 @@
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800 bg-slate-50">
 
-    <!-- Mobile Overlay for Sidebar Navigation -->
     <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 z-40 hidden transition-opacity backdrop-blur-sm md:hidden"></div>
-    
-    <!-- Container for dynamic notifications -->
     <div id="toast-container"></div>
 
-    <!-- MAIN SIDEBAR NAVIGATION -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-indigo-950 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static shadow-xl">
+   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-indigo-950 flex flex-col transition-transform duration-300 transform -translate-x-full md:translate-x-0 md:static shadow-xl">
         <div class="h-20 flex items-center justify-between px-6 border-b border-indigo-900 bg-indigo-950">
             <div class="flex items-center gap-3">
                 <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -100,9 +92,7 @@
         </div>
     </aside>
 
-    <!-- MAIN CONTENT AREA -->
     <main class="flex-1 flex flex-col overflow-hidden relative w-full">
-        <!-- Dashboard Header -->
         <header class="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shadow-sm z-10 sticky top-0">
             <div class="flex items-center gap-3">
                 <button onclick="toggleSidebar()" class="md:hidden text-slate-700 hover:text-indigo-600 focus:outline-none p-2 -ml-2 rounded-xl hover:bg-slate-50 transition">
@@ -117,8 +107,7 @@
             <div class="flex items-center gap-4 md:gap-6">
                 <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
                     <div class="text-right hidden md:block">
-                        <!-- REQUIREMENT: Owner name in top right -->
-                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Loading...</p>
+                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Landlord</p>
                         <p class="text-xs text-slate-500">Property Owner</p>
                     </div>
                     <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font" id="owner-initials-display">LL</div>
@@ -126,10 +115,8 @@
             </div>
         </header>
 
-        <!-- Dynamic Content Scroller -->
         <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 scroll-smooth pb-32" id="app-content">
             
-            <!-- SECTION: DASHBOARD -->
             <div id="view-dashboard" class="view-section fade-in-up">
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-8">
                     <div class="bg-gradient-to-br from-emerald-50 to-white p-4 md:p-6 rounded-3xl shadow-sm border border-emerald-100 flex flex-col justify-between h-36 relative overflow-hidden">
@@ -151,10 +138,9 @@
                 </div>
                 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- REQUIREMENT: Performance Charts -->
                     <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-100 h-80">
                         <div class="flex justify-between items-end mb-4">
-                            <h3 class="font-bold text-lg text-slate-800 brand-font" id="chart-title">Portfolio Performance</h3>
+                            <h3 class="font-bold text-lg text-slate-800 brand-font" id="chart-title">Performance</h3>
                         </div>
                         <div class="h-64"><canvas id="revenueChart"></canvas></div>
                     </div>
@@ -169,7 +155,6 @@
                 </div>
             </div>
 
-            <!-- SECTION: TENANTS -->
             <div id="view-tenants" class="view-section hidden-section fade-in-up">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-slate-800 brand-font">Directory</h3>
@@ -199,13 +184,11 @@
                 </div>
             </div>
 
-            <!-- SECTION: LISTINGS -->
             <div id="view-listings" class="view-section hidden-section fade-in-up">
                 <div class="flex justify-between items-center mb-6"><h3 class="text-xl font-bold text-slate-800 brand-font">Listings</h3><button onclick="openModal('modal-listing')" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow hover:bg-indigo-700 brand-font">+ Post</button></div>
                 <div id="grid-listings" class="grid grid-cols-1 md:grid-cols-4 gap-6"></div>
             </div>
 
-            <!-- SECTION: SCREENING -->
             <div id="view-screening" class="view-section hidden-section fade-in-up">
                 <h3 class="text-xl font-bold text-slate-800 brand-font mb-4">Applicant Queue</h3>
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 w-full overflow-x-auto">
@@ -223,7 +206,6 @@
                 </div>
             </div>
 
-            <!-- SECTION: MESSAGES -->
             <div id="view-messages" class="view-section hidden-section fade-in-up h-[calc(100dvh-90px)]">
                 <div class="flex h-full bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden relative">
                     <div id="msg-list-panel" class="w-full md:w-1/3 border-r border-slate-200 bg-slate-50 flex flex-col">
@@ -244,28 +226,26 @@
                 </div>
             </div>
 
-            <!-- SECTION: MAINTENANCE -->
             <div id="view-maintenance" class="view-section hidden-section fade-in-up">
                 <h3 class="text-xl font-bold text-slate-800 mb-4 brand-font">Maintenance</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b bg-rose-50 border-rose-100"><h3 class="font-bold text-rose-800 brand-font">Active Requests</h3></div><div id="list-maint-active" class="divide-y divide-slate-100"></div></div>
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b bg-slate-50 border-slate-100"><h3 class="font-bold text-slate-700 brand-font">Service History</h3></div><div id="list-maint-history" class="divide-y divide-slate-100"></div></div>
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b bg-rose-50 border-rose-100"><h3 class="font-bold text-rose-800 brand-font">Active</h3></div><div id="list-maint-active" class="divide-y divide-slate-100"></div></div>
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b bg-slate-50 border-slate-100"><h3 class="font-bold text-slate-700 brand-font">History</h3></div><div id="list-maint-history" class="divide-y divide-slate-100"></div></div>
                 </div>
             </div>
 
-            <!-- SECTION: FINANCIALS (RECORDS) -->
             <div id="view-financials" class="view-section hidden-section fade-in-up">
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-slate-800 brand-font">Payment Records</h3>
+                    <h3 class="text-xl font-bold text-slate-800 brand-font">Financial Records</h3>
                     <div class="flex gap-2">
-                        <button onclick="act_openPayModal(null)" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-700 brand-font">+ Record Payment</button>
-                        <button onclick="openInvoiceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-emerald-700 brand-font">+ New Invoice</button>
+                        <button onclick="act_openPayModal(null)" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-blue-700 brand-font">+ Payment</button>
+                        <button onclick="openInvoiceModal()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-emerald-700 brand-font">+ Invoice</button>
                     </div>
                 </div>
 
                 <div id="fin-summary-container" class="mb-6 hidden-section">
                     <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm max-w-xs">
-                        <p class="text-xs text-slate-500 font-bold uppercase">Portfolio Outstanding</p>
+                        <p class="text-xs text-slate-500 font-bold uppercase">Total Outstanding</p>
                         <h4 class="text-xl font-bold text-slate-800" id="fin-open-bal">$0.00</h4>
                     </div>
                 </div>
@@ -292,14 +272,13 @@
                 </div>
             </div>
 
-            <!-- SECTION: EXPENSES -->
             <div id="view-expenses" class="view-section hidden-section fade-in-up">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <h3 class="text-xl font-bold text-slate-800 brand-font">Business Expenses</h3>
+                    <h3 class="text-xl font-bold text-slate-800 brand-font">Expenses</h3>
                     <div class="flex gap-3 w-full md:w-auto">
                         <select id="filter-expenses" onchange="renderExpenses()" class="border border-slate-300 rounded-xl px-3 py-2 text-sm bg-white flex-1 md:flex-none font-medium text-slate-600"><option value="all">All Properties</option></select>
                         <div class="bg-rose-50 text-rose-700 px-4 py-2 rounded-xl font-bold border border-rose-200 text-sm flex-1 md:flex-none text-center brand-font">Total: <span id="exp-total-display">$0.00</span></div>
-                        <button onclick="populateExpenseModal(); openModal('modal-expense')" class="bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-rose-700 flex-none brand-font">+ Log Expense</button>
+                        <button onclick="populateExpenseModal(); openModal('modal-expense')" class="bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow hover:bg-rose-700 flex-none brand-font">+ Add</button>
                     </div>
                 </div>
 
@@ -311,28 +290,24 @@
                 </div>
             </div>
 
-            <!-- SECTION: REPORTS -->
             <div id="view-reports" class="view-section hidden-section fade-in-up">
-                <h3 class="text-xl font-bold text-slate-800 brand-font mb-6">Financial Intelligence</h3>
+                <h3 class="text-xl font-bold text-slate-800 brand-font mb-6">Reports</h3>
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- REQUIREMENT: Income Statement -->
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
                         <h4 class="font-bold text-lg text-slate-900 border-b pb-4 mb-4 brand-font">Income Statement (Year to Date)</h4>
                         <div class="space-y-4">
-                            <div class="flex justify-between items-center"><span class="text-slate-600">Total Gross Income</span><span class="font-bold text-emerald-600 text-lg brand-font" id="report-income">$0.00</span></div>
-                            <div class="flex justify-between items-center"><span class="text-slate-600">Total Operating Expenses</span><span class="font-bold text-rose-600 text-lg brand-font" id="report-expense">$0.00</span></div>
-                            <div class="border-t pt-4 flex justify-between items-center mt-4"><span class="font-extrabold text-slate-800 brand-font">Net Operating Income (NOI)</span><span class="font-extrabold text-indigo-900 text-2xl brand-font" id="report-noi">$0.00</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-600">Total Revenue</span><span class="font-bold text-emerald-600 text-lg brand-font" id="report-income">$0.00</span></div>
+                            <div class="flex justify-between items-center"><span class="text-slate-600">Total Expenses</span><span class="font-bold text-rose-600 text-lg brand-font" id="report-expense">$0.00</span></div>
+                            <div class="border-t pt-4 flex justify-between items-center mt-4"><span class="font-extrabold text-slate-800 brand-font">Net Operating Income</span><span class="font-extrabold text-indigo-900 text-2xl brand-font" id="report-noi">$0.00</span></div>
                         </div>
                     </div>
-                    <!-- REQUIREMENT: Monthly Breakdown -->
                     <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-                        <h4 class="font-bold text-lg text-slate-900 mb-4 brand-font">Monthly Cashflow Breakdown</h4>
+                        <h4 class="font-bold text-lg text-slate-900 mb-4 brand-font">Monthly Breakdown</h4>
                         <div class="h-64"><canvas id="monthlyChart"></canvas></div>
                     </div>
                 </div>
             </div>
 
-            <!-- SECTION: SETTINGS -->
             <div id="view-settings" class="view-section hidden-section fade-in-up">
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
@@ -348,42 +323,38 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Late Fees Configuration</label>
+                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Late Fees</label>
                             <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-xs font-bold text-slate-500 mb-1">Fee Amount ($)</label><input type="number" id="fee-amount" class="w-full border p-3 rounded-xl bg-slate-50" value="50"></div>
+                                <div><label class="block text-xs font-bold text-slate-500 mb-1">Amount ($)</label><input type="number" id="fee-amount" class="w-full border p-3 rounded-xl bg-slate-50" value="50"></div>
                                 <div><label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label><input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50" value="5"></div>
                             </div>
                         </div>
                         
                         <div class="pt-4 border-t border-slate-100">
-                            <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Auto-Screening Criteria</h4>
+                            <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Screening Criteria</h4>
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div><label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Min Credit Score</label><input type="number" id="set-min-score" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="e.g. 650"></div>
-                                <div><label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Min Income (Ratio x Rent)</label><input type="number" step="0.1" id="set-min-income" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="e.g. 3.0"></div>
+                                <div><label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Min Income (x Rent)</label><input type="number" step="0.1" id="set-min-income" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="e.g. 3.0"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
-                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-evict" class="text-indigo-600 rounded"><span class="text-sm font-medium">Require No Evictions</span></label></div>
-                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-crim" class="text-indigo-600 rounded"><span class="text-sm font-medium">Require Clean Criminal Hist.</span></label></div>
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-evict" class="text-indigo-600 rounded"><span class="text-sm font-medium">No Evictions</span></label></div>
+                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-crim" class="text-indigo-600 rounded"><span class="text-sm font-medium">No Criminal Hist.</span></label></div>
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg brand-font">Save System Configuration</button>
+                        <button class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg brand-font">Save Configuration</button>
                     </form>
                 </div>
             </div>
         </div>
     </main>
-
-    <!-- UI MODALS: GLOBAL PLATFORM COMPONENTS -->
-
-    <!-- Platform Confirm Modal -->
-    <div id="modal-platform-confirm" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+<div id="modal-platform-confirm" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center">
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
                 <i class="fas fa-question"></i>
             </div>
             <h3 class="text-lg font-bold mb-2 text-slate-900" id="plat-conf-title">Confirm Action</h3>
-            <p class="text-sm text-slate-500 mb-6" id="plat-conf-msg">Are you sure you want to proceed with this operation?</p>
+            <p class="text-sm text-slate-500 mb-6" id="plat-conf-msg">Are you sure you want to proceed?</p>
             <div class="flex gap-3">
                 <button onclick="closePlatformConfirm(false)" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition">Cancel</button>
                 <button onclick="closePlatformConfirm(true)" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition">Confirm</button>
@@ -391,159 +362,316 @@
         </div>
     </div>
 
-    <!-- Platform Prompt Modal -->
     <div id="modal-prompt" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-4" id="prompt-title">Input Required</h3>
-            <input type="text" id="prompt-input" class="w-full border p-3 rounded-xl bg-slate-50 mb-4 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter value here...">
+            <h3 class="text-lg font-bold mb-4" id="prompt-title">Enter Value</h3>
+            <input type="text" id="prompt-input" class="w-full border p-3 rounded-xl bg-slate-50 mb-4" placeholder="Type here...">
             <div class="flex gap-2">
-                <button onclick="closePrompt(false)" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl font-bold text-sm transition">Cancel</button>
-                <button onclick="closePrompt(true)" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition">Submit</button>
+                <button onclick="closePrompt(false)" class="flex-1 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
+                <button onclick="closePrompt(true)" class="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm">Confirm</button>
             </div>
         </div>
     </div>
 
-    <!-- Tenant Management Modal -->
+    <div id="modal-share-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4"><i class="fas fa-check"></i></div>
+            <h3 class="text-lg font-bold mb-2">Listing Posted!</h3>
+            <p class="text-sm text-slate-500 mb-6">Your property is now live on Kozeyy Rentals.</p>
+            
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-2 mb-4">
+                <input id="share-link-input" readonly class="bg-transparent text-xs flex-1 text-slate-600 outline-none">
+                <button onclick="copyListingLink()" class="text-indigo-600 font-bold text-xs">Copy</button>
+            </div>
+            
+            <a id="public-link-btn" href="#" target="_blank" class="block w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm mb-2 hover:bg-indigo-700">View Public Listing</a>
+            <button onclick="closeModal('modal-share-listing')" class="block w-full text-slate-400 text-xs font-bold py-2">Close</button>
+        </div>
+    </div>
+
     <div id="modal-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400 hover:text-slate-800"><i class="fas fa-times text-xl"></i></button>
-            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-tenant-title">Add New Tenant</h3>
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
+            <button onclick="closeModal('modal-tenant')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-tenant-title">Add Tenant</h3>
             <form onsubmit="act_saveTenant(event)" class="space-y-4">
                 <input type="hidden" id="t-id">
                 <div class="grid grid-cols-2 gap-4">
                     <input id="t-name" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Full Name" required>
-                    <input id="t-phone" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Phone Number">
+                    <input id="t-phone" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Phone">
                 </div>
                 <input id="t-email" type="email" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Email Address" required>
-                <input id="t-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address (Street)">
+                <input id="t-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address">
                 <div class="grid grid-cols-3 gap-4">
                     <input id="t-city" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="City">
                     <input id="t-state" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="State">
-                    <input id="t-zip" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Zip Code">
+                    <input id="t-zip" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Zip">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <input id="t-unit" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Unit / Suite #">
+                    <input id="t-unit" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Unit #">
                     <input id="t-rent" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Rent Amount" required>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-xs font-bold text-slate-500 ml-1">Lease Start Date</label><input type="date" id="t-start" class="w-full border p-3 rounded-xl bg-slate-50"></div>
-                    <div><label class="text-xs font-bold text-slate-500 ml-1">Lease End Date</label><input type="date" id="t-end" class="w-full border p-3 rounded-xl bg-slate-50"></div>
+                    <div><label class="text-xs font-bold text-slate-500 ml-1">Lease Start</label><input type="date" id="t-start" class="w-full border p-3 rounded-xl bg-slate-50"></div>
+                    <div><label class="text-xs font-bold text-slate-500 ml-1">Lease End</label><input type="date" id="t-end" class="w-full border p-3 rounded-xl bg-slate-50"></div>
                 </div>
-                <div>
-                    <label class="text-xs font-bold text-slate-500 ml-1">Account Status</label>
-                    <select id="t-status" class="w-full border p-3 rounded-xl bg-slate-50">
-                        <option value="Active">Active</option>
-                        <option value="Vacant">Vacant</option>
-                        <option value="Archived">Archived</option>
-                    </select>
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold brand-font shadow-lg hover:bg-blue-700 transition" id="btn-save-tenant">Save Tenant Record</button>
+                 <select id="t-status" class="w-full border p-3 rounded-xl bg-slate-50">
+                    <option value="Active">Active</option>
+                    <option value="Vacant">Vacant</option>
+                    <option value="Archived">Archived</option>
+                </select>
+                <button class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-blue-700 transition" id="btn-save-tenant">Save Tenant</button>
             </form>
         </div>
     </div>
 
-    <!-- Invoice Wizard Modal -->
+    <div id="modal-view-tenant" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
+            <button onclick="closeModal('modal-view-tenant')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-view-tenant-title">Tenant Details</h3>
+            <div class="space-y-4">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-1">Contact Info</p>
+                    <h4 class="text-lg font-bold text-slate-800" id="vt-name"></h4>
+                    <p class="text-sm text-slate-600"><i class="fas fa-envelope w-5"></i> <span id="vt-email"></span></p>
+                    <p class="text-sm text-slate-600"><i class="fas fa-phone w-5"></i> <span id="vt-phone"></span></p>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-1">Property</p>
+                    <p class="text-sm font-medium text-slate-800" id="vt-addr"></p>
+                    <div class="flex gap-4 mt-2">
+                        <div><p class="text-xs text-slate-500">Unit</p><p class="font-bold" id="vt-unit"></p></div>
+                        <div><p class="text-xs text-slate-500">Rent</p><p class="font-bold text-emerald-600" id="vt-rent"></p></div>
+                        <div><p class="text-xs text-slate-500">Status</p><p class="font-bold" id="vt-status"></p></div>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-1">Lease Term</p>
+                    <div class="flex justify-between">
+                        <div><p class="text-xs text-slate-500">Start</p><p class="font-bold text-slate-700" id="vt-start"></p></div>
+                        <div><p class="text-xs text-slate-500">End</p><p class="font-bold text-slate-700" id="vt-end"></p></div>
+                    </div>
+                </div>
+
+                <button onclick="closeModal('modal-view-tenant')" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-slate-900 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal-listing')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-listing-title">Property Listing</h3>
+            <form onsubmit="act_saveListing(event)" class="space-y-4">
+                <input id="l-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address" required>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="l-price" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Price" required>
+                    <input id="l-sqft" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Sq Ft">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="l-beds" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Beds">
+                    <input id="l-baths" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Baths">
+                </div>
+                <textarea id="l-desc" class="w-full border p-3 rounded-xl bg-slate-50 h-24" placeholder="Description"></textarea>
+                <input id="l-amen" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amenities (comma separated)">
+                
+                <input id="l-contact" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Owner Contact (Email or Phone)">
+                
+                <div class="mt-2">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Listing Images</label>
+                    <div class="flex items-center gap-2">
+                        <label for="l-img-file" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-300 w-full justify-center">
+                            <i class="fas fa-camera"></i> <span id="l-img-label">Upload Photos</span>
+                        </label>
+                        <input type="file" id="l-img-file" class="hidden" accept=".jpg, .jpeg, .png, .webp" multiple onchange="updateFileCount()">
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-1 text-center" id="l-file-count"></p>
+                </div>
+
+                <input type="date" id="l-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
+                <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-indigo-700 transition" id="btn-save-listing">Post Listing</button>
+            </form>
+        </div>
+    </div>
+
     <div id="modal-invoice" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-            <button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400 hover:text-slate-800 transition"><i class="fas fa-times text-xl"></i></button>
-            <h3 class="text-xl font-bold mb-6 brand-font" id="inv-modal-title">Draft New Invoice</h3>
+            <button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="inv-modal-title">Create Invoice</h3>
             
             <div id="inv-step-input">
                 <form onsubmit="event.preventDefault(); logic_generatePreview();" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-400 uppercase mb-1 ml-1">Select Resident</label>
-                        <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50 font-medium" required>
-                            <option value="" disabled selected>Choose a Tenant...</option>
-                        </select>
-                    </div>
+                    <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
                     
                     <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
-                        <button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-lg font-bold text-sm bg-white shadow text-emerald-700">Monthly Rent (Fixed)</button>
-                        <button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-lg font-bold text-sm text-slate-500">Custom / Variable</button>
-                    </div>
-
-                    <!-- REQUIREMENT: Recurring Invoices Logic -->
-                    <div id="recurring-section" class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 space-y-3">
-                        <div class="flex items-center justify-between">
-                            <label class="text-sm font-bold text-indigo-900">Enable Recurring Billing?</label>
-                            <input type="checkbox" id="inv-is-recurring" onchange="logic_toggleRecurring()" class="w-5 h-5 accent-indigo-600 rounded">
-                        </div>
-                        <div id="recurring-dates" class="hidden-section grid grid-cols-2 gap-3 pt-2">
-                            <div>
-                                <label class="text-[10px] font-bold text-indigo-400 uppercase">First Invoice Date</label>
-                                <input type="date" id="inv-rec-start" class="w-full border p-2 rounded-lg text-sm bg-white">
-                            </div>
-                            <div>
-                                <label class="text-[10px] font-bold text-indigo-400 uppercase">Final End Date</label>
-                                <input type="date" id="inv-rec-end" class="w-full border p-2 rounded-lg text-sm bg-white">
-                            </div>
-                        </div>
-                        <p class="text-[10px] text-indigo-400 italic">When active, an invoice will be generated on this day every month.</p>
+                        <button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-lg font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button>
+                        <button type="button" onclick="logic_invMode('variable')" id="btn-variable" class="flex-1 py-2 rounded-lg font-bold text-sm text-slate-500">Variable</button>
                     </div>
                     
-                    <div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto custom-scroll"></div>
-                    <button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition">+ Add Item Line</button>
+                    <div id="inv-items-container" class="space-y-2 max-h-48 overflow-y-auto"></div>
+                    <button type="button" id="btn-add-row" onclick="logic_addRow()" class="hidden-section w-full border border-dashed border-slate-300 text-slate-500 py-2 rounded-xl text-sm">+ Add Item</button>
                     
-                    <div id="send-on-section">
-                        <!-- REQUIREMENT: Send invoice on specific date -->
-                        <label class="block text-xs font-bold text-slate-500 mb-1 ml-1">Send Invoice On</label>
-                        <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50 outline-none">
+                    <div class="mt-4">
+                        <label class="block text-sm font-bold text-slate-700 mb-1 brand-font">Attach Document</label>
+                        <div class="flex items-center gap-2">
+                            <label for="inv-doc" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-sm font-bold transition flex items-center gap-2 border border-slate-300">
+                                <i class="fas fa-paperclip"></i> <span id="inv-doc-label">Choose File</span>
+                            </label>
+                            <input type="file" id="inv-doc" class="hidden" accept=".pdf, .jpg, .jpeg, .png" onchange="updateFileName('inv-doc', 'inv-doc-label')">
+                        </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold brand-font hover:bg-indigo-700 transition shadow-lg">Generate Preview & Verify</button>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Send Invoice On</label>
+                        <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
+                    </div>
+
+                    <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font hover:bg-indigo-700 transition">Preview Invoice</button>
                 </form>
             </div>
 
             <div id="inv-step-preview" class="hidden-section">
-                <!-- Target Area for HTML2PDF High Res Export -->
-                <div id="invoice-download-container" class="bg-white border border-slate-200 rounded-xl p-8 mb-6 paper-shadow relative overflow-hidden">
+                <!-- Target Area for HTML2PDF -->
+                <div id="invoice-download-area" class="bg-white border border-slate-200 rounded-xl p-6 mb-6 paper-shadow relative overflow-hidden">
                     <div class="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
-                    <div class="flex justify-between items-start mb-10">
+                    <div class="flex justify-between items-start mb-6">
                         <div>
-                            <h2 class="text-3xl font-bold text-slate-800 brand-font tracking-tight">INVOICE</h2>
-                            <p class="text-xs text-slate-400 mt-2 font-medium">Kozeyy Real Estate Portfolio Management</p>
+                            <h2 class="text-2xl font-bold text-slate-800 brand-font">INVOICE</h2>
+                            <p class="text-xs text-slate-400 mt-1">Kozeyy Property Mgmt</p>
                         </div>
                         <div class="text-right">
-                            <!-- REQUIREMENT: Date must match send date -->
-                            <p class="text-sm font-bold text-slate-700" id="prev-date">---</p>
-                            <p class="text-xs text-slate-500 mt-1 uppercase tracking-tighter">Bill To:</p>
-                            <p class="text-sm font-extrabold text-slate-800" id="prev-name">---</p>
+                            <p class="text-sm font-bold text-slate-700" id="prev-date">Oct 24, 2023</p>
+                            <p class="text-xs text-slate-500">Bill To: <span id="prev-name">Tenant Name</span></p>
                         </div>
                     </div>
                     
-                    <div class="space-y-6">
-                        <table class="w-full text-sm text-left">
-                            <thead class="text-xs text-slate-400 uppercase border-b border-slate-100">
-                                <tr><th class="py-4 font-bold">Line Description</th><th class="py-4 text-right font-bold">Amount</th></tr>
-                            </thead>
-                            <tbody id="prev-items-body" class="text-slate-700 divide-y divide-slate-50"></tbody>
-                        </table>
-                        <div class="flex justify-end pt-6 border-t border-slate-100">
-                            <div class="bg-slate-50 px-8 py-5 rounded-2xl border border-slate-100 min-w-[180px] text-right">
-                                <p class="text-[10px] font-bold text-slate-400 uppercase mb-1">Total Balance Due</p>
-                                <p class="text-2xl font-black text-slate-900 brand-font" id="prev-total-due">$0.00</p>
-                            </div>
+                    <div class="space-y-4">
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <div class="flex justify-between text-xs font-bold text-slate-700"><span>Total Amount</span><span id="prev-total-due">$0.00</span></div>
                         </div>
+
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-slate-400 uppercase border-b"><tr><th class="py-2">Description</th><th class="py-2 text-right">Amount</th></tr></thead>
+                            <tbody id="prev-items-body" class="text-slate-700"></tbody>
+                        </table>
                     </div>
                 </div>
                 
                 <div id="inv-actions-create" class="flex gap-3">
-                    <button onclick="logic_backToInput()" class="flex-1 py-3.5 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition">Go Back</button>
-                    <button onclick="logic_confirmInvoice()" id="btn-confirm-inv" class="flex-1 py-3.5 bg-emerald-600 text-white rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition">Confirm & Dispatch</button>
+                    <button onclick="logic_backToInput()" class="flex-1 py-3 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50">Back</button>
+                    <button onclick="logic_confirmInvoice()" id="btn-confirm-inv" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold shadow hover:bg-emerald-700">Send Invoice</button>
                 </div>
                 
                 <div id="inv-actions-view" class="hidden-section">
-                    <!-- REQUIREMENT: Download by PDF -->
-                    <button onclick="downloadOwnerInvoicePDF()" class="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-xl hover:bg-indigo-700 mb-3 transition">
-                        <i class="fas fa-file-pdf mr-2"></i> Download as PDF Document
-                    </button>
-                    <button onclick="closeModal('modal-invoice')" class="w-full py-4 bg-slate-800 text-white rounded-xl font-bold shadow hover:bg-slate-900 transition">Close Viewer</button>
+                    <!-- Buttons injected dynamically -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="modal-expense" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
+            <button onclick="closeModal('modal-expense')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-6 brand-font" id="modal-expense-title">Expense</h3>
+            <form onsubmit="act_saveExpense(event)" class="space-y-4">
+                <input type="hidden" id="ex-id">
+                <select id="ex-prop" class="w-full border p-3 rounded-xl bg-slate-50"></select>
+                <input type="date" id="ex-date" class="w-full border p-3 rounded-xl bg-slate-50" required>
+                <input id="ex-vendor" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Vendor" required>
+                <select id="ex-cat" class="w-full border p-3 rounded-xl bg-slate-50"><option>Repairs</option><option>Utilities</option><option>Tax</option><option>Insurance</option><option>Other</option></select>
+                <input id="ex-amount" type="number" step="0.01" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Amount" required>
+                
+                <div class="mt-2">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">Receipt</label>
+                    <div class="flex items-center gap-2">
+                        <label for="ex-doc" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 border border-slate-300">
+                            <i class="fas fa-camera"></i> <span id="ex-doc-label">Upload</span>
+                        </label>
+                        <input type="file" id="ex-doc" class="hidden" accept=".pdf, .jpg, .jpeg, .png" onchange="updateFileName('ex-doc', 'ex-doc-label')">
+                    </div>
+                </div>
+
+                <button class="w-full bg-rose-600 text-white py-3 rounded-xl font-bold brand-font" id="btn-save-expense">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-pay" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm relative">
+            <h3 class="text-xl font-bold mb-4 brand-font">Record Payment</h3>
+            <select id="pay-tenant-select" class="w-full border p-3 rounded-xl mb-4 hidden-section"></select>
+            <input type="hidden" id="pay-tenant-id">
+            <input type="number" id="pay-amount" class="w-full border p-3 rounded-xl mb-4" placeholder="Amount Recieved">
+            <input type="date" id="pay-date" class="w-full border p-3 rounded-xl mb-4">
+            <div class="flex gap-2">
+                <button onclick="closeModal('modal-pay')" class="flex-1 py-3 bg-slate-100 rounded-xl font-bold">Cancel</button>
+                <button onclick="confirmPay()" class="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-bold">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1 brand-font"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">None</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-50 brand-font">Close</button></div></div>
+
+    <div id="modal-screening-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeModal('modal-screening-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-1 brand-font">Applicant Report</h3>
+            <h4 id="sd-name" class="text-lg text-slate-600 mb-6"></h4>
+
+            <div class="space-y-4">
+                <div id="sd-banner" class="p-4 rounded-xl border font-bold text-center"></div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-3">Financials</p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><p class="text-xs text-slate-500">Credit Score</p><p class="font-bold text-lg" id="sd-score">-</p></div>
+                        <div><p class="text-xs text-slate-500">Monthly Income</p><p class="font-bold text-lg" id="sd-income">-</p></div>
+                    </div>
+                    <div class="mt-2 text-xs text-slate-500">Rent Coverage: <span id="sd-ratio" class="font-bold text-slate-800"></span>x</div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-3">Employment</p>
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-sm text-slate-500">Job Title</span>
+                        <span id="sd-job" class="font-bold text-sm text-slate-800">-</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-slate-500">Verified Status</span>
+                        <span id="sd-employ" class="font-bold text-sm">-</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                    <p class="text-xs font-bold text-slate-400 uppercase mb-3">Background Check</p>
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2">
+                        <span class="text-sm font-medium">Evictions</span>
+                        <span id="sd-evict" class="font-bold text-sm">-</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium">Criminal History</span>
+                        <span id="sd-crim" class="font-bold text-sm">-</span>
+                    </div>
+                </div>
+                
+                <div id="sd-actions" class="grid grid-cols-3 gap-2 mt-4">
+                    <button onclick="act_initiateApproval()" class="bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow">Approve</button>
+                    <button onclick="act_screenDecision('Conditional')" class="bg-amber-400 text-white py-3 rounded-xl font-bold text-sm shadow">Conditional</button>
+                    <button onclick="act_screenDecision('Deny')" class="bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow">Deny</button>
+                </div>
+                
+                <div id="sd-email-option" class="hidden-section text-center p-4 bg-slate-50 rounded-xl">
+                    <p class="text-sm text-slate-500 mb-2">Applicant Approved.</p>
+                    <button onclick="act_initiateSendLease(currentAppId)" class="text-indigo-600 font-bold text-sm hover:underline">Proceed to Lease</button>
                 </div>
             </div>
         </div>
     </div>
-    <script>
-    // --- DATABASE & PLATFORM CONFIGURATION ---
+
+<script>
+    // --- SUPABASE CONFIG ---
     const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
     
@@ -552,66 +680,314 @@
         if(window.supabase) {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
-    } catch(e) {
-        console.error("Supabase library initialization failure:", e);
-    }
+    } catch(e) { console.error("Error init Supabase:", e); }
 
-    // --- APPLICATION STATE CONTAINER ---
+    // --- GLOBAL STATE ---
     let state = {
-        tenants: [], 
-        listings: [], 
-        invoices: [], 
-        payments: [], 
-        expenses: [],
-        apps: [], 
-        msgs: [], 
-        maint: [], 
-        settings: {}, 
+        tenants: [], listings: [], invoices: [], payments: [], expenses: [],
+        apps: [], msgs: [], maint: [], settings: {}, 
         notifications: { messages: 0, maintenance: 0, screening: 0 }
     };
     
-    // Persistent View and Session Tracking
+    // Persistent View Tracking
     let viewedMaintIds = new Set(JSON.parse(localStorage.getItem('kozeyy_viewed_maint') || '[]').map(String));
     let viewedAppIds = new Set(JSON.parse(localStorage.getItem('kozeyy_viewed_apps') || '[]').map(String));
     let locallyReadMsgIds = new Set(JSON.parse(localStorage.getItem('kozeyy_read_msgs') || '[]').map(String));
     let activeTab = 'dashboard';
 
-    // UI state trackers
-    let chartInstance = null, 
-        monthlyChartInstance = null, 
-        currentChatId = null, 
-        invMode = 'fixed', 
-        invItems = [], 
-        editTenantId = null, 
-        editListingId = null, 
-        draftInvoice = null, 
-        promptCallback = null, 
-        platformConfirmCallback = null;
+    // State Tracking for Diffing
+    let lastRenderedState = {
+        dashboard: "", tenants: "", listings: "", maint: "", msgs: "", invoices: "", expenses: "", screening: ""
+    };
 
-    // --- HELPER FUNCTIONS ---
+    // Helper Functions
+    function parseDateStr(str) { if(!str) return new Date(); const parts = str.split('-'); return new Date(parts[0], parts[1]-1, parts[2]); }
+    function getLastName(fullName) { if(!fullName) return ''; const parts = fullName.trim().split(' '); return parts.length > 1 ? parts[parts.length - 1] : parts[0]; }
+    function setText(id, text) { const el = document.getElementById(id); if(el && el.innerText !== text) el.innerText = text; }
 
-    /**
-     * REQUIREMENT 2: MATCHING DATES EXACTLY
-     * Fixes timezone shift bug where Date objects default to UTC and show the "day before" in local display.
-     */
-    function parseLocalDate(str) {
-        if(!str) return new Date();
-        const parts = str.split('-');
-        // Creates date using local timezone constructor (Y, M-1, D)
-        return new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+    // UI State Variables
+    let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
+    let editTenantId = null, editListingId = null, editExpenseId = null, currentAppId = null;
+    let draftInvoice = null;
+    let promptCallback = null;
+    let platformConfirmCallback = null;
+
+    // --- 1. INIT & POLLING ---
+    async function initSystem() {
+        try {
+            if(!supabaseClient) throw new Error("Supabase library not loaded.");
+            await fetchData();
+            renderAll();
+            loadUserProfile(); // Populate header
+            
+            // Check for upload redirect param
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('action') === 'lease_uploaded') {
+                navTo('screening');
+                showToast("Lease document saved successfully");
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+
+            // Start Polling
+            setInterval(async () => { await fetchData(); renderAll(); }, 4000);
+        } catch (err) { console.error("Initialization failed:", err); renderAll(); }
     }
 
-    function formatDisplayDate(str) {
-        if(!str) return '-';
-        const dateObj = parseLocalDate(str);
-        return dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    async function fetchData() {
+        // --- MULTI-TENANCY FILTERING ---
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        if(!ownerId) {
+            console.warn("No owner ID found. Redirecting to login.");
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const [t, l, i, p, e, m, msg, s, a] = await Promise.all([
+            supabaseClient.from('tenants').select('*').eq('owner_id', ownerId), 
+            supabaseClient.from('listings').select('*').eq('owner_id', ownerId),
+            supabaseClient.from('invoices').select('*').eq('owner_id', ownerId), 
+            supabaseClient.from('payments').select('*'),
+            supabaseClient.from('expenses').select('*').eq('owner_id', ownerId),
+            supabaseClient.from('maintenance').select('*'),
+            supabaseClient.from('msgs').select('*'),
+            supabaseClient.from('settings').select('*').eq('owner_id', ownerId).maybeSingle(), 
+            supabaseClient.from('apps').select('*').eq('owner_id', ownerId)
+        ]);
+
+        state.tenants = t.data || [];
+        state.listings = l.data || [];
+        state.expenses = e.data || [];
+        state.settings = s.data || {};
+        state.apps = a.data || [];
+
+        // --- ASSOCIATION FILTERING ---
+        const myTenantIds = new Set(state.tenants.map(tn => tn.id));
+
+        state.invoices = (i.data || []).filter(x => myTenantIds.has(x.tenant_id));
+        state.payments = (p.data || []).filter(x => myTenantIds.has(x.tenant_id));
+        state.maint = (m.data || []).filter(x => myTenantIds.has(x.tenant_id));
+        
+        const serverMsgs = msg.data || [];
+        state.msgs = serverMsgs.filter(x => myTenantIds.has(x.tenant_id));
+        state.msgs.forEach(x => { if(locallyReadMsgIds.has(String(x.id))) x.read_at = new Date().toISOString(); });
+
+        state.notifications.messages = state.msgs.filter(x => x.from === 'Tenant' && !x.read_at).length;
+        state.notifications.maintenance = state.maint.filter(x => x.status === 'Active' && !viewedMaintIds.has(String(x.id))).length;
+        state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
     }
 
-    function setText(id, text) { 
-        const el = document.getElementById(id); 
-        if(el && el.innerText !== text) el.innerText = text; 
+    // --- 2. RENDER LOGIC ---
+    function renderAll() {
+        updateBadge('messages', state.notifications.messages); 
+        updateBadge('maintenance', state.notifications.maintenance); 
+        updateBadge('screening', state.notifications.screening);
+
+        const stats = calculateGlobalStats();
+        const activeMaint = state.maint.filter(m=>m.status==='Active').length;
+        
+        const totalUnits = state.tenants.filter(t => t.status !== 'Archived').length;
+        const occupiedUnits = state.tenants.filter(t => t.status === 'Active').length;
+        const occupancyPct = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
+
+        setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
+        setText('dash-maintenance', activeMaint); 
+        setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
+        setText('dash-occupancy', `${occupancyPct}%`);
+        
+        if(chartInstance) {
+            chartInstance.data.datasets[0].data = [stats.revenue, 0, stats.overdue];
+            chartInstance.update();
+        } else if(document.getElementById('revenueChart')) {
+            initChart(stats);
+        }
+
+        // Tenants
+        const tenantHash = JSON.stringify(state.tenants);
+        const statusFilter = document.getElementById('filter-tenant-status') ? document.getElementById('filter-tenant-status').value : 'Active';
+        const combinedHash = tenantHash + statusFilter;
+
+        if(combinedHash !== lastRenderedState.tenants) {
+            const tbody = document.getElementById('table-tenants'); 
+            if(tbody) {
+                tbody.innerHTML = '';
+                state.tenants
+                    .filter(t => statusFilter === 'all' ? true : t.status === statusFilter)
+                    .sort((a, b) => getLastName(a.name||'').localeCompare(getLastName(b.name||'')))
+                    .forEach(t => { 
+                        const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
+                        const moveOutBtn = t.status === 'Active' ? `<button onclick="act_moveOut(${t.id})" class="text-amber-500 hover:text-amber-700" title="Move Out"><i class="fas fa-box-open"></i></button>` : '';
+                        
+                        tbody.innerHTML += `
+                        <tr class="border-b border-slate-100">
+                            <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">
+                                ${t.name}<br>
+                                <span class="text-xs text-slate-400 font-normal">${t.email}</span>
+                                <div class="text-xs text-slate-500 mt-0.5">${t.phone || ''}</div>
+                            </td>
+                            <td class="p-5 text-sm hidden md:table-cell">${t.address || '-'}</td>
+                            <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
+                            <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent_amount || 0).toLocaleString()}</td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
+                            <td class="p-5 text-right">
+                                <div class="flex justify-end gap-3">
+                                    <button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button>
+                                    ${moveOutBtn}
+                                    <button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>`; 
+                });
+            }
+            lastRenderedState.tenants = combinedHash;
+        }
+
+        // Listings with Link Generation
+        const listingHash = JSON.stringify(state.listings);
+        if(listingHash !== lastRenderedState.listings) {
+            const grid = document.getElementById('grid-listings');
+            if(grid) {
+                grid.innerHTML = '';
+                state.listings.forEach(l => {
+                    const displayImg = (l.images && l.images.length > 0) ? l.images[0] : (l.image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994');
+                    grid.innerHTML += `
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                        <div class="h-32 bg-slate-200 relative">
+                            <img src="${displayImg}" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-bold shadow">$${l.price}</div>
+                        </div>
+                        <div class="p-4 flex-1">
+                            <h4 class="font-bold text-slate-800">${l.address}</h4>
+                            <p class="text-xs text-slate-500 mb-3">${l.beds} Bed • ${l.baths} Bath • ${l.sqft} sqft</p>
+                            <div class="flex gap-2 mt-auto">
+                                <button onclick="act_editListing(${l.id})" class="flex-1 border border-slate-200 text-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-slate-50">Edit</button>
+                                <button onclick="showShareModal(${l.id})" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold hover:bg-indigo-700">Share</button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            }
+            lastRenderedState.listings = listingHash;
+        }
+
+        // Screening
+        const screeningHash = JSON.stringify(state.apps);
+        if(screeningHash !== lastRenderedState.screening) {
+            const tbody = document.getElementById('table-screening');
+            if(tbody) {
+                tbody.innerHTML = '';
+                state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
+                    const eval = evalApplicant(app);
+                    
+                    let actionButton = '';
+                    const status = app.status || 'Pending';
+                    
+                    if(status === 'Approved') {
+                        actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700 block text-center w-full md:w-auto">Upload Lease</a>`;
+                    } 
+                    else if (status === 'Lease Uploaded') {
+                        actionButton = `
+                        <div class="flex items-center justify-end gap-2">
+                            <i class="fas fa-file-pdf text-slate-400 text-lg" title="Lease Attached"></i>
+                            <button onclick="act_initiateSendLease(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700">Send Lease</button>
+                        </div>`;
+                    } 
+                    else if (status === 'Lease Sent') {
+                        actionButton = `<button onclick="act_initiateFinalize(${app.id})" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-purple-700">Finalize</button>`;
+                    } 
+                    else if (status === 'Completed' || status === 'Active') {
+                        actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Tenant Active</span>`;
+                    } 
+                    else if (status === 'Deny') {
+                        actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
+                    } 
+                    else {
+                        actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm">Review</button>`;
+                    }
+
+                    const statusColor = status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 
+                                      (status === 'Lease Uploaded' ? 'bg-blue-50 text-blue-700' : 
+                                      (status === 'Lease Sent' ? 'bg-purple-100 text-purple-700' : 
+                                      (status === 'Completed' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')));
+
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100">
+                            <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewApp(${app.id})">
+                                ${app.name}<br>
+                                <span class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</span>
+                            </td>
+                            <td class="p-5">
+                                <span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span>
+                            </td>
+                            <td class="p-5">
+                                <span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${status}</span>
+                            </td>
+                            <td class="p-5 text-right">
+                                ${actionButton}
+                            </td>
+                        </tr>`;
+                });
+            }
+            lastRenderedState.screening = screeningHash;
+        }
+
+        // Maintenance
+        const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
+        if(maintHash !== lastRenderedState.maint) {
+            const activeList = document.getElementById('list-maint-active'); 
+            const histList = document.getElementById('list-maint-history'); 
+            if(activeList && histList) {
+                activeList.innerHTML = ''; histList.innerHTML = '';
+                const activeMaintItems = state.maint.filter(m => m.status === 'Active').sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
+                const completedMaintItems = state.maint.filter(m => m.status === 'Completed').sort((a,b) => new Date(b.completed_date) - new Date(a.completed_date));
+                if (activeMaintItems.length === 0) activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">No active requests</div>`; 
+                else activeMaintItems.forEach(m => { 
+                    const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown', unit: '?'}; 
+                    const displayDate = m.created_at ? new Date(m.created_at).toLocaleDateString() : (m.date ? new Date(m.date).toLocaleDateString() : 'Just now');
+                    activeList.innerHTML += `<div class="p-4 flex justify-between items-start bg-white border-b border-slate-100 hover:bg-slate-50 transition"><div><div class="flex items-center gap-2 mb-1"><span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Unit ${t.unit}</span><span class="text-xs font-bold text-slate-700">${t.name}</span></div><p class="font-bold text-slate-800 text-sm">${m.issue}</p><p class="text-xs text-slate-400 mt-1"><i class="far fa-clock"></i> ${displayDate}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition shadow-sm">Mark Done</button></div>`; 
+                }); 
+                completedMaintItems.forEach(m => { 
+                    const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown'};
+                    histList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white opacity-75 hover:opacity-100 transition border-b border-slate-100"><div><p class="font-medium text-slate-600 text-sm line-through decoration-slate-400">${m.issue}</p><p class="text-xs text-slate-400">${t.name} • Completed: ${m.completed_date ? new Date(m.completed_date).toLocaleDateString() : '-'}</p></div><button onclick="viewMaintNote(${m.id})" class="text-indigo-500 text-xs font-bold hover:text-indigo-700">View Notes</button></div>`; 
+                });
+            }
+            lastRenderedState.maint = maintHash;
+        }
+
+        if(currentChatId) renderMessages();
+        if(activeTab === 'messages') renderChatList();
+
+        // Expenses
+        const expHash = JSON.stringify(state.expenses);
+        if(expHash !== lastRenderedState.expenses) {
+            const exBody = document.getElementById('table-expenses'); 
+            if(exBody) {
+                exBody.innerHTML = '';
+                const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
+                let dEx = state.expenses;
+                if (fid !== 'all') dEx = dEx.filter(x => x.property_address === fid);
+                dEx.forEach(x => { 
+                    const fileLink = x.receipt_url ? `<a href="${x.receipt_url}" target="_blank" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-paperclip"></i> View</a>` : '-';
+                    exBody.innerHTML += `<tr class="border-b border-slate-100 hover:bg-slate-50 transition"><td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td><td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.property_address || 'General'}</td><td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td><td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.category}</span></td><td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td><td class="p-5 text-center hidden md:table-cell">${fileLink}</td><td class="p-5 text-right hidden md:table-cell"><div class="flex justify-end gap-3"><button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button><button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button></div></td></tr>`; 
+                });
+                if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${dEx.reduce((a,b)=>a+b.amount,0).toLocaleString()}`;
+            }
+            lastRenderedState.expenses = expHash;
+        }
+
+        renderFinancials();
+        renderReports(); 
     }
 
+    function renderReports() {
+        const totalRev = state.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        const totalExp = state.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const noi = totalRev - totalExp;
+        setText('report-income', `$${totalRev.toLocaleString()}`);
+        setText('report-expense', `$${totalExp.toLocaleString()}`);
+        setText('report-noi', `$${noi.toLocaleString()}`);
+    }
+
+    // --- UTILS ---
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -623,489 +999,274 @@
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
-    // --- DATA HANDLING & FETCHING ---
+    // Generic Platform Modal Functions
+    function openPlatformConfirm(title, message, callback) {
+        setText('plat-conf-title', title);
+        setText('plat-conf-msg', message);
+        document.getElementById('modal-platform-confirm').classList.remove('hidden-section');
+        document.getElementById('modal-platform-confirm').classList.add('flex');
+        platformConfirmCallback = callback;
+    }
 
-    async function initSystem() {
-        try {
-            await fetchData();
-            renderAll();
-            loadUserProfile(); // Sync owner name and initials
-            
-            // Background polling loop
-            setInterval(async () => { 
-                await fetchData(); 
-                renderAll(); 
-            }, 6000);
-        } catch (err) { 
-            console.error("Portfolio init error:", err); 
+    function closePlatformConfirm(confirmed) {
+        document.getElementById('modal-platform-confirm').classList.add('hidden-section');
+        document.getElementById('modal-platform-confirm').classList.remove('flex');
+        if(confirmed && platformConfirmCallback) {
+            platformConfirmCallback();
         }
+        platformConfirmCallback = null;
     }
 
-    async function fetchData() {
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        if(!ownerId) { window.location.href = 'login.html'; return; }
-
-        const [t, l, i, p, e, m, msg, s, a] = await Promise.all([
-            supabaseClient.from('tenants').select('*').eq('owner_id', ownerId),
-            supabaseClient.from('listings').select('*').eq('owner_id', ownerId),
-            supabaseClient.from('invoices').select('*').eq('owner_id', ownerId),
-            supabaseClient.from('payments').select('*'),
-            supabaseClient.from('expenses').select('*').eq('owner_id', ownerId),
-            supabaseClient.from('maintenance').select('*'),
-            supabaseClient.from('msgs').select('*'),
-            supabaseClient.from('settings').select('*').eq('owner_id', ownerId).maybeSingle(),
-            supabaseClient.from('apps').select('*').eq('owner_id', ownerId)
-        ]);
-
-        state.tenants = t.data || [];
-        state.listings = l.data || [];
-        state.expenses = e.data || [];
-        state.settings = s.data || {};
-        state.apps = a.data || [];
-        
-        const myTenantIds = new Set(state.tenants.map(tn => tn.id));
-        state.invoices = (i.data || []).filter(x => myTenantIds.has(x.tenant_id));
-        state.payments = (p.data || []).filter(x => myTenantIds.has(x.tenant_id));
-        state.maint = (m.data || []).filter(x => myTenantIds.has(x.tenant_id));
-        state.msgs = (msg.data || []).filter(x => myTenantIds.has(x.tenant_id));
-        
-        // Notification counts for unread/new data
-        state.notifications.messages = state.msgs.filter(x => x.from === 'Tenant' && !x.read_at).length;
-        state.notifications.maintenance = state.maint.filter(x => x.status === 'Active' && !viewedMaintIds.has(String(x.id))).length;
-        state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
+    function openPrompt(title, callback) {
+        setText('prompt-title', title);
+        document.getElementById('prompt-input').value = '';
+        document.getElementById('modal-prompt').classList.remove('hidden-section');
+        document.getElementById('modal-prompt').classList.add('flex');
+        promptCallback = callback;
     }
 
-    // --- REQUIREMENT 3: LATE FEE LOGIC ---
+    function closePrompt(confirmed) {
+        document.getElementById('modal-prompt').classList.add('hidden-section');
+        document.getElementById('modal-prompt').classList.remove('flex');
+        if (confirmed && promptCallback) {
+            const val = document.getElementById('prompt-input').value;
+            promptCallback(val);
+        }
+        promptCallback = null;
+    }
+
+  // --- VIEW PUBLIC LISTING LINK ---
+    function showShareModal(id) {
+        let currentPath = window.location.href.substring(0, window.location.href.lastIndexOf('/'));
+        const url = `${currentPath}/index.html?page=rentals&highlight=${id}`;
+        document.getElementById('share-link-input').value = url;
+        document.getElementById('public-link-btn').href = url;
+        openModal('modal-share-listing');
+    }
+
+    function copyListingLink() {
+        const input = document.getElementById('share-link-input');
+        input.select();
+        document.execCommand('copy');
+        showToast("Link copied to clipboard!");
+    }
+
+    async function uploadFile(file, bucket) {
+        if (!file) return null;
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const { error: uploadError } = await supabaseClient.storage.from(bucket).upload(fileName, file);
+        if (uploadError) {
+            showToast(`Upload failed: ${uploadError.message}`, 'error');
+            return null;
+        }
+        const { data: { publicUrl } } = supabaseClient.storage.from(bucket).getPublicUrl(fileName);
+        return publicUrl;
+    }
+
+    async function act_completeMaint(id) { 
+        openPrompt("Resolution Notes (Optional):", async (n) => {
+            const note = n || "Completed";
+            const m = state.maint.find(x => x.id === id);
+            if(m) { m.status = 'Completed'; m.completed_date = new Date().toISOString(); m.notes = note; renderAll(); }
+            const { data, error } = await supabaseClient.from('maintenance').update({ status: 'Completed', completed_date: new Date().toISOString(), notes: note }).eq('id', id).select();
+            if (error) { showToast("Update failed: " + error.message, 'error'); await fetchData(); renderAll(); }
+        });
+    }
+    
+    function updateBadge(id, count) { 
+        const el = document.getElementById('badge-' + id); 
+        if(!el) return;
+        const isViewing = activeTab === id;
+        if(count > 0 && !isViewing) { el.innerText = count; el.classList.remove('hidden-section'); } 
+        else { el.classList.add('hidden-section'); } 
+    }
 
     function calculateGlobalStats() {
         let revenue = 0, overdue = 0;
         const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
         const lateFee = parseFloat(state.settings.late_fee_amount || 0);
         const grace = parseInt(state.settings.grace_period || 0);
 
-        // Revenue tracking
-        state.payments.forEach(pay => { 
-            const payDate = parseLocalDate(pay.date); 
-            if(payDate.getMonth() === currentMonth && payDate.getFullYear() === currentYear) {
-                revenue += pay.amount; 
-            }
+        state.payments.forEach(p => { 
+            const pDate = parseDateStr(p.date); 
+            if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) revenue += p.amount; 
         });
 
-        // Overdue tracking with grace period logic
         state.invoices.forEach(inv => { 
-            const invDate = parseLocalDate(inv.date);
-            // REQUIREMENT 3: If scheduled in future, don't count as overdue/dash stat
-            if(invDate > now) return;
-
             if(inv.status !== 'Paid') { 
+                const invDate = parseDateStr(inv.date);
                 const dueDate = new Date(invDate);
                 dueDate.setDate(dueDate.getDate() + grace);
                 
-                let balance = inv.total - (inv.amount_paid || 0);
+                let bal = inv.total - (inv.amount_paid || 0);
                 if (now > dueDate) {
-                    balance += lateFee; // Apply late fee from settings
+                    bal += lateFee;
                 }
                 
-                if(balance > 0) overdue += balance; 
+                if(bal > 0) overdue += bal; 
             } 
         });
         return { revenue, overdue };
     }
 
-    // --- RENDERING HANDLERS ---
-
-    function renderAll() {
-        const stats = calculateGlobalStats();
-        setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
-        setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
-        setText('dash-occupancy', state.tenants.length > 0 ? `${Math.round((state.tenants.filter(t=>t.status==='Active').length / state.tenants.length)*100)}%` : '0%');
-        setText('dash-maintenance', state.maint.filter(m=>m.status==='Active').length);
-
-        initPerformanceChart(stats);
-        renderTenants();
-        renderFinancials();
-        renderListings();
-        renderScreening();
-        renderMaint();
-        renderExpenses();
-        renderReports();
+    function navTo(view) {
+        activeTab = view;
+        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
+        document.getElementById('view-' + view).classList.remove('hidden-section');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
+        const link = document.getElementById('link-' + view);
+        if(link) link.classList.add('sidebar-active');
         
-        updateBadge('messages', state.notifications.messages); 
-        updateBadge('maintenance', state.notifications.maintenance); 
-        updateBadge('screening', state.notifications.screening);
-    }
-
-    /**
-     * REQUIREMENT: Performance Charts
-     */
-    function initPerformanceChart(stats) {
-        const ctx = document.getElementById('revenueChart');
-        if(!ctx) return;
-        if(chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: { 
-                labels: ['Revenue (Curr. Mo)', 'Portfolio Overdue'], 
-                datasets: [{ 
-                    label: 'Portfolio Value', 
-                    data: [stats.revenue, stats.overdue], 
-                    backgroundColor: ['#10b981', '#f43f5e'], 
-                    borderRadius: 12 
-                }] 
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { callback: (v) => '$' + v.toLocaleString() } } }
-            }
-        });
-    }
-
-    /**
-     * REQUIREMENT: Monthly Cashflow Breakdown Chart
-     */
-    function renderMonthlyChart() {
-        const ctx = document.getElementById('monthlyChart');
-        if(!ctx) return;
-        if(monthlyChartInstance) monthlyChartInstance.destroy();
-
-        const labels = [], revenueData = [], expenseData = [];
-        const today = new Date();
-        for(let i=5; i>=0; i--) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            labels.push(d.toLocaleString('default', { month: 'short' }));
-            
-            const monthRev = state.payments.filter(p => {
-                const pd = parseLocalDate(p.date);
-                return pd.getMonth() === d.getMonth() && pd.getFullYear() === d.getFullYear();
-            }).reduce((sum, p) => sum + p.amount, 0);
-            revenueData.push(monthRev);
-
-            const monthExp = state.expenses.filter(e => {
-                const ed = parseLocalDate(e.date);
-                return ed.getMonth() === d.getMonth() && ed.getFullYear() === d.getFullYear();
-            }).reduce((sum, e) => sum + e.amount, 0);
-            expenseData.push(monthExp);
+        const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests' };
+        setText('desktop-page-title', titles[view] || 'Dashboard');
+        
+        if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
+        
+        if(view === 'maintenance') {
+            state.maint.filter(m => m.status === 'Active').forEach(m => viewedMaintIds.add(String(m.id)));
+            localStorage.setItem('kozeyy_viewed_maint', JSON.stringify([...viewedMaintIds]));
+            updateBadge('maintenance', 0);
         }
-
-        monthlyChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: { 
-                labels: labels, 
-                datasets: [
-                    { label: 'Revenue', data: revenueData, backgroundColor: '#10b981', borderRadius: 6 },
-                    { label: 'Expenses', data: expenseData, backgroundColor: '#f43f5e', borderRadius: 6 }
-                ] 
-            },
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false,
-                scales: { y: { ticks: { callback: (v) => '$' + v } } }
-            }
-        });
-    }
-
-    function renderFinancials() {
-        const filterVal = document.getElementById('filter-financials').value;
-        const tbody = document.getElementById('table-financials');
-        if(!tbody) return;
-        tbody.innerHTML = '';
-        
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const lateFee = parseFloat(state.settings.late_fee_amount || 0);
-        const grace = parseInt(state.settings.grace_period || 0);
-        let totalOut = 0;
-
-        // Merge and sort all transaction types
-        const allTransactions = [
-            ...state.invoices.map(inv => ({ ...inv, sortTime: parseLocalDate(inv.date), type: 'invoice' })),
-            ...state.payments.map(pay => ({ ...pay, sortTime: parseLocalDate(pay.date), type: 'payment' }))
-        ].sort((a, b) => b.sortTime - a.sortTime);
-
-        allTransactions.forEach(item => {
-            if (filterVal !== 'all' && item.tenant_id != filterVal) return;
-            
-            // REQUIREMENT: Do not add scheduled invoices until send by date
-            if (item.sortTime > now) return;
-
-            if(item.type === 'invoice') {
-                const dueDate = new Date(item.sortTime);
-                dueDate.setDate(dueDate.getDate() + grace);
-                
-                const isOverdue = now > dueDate && item.status !== 'Paid';
-                const bal = (item.total || 0) - (item.amount_paid || 0);
-                const displayBalance = isOverdue ? bal + lateFee : bal;
-                
-                if(item.status !== 'Paid') totalOut += displayBalance;
-
-                const stColor = item.status === 'Paid' ? 'bg-emerald-50 text-emerald-600' : (isOverdue ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600');
-                const stLabel = item.status === 'Paid' ? 'Paid' : (isOverdue ? 'Overdue' : 'Unpaid');
-
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                        <td class="p-5 text-sm">${formatDisplayDate(item.date)}</td>
-                        <td class="p-5 text-sm font-bold text-slate-700">${item.tenant_name}</td>
-                        <td class="p-5"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td>
-                        <td class="p-5 text-sm text-slate-500 truncate max-w-[150px]">${item.items[0].desc}</td>
-                        <td class="p-5 text-right font-bold text-slate-800">$${displayBalance.toLocaleString()}</td>
-                        <td class="p-5 text-right"><span class="px-2 py-1 rounded text-[10px] font-bold uppercase ${stColor}">${stLabel}</span></td>
-                        <td class="p-5 text-right"><button onclick="act_viewInvoice(${item.id})" class="text-slate-400 hover:text-indigo-600 transition" title="View & Download PDF"><i class="fas fa-eye"></i></button></td>
-                    </tr>`;
-            } else {
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                        <td class="p-5 text-sm">${formatDisplayDate(item.date)}</td>
-                        <td class="p-5 text-sm font-bold text-slate-700">${state.tenants.find(t=>t.id==item.tenant_id)?.name || 'Resident'}</td>
-                        <td class="p-5"><span class="px-2 py-1 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
-                        <td class="p-5 text-sm text-slate-400 italic">Electronic Payment Received</td>
-                        <td class="p-5 text-right font-bold text-emerald-600">+$${item.amount.toLocaleString()}</td>
-                        <td class="p-5 text-right text-xs text-slate-400">-</td>
-                        <td class="p-5 text-right text-xs text-slate-400">-</td>
-                    </tr>`;
-            }
-        });
-
-        setText('fin-open-bal', `$${totalOut.toLocaleString()}`);
-        document.getElementById('fin-summary-container').classList.remove('hidden-section');
-    }
-
-    // --- INVOICE WIZARD & RECURRING SCHEDULER ---
-
-    function openInvoiceModal() { 
-        const s = document.getElementById('inv-tenant');
-        s.innerHTML = '<option value="" disabled selected>Select a Tenant Account...</option>';
-        state.tenants.filter(t => t.status === 'Active').forEach(t => { 
-            s.innerHTML += `<option value="${t.id}">${t.name}</option>`; 
-        });
-
-        // Initialize Wizard View
-        document.getElementById('inv-step-input').classList.remove('hidden-section');
-        document.getElementById('inv-step-preview').classList.add('hidden-section');
-        document.getElementById('inv-actions-create').classList.remove('hidden-section');
-        document.getElementById('inv-actions-create').classList.add('flex');
-        document.getElementById('inv-actions-view').classList.add('hidden-section');
-        
-        // Reset Recurring States
-        document.getElementById('inv-is-recurring').checked = false;
-        document.getElementById('recurring-dates').classList.add('hidden-section');
-        document.getElementById('send-on-section').classList.remove('hidden-section');
-
-        setText('inv-modal-title', "Draft Property Invoice");
-        document.getElementById('inv-date').valueAsDate = new Date();
-        openModal('modal-invoice');
-        logic_invMode('fixed');
-    }
-
-    function logic_toggleRecurring() {
-        const isRec = document.getElementById('inv-is-recurring').checked;
-        document.getElementById('recurring-dates').classList.toggle('hidden-section', !isRec);
-        document.getElementById('send-on-section').classList.toggle('hidden-section', isRec);
-    }
-
-    function logic_generatePreview() {
-        const tid = document.getElementById('inv-tenant').value;
-        if(!tid) return showToast("Please choose a resident first", 'error');
-        
-        const resident = state.tenants.find(t => t.id == tid);
-        const isRec = document.getElementById('inv-is-recurring').checked;
-        const sendDateStr = isRec ? document.getElementById('inv-rec-start').value : document.getElementById('inv-date').value;
-        
-        const total = invItems.reduce((sum, item) => sum + (item.amount || 0), 0);
-        
-        draftInvoice = { 
-            tenantId: parseInt(tid), 
-            tenantName: resident.name, 
-            items: JSON.parse(JSON.stringify(invItems)), 
-            total: total, 
-            date: sendDateStr,
-            isRec: isRec,
-            recEnd: document.getElementById('inv-rec-end').value
-        };
-
-        // REQUIREMENT: Date matches Send date exactly
-        setText('prev-name', resident.name);
-        setText('prev-date', formatDisplayDate(sendDateStr)); 
-        setText('prev-total-due', `$${total.toLocaleString()}`);
-        
-        const tbody = document.getElementById('prev-items-body');
-        tbody.innerHTML = '';
-        invItems.forEach(i => {
-            tbody.innerHTML += `
-                <tr>
-                    <td class="py-4 text-slate-600 font-medium">${i.desc}</td>
-                    <td class="py-4 text-right font-extrabold text-slate-800">$${i.amount.toLocaleString()}</td>
-                </tr>`;
-        });
-
-        // Determine Button Label based on date
-        const now = new Date();
-        now.setHours(0, 0, 0, 0);
-        const targetDate = parseLocalDate(sendDateStr);
-        const btn = document.getElementById('btn-confirm-inv');
-        
-        if(targetDate > now) {
-            btn.innerText = `Confirm: Schedule for ${formatDisplayDate(sendDateStr)}`;
-            btn.classList.replace('bg-emerald-600', 'bg-indigo-600');
-        } else {
-            btn.innerText = "Confirm: Send Immediately";
-            btn.classList.replace('bg-indigo-600', 'bg-emerald-600');
+        if(view === 'screening') {
+            state.apps.filter(a => a.status === 'Pending').forEach(a => viewedAppIds.add(String(a.id)));
+            localStorage.setItem('kozeyy_viewed_apps', JSON.stringify([...viewedAppIds]));
+            updateBadge('screening', 0);
         }
-
-        document.getElementById('inv-step-input').classList.add('hidden-section');
-        document.getElementById('inv-step-preview').classList.remove('hidden-section');
-    }
-
-    async function logic_confirmInvoice() {
-        if(!draftInvoice) return;
-        const btn = document.getElementById('btn-confirm-inv');
-        btn.disabled = true;
         
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        try {
-            // Log recurring schedule if enabled
-            if(draftInvoice.isRec) {
-                await supabaseClient.from('recurring_invoices').insert([{
-                    owner_id: ownerId, 
-                    tenant_id: draftInvoice.tenantId, 
-                    amount: draftInvoice.total, 
-                    start_date: draftInvoice.date, 
-                    end_date: draftInvoice.recEnd, 
-                    status: 'Active'
-                }]);
-            }
-
-            // Save standard invoice record
-            const { error } = await supabaseClient.from('invoices').insert([{
-                owner_id: ownerId,
-                tenant_id: draftInvoice.tenantId,
-                tenant_name: draftInvoice.tenantName,
-                items: draftInvoice.items,
-                total: draftInvoice.total,
-                date: draftInvoice.date,
-                status: 'Unpaid'
-            }]);
-
-            if(error) throw error;
-            
-            showToast("Success! Financial record has been saved.");
-            closeModal('modal-invoice');
-            fetchData();
-            renderAll();
-        } catch(e) { 
-            showToast("Database Error: " + e.message, 'error'); 
-            btn.disabled = false; 
-        }
-    }
-
-    function act_viewInvoice(id) {
-        const inv = state.invoices.find(i => i.id == id);
-        if(!inv) return;
-        
-        setText('prev-name', inv.tenant_name);
-        setText('prev-date', formatDisplayDate(inv.date));
-        setText('prev-total-due', `$${inv.total.toLocaleString()}`);
-        
-        const tbody = document.getElementById('prev-items-body');
-        tbody.innerHTML = '';
-        inv.items.forEach(i => {
-            tbody.innerHTML += `
-                <tr class="border-b border-slate-50 last:border-0">
-                    <td class="py-4 font-medium text-slate-600">${i.desc}</td>
-                    <td class="py-4 text-right font-bold text-slate-800">$${i.amount.toLocaleString()}</td>
-                </tr>`;
-        });
-
-        document.getElementById('inv-step-input').classList.add('hidden-section');
-        document.getElementById('inv-step-preview').classList.remove('hidden-section');
-        document.getElementById('inv-actions-create').classList.add('hidden-section');
-        document.getElementById('inv-actions-view').classList.remove('hidden-section');
-        openModal('modal-invoice');
-    }
-
-    /**
-     * REQUIREMENT: Download by PDF
-     */
-    function downloadOwnerInvoicePDF() {
-        const element = document.getElementById('invoice-download-container');
-        const options = {
-            margin: 0.5,
-            filename: `Kozeyy_Invoice_${Date.now()}.pdf`,
-            image: { type: 'jpeg', quality: 1 },
-            html2canvas: { scale: 3, useCORS: true },
-            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-        };
-        html2pdf().set(options).from(element).save();
-    }
-
-    // --- REQUIREMENT: SETTINGS BACKEND SYNC ---
-
-    async function act_saveSettings(e) {
-        e.preventDefault();
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        
-        // Exact mapping to Supabase columns in your screenshot
-        const settingsPayload = {
-            owner_id: ownerId,
-            stripe_connect_id: document.getElementById('set-stripe-id').value,
-            late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0,
-            grace_period: parseInt(document.getElementById('fee-grace').value) || 0,
-            min_credit_score: parseInt(document.getElementById('set-min-score').value) || 600,
-            min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
-            require_no_evictions: document.getElementById('set-no-evict').checked,
-            require_no_criminal_history: document.getElementById('set-no-crim').checked,
-            require_insurance: false,
-            late_fee_method: 'Fixed'
-        };
-
-        const { error } = await supabaseClient.from('settings').upsert(settingsPayload, { onConflict: 'owner_id' });
-        
-        if (error) {
-            showToast("Settings Save Failed: " + error.message, 'error');
-        } else {
-            showToast("System Configuration Successfully Synced");
-            await fetchData();
-            renderAll();
-        }
+        if(view === 'financials') populateFinFilter();
+        if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
+        if(view === 'messages') { renderChatList(); backToChatList(); }
+        if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
+        if(view === 'settings') { renderSettings(); } 
     }
 
     function renderSettings() {
         const s = state.settings;
         if(!s) return;
-        document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
-        document.getElementById('fee-amount').value = s.late_fee_amount || 50;
-        document.getElementById('fee-grace').value = s.grace_period || 5;
-        document.getElementById('set-min-score').value = s.min_credit_score || 600;
-        document.getElementById('set-min-income').value = s.min_income_ratio || 2.5;
-        document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
-        document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
+        if(document.getElementById('set-stripe-id')) document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
+        if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.late_fee_amount || 50; 
+        if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 5; 
+        
+        if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = s.min_credit_score || 650;
+        if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
+        if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
+        if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
     }
 
-    // --- REQUIREMENT: OWNER NAME TOP RIGHT ---
+    function viewMaintNote(id) { 
+        const m = state.maint.find(x => x.id == id); 
+        setText('md-issue', m.issue); 
+        setText('md-meta', `Completed: ${m.completed_date ? new Date(m.completed_date).toLocaleDateString() : 'Unknown'}`); 
+        setText('md-notes', m.notes || "No notes."); 
+        openModal('modal-maint-detail'); 
+    }
 
-    function loadUserProfile() {
-        const profileStr = localStorage.getItem('kozeyy_profile');
-        if (profileStr) {
-            const user = JSON.parse(profileStr);
-            const name = user.username || user.name || 'Property Landlord';
-            setText('owner-name-display', name);
-            
-            // Generate initials for the avatar
-            const initials = name.split(' ').map(n=>n[0]).join('').substring(0, 2).toUpperCase();
-            document.getElementById('owner-initials-display').innerText = initials || 'LL';
+    function renderChatList() { 
+        const l = document.getElementById('list-chats'); 
+        if(!l) return;
+        l.innerHTML = ''; 
+        const sortedChats = state.tenants.filter(t => t.status !== 'Vacant').map(t => {
+            const msgs = state.msgs.filter(m => m.tenant_id === t.id);
+            const lastTime = msgs.length > 0 ? new Date(msgs[msgs.length - 1].created_at).getTime() : 0;
+            const unread = msgs.filter(m => m.from === 'Tenant' && !m.read_at).length;
+            return { tenant: t, time: lastTime, unread: unread };
+        }).sort((a, b) => b.time - a.time); 
+
+        sortedChats.forEach(item => { 
+            const t = item.tenant;
+            const badge = item.unread > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">${item.unread}</span>` : '';
+            l.innerHTML += `<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><div><span>${t.name}</span></div><div class="flex items-center gap-2">${badge}<i class="fas fa-chevron-right text-slate-300 text-xs"></i></div></div>`; 
+        }); 
+    }
+
+    async function openChat(id) { 
+        currentChatId=id; 
+        setText('chat-title', state.tenants.find(x=>x.id==id).name); 
+        renderMessages(true);
+        const unreadIds = state.msgs.filter(m => m.tenant_id === id && m.from === 'Tenant' && !m.read_at).map(m => m.id);
+        if(unreadIds.length > 0) {
+            unreadIds.forEach(uid => locallyReadMsgIds.add(String(uid)));
+            localStorage.setItem('kozeyy_read_msgs', JSON.stringify([...locallyReadMsgIds]));
+            state.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
+            await supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
+            renderAll(); 
         }
+        if(window.innerWidth < 768) { document.getElementById('msg-list-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('hidden'); document.getElementById('msg-view-panel').classList.add('flex'); } 
     }
 
-    // --- CRUD OPERATIONS: ALL CATEGORIES (TENANTS, LISTINGS, EXPENSES) ---
+    function renderMessages(force = false) { 
+        const b = document.getElementById('box-chat'); 
+        if(!b) return;
+        const relevantMsgs = state.msgs.filter(m => m.tenant_id == currentChatId).sort((a,b)=> new Date(a.created_at) - new Date(b.created_at));
+        const hash = JSON.stringify(relevantMsgs);
+        if(!force && hash === lastRenderedState.msgs) return;
+        lastRenderedState.msgs = hash;
+        b.innerHTML = ''; 
+        relevantMsgs.forEach(m => { 
+            const d = new Date(m.created_at);
+            const ts = d.toDateString() === new Date().toDateString() ? d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}) : d.toLocaleDateString();
+            const isOwner = m.from === 'Owner';
+            b.innerHTML += `<div class="flex flex-col w-full ${isOwner ? 'items-end' : 'items-start'} mb-4 fade-in"><div class="px-4 py-3 rounded-2xl text-sm shadow-sm max-w-[85%] ${isOwner ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 rounded-bl-none'}">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div>`; 
+        }); 
+        b.scrollTop = b.scrollHeight; 
+    }
+    
+    async function sendMsg() { 
+        const i=document.getElementById('input-chat'); 
+        if(i.value && currentChatId) { 
+            const newMsg = {tenant_id:currentChatId, from:'Owner', text:i.value, time: new Date().toISOString(), created_at: new Date().toISOString() };
+            state.msgs.push(newMsg);
+            renderMessages(true);
+            const val = i.value; i.value=''; 
+            await supabaseClient.from('msgs').insert([newMsg]);
+            await fetchData(); 
+        } 
+    }
 
+    // Modal/CRUD
+    function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
+    function resetForms() {
+        editTenantId = null;
+        editListingId = null;
+        editExpenseId = null;
+
+        setText('btn-save-tenant', "Save Tenant");
+        setText('btn-save-listing', "Post Listing");
+        setText('btn-save-expense', "Save");
+
+        ['ex-id', 'ex-amount', 'ex-vendor', 'ex-date', 'ex-doc',
+         't-id', 't-name', 't-email', 't-phone', 't-unit', 't-rent', 't-start', 't-end', 't-addr', 't-city', 't-state', 't-zip',
+         'l-addr', 'l-price', 'l-sqft', 'l-beds', 'l-baths', 'l-desc', 'l-amen', 'l-contact', 'l-date', 'l-img'
+        ].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+
+        updateFileName('inv-doc', 'inv-doc-label');
+        updateFileName('ex-doc', 'ex-doc-label');
+    }
+    function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
+    
+    // Screening Logic
+    function evalApplicant(app) {
+        const crit = state.settings || { min_credit_score: 600, min_income_ratio: 2.5 };
+        const incomeRatio = app.income / app.rent;
+        if(app.score < (crit.min_credit_score - 50)) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
+        if(app.score < crit.min_credit_score || incomeRatio < crit.min_income_ratio) return { status: 'Conditional', color: 'bg-amber-100 text-amber-700 border-amber-200' };
+        return { status: 'Meets Criteria', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+    }
+    
+    // CRUD Functions
+    
     async function act_saveTenant(e) { 
         e.preventDefault(); 
         const ownerId = localStorage.getItem('kozeyy_user_id');
+        if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
+
         const data = { 
             owner_id: ownerId, 
             name: document.getElementById('t-name').value, 
@@ -1132,63 +1293,468 @@
         await fetchData(); 
         renderAll(); 
     }
-
-    async function act_delTenant(id) {
-        openPlatformConfirm("Delete Resident?", "This will permanently remove the resident record and history.", async () => {
-            await supabaseClient.from('tenants').delete().eq('id', id);
-            await fetchData();
-            renderAll();
-            showToast("Tenant record removed.");
+    
+    async function act_moveOut(id) {
+        openPlatformConfirm("Archive Tenant?", "This will move the tenant to archives and mark the unit as Vacant.", async () => {
+            const t = state.tenants.find(x => x.id === id);
+            if(!t) return;
+            await supabaseClient.from('tenants').update({ status: 'Archived' }).eq('id', id);
+            const newUnit = { 
+                owner_id: localStorage.getItem('kozeyy_user_id'), 
+                name: '(Vacant)', email: '', phone: '', address: t.address, unit: t.unit, city: t.city, state: t.state, zip: t.zip, rent_amount: t.rent_amount, status: 'Vacant', lease_start: null, lease_end: null 
+            };
+            await supabaseClient.from('tenants').insert([newUnit]);
+            await fetchData(); renderAll(); showToast("Tenant archived and unit marked Vacant");
         });
     }
 
-    function act_editTenant(id) { 
-        editTenantId = id; 
-        const t = state.tenants.find(x => x.id === id); 
-        setText('modal-tenant-title',"Modify Tenant Data"); 
-        document.getElementById('t-name').value = t.name; 
-        document.getElementById('t-email').value = t.email; 
-        document.getElementById('t-phone').value = t.phone || ''; 
-        document.getElementById('t-unit').value = t.unit || ''; 
-        document.getElementById('t-rent').value = t.rent_amount; 
-        document.getElementById('t-addr').value = t.address || '';
-        document.getElementById('t-status').value = t.status;
-        openModal('modal-tenant'); 
-    }
+    function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id === id); setText('modal-tenant-title',"Edit Tenant"); setText('btn-save-tenant',"Update Tenant"); document.getElementById('t-id').value = t.id; document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone||''; document.getElementById('t-unit').value = t.unit||''; document.getElementById('t-rent').value = t.rent_amount; document.getElementById('t-start').value = t.lease_start||''; document.getElementById('t-end').value = t.lease_end||''; document.getElementById('t-addr').value = t.address||''; document.getElementById('t-status').value = t.status; document.getElementById('t-city').value = t.city||''; document.getElementById('t-state').value = t.state||''; document.getElementById('t-zip').value = t.zip||''; openModal('modal-tenant'); }
+    async function act_delTenant(id) { openPlatformConfirm("Delete Tenant?", "This cannot be undone.", async () => { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); }); }
+    
+    async function act_saveListing(e) { 
+        e.preventDefault(); 
+        const btn = document.getElementById('btn-save-listing');
+        const originalText = btn.innerText;
+        btn.innerText = "Uploading Images...";
+        btn.disabled = true;
 
-    // --- OTHER CORE SYSTEM FUNCTIONS ---
-
-    function navTo(view) {
-        activeTab = view;
-        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
-        document.getElementById('view-' + view).classList.remove('hidden-section');
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
-        const link = document.getElementById('link-' + view);
-        if(link) link.classList.add('sidebar-active');
+        const files = document.getElementById('l-img-file').files;
+        let imageUrls = [];
         
-        // Dynamic Header Title
-        const titles = { dashboard: 'Portfolio Overview', tenants: 'Resident Directory', listings: 'Leasing Listings', screening: 'Applicant Screening', messages: 'Resident Communication', maintenance: 'Property Maintenance', financials: 'Financial Ledgers', expenses: 'Business Expenses', reports: 'Performance Reports', settings: 'System Configuration' };
-        setText('desktop-page-title', titles[view] || 'Dashboard');
+        try {
+            if (files && files.length > 0) {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${Date.now()}_${i}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabaseClient.storage.from('listings').upload(fileName, file);
+                    if (uploadError) throw uploadError;
+                    
+                    const { data } = supabaseClient.storage.from('listings').getPublicUrl(fileName);
+                    imageUrls.push(data.publicUrl);
+                }
+            }
 
-        if(view === 'settings') renderSettings();
-        if(view === 'reports') setTimeout(renderMonthlyChart, 50);
-        renderAll();
+            let ownerId = localStorage.getItem('kozeyy_user_id');
+            if (!ownerId) throw new Error("No owner logged in");
+
+            const listingData = { 
+                owner_id: ownerId, 
+                address: document.getElementById('l-addr').value, 
+                price: parseFloat(document.getElementById('l-price').value), 
+                sqft: parseInt(document.getElementById('l-sqft').value), 
+                beds: parseInt(document.getElementById('l-beds').value), 
+                baths: parseFloat(document.getElementById('l-baths').value), 
+                description: document.getElementById('l-desc').value, 
+                amenities: document.getElementById('l-amen').value, 
+                contact_info: document.getElementById('l-contact').value,
+                date_available: document.getElementById('l-date').value,
+                images: imageUrls, 
+                image_url: imageUrls.length > 0 ? imageUrls[0] : null
+            }; 
+            
+            if(editListingId) {
+                if(imageUrls.length === 0) { delete listingData.images; delete listingData.image_url; }
+                const { error } = await supabaseClient.from('listings').update(listingData).eq('id', editListingId);
+                if(error) throw error;
+            } else {
+                const { data, error } = await supabaseClient.from('listings').insert([listingData]).select(); 
+                if(error) throw error;
+                if(data && data[0]) showShareModal(data[0].id);
+            }
+            
+            closeModal('modal-listing'); 
+            await fetchData(); 
+            renderAll();
+            if(!editListingId) showToast("Listing saved!");
+
+        } catch (err) {
+            console.error(err);
+            showToast("Error: " + err.message, 'error');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+    
+    function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.address; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.description; document.getElementById('l-amen').value = l.amenities||''; document.getElementById('l-date').value = l.date_available; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
+    async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); await fetchData(); renderAll(); }
+
+    async function act_saveExpense(e) { 
+        e.preventDefault(); 
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const file = document.getElementById('ex-doc').files[0];
+        let docUrl = null;
+        if (file) docUrl = await uploadFile(file, 'receipts'); 
+        
+        const data = { 
+            owner_id: ownerId, 
+            date: document.getElementById('ex-date').value, 
+            vendor: document.getElementById('ex-vendor').value, 
+            category: document.getElementById('ex-cat').value, 
+            property_address: document.getElementById('ex-prop').value, 
+            amount: parseFloat(document.getElementById('ex-amount').value)||0, 
+            receipt_url: docUrl 
+        }; 
+        
+        if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
+        else await supabaseClient.from('expenses').insert([data]); 
+        
+        closeModal('modal-expense'); await fetchData(); renderAll(); showToast("Expense saved");
     }
 
-    // REQUIREMENT: Platform UI helpers replacing browser natives
-    function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); }
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('-translate-x-full'); document.getElementById('mobile-overlay').classList.toggle('hidden'); }
-    function openPrompt(title, cb) { setText('prompt-title', title); document.getElementById('prompt-input').value = ''; openModal('modal-prompt'); promptCallback = cb; }
-    function closePrompt(conf) { closeModal('modal-prompt'); if(conf && promptCallback) promptCallback(document.getElementById('prompt-input').value); promptCallback = null; }
-    function openPlatformConfirm(title, msg, cb) { setText('plat-conf-title', title); setText('plat-conf-msg', msg); openModal('modal-platform-confirm'); platformConfirmCallback = cb; }
-    function closePlatformConfirm(conf) { closeModal('modal-platform-confirm'); if(conf && platformConfirmCallback) platformConfirmCallback(); platformConfirmCallback = null; }
+    function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.category; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.property_address; openModal('modal-expense'); }
+    async function act_delExpense(id) { openPlatformConfirm("Delete Expense?", "Confirm deletion.", async () => { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); }); }
 
-    function updateBadge(id, count) { 
-        const el = document.getElementById('badge-' + id); 
-        if(!el) return;
-        if(count > 0) { el.innerText = count; el.classList.remove('hidden-section'); } 
-        else { el.classList.add('hidden-section'); } 
+    function act_viewTenant(id) { const t = state.tenants.find(x => x.id === id); if(!t) return; setText('vt-name', t.name); setText('vt-email', t.email); setText('vt-phone', t.phone||'-'); setText('vt-addr', `${t.address||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); setText('vt-unit', t.unit||'-'); setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); setText('vt-status', t.status); setText('vt-start', t.lease_start||'-'); setText('vt-end', t.lease_end||'-'); openModal('modal-view-tenant'); }
+    
+    function act_viewApp(id) { currentAppId = id; const app = state.apps.find(a => a.id === id); const eval = evalApplicant(app); setText('sd-name', app.name); setText('sd-score', app.score); setText('sd-income', `$${app.income.toLocaleString()}`); setText('sd-ratio', (app.income / app.rent).toFixed(1)); document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>'; document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>'; setText('sd-job', app.job||'Unemployed'); document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>'; const ban = document.getElementById('sd-banner'); const actions = document.getElementById('sd-actions'); const emailOpt = document.getElementById('sd-email-option'); if(app.status === 'Approved') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200"; ban.innerText = "Approved"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else if (app.status === 'Deny') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200"; ban.innerText = "Denied"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else { ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`; ban.innerText = eval.status; actions.classList.remove('hidden-section'); emailOpt.classList.add('hidden-section'); } openModal('modal-screening-detail'); }
+    
+    function act_initiateApproval() {
+        openPlatformConfirm("Approve Applicant?", "This will mark the applicant as approved and send them an email notification. The next step will be to upload the lease.", async () => {
+             act_screenDecision('Approved');
+             showToast("Approval email sent to applicant.");
+        });
+    }
+
+    async function act_screenDecision(decision) { 
+        if(currentAppId) { 
+            await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId); 
+            closeModal('modal-screening-detail');
+            await fetchData(); 
+            renderAll();
+        } 
+    }
+
+    function act_initiateSendLease(appId) {
+        openPlatformConfirm("Send Lease?", "This will email the uploaded lease to the applicant for their signature.", async () => {
+            await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
+            const app = state.apps.find(a => a.id === appId);
+            if(app) {
+                const existing = state.tenants.find(t => t.email === app.email);
+                if(existing) await supabaseClient.from('tenants').update({ status: 'Lease Sent' }).eq('id', existing.id);
+            }
+            await fetchData();
+            renderAll();
+            showToast("Lease sent to applicant.");
+        });
+    }
+
+    function act_initiateFinalize(appId) {
+        openPlatformConfirm("Finalize Tenant?", "Confirm the lease has been signed. This will convert the applicant to an Active tenant.", async () => {
+            const app = state.apps.find(a => a.id === appId);
+            if(!app) return;
+            
+            await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', appId);
+            const ownerId = localStorage.getItem('kozeyy_user_id');
+
+            const existing = state.tenants.find(t => t.email === app.email);
+            if(existing) {
+                await supabaseClient.from('tenants').update({ status: 'Active', owner_id: ownerId }).eq('id', existing.id);
+            } else {
+                await supabaseClient.from('tenants').insert([{
+                    name: app.name,
+                    email: app.email,
+                    rent_amount: app.rent,
+                    status: 'Active',
+                    owner_id: ownerId
+                }]);
+            }
+            
+            await fetchData();
+            renderAll();
+            showToast("Tenant finalized and active!");
+        });
+    }
+
+    async function act_saveSettings(e) { 
+        e.preventDefault(); 
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const { error } = await supabaseClient.from('settings').upsert({ 
+            owner_id: ownerId, // Use owner_id as primary link
+            stripe_connect_id: document.getElementById('set-stripe-id').value, 
+            late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0, 
+            grace_period: parseInt(document.getElementById('fee-grace').value) || 0,     
+            min_credit_score: parseInt(document.getElementById('set-min-score').value) || 600,
+            min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
+            require_no_evictions: document.getElementById('set-no-evict').checked,
+            require_no_criminal_history: document.getElementById('set-no-crim').checked,
+            late_fee_method: 'Fixed',
+            require_insurance: false
+        }, { onConflict: 'owner_id' }); 
+        
+        if (error) { showToast("Save Failed: " + error.message, 'error'); } 
+        else { showToast("Configuration Saved"); await fetchData(); }
+    }
+    
+    function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
+
+    function initChart(stats = {revenue:0, overdue:0}) { const ctx = document.getElementById('revenueChart'); if(!ctx) return; const context = ctx.getContext('2d'); chartInstance = new Chart(context, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [stats.revenue, 0, stats.overdue], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+    function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart'); if(!ctx) return; const context = ctx.getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(context, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
+    function getMonthlyFinancials() { const months = [], revenueData = [], expenseData = []; const today = new Date(); for(let i=5; i>=0; i--) { const d = new Date(today.getFullYear(), today.getMonth() - i, 1); const mKey = d.getMonth(); const yKey = d.getFullYear(); months.push(d.toLocaleString('default', { month: 'short' })); const monthRev = state.payments.reduce((sum, p) => { const pd = parseDateStr(p.date); return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum; }, 0); revenueData.push(monthRev); const monthExp = state.expenses.reduce((sum, e) => { const ed = parseDateStr(e.date); return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum; }, 0); expenseData.push(monthExp); } return { labels: months, revenue: revenueData, expenses: expenseData }; }
+
+    function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
+    
+    async function confirmPay() { 
+        let tid = document.getElementById('pay-tenant-id').value; 
+        const sel = document.getElementById('pay-tenant-select'); 
+        if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
+        tid = parseInt(tid); 
+        let amt = parseFloat(document.getElementById('pay-amount').value); 
+        
+        if(tid && amt > 0) { 
+            const { error } = await supabaseClient.from('payments').insert([{ tenant_id: tid, amount: amt, date: document.getElementById('pay-date').value }]);
+            if (error) { showToast("Payment Failed: " + error.message, 'error'); return; }
+            const openInvoices = state.invoices.filter(i => i.tenant_id === tid && i.status !== 'Paid').sort((a,b) => new Date(a.date) - new Date(b.date)); 
+            for(const inv of openInvoices) { 
+                if (amt <= 0) break; 
+                const due = inv.total - (inv.amount_paid || 0); 
+                const pay = Math.min(amt, due); 
+                const newPaid = (inv.amount_paid || 0) + pay; 
+                const newStatus = newPaid >= inv.total ? 'Paid' : 'Unpaid'; 
+                await supabaseClient.from('invoices').update({ amount_paid: newPaid, status: newStatus }).eq('id', inv.id); 
+                amt -= pay; 
+            } 
+            closeModal('modal-pay'); initSystem(); showToast("Payment Recorded & Applied"); 
+        } 
+    }
+    
+    function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
+    
+    function renderFinancials() {
+        const filterVal = document.getElementById('filter-financials').value;
+        const tbody = document.getElementById('table-financials');
+        const sumContainer = document.getElementById('fin-summary-container');
+        const balanceDisplay = document.getElementById('fin-open-bal');
+
+        tbody.innerHTML = '';
+        let transactions = [];
+        const lateFee = parseFloat(state.settings.late_fee_amount || 0);
+        const grace = parseInt(state.settings.grace_period || 0);
+        const now = new Date();
+
+        state.invoices.forEach(inv => {
+            if (filterVal === 'all' || inv.tenant_id == filterVal) {
+                transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.date || inv.created_at).toLocaleDateString() });
+            }
+        });
+
+        state.payments.forEach(pay => {
+            if (filterVal === 'all' || pay.tenant_id == filterVal) {
+                transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() });
+            }
+        });
+
+        transactions.sort((a, b) => b.sortTime - a.sortTime);
+
+        let totalOut = 0;
+
+        transactions.forEach(item => {
+            const isInv = item.type === 'invoice';
+            const record = item.data;
+            const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
+            const dateStr = item.displayDate;
+            let rowHtml = '';
+
+            if (isInv) {
+                const invDate = parseDateStr(record.date);
+                const dueDate = new Date(invDate);
+                dueDate.setDate(dueDate.getDate() + grace);
+                
+                const isOverdue = now > dueDate && record.status !== 'Paid';
+                const bal = (record.total || 0) - (record.amount_paid || 0);
+                const displayAmt = isOverdue ? bal + lateFee : bal;
+                
+                if (record.status !== 'Paid') totalOut += displayAmt;
+
+                const statusLabel = record.status === 'Paid' ? 'Paid' : (isOverdue ? 'Overdue' : 'Unpaid');
+                const statusColor = record.status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : (isOverdue ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50');
+                
+                const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
+                rowHtml = `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td><td class="p-5 text-sm text-slate-500">${desc}</td><td class="p-5 text-right font-bold text-slate-800">$${(record.total||0).toLocaleString()}</td><td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td><td class="p-5 text-right"><button onclick="act_viewInvoice(${record.id})" class="text-slate-400 hover:text-indigo-600 transition" title="View Details"><i class="fas fa-eye"></i></button></td></tr>`;
+            } else {
+                rowHtml = `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td><td class="p-5 text-sm text-slate-400 italic">Payment Received</td><td class="p-5 text-right font-bold text-emerald-600">+$${(record.amount||0).toLocaleString()}</td><td class="p-5 text-right text-xs text-slate-400">-</td><td class="p-5 text-right text-xs text-slate-400">-</td></tr>`;
+            }
+            tbody.innerHTML += rowHtml;
+        });
+
+        balanceDisplay.innerText = `$${totalOut.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        sumContainer.classList.remove('hidden-section');
+        if (transactions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>'; }
+    }
+    
+    function openInvoiceModal() { 
+        const s = document.getElementById('inv-tenant');
+        s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>';
+        state.tenants.filter(t => t.status === 'Active').forEach(t => {
+            s.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+        });
+
+        document.getElementById('inv-step-input').classList.remove('hidden-section');
+        document.getElementById('inv-step-preview').classList.add('hidden-section');
+        document.getElementById('inv-actions-create').classList.remove('hidden-section');
+        document.getElementById('inv-actions-create').classList.add('flex');
+        document.getElementById('inv-actions-view').classList.add('hidden-section');
+        
+        setText('inv-modal-title', "Create Invoice");
+        document.getElementById('inv-date').valueAsDate = new Date();
+        openModal('modal-invoice');
+        logic_invMode('fixed');
+    }
+
+    function act_viewInvoice(id) {
+        const inv = state.invoices.find(i => i.id === id);
+        if(!inv) return;
+
+        const lateFee = parseFloat(state.settings.late_fee_amount || 0);
+        const grace = parseInt(state.settings.grace_period || 0);
+        const now = new Date();
+        const invDate = parseDateStr(inv.date);
+        const dueDate = new Date(invDate);
+        dueDate.setDate(dueDate.getDate() + grace);
+        const isOverdue = now > dueDate && inv.status !== 'Paid';
+
+        setText('prev-name', inv.tenant_name || 'Unknown');
+        setText('prev-date', new Date(inv.date).toLocaleDateString());
+        
+        const currentBal = inv.total + (isOverdue ? lateFee : 0);
+        setText('prev-total-due', `$${currentBal.toLocaleString()}`);
+        setText('inv-modal-title', `Invoice #${inv.id}`);
+
+        const tbody = document.getElementById('prev-items-body');
+        tbody.innerHTML = '';
+        (inv.items || []).forEach(item => {
+            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2 text-slate-600">${item.desc}</td><td class="py-2 text-right font-medium text-slate-800">$${(item.amount||0).toLocaleString()}</td></tr>`;
+        });
+        
+        if (isOverdue) {
+            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">Late Fee Applied</td><td class="py-2 text-right">+$${lateFee.toLocaleString()}</td></tr>`;
+        }
+
+        document.getElementById('inv-step-input').classList.add('hidden-section');
+        document.getElementById('inv-step-preview').classList.remove('hidden-section');
+        document.getElementById('inv-actions-create').classList.remove('flex');
+        document.getElementById('inv-actions-create').classList.add('hidden-section');
+        
+        const viewActions = document.getElementById('inv-actions-view');
+        viewActions.classList.remove('hidden-section');
+        viewActions.innerHTML = `
+            <div class="flex gap-2">
+                <button onclick="downloadOwnerInvoicePDF('Invoice_${id}')" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-sm hover:bg-indigo-700">
+                    <i class="fas fa-download mr-2"></i> Download PDF
+                </button>
+                <button onclick="closeModal('modal-invoice')" class="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold shadow hover:bg-slate-900">
+                    Close
+                </button>
+            </div>
+        `;
+
+        openModal('modal-invoice');
+    }
+
+    function downloadOwnerInvoicePDF(filename) {
+        const element = document.getElementById('invoice-download-area'); 
+        const opt = {
+            margin:       0.5,
+            filename:     `${filename}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
+    function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
+    function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
+    function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
+    function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); }
+    function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
+    
+    function logic_generatePreview() { 
+        const tidSelect = document.getElementById('inv-tenant').value; 
+        if(!tidSelect) return showToast("Please select a tenant", 'error'); 
+        
+        const tenant = state.tenants.find(t => t.id == tidSelect); 
+        const date = document.getElementById('inv-date').value; 
+        const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); 
+        
+        draftInvoice = { tenantId: parseInt(tidSelect), tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: date }; 
+        
+        setText('prev-name', tenant.name); 
+        setText('prev-date', new Date(date).toLocaleDateString()); 
+        setText('prev-total-due', `$${currentTotal.toLocaleString()}`); 
+        
+        const tbody = document.getElementById('prev-items-body'); 
+        tbody.innerHTML = ''; 
+        invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); 
+        
+        document.getElementById('inv-step-input').classList.add('hidden-section'); 
+        document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
+        setText('inv-modal-title',"Review Invoice"); 
+    }
+
+    function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
+    
+    async function logic_confirmInvoice() { 
+        if(!draftInvoice) return; 
+        const btn = document.getElementById('btn-confirm-inv');
+        btn.disabled = true; 
+        btn.innerText = "Sending...";
+
+        try {
+            const ownerId = localStorage.getItem('kozeyy_user_id');
+            const stripeId = state.settings.stripe_connect_id || null;
+            const file = document.getElementById('inv-doc').files[0]; 
+            let docUrl = null; 
+            if (file) docUrl = await uploadFile(file, 'invoices'); 
+
+            const { error } = await supabaseClient.from('invoices').insert([{ 
+                owner_id: ownerId, 
+                tenant_id: draftInvoice.tenantId, 
+                tenant_name: draftInvoice.tenantName, 
+                items: draftInvoice.items, 
+                total: draftInvoice.total, 
+                date: draftInvoice.date, 
+                status: 'Unpaid', 
+                landlord_stripe_id: stripeId, 
+                doc_url: docUrl 
+            }]); 
+
+            if(error) throw error;
+            closeModal('modal-invoice'); 
+            await initSystem(); 
+            showToast("Invoice Created Successfully"); 
+        } catch(err) {
+            console.error(err);
+            showToast("Error creating invoice: " + err.message, 'error');
+            btn.disabled = false;
+            btn.innerText = "Send Invoice";
+        }
+    }
+
+    function updateFileName(inputId, labelId) { const input = document.getElementById(inputId); const label = document.getElementById(labelId); if(input.files && input.files[0]) { label.innerText = input.files[0].name; label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } else { label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File'; label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } }
+    
+    function updateFileCount() {
+        const input = document.getElementById('l-img-file');
+        const label = document.getElementById('l-file-count');
+        if (input.files && input.files.length > 0) label.innerText = `${input.files.length} file(s) selected`;
+        else label.innerText = '';
+    }
+
+    function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
+    function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
+    
+    function loadUserProfile() { 
+        const savedProfile = localStorage.getItem('kozeyy_profile'); 
+        if (savedProfile) { 
+            const user = JSON.parse(savedProfile); 
+            const nameDisplay = user.username ? user.username : (user.name || 'Owner'); 
+            setText('owner-name-display', nameDisplay); 
+            const initialBox = document.getElementById('owner-initials-display'); 
+            if(initialBox) initialBox.innerText = user.initials || 'LL'; 
+        } 
     }
 
     initSystem();
