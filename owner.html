@@ -338,17 +338,32 @@
     <div class="grid grid-cols-2 gap-4 mb-4">
     <div>
         <label class="block text-xs font-bold text-slate-500 mb-1">Fee Type & Value</label>
-        <div class="flex gap-2">
-            <select id="fee-method" class="w-1/2 border p-3 rounded-xl bg-slate-50 text-sm">
-                <option value="Fixed">Fixed ($)</option>
-                <option value="Percentage">% Rent</option>
-            </select>
-            <input type="number" id="fee-amount" class="w-1/2 border p-3 rounded-xl bg-slate-50 text-sm" placeholder="Value">
-        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200 mb-6">
+    <h4 class="font-bold text-slate-800 mb-4 brand-font">Late Fee Configuration</h4>
+    
+    <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
+        <label class="text-sm font-bold text-slate-700">Enable Late Fees</label>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="set-fee-active" class="sr-only peer" onchange="toggleFeeVisibility()">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
     </div>
-    <div>
-        <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
-        <input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="e.g. 5 days">
+
+    <div id="fee-inputs-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Fee Structure</label>
+            <div class="flex gap-2">
+                <select id="fee-method" class="w-2/3 border p-3 rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="Fixed">Fixed Amount ($)</option>
+                    <option value="Percentage">Percentage (%)</option>
+                    <option value="Daily">Daily ($/Day)</option> </select>
+                <input type="number" id="fee-amount" class="w-1/3 border p-3 rounded-xl bg-slate-50 text-sm text-center font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0">
+            </div>
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
+            <input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 5">
+        </div>
     </div>
 </div>
                         
@@ -1219,18 +1234,36 @@
         if(view === 'settings') { renderSettings(); } 
     }
 
-    function renderSettings() {
+function toggleFeeVisibility() {
+    const isActive = document.getElementById('set-fee-active').checked;
+    const container = document.getElementById('fee-inputs-container');
+    if(isActive) {
+        container.classList.remove('opacity-50', 'pointer-events-none');
+    } else {
+        container.classList.add('opacity-50', 'pointer-events-none');
+    }
+}
+    
+   function renderSettings() {
         const s = state.settings;
         if(!s) return;
         if(document.getElementById('set-stripe-id')) document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
+        
+        // Fee Settings
+        if(document.getElementById('set-fee-active')) {
+            const isActive = s.late_fee_enabled !== false; // Default true
+            document.getElementById('set-fee-active').checked = isActive;
+            toggleFeeVisibility();
+        }
         if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.late_fee_amount || 50; 
         if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 5; 
-        
+        if(document.getElementById('fee-method')) document.getElementById('fee-method').value = s.late_fee_method || 'Fixed';
+
+        // Screening
         if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = s.min_credit_score || 650;
         if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
         if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
         if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
-        if(document.getElementById('fee-method')) document.getElementById('fee-method').value = s.late_fee_method || 'Fixed';
     }
 
     function viewMaintNote(id) { 
@@ -1576,13 +1609,17 @@
         const { error } = await supabaseClient.from('settings').upsert({ 
             owner_id: ownerId, 
             stripe_connect_id: document.getElementById('set-stripe-id').value, 
+            
+            // NEW: Fee Configuration
+            late_fee_enabled: document.getElementById('set-fee-active').checked,
+            late_fee_method: document.getElementById('fee-method').value, 
             late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0, 
             grace_period: parseInt(document.getElementById('fee-grace').value) || 0,     
+            
             min_credit_score: parseInt(document.getElementById('set-min-score').value) || 600,
             min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
             require_no_evictions: document.getElementById('set-no-evict').checked,
             require_no_criminal_history: document.getElementById('set-no-crim').checked,
-            late_fee_method: document.getElementById('fee-method').value, 
             require_insurance: false
         }, { onConflict: 'owner_id' });
         
@@ -1751,28 +1788,34 @@
         logic_invMode('fixed');
     }
 
-   function act_viewInvoice(id) {
+  function act_viewInvoice(id) {
         const inv = state.invoices.find(i => i.id === id);
         if(!inv) return;
 
-        // FIX 1: Pass the 'inv' object, not 'state.settings'
-        // This ensures it uses the keys fee_type/fee_value saved on the invoice
-        const lateFee = calculateLateFee(inv.total, inv); 
-        
-        // Calculate due date based on the SNAPSHOTTED grace period (fallback to global if missing)
+        // 1. Determine Dates & Grace Period
+        // Use snapshot grace period if available, otherwise global default
         const grace = inv.grace_period !== undefined ? inv.grace_period : (parseInt(state.settings.grace_period || 0));
-        
         const now = new Date();
         const invDate = parseDateStr(inv.date);
         const dueDate = new Date(invDate);
         dueDate.setDate(dueDate.getDate() + grace);
+        
+        // 2. Determine Overdue Status & Days
         const isOverdue = now > dueDate && inv.status !== 'Paid';
+        let daysOverdue = 0;
+        if(isOverdue) {
+            const diffTime = Math.abs(now - dueDate);
+            daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        }
+
+        // 3. Calculate Fee using new logic (passing daysOverdue)
+        const lateFee = calculateLateFee(inv.total, inv, daysOverdue);
 
         setText('prev-name', inv.tenant_name || 'Unknown');
         setText('prev-date', new Date(inv.date).toLocaleDateString());
         
         const currentBal = inv.total + (isOverdue ? lateFee : 0);
-        setText('prev-total-due', `$${currentBal.toLocaleString()}`);
+        setText('prev-total-due', `$${currentBal.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
         setText('inv-modal-title', `Invoice #${inv.id}`);
 
         const tbody = document.getElementById('prev-items-body');
@@ -1781,19 +1824,18 @@
             tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2 text-slate-600">${item.desc}</td><td class="py-2 text-right font-medium text-slate-800">$${(item.amount||0).toLocaleString()}</td></tr>`;
         });
         
-        if (isOverdue) {
-            // FIX 2: Use the invoice's own data for the label
+        // 4. Update the Label Logic for "Daily", "Percentage", or "Fixed"
+        if (isOverdue && lateFee > 0) {
             const type = inv.fee_type || 'Fixed';
             const val = inv.fee_value || 0;
             
-            const feeLabel = type === 'Percentage' 
-                ? `Late Fee (${val}%)` 
-                : `Late Fee`;
-                
+            let feeLabel = `Late Fee`;
+            if (type === 'Percentage') feeLabel = `Late Fee (${val}%)`;
+            if (type === 'Daily') feeLabel = `Late Fee ($${val}/day x ${daysOverdue} days)`;
+
             tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
         }
 
-        // ... (rest of the function remains the same) ...
         document.getElementById('inv-step-input').classList.add('hidden-section');
         document.getElementById('inv-step-preview').classList.remove('hidden-section');
         document.getElementById('inv-actions-create').classList.remove('flex');
@@ -1814,7 +1856,6 @@
 
         openModal('modal-invoice');
     }
-
     function downloadOwnerInvoicePDF(filename) {
         const element = document.getElementById('invoice-download-area'); 
         const opt = {
@@ -1932,7 +1973,8 @@
                 doc_url: docUrl,                         // Added missing comma here
                 fee_type: settings.late_fee_method || 'Fixed',
                 fee_value: parseFloat(settings.late_fee_amount) || 0,
-                grace_period: parseInt(settings.grace_period) || 0
+                grace_period: parseInt(settings.grace_period) || 0,
+                fee_enabled: settings.late_fee_enabled !== false
             }]); 
 
             if(error) throw error;
@@ -1970,21 +2012,27 @@
             if(initialBox) initialBox.innerText = user.initials || 'LL'; 
         } 
     }
-function calculateLateFee(total, invoice) {
-    // Use the rules saved on the INVOICE, not global settings
-    // Fallback to 0 if not present (for old invoices)
+function calculateLateFee(total, invoice, daysOverdue = 1) {
+    // 1. Check if fees are enabled on this invoice
+    // (We check strict false because old data might be null/undefined, defaulting to true)
+    if (invoice.fee_enabled === false) return 0;
+
     const type = invoice.fee_type || 'Fixed'; 
     const value = parseFloat(invoice.fee_value || 0);
 
     if (type === 'Percentage') {
         return total * (value / 100);
     }
-    return value;
+    if (type === 'Daily') {
+        return value * daysOverdue;
+    }
+    return value; // Fixed
 }
     initSystem();
 </script>
 </body>
 </html>
+
 
 
 
