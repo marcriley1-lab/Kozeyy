@@ -1702,18 +1702,62 @@
         if(!tidSelect) return showToast("Please select a tenant", 'error'); 
         
         const tenant = state.tenants.find(t => t.id == tidSelect); 
-        const date = document.getElementById('inv-date').value; 
-        const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); 
+        const dateStr = document.getElementById('inv-date').value; 
+        if(!dateStr) return showToast("Please select a date", 'error');
+
+        // 1. Calculate Base Total from Line Items
+        const baseTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); 
         
-        draftInvoice = { tenantId: parseInt(tidSelect), tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: date }; 
+        // 2. PREVIEW LOGIC: Calculate Potential Late Fee
+        // We assume the settings currently in the state will be applied to this invoice
+        const s = state.settings || {};
+        const mockInvForCalc = {
+            fee_type: s.late_fee_method || 'Fixed',
+            fee_value: parseFloat(s.late_fee_amount) || 0
+        };
+        
+        const lateFee = calculateLateFee(baseTotal, mockInvForCalc);
+        const grace = parseInt(s.grace_period || 0);
+        
+        // Check if the drafted "Send On" date is already overdue
+        const now = new Date();
+        const draftDate = parseDateStr(dateStr);
+        const dueDate = new Date(draftDate);
+        dueDate.setDate(dueDate.getDate() + grace);
+        
+        // If today > (Draft Date + Grace), show the fee in the preview
+        const isOverdue = now > dueDate;
+        const displayTotal = baseTotal + (isOverdue ? lateFee : 0);
+
+        // 3. Save Draft State
+        draftInvoice = { 
+            tenantId: parseInt(tidSelect), 
+            tenantName: tenant.name, 
+            items: JSON.parse(JSON.stringify(invItems)), 
+            total: baseTotal, // IMPORTANT: We still only save the BASE total to DB
+            date: dateStr 
+        }; 
         
         setText('prev-name', tenant.name); 
-        setText('prev-date', new Date(date).toLocaleDateString()); 
-        setText('prev-total-due', `$${currentTotal.toLocaleString()}`); 
+        setText('prev-date', new Date(dateStr).toLocaleDateString()); 
+        setText('prev-total-due', `$${displayTotal.toLocaleString()}`); // Show Grand Total with Fee
         
         const tbody = document.getElementById('prev-items-body'); 
         tbody.innerHTML = ''; 
-        invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); 
+        
+        // Render Standard Items
+        invItems.forEach(i => { 
+            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; 
+        }); 
+        
+        // Render Late Fee Row (if overdue)
+        if(isOverdue) {
+            const feeLabel = mockInvForCalc.fee_type === 'Percentage' 
+                ? `Late Fee (${mockInvForCalc.fee_value}%)` 
+                : `Late Fee`;
+            
+            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel} <span class="text-xs font-normal text-rose-400 ml-1">(Est.)</span></td><td class="py-2 text-right">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+        }
         
         document.getElementById('inv-step-input').classList.add('hidden-section'); 
         document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
@@ -1804,6 +1848,7 @@ function calculateLateFee(total, invoice) {
 </script>
 </body>
 </html>
+
 
 
 
