@@ -323,12 +323,15 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Late Fees</label>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div><label class="block text-xs font-bold text-slate-500 mb-1">Amount ($)</label><input type="number" id="fee-amount" class="w-full border p-3 rounded-xl bg-slate-50" value="50"></div>
-                                <div><label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label><input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50" value="5"></div>
-                            </div>
-                        </div>
+    <label class="block text-xs font-bold text-slate-500 mb-1">Fee Type</label>
+    <div class="flex gap-2 mb-2">
+        <select id="fee-method" class="w-1/2 border p-3 rounded-xl bg-slate-50">
+            <option value="Fixed">Fixed Amount ($)</option>
+            <option value="Percentage">Percentage (%)</option>
+        </select>
+        <input type="number" id="fee-amount" class="w-1/2 border p-3 rounded-xl bg-slate-50" value="50" placeholder="50 or 5">
+    </div>
+</div>
                         
                         <div class="pt-4 border-t border-slate-100">
                             <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Screening Criteria</h4>
@@ -1154,6 +1157,7 @@
         if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
         if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
         if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
+        if(document.getElementById('fee-method')) document.getElementById('fee-method').value = s.late_fee_method || 'Fixed';
     }
 
     function viewMaintNote(id) { 
@@ -1471,8 +1475,11 @@
     async function act_saveSettings(e) { 
         e.preventDefault(); 
         const ownerId = localStorage.getItem('kozeyy_user_id');
+        // Inside act_saveSettings(e) ...
+// Replace the .upsert() block with this:
+
         const { error } = await supabaseClient.from('settings').upsert({ 
-            owner_id: ownerId, // Use owner_id as primary link
+            owner_id: ownerId, 
             stripe_connect_id: document.getElementById('set-stripe-id').value, 
             late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0, 
             grace_period: parseInt(document.getElementById('fee-grace').value) || 0,     
@@ -1480,9 +1487,9 @@
             min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
             require_no_evictions: document.getElementById('set-no-evict').checked,
             require_no_criminal_history: document.getElementById('set-no-crim').checked,
-            late_fee_method: 'Fixed',
+            late_fee_method: document.getElementById('fee-method').value, // NOW DYNAMIC
             require_insurance: false
-        }, { onConflict: 'owner_id' }); 
+        }, { onConflict: 'owner_id' });
         
         if (error) { showToast("Save Failed: " + error.message, 'error'); } 
         else { showToast("Configuration Saved"); await fetchData(); }
@@ -1607,13 +1614,13 @@
         const inv = state.invoices.find(i => i.id === id);
         if(!inv) return;
 
-        const lateFee = parseFloat(state.settings.late_fee_amount || 0);
-        const grace = parseInt(state.settings.grace_period || 0);
-        const now = new Date();
-        const invDate = parseDateStr(inv.date);
-        const dueDate = new Date(invDate);
-        dueDate.setDate(dueDate.getDate() + grace);
-        const isOverdue = now > dueDate && inv.status !== 'Paid';
+        const lateFee = calculateLateFee(inv.total, state.settings); // New Helper
+    const grace = parseInt(state.settings.grace_period || 0);
+    const now = new Date();
+    const invDate = parseDateStr(inv.date);
+    const dueDate = new Date(invDate);
+    dueDate.setDate(dueDate.getDate() + grace);
+    const isOverdue = now > dueDate && inv.status !== 'Paid';
 
         setText('prev-name', inv.tenant_name || 'Unknown');
         setText('prev-date', new Date(inv.date).toLocaleDateString());
@@ -1629,8 +1636,13 @@
         });
         
         if (isOverdue) {
-            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">Late Fee Applied</td><td class="py-2 text-right">+$${lateFee.toLocaleString()}</td></tr>`;
-        }
+        // Update the display text to handle % or $ formatting
+        const feeLabel = state.settings.late_fee_method === 'Percentage' 
+            ? `Late Fee (${state.settings.late_fee_amount}%)` 
+            : `Late Fee`;
+            
+        tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+    }
 
         document.getElementById('inv-step-input').classList.add('hidden-section');
         document.getElementById('inv-step-preview').classList.remove('hidden-section');
@@ -1700,12 +1712,15 @@
     async function logic_confirmInvoice() { 
         if(!draftInvoice) return; 
         const btn = document.getElementById('btn-confirm-inv');
+        const originalText = btn.innerText; // Save text to restore later
         btn.disabled = true; 
         btn.innerText = "Sending...";
 
         try {
             const ownerId = localStorage.getItem('kozeyy_user_id');
-            const stripeId = state.settings.stripe_connect_id || null;
+            // FIX: Safer check for settings
+            const stripeId = (state.settings && state.settings.stripe_connect_id) ? state.settings.stripe_connect_id : null;
+            
             const file = document.getElementById('inv-doc').files[0]; 
             let docUrl = null; 
             if (file) docUrl = await uploadFile(file, 'invoices'); 
@@ -1719,7 +1734,10 @@
                 date: draftInvoice.date, 
                 status: 'Unpaid', 
                 landlord_stripe_id: stripeId, 
-                doc_url: docUrl 
+                doc_url: docUrl
+                fee_type: settings.late_fee_method || 'Fixed',
+                fee_value: parseFloat(settings.late_fee_amount) || 0,
+                grace_period: parseInt(settings.grace_period) || 0
             }]); 
 
             if(error) throw error;
@@ -1729,11 +1747,13 @@
         } catch(err) {
             console.error(err);
             showToast("Error creating invoice: " + err.message, 'error');
+        } finally {
+            // FIX: Always reset button state
             btn.disabled = false;
-            btn.innerText = "Send Invoice";
+            btn.innerText = originalText;
         }
     }
-
+    
     function updateFileName(inputId, labelId) { const input = document.getElementById(inputId); const label = document.getElementById(labelId); if(input.files && input.files[0]) { label.innerText = input.files[0].name; label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } else { label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File'; label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } }
     
     function updateFileCount() {
@@ -1756,8 +1776,19 @@
             if(initialBox) initialBox.innerText = user.initials || 'LL'; 
         } 
     }
+function calculateLateFee(total, invoice) {
+    // Use the rules saved on the INVOICE, not global settings
+    // Fallback to 0 if not present (for old invoices)
+    const type = invoice.fee_type || 'Fixed'; 
+    const value = parseFloat(invoice.fee_value || 0);
 
+    if (type === 'Percentage') {
+        return total * (value / 100);
+    }
+    return value;
+}
     initSystem();
 </script>
 </body>
 </html>
+
