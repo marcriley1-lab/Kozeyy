@@ -1031,7 +1031,7 @@
         if(currentChatId) renderMessages();
         if(activeTab === 'messages') renderChatList();
 
-        // Expenses Render
+       // Expenses Render
         const expHash = JSON.stringify(state.expenses);
         if(expHash !== lastRenderedState.expenses) {
             const exBody = document.getElementById('table-expenses'); 
@@ -1040,10 +1040,10 @@
                 const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
                 let dEx = state.expenses;
                 if (fid !== 'all') dEx = dEx.filter(x => x.property_address === fid);
+                
                 dEx.forEach(x => { 
                     const fileLink = x.receipt_url ? `<a href="${x.receipt_url}" target="_blank" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-paperclip"></i> View</a>` : '-';
-                    // FIX: Columns now align with the header. 
-                    // Property & Category hidden on mobile. Actions VISIBLE on mobile.
+                    
                     exBody.innerHTML += `
                     <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
                         <td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td>
@@ -1054,8 +1054,8 @@
                         <td class="p-5 text-center hidden md:table-cell">${fileLink}</td>
                         <td class="p-5 text-right">
                             <div class="flex justify-end gap-3">
-                                <button onclick="act_editExpense(${x.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-edit"></i></button>
-                                <button onclick="act_delExpense(${x.id})" class="text-slate-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
+                                <button onclick="act_editExpense(${x.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button>
+                                <button onclick="act_delExpense(${x.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
                             </div>
                         </td>
                     </tr>`; 
@@ -2061,6 +2061,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
