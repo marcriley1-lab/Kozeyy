@@ -323,13 +323,20 @@
                         </div>
 
                         <div>
-    <label class="block text-xs font-bold text-slate-500 mb-1">Fee Type</label>
-    <div class="flex gap-2 mb-2">
-        <select id="fee-method" class="w-1/2 border p-3 rounded-xl bg-slate-50">
-            <option value="Fixed">Fixed Amount ($)</option>
-            <option value="Percentage">Percentage (%)</option>
-        </select>
-        <input type="number" id="fee-amount" class="w-1/2 border p-3 rounded-xl bg-slate-50" value="50" placeholder="50 or 5">
+    <div class="grid grid-cols-2 gap-4 mb-4">
+    <div>
+        <label class="block text-xs font-bold text-slate-500 mb-1">Fee Type & Value</label>
+        <div class="flex gap-2">
+            <select id="fee-method" class="w-1/2 border p-3 rounded-xl bg-slate-50 text-sm">
+                <option value="Fixed">Fixed ($)</option>
+                <option value="Percentage">% Rent</option>
+            </select>
+            <input type="number" id="fee-amount" class="w-1/2 border p-3 rounded-xl bg-slate-50 text-sm" placeholder="Value">
+        </div>
+    </div>
+    <div>
+        <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
+        <input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="e.g. 5 days">
     </div>
 </div>
                         
@@ -1788,5 +1795,6 @@ function calculateLateFee(total, invoice) {
 </script>
 </body>
 </html>
+
 
 
