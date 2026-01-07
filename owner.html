@@ -1614,17 +1614,22 @@
         logic_invMode('fixed');
     }
 
-    function act_viewInvoice(id) {
+   function act_viewInvoice(id) {
         const inv = state.invoices.find(i => i.id === id);
         if(!inv) return;
 
-        const lateFee = calculateLateFee(inv.total, state.settings); // New Helper
-    const grace = parseInt(state.settings.grace_period || 0);
-    const now = new Date();
-    const invDate = parseDateStr(inv.date);
-    const dueDate = new Date(invDate);
-    dueDate.setDate(dueDate.getDate() + grace);
-    const isOverdue = now > dueDate && inv.status !== 'Paid';
+        // FIX 1: Pass the 'inv' object, not 'state.settings'
+        // This ensures it uses the keys fee_type/fee_value saved on the invoice
+        const lateFee = calculateLateFee(inv.total, inv); 
+        
+        // Calculate due date based on the SNAPSHOTTED grace period (fallback to global if missing)
+        const grace = inv.grace_period !== undefined ? inv.grace_period : (parseInt(state.settings.grace_period || 0));
+        
+        const now = new Date();
+        const invDate = parseDateStr(inv.date);
+        const dueDate = new Date(invDate);
+        dueDate.setDate(dueDate.getDate() + grace);
+        const isOverdue = now > dueDate && inv.status !== 'Paid';
 
         setText('prev-name', inv.tenant_name || 'Unknown');
         setText('prev-date', new Date(inv.date).toLocaleDateString());
@@ -1640,14 +1645,18 @@
         });
         
         if (isOverdue) {
-        // Update the display text to handle % or $ formatting
-        const feeLabel = state.settings.late_fee_method === 'Percentage' 
-            ? `Late Fee (${state.settings.late_fee_amount}%)` 
-            : `Late Fee`;
+            // FIX 2: Use the invoice's own data for the label
+            const type = inv.fee_type || 'Fixed';
+            const val = inv.fee_value || 0;
             
-        tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
-    }
+            const feeLabel = type === 'Percentage' 
+                ? `Late Fee (${val}%)` 
+                : `Late Fee`;
+                
+            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+        }
 
+        // ... (rest of the function remains the same) ...
         document.getElementById('inv-step-input').classList.add('hidden-section');
         document.getElementById('inv-step-preview').classList.remove('hidden-section');
         document.getElementById('inv-actions-create').classList.remove('flex');
@@ -1795,6 +1804,7 @@ function calculateLateFee(total, invoice) {
 </script>
 </body>
 </html>
+
 
 
 
