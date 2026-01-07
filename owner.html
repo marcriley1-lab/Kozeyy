@@ -257,17 +257,18 @@
 
                 <div class="bg-white rounded-3xl shadow-sm border border-slate-200 w-full overflow-x-auto">
                     <table class="w-full text-left whitespace-nowrap">
-                        <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font">
-                            <tr>
-                                <th class="p-5">Date</th>
-                                <th class="p-5">Tenant</th>
-                                <th class="p-5">Type</th>
-                                <th class="p-5">Description</th>
-                                <th class="p-5 text-right">Amount</th>
-                                <th class="p-5 text-right">Status</th>
-                                <th class="p-5 text-right">Action</th>
-                            </tr>
-                        </thead>
+                       <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font">
+    <tr>
+        <th class="p-5">Date</th>
+        <th class="p-5">Tenant</th>
+        <th class="p-5">Type</th>
+        
+        <th class="p-5 hidden md:table-cell">Description</th>
+        <th class="p-5 text-right hidden md:table-cell">Amount</th>
+        <th class="p-5 text-right hidden md:table-cell">Status</th>
+        <th class="p-5 text-right hidden md:table-cell">Action</th>
+    </tr>
+</thead>
                         <tbody id="table-financials" class="divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
@@ -690,7 +691,25 @@
             </div>
         </div>
     </div>
-
+<div id="modal-payment-view" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm relative text-center">
+        <button onclick="closeModal('modal-payment-view')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
+        <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mx-auto mb-4 text-xl">
+            <i class="fas fa-check"></i>
+        </div>
+        <h3 class="text-lg font-bold text-slate-900 mb-1">Payment Received</h3>
+        <p class="text-sm text-slate-500 mb-6" id="mp-date">-</p>
+        
+        <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-4">
+            <p class="text-xs font-bold text-slate-400 uppercase mb-1">Amount</p>
+            <h2 class="text-3xl font-extrabold text-emerald-600" id="mp-amount">$0.00</h2>
+            <p class="text-sm text-slate-600 font-medium mt-2" id="mp-tenant">-</p>
+        </div>
+        
+        <button onclick="closeModal('modal-payment-view')" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold">Close</button>
+    </div>
+</div>
+    
 <script>
     // --- SUPABASE CONFIG ---
     const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
@@ -1612,22 +1631,18 @@
 
         tbody.innerHTML = '';
         let transactions = [];
-        
-        // GLOBAL SETTINGS FALLBACKS (for calculating the "Outstanding" top card)
         const s = state.settings || {};
         const globalGrace = parseInt(s.grace_period || 0);
         const globalFeeVal = parseFloat(s.late_fee_amount || 0);
         const globalFeeType = s.late_fee_method || 'Fixed';
         const now = new Date();
 
-        // 1. GATHER INVOICES
+        // Gather Data
         state.invoices.forEach(inv => {
             if (filterVal === 'all' || inv.tenant_id == filterVal) {
                 transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.date || inv.created_at).toLocaleDateString() });
             }
         });
-
-        // 2. GATHER PAYMENTS
         state.payments.forEach(pay => {
             if (filterVal === 'all' || pay.tenant_id == filterVal) {
                 transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() });
@@ -1635,7 +1650,6 @@
         });
 
         transactions.sort((a, b) => b.sortTime - a.sortTime);
-
         let totalOutstandingDebt = 0;
 
         transactions.forEach(item => {
@@ -1645,67 +1659,77 @@
             const dateStr = item.displayDate;
             let rowHtml = '';
 
+            // Common classes for hidden columns on mobile
+            const hiddenClass = "hidden md:table-cell";
+
             if (isInv) {
-                // --- CALCULATION FOR TOTAL DEBT (Top Card) ---
+                // Debt Calculation
                 const invDate = parseDateStr(record.date);
                 const grace = record.grace_period !== undefined ? record.grace_period : globalGrace;
                 const dueDate = new Date(invDate);
                 dueDate.setDate(dueDate.getDate() + grace);
-                
                 const isOverdue = now > dueDate && record.status !== 'Paid';
                 const baseBal = (record.total || 0) - (record.amount_paid || 0);
-                
                 let currentDebtOnThis = baseBal;
-                
                 if (isOverdue && baseBal > 0) {
                     const iFeeVal = record.fee_value !== undefined ? record.fee_value : globalFeeVal;
                     const iFeeType = record.fee_type || globalFeeType;
                     const fee = iFeeType === 'Percentage' ? record.total * (iFeeVal/100) : iFeeVal;
                     currentDebtOnThis += fee;
                 }
-                
                 if (record.status !== 'Paid') totalOutstandingDebt += currentDebtOnThis;
-                // ---------------------------------------------
 
-                // UI DISPLAY LOGIC
+                // UI Variables
                 const statusLabel = record.status === 'Paid' ? 'Paid' : (isOverdue ? 'Overdue' : 'Unpaid');
                 const statusColor = record.status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : (isOverdue ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50');
-                
-                // CHANGE: Show the ORIGINAL Total (record.total), not the dynamic debt
-                // This keeps the "Amount" column consistent with the PDF
                 const displayAmount = record.total; 
-
                 const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
                 
+                // INVOICE ROW: Click triggers act_viewInvoice
                 rowHtml = `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                <tr onclick="act_viewInvoice(${record.id})" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td>
-                    <td class="p-5 text-sm text-slate-500">${desc}</td>
-                    <td class="p-5 text-right font-bold text-slate-800">$${(displayAmount||0).toLocaleString()}</td>
-                    <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
-                    <td class="p-5 text-right"><button onclick="act_viewInvoice(${record.id})" class="text-slate-400 hover:text-indigo-600 transition" title="View Details"><i class="fas fa-eye"></i></button></td>
+                    
+                    <td class="p-5 text-sm text-slate-500 ${hiddenClass}">${desc}</td>
+                    <td class="p-5 text-right font-bold text-slate-800 ${hiddenClass}">$${(displayAmount||0).toLocaleString()}</td>
+                    <td class="p-5 text-right ${hiddenClass}"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
+                    <td class="p-5 text-right ${hiddenClass}"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
                 </tr>`;
             } else {
+                // PAYMENT ROW: Click triggers act_viewPayment
                 rowHtml = `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                <tr onclick="act_viewPayment(${record.id})" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
-                    <td class="p-5 text-sm text-slate-400 italic">Payment Received</td>
-                    <td class="p-5 text-right font-bold text-emerald-600">+$${(record.amount||0).toLocaleString()}</td>
-                    <td class="p-5 text-right text-xs text-slate-400">-</td>
-                    <td class="p-5 text-right text-xs text-slate-400">-</td>
+                    
+                    <td class="p-5 text-sm text-slate-400 italic ${hiddenClass}">Payment Received</td>
+                    <td class="p-5 text-right font-bold text-emerald-600 ${hiddenClass}">+$${(record.amount||0).toLocaleString()}</td>
+                    <td class="p-5 text-right text-xs text-slate-400 ${hiddenClass}">-</td>
+                    <td class="p-5 text-right text-xs text-slate-400 ${hiddenClass}">-</td>
                 </tr>`;
             }
             tbody.innerHTML += rowHtml;
         });
 
-        // Update the top summary card with the TRUE debt (including fees)
         balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
         sumContainer.classList.remove('hidden-section');
         if (transactions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>'; }
+    }
+
+    // New Helper Function for Mobile Payment Details
+    function act_viewPayment(id) {
+        const p = state.payments.find(x => x.id === id);
+        if(!p) return;
+        const tenant = state.tenants.find(t => t.id === p.tenant_id) || {name: 'Unknown'};
+        
+        setText('mp-date', new Date(p.date || p.created_at).toLocaleDateString());
+        setText('mp-amount', `+$${p.amount.toLocaleString()}`);
+        setText('mp-tenant', `From: ${tenant.name}`);
+        
+        openModal('modal-payment-view');
     }
     
     function openInvoiceModal() { 
@@ -1961,6 +1985,7 @@ function calculateLateFee(total, invoice) {
 </script>
 </body>
 </html>
+
 
 
 
