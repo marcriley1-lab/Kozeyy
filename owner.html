@@ -1611,16 +1611,22 @@
 
         tbody.innerHTML = '';
         let transactions = [];
-        const lateFee = parseFloat(state.settings.late_fee_amount || 0);
-        const grace = parseInt(state.settings.grace_period || 0);
+        
+        // GLOBAL SETTINGS FALLBACKS (for calculating the "Outstanding" top card)
+        const s = state.settings || {};
+        const globalGrace = parseInt(s.grace_period || 0);
+        const globalFeeVal = parseFloat(s.late_fee_amount || 0);
+        const globalFeeType = s.late_fee_method || 'Fixed';
         const now = new Date();
 
+        // 1. GATHER INVOICES
         state.invoices.forEach(inv => {
             if (filterVal === 'all' || inv.tenant_id == filterVal) {
                 transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.date || inv.created_at).toLocaleDateString() });
             }
         });
 
+        // 2. GATHER PAYMENTS
         state.payments.forEach(pay => {
             if (filterVal === 'all' || pay.tenant_id == filterVal) {
                 transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() });
@@ -1629,7 +1635,7 @@
 
         transactions.sort((a, b) => b.sortTime - a.sortTime);
 
-        let totalOut = 0;
+        let totalOutstandingDebt = 0;
 
         transactions.forEach(item => {
             const isInv = item.type === 'invoice';
@@ -1639,28 +1645,64 @@
             let rowHtml = '';
 
             if (isInv) {
+                // --- CALCULATION FOR TOTAL DEBT (Top Card) ---
                 const invDate = parseDateStr(record.date);
+                const grace = record.grace_period !== undefined ? record.grace_period : globalGrace;
                 const dueDate = new Date(invDate);
                 dueDate.setDate(dueDate.getDate() + grace);
                 
                 const isOverdue = now > dueDate && record.status !== 'Paid';
-                const bal = (record.total || 0) - (record.amount_paid || 0);
-                const displayAmt = isOverdue ? bal + lateFee : bal;
+                const baseBal = (record.total || 0) - (record.amount_paid || 0);
                 
-                if (record.status !== 'Paid') totalOut += displayAmt;
+                let currentDebtOnThis = baseBal;
+                
+                if (isOverdue && baseBal > 0) {
+                    const iFeeVal = record.fee_value !== undefined ? record.fee_value : globalFeeVal;
+                    const iFeeType = record.fee_type || globalFeeType;
+                    const fee = iFeeType === 'Percentage' ? record.total * (iFeeVal/100) : iFeeVal;
+                    currentDebtOnThis += fee;
+                }
+                
+                if (record.status !== 'Paid') totalOutstandingDebt += currentDebtOnThis;
+                // ---------------------------------------------
 
+                // UI DISPLAY LOGIC
                 const statusLabel = record.status === 'Paid' ? 'Paid' : (isOverdue ? 'Overdue' : 'Unpaid');
                 const statusColor = record.status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : (isOverdue ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50');
                 
+                // CHANGE: Show the ORIGINAL Total (record.total), not the dynamic debt
+                // This keeps the "Amount" column consistent with the PDF
+                const displayAmount = record.total; 
+
                 const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
-                rowHtml = `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td><td class="p-5 text-sm text-slate-500">${desc}</td><td class="p-5 text-right font-bold text-slate-800">$${(record.total||0).toLocaleString()}</td><td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td><td class="p-5 text-right"><button onclick="act_viewInvoice(${record.id})" class="text-slate-400 hover:text-indigo-600 transition" title="View Details"><i class="fas fa-eye"></i></button></td></tr>`;
+                
+                rowHtml = `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
+                    <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td>
+                    <td class="p-5 text-sm text-slate-500">${desc}</td>
+                    <td class="p-5 text-right font-bold text-slate-800">$${(displayAmount||0).toLocaleString()}</td>
+                    <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
+                    <td class="p-5 text-right"><button onclick="act_viewInvoice(${record.id})" class="text-slate-400 hover:text-indigo-600 transition" title="View Details"><i class="fas fa-eye"></i></button></td>
+                </tr>`;
             } else {
-                rowHtml = `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td><td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td><td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td><td class="p-5 text-sm text-slate-400 italic">Payment Received</td><td class="p-5 text-right font-bold text-emerald-600">+$${(record.amount||0).toLocaleString()}</td><td class="p-5 text-right text-xs text-slate-400">-</td><td class="p-5 text-right text-xs text-slate-400">-</td></tr>`;
+                rowHtml = `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
+                    <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
+                    <td class="p-5 text-sm text-slate-400 italic">Payment Received</td>
+                    <td class="p-5 text-right font-bold text-emerald-600">+$${(record.amount||0).toLocaleString()}</td>
+                    <td class="p-5 text-right text-xs text-slate-400">-</td>
+                    <td class="p-5 text-right text-xs text-slate-400">-</td>
+                </tr>`;
             }
             tbody.innerHTML += rowHtml;
         });
 
-        balanceDisplay.innerText = `$${totalOut.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        // Update the top summary card with the TRUE debt (including fees)
+        balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
         sumContainer.classList.remove('hidden-section');
         if (transactions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>'; }
     }
@@ -1918,6 +1960,7 @@ function calculateLateFee(total, invoice) {
 </script>
 </body>
 </html>
+
 
 
 
