@@ -154,28 +154,45 @@
                     const { data: existing } = await supabaseClient.from('tenants').select('*').eq('email', email).maybeSingle();
                     
                     if(existing) {
-                        // 🟢 FIXED: If tenant is Active (added by owner), log them in and go to Dashboard
-                        if (existing.status === 'Active') {
+                        // FLOWPATH: OWNER ADDED MANUALLY (Has owner_id or is Active)
+                        // If found, we update their details (Claim Account) and log them in
+                        if (existing.owner_id || existing.status === 'Active') {
+                            
+                            // Update placeholder record with real user details
+                            const { error: updateError } = await supabaseClient
+                                .from('tenants')
+                                .update({
+                                    name: userProfile.name,
+                                    phone: phone,
+                                    status: 'Active' // Ensure they remain active
+                                })
+                                .eq('id', existing.id);
+
+                            if(updateError) throw updateError;
+
                             localStorage.setItem('kozeyy_user_id', existing.id);
                             localStorage.setItem('kozeyy_role', 'tenant');
                             localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
                             
-                            showModal("Welcome", "We found your existing tenant account. Logging you in...");
+                            showModal("Success", "Account verified! Redirecting to your portal...");
                             setTimeout(() => { window.location.href = 'tenant.html'; }, 1500);
                             return;
-                        } else {
+                        } 
+                        
+                        // FLOWPATH: DUPLICATE APPLICATION (No owner link)
+                        else {
                             showModal("Account Exists", "An application with this email already exists. Please log in to check status.");
                             btn.innerHTML = originalText; btn.disabled = false;
                             return;
                         }
                     }
 
-                    // Insert new Tenant (Applicant)
+                    // FLOWPATH: NEW APPLICANT
                     const { data, error } = await supabaseClient.from('tenants').insert([{
                         name: userProfile.name,
                         email: email,
                         phone: phone,
-                        status: 'Applicant', // Default status
+                        status: 'Applicant', // Default status for new listing applicants
                         rent_amount: 0
                     }]).select().single();
 
@@ -193,7 +210,7 @@
                     }
 
                 } else {
-                    // 🟢 FIXED: Create REAL Owner row instead of using Mock ID
+                    // OWNER SIGNUP
                     const { data, error } = await supabaseClient.from('owners').insert([{
                         name: `${fname} ${lname}`,
                         email: email,
@@ -202,7 +219,6 @@
 
                     if(error) throw error;
 
-                    // Use the REAL ID
                     localStorage.setItem('kozeyy_user_id', data.id);
                     localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
                     localStorage.setItem('kozeyy_role', 'owner');
