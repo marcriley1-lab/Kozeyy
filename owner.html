@@ -1475,9 +1475,7 @@
     async function act_saveSettings(e) { 
         e.preventDefault(); 
         const ownerId = localStorage.getItem('kozeyy_user_id');
-        // Inside act_saveSettings(e) ...
-// Replace the .upsert() block with this:
-
+        
         const { error } = await supabaseClient.from('settings').upsert({ 
             owner_id: ownerId, 
             stripe_connect_id: document.getElementById('set-stripe-id').value, 
@@ -1487,14 +1485,13 @@
             min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
             require_no_evictions: document.getElementById('set-no-evict').checked,
             require_no_criminal_history: document.getElementById('set-no-crim').checked,
-            late_fee_method: document.getElementById('fee-method').value, // NOW DYNAMIC
+            late_fee_method: document.getElementById('fee-method').value, 
             require_insurance: false
         }, { onConflict: 'owner_id' });
         
         if (error) { showToast("Save Failed: " + error.message, 'error'); } 
         else { showToast("Configuration Saved"); await fetchData(); }
     }
-    
     function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
 
     function initChart(stats = {revenue:0, overdue:0}) { const ctx = document.getElementById('revenueChart'); if(!ctx) return; const context = ctx.getContext('2d'); chartInstance = new Chart(context, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [stats.revenue, 0, stats.overdue], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
@@ -1712,14 +1709,15 @@
     async function logic_confirmInvoice() { 
         if(!draftInvoice) return; 
         const btn = document.getElementById('btn-confirm-inv');
-        const originalText = btn.innerText; // Save text to restore later
+        const originalText = btn.innerText; 
         btn.disabled = true; 
         btn.innerText = "Sending...";
 
         try {
             const ownerId = localStorage.getItem('kozeyy_user_id');
-            // FIX: Safer check for settings
-            const stripeId = (state.settings && state.settings.stripe_connect_id) ? state.settings.stripe_connect_id : null;
+            // Get settings safely
+            const settings = state.settings || {};
+            const stripeId = settings.stripe_connect_id || null;
             
             const file = document.getElementById('inv-doc').files[0]; 
             let docUrl = null; 
@@ -1734,7 +1732,7 @@
                 date: draftInvoice.date, 
                 status: 'Unpaid', 
                 landlord_stripe_id: stripeId, 
-                doc_url: docUrl
+                doc_url: docUrl,                         // Added missing comma here
                 fee_type: settings.late_fee_method || 'Fixed',
                 fee_value: parseFloat(settings.late_fee_amount) || 0,
                 grace_period: parseInt(settings.grace_period) || 0
@@ -1748,7 +1746,6 @@
             console.error(err);
             showToast("Error creating invoice: " + err.message, 'error');
         } finally {
-            // FIX: Always reset button state
             btn.disabled = false;
             btn.innerText = originalText;
         }
@@ -1791,4 +1788,5 @@ function calculateLateFee(total, invoice) {
 </script>
 </body>
 </html>
+
 
