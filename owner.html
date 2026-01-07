@@ -1394,26 +1394,50 @@
 
     async function act_saveExpense(e) { 
         e.preventDefault(); 
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        const file = document.getElementById('ex-doc').files[0];
-        let docUrl = null;
-        if (file) docUrl = await uploadFile(file, 'receipts'); 
-        
-        const data = { 
-            owner_id: ownerId, 
-            date: document.getElementById('ex-date').value, 
-            vendor: document.getElementById('ex-vendor').value, 
-            category: document.getElementById('ex-cat').value, 
-            property_address: document.getElementById('ex-prop').value, 
-            amount: parseFloat(document.getElementById('ex-amount').value)||0, 
-            receipt_url: docUrl 
-        }; 
-        
-        if(editExpenseId) await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
-        else await supabaseClient.from('expenses').insert([data]); 
-        
-        closeModal('modal-expense'); await fetchData(); renderAll(); showToast("Expense saved");
-    }
+        const btn = document.getElementById('btn-save-expense');
+        const originalText = btn.innerText;
+        btn.innerText = "Saving...";
+        btn.disabled = true;
+
+        try {
+            const ownerId = localStorage.getItem('kozeyy_user_id');
+            const file = document.getElementById('ex-doc').files[0];
+            let docUrl = null;
+            if (file) docUrl = await uploadFile(file, 'receipts'); 
+            
+            const data = { 
+                owner_id: ownerId, 
+                date: document.getElementById('ex-date').value, 
+                vendor: document.getElementById('ex-vendor').value, 
+                category: document.getElementById('ex-cat').value, 
+                property_address: document.getElementById('ex-prop').value, 
+                amount: parseFloat(document.getElementById('ex-amount').value)||0, 
+                receipt_url: docUrl 
+            }; 
+            
+            let result;
+            if(editExpenseId) {
+                result = await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
+            } else {
+                result = await supabaseClient.from('expenses').insert([data]); 
+            }
+
+            // CRITICAL FIX: Check for error!
+            if (result.error) throw result.error;
+            
+            closeModal('modal-expense'); 
+            await fetchData(); 
+            renderAll(); 
+            showToast("Expense saved");
+
+        } catch (err) {
+            console.error(err);
+            showToast("Error saving expense: " + err.message, 'error');
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }}
 
     function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.category; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.property_address; openModal('modal-expense'); }
     async function act_delExpense(id) { openPlatformConfirm("Delete Expense?", "Confirm deletion.", async () => { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); }); }
@@ -1848,6 +1872,7 @@ function calculateLateFee(total, invoice) {
 </script>
 </body>
 </html>
+
 
 
 
