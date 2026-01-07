@@ -324,69 +324,92 @@
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
                     <form onsubmit="act_saveSettings(event)" class="space-y-6">
-                        
-                        <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
-                            <h4 class="font-bold text-indigo-900 mb-2 brand-font flex items-center gap-2"><i class="fab fa-stripe text-xl"></i> Payments Integration</h4>
-                            <p class="text-xs text-indigo-700 mb-4">Enter your Stripe Connected Account ID to receive payments automatically from tenants.</p>
-                            <div>
-                                <label class="block text-xs font-bold text-indigo-800 uppercase mb-1">Stripe Account ID</label>
-                                <input type="text" id="set-stripe-id" class="w-full border border-indigo-200 p-3 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="acct_..." value="">
-                            </div>
-                        </div>
-
-                        <div>
-    <div class="grid grid-cols-2 gap-4 mb-4">
-    <div>
-        <label class="block text-xs font-bold text-slate-500 mb-1">Fee Type & Value</label>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 mb-6">
-    <h4 class="font-bold text-slate-800 mb-4 brand-font">Late Fee Configuration</h4>
     
-    <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
-        <label class="text-sm font-bold text-slate-700">Enable Late Fees</label>
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="set-fee-active" class="sr-only peer" onchange="toggleFeeVisibility()">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-        </label>
-    </div>
-
-    <div id="fee-inputs-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div>
-        <label class="block text-xs font-bold text-slate-500 mb-1">Fee Structure</label>
-        <div class="flex flex-col sm:flex-row gap-2">
-            <select id="fee-method" class="w-full sm:w-2/3 border p-3 rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="Fixed">Fixed Amount ($)</option>
-                <option value="Percentage">Percentage (%)</option>
-                <option value="Daily">Daily ($/Day)</option> 
-            </select>
-            <input type="number" id="fee-amount" class="w-full sm:w-1/3 border p-3 rounded-xl bg-slate-50 text-sm text-center font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0">
-        </div>
-    </div>
-    <div>
-        <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
-        <input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 5">
-    </div>
-</div>
+    <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+        <h4 class="font-bold text-indigo-900 mb-2 brand-font flex items-center gap-2">
+            <i class="fab fa-stripe text-xl"></i> Payments Integration
+        </h4>
+        <p class="text-xs text-indigo-700 mb-4">Enter your Stripe Connected Account ID to receive payments automatically from tenants.</p>
         <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
-            <input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 5">
+            <label class="block text-xs font-bold text-indigo-800 uppercase mb-1">Stripe Account ID</label>
+            <input type="text" id="set-stripe-id" class="w-full border border-indigo-200 p-3 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="acct_..." value="">
         </div>
     </div>
-</div>
-                        
-                        <div class="pt-4 border-t border-slate-100">
-                            <h4 class="font-bold text-lg text-slate-800 mb-4 brand-font">Screening Criteria</h4>
-                            <div class="grid grid-cols-2 gap-4 mb-4">
-                                <div><label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Min Credit Score</label><input type="number" id="set-min-score" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="e.g. 650"></div>
-                                <div><label class="block text-sm font-bold text-slate-700 mb-2 brand-font">Min Income (x Rent)</label><input type="number" step="0.1" id="set-min-income" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="e.g. 3.0"></div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-evict" class="text-indigo-600 rounded"><span class="text-sm font-medium">No Evictions</span></label></div>
-                                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="set-no-crim" class="text-indigo-600 rounded"><span class="text-sm font-medium">No Criminal Hist.</span></label></div>
-                            </div>
-                        </div>
 
-                        <button class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg brand-font">Save Configuration</button>
-                    </form>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Fee Type & Value</label>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 h-full">
+                <h4 class="font-bold text-slate-800 mb-4 brand-font">Late Fee Configuration</h4>
+                
+                <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
+                    <label class="text-sm font-bold text-slate-700">Enable Late Fees</label>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="set-fee-active" class="sr-only peer" onchange="toggleFeeVisibility()">
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                </div>
+
+                <div id="fee-inputs-container" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Fee Structure</label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <select id="fee-method" class="w-full border p-3 rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="Fixed">Fixed ($)</option>
+                                <option value="Percentage">Percent (%)</option>
+                                <option value="Daily">Daily ($)</option>
+                            </select>
+                            <input type="number" id="fee-amount" class="w-full border p-3 rounded-xl bg-slate-50 text-sm text-center font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
+                        <input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 5">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Screening Rules</label>
+            <div class="bg-white p-4 rounded-xl border border-slate-200 h-full">
+                <h4 class="font-bold text-slate-800 mb-4 brand-font">Screening Criteria</h4>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Min Credit Score</label>
+                        <input type="number" id="set-min-score" class="w-full border p-3 rounded-xl bg-slate-50 text-center font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="650">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Min Income (x Rent)</label>
+                        <input type="number" step="0.1" id="set-min-income" class="w-full border p-3 rounded-xl bg-slate-50 text-center font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="3.0">
+                    </div>
+                </div>
+                
+                <div class="space-y-2">
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="set-no-evict" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
+                            <span class="text-sm font-bold text-slate-700">No Prior Evictions</span>
+                        </label>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" id="set-no-crim" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
+                            <span class="text-sm font-bold text-slate-700">No Criminal History</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <button class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg brand-font text-lg">
+        Save Configuration
+    </button>
+</form>
                 </div>
             </div>
         </div>
@@ -2038,6 +2061,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
