@@ -107,7 +107,7 @@
             <div class="flex items-center gap-4 md:gap-6">
                 <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
                     <div class="text-right hidden md:block">
-                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Loading...</p>
+                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Landlord</p>
                         <p class="text-xs text-slate-500">Property Owner</p>
                     </div>
                     <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font" id="owner-initials-display">LL</div>
@@ -307,7 +307,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div id="view-settings" class="view-section hidden-section fade-in-up">
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
@@ -348,8 +348,7 @@
             </div>
         </div>
     </main>
-
-    <div id="modal-platform-confirm" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+<div id="modal-platform-confirm" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center">
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
                 <i class="fas fa-question"></i>
@@ -379,10 +378,12 @@
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4"><i class="fas fa-check"></i></div>
             <h3 class="text-lg font-bold mb-2">Listing Posted!</h3>
             <p class="text-sm text-slate-500 mb-6">Your property is now live on Kozeyy Rentals.</p>
+            
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center gap-2 mb-4">
                 <input id="share-link-input" readonly class="bg-transparent text-xs flex-1 text-slate-600 outline-none">
                 <button onclick="copyListingLink()" class="text-indigo-600 font-bold text-xs">Copy</button>
             </div>
+            
             <a id="public-link-btn" href="#" target="_blank" class="block w-full bg-indigo-600 text-white py-3 rounded-xl font-bold text-sm mb-2 hover:bg-indigo-700">View Public Listing</a>
             <button onclick="closeModal('modal-share-listing')" class="block w-full text-slate-400 text-xs font-bold py-2">Close</button>
         </div>
@@ -531,7 +532,7 @@
             </div>
 
             <div id="inv-step-preview" class="hidden-section">
-                <div id="invoice-preview-paper" class="bg-white border border-slate-200 rounded-xl p-6 mb-6 paper-shadow relative overflow-hidden">
+                <div class="bg-white border border-slate-200 rounded-xl p-6 mb-6 paper-shadow relative overflow-hidden" id="invoice-preview-area">
                     <div class="absolute top-0 left-0 w-full h-1 bg-indigo-600"></div>
                     <div class="flex justify-between items-start mb-6">
                         <div>
@@ -562,7 +563,8 @@
                 </div>
                 
                 <div id="inv-actions-view" class="hidden-section">
-                    </div>
+                    <!-- Buttons injected dynamically -->
+                </div>
             </div>
 
         </div>
@@ -666,8 +668,9 @@
             </div>
         </div>
     </div>
-    <script>
-        // --- SUPABASE CONFIG ---
+
+<script>
+    // --- SUPABASE CONFIG ---
     const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
     
@@ -689,49 +692,55 @@
     let viewedAppIds = new Set(JSON.parse(localStorage.getItem('kozeyy_viewed_apps') || '[]').map(String));
     let locallyReadMsgIds = new Set(JSON.parse(localStorage.getItem('kozeyy_read_msgs') || '[]').map(String));
     let activeTab = 'dashboard';
-    let lastRenderedState = { dashboard: "", tenants: "", listings: "", maint: "", msgs: "", invoices: "", expenses: "", screening: "" };
 
-    // --- UI VARS ---
+    let lastRenderedState = {
+        dashboard: "", tenants: "", listings: "", maint: "", msgs: "", invoices: "", expenses: "", screening: ""
+    };
+
+    function parseDateStr(str) { 
+        if(!str) return new Date(); 
+        const parts = str.split('-'); 
+        return new Date(parts[0], parts[1]-1, parts[2]); 
+    }
+    
+    function getLastName(fullName) { if(!fullName) return ''; const parts = fullName.trim().split(' '); return parts.length > 1 ? parts[parts.length - 1] : parts[0]; }
+    function setText(id, text) { const el = document.getElementById(id); if(el && el.innerText !== text) el.innerText = text; }
+
     let currentChatId = null, invMode = 'fixed', invItems = [], chartInstance = null, monthlyChartInstance = null;
     let editTenantId = null, editListingId = null, editExpenseId = null, currentAppId = null;
     let draftInvoice = null;
     let promptCallback = null;
     let platformConfirmCallback = null;
 
-    // --- INIT & POLLING ---
     async function initSystem() {
         try {
             if(!supabaseClient) throw new Error("Supabase library not loaded.");
-            loadUserProfile(); // Fix #4: Load Name
             await fetchData();
             renderAll();
-            setInterval(async () => { await fetchData(); renderAll(); }, 4000);
-        } catch (err) { console.error("Initialization failed:", err); renderAll(); }
-    }
+            
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('action') === 'lease_uploaded') {
+                navTo('screening');
+                showToast("Lease document saved successfully");
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
 
-    // --- FIX #4: OWNER NAME DISPLAY ---
-    function loadUserProfile() { 
-        const savedProfile = localStorage.getItem('kozeyy_profile'); 
-        if (savedProfile) { 
-            const user = JSON.parse(savedProfile); 
-            if(user.role === 'owner') { 
-                const nameDisplay = user.username ? user.username : (user.name || "Owner"); 
-                setText('owner-name-display', nameDisplay); 
-                const initialBox = document.getElementById('owner-initials-display'); 
-                if(initialBox) initialBox.innerText = user.initials || "LL"; 
-            } 
-        } 
+            setInterval(async () => { await fetchData(); renderAll(); }, 10000);
+        } catch (err) { console.error("Initialization failed:", err); renderAll(); }
     }
 
     async function fetchData() {
         const ownerId = localStorage.getItem('kozeyy_user_id');
-        if(!ownerId) { window.location.href = 'login.html'; return; }
+        if(!ownerId) {
+            window.location.href = 'login.html';
+            return;
+        }
 
         const [t, l, i, p, e, m, msg, s, a] = await Promise.all([
             supabaseClient.from('tenants').select('*').eq('owner_id', ownerId),
             supabaseClient.from('listings').select('*').eq('owner_id', ownerId),
-            supabaseClient.from('invoices').select('*').eq('owner_id', ownerId), // Filtered
-            supabaseClient.from('payments').select('*'), // Filter logic below
+            supabaseClient.from('invoices').select('*').eq('owner_id', ownerId),
+            supabaseClient.from('payments').select('*'),
             supabaseClient.from('expenses').select('*').eq('owner_id', ownerId),
             supabaseClient.from('maintenance').select('*'),
             supabaseClient.from('msgs').select('*'),
@@ -741,13 +750,12 @@
 
         state.tenants = t.data || [];
         state.listings = l.data || [];
-        state.invoices = i.data || [];
         state.expenses = e.data || [];
         state.settings = s.data || {};
         state.apps = a.data || [];
 
-        // Association Filtering
         const myTenantIds = new Set(state.tenants.map(tn => tn.id));
+        state.invoices = (i.data || []).filter(x => myTenantIds.has(x.tenant_id));
         state.payments = (p.data || []).filter(x => myTenantIds.has(x.tenant_id));
         state.maint = (m.data || []).filter(x => myTenantIds.has(x.tenant_id));
         
@@ -760,140 +768,259 @@
         state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
     }
 
-    // --- FIX #3: OVERDUE LOGIC ---
+    function renderAll() {
+        updateBadge('messages', state.notifications.messages); 
+        updateBadge('maintenance', state.notifications.maintenance); 
+        updateBadge('screening', state.notifications.screening);
+
+        const stats = calculateGlobalStats();
+        const activeMaint = state.maint.filter(m=>m.status==='Active').length;
+        
+        const totalUnits = state.tenants.filter(t => t.status !== 'Archived').length;
+        const occupiedUnits = state.tenants.filter(t => t.status === 'Active').length;
+        const occupancyPct = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
+
+        setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
+        setText('dash-maintenance', activeMaint); 
+        setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
+        setText('dash-occupancy', `${occupancyPct}%`);
+        
+        if(chartInstance) {
+            chartInstance.data.datasets[0].data = [stats.revenue, 0, stats.overdue];
+            chartInstance.update();
+        } else if(document.getElementById('revenueChart')) {
+            initChart(stats);
+        }
+
+        const tenantHash = JSON.stringify(state.tenants);
+        const statusFilter = document.getElementById('filter-tenant-status') ? document.getElementById('filter-tenant-status').value : 'Active';
+        const combinedHash = tenantHash + statusFilter;
+
+        if(combinedHash !== lastRenderedState.tenants) {
+            const tbody = document.getElementById('table-tenants'); 
+            if(tbody) {
+                tbody.innerHTML = '';
+                state.tenants
+                    .filter(t => statusFilter === 'all' ? true : t.status === statusFilter)
+                    .sort((a, b) => getLastName(a.name||'').localeCompare(getLastName(b.name||'')))
+                    .forEach(t => { 
+                        const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
+                        const moveOutBtn = t.status === 'Active' ? `<button onclick="act_moveOut(${t.id})" class="text-amber-500 hover:text-amber-700" title="Move Out"><i class="fas fa-box-open"></i></button>` : '';
+                        
+                        tbody.innerHTML += `
+                        <tr class="border-b border-slate-100">
+                            <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">
+                                ${t.name}<br>
+                                <span class="text-xs text-slate-400 font-normal">${t.email}</span>
+                            </td>
+                            <td class="p-5 text-sm hidden md:table-cell">${t.address || '-'}</td>
+                            <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
+                            <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent_amount || 0).toLocaleString()}</td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
+                            <td class="p-5 text-right">
+                                <div class="flex justify-end gap-3">
+                                    <button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button>
+                                    ${moveOutBtn}
+                                    <button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </td>
+                        </tr>`; 
+                });
+            }
+            lastRenderedState.tenants = combinedHash;
+        }
+
+        const listingHash = JSON.stringify(state.listings);
+        if(listingHash !== lastRenderedState.listings) {
+            const grid = document.getElementById('grid-listings');
+            if(grid) {
+                grid.innerHTML = '';
+                state.listings.forEach(l => {
+                    const displayImg = (l.images && l.images.length > 0) ? l.images[0] : (l.image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994');
+                    grid.innerHTML += `
+                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
+                        <div class="h-32 bg-slate-200 relative">
+                            <img src="${displayImg}" class="w-full h-full object-cover">
+                            <div class="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-bold shadow">$${l.price}</div>
+                        </div>
+                        <div class="p-4 flex-1">
+                            <h4 class="font-bold text-slate-800">${l.address}</h4>
+                            <p class="text-xs text-slate-500 mb-3">${l.beds} Bed • ${l.baths} Bath</p>
+                            <div class="flex gap-2 mt-auto">
+                                <button onclick="act_editListing(${l.id})" class="flex-1 border border-slate-200 text-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-slate-50">Edit</button>
+                                <button onclick="showShareModal(${l.id})" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold hover:bg-indigo-700">Share</button>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+            }
+            lastRenderedState.listings = listingHash;
+        }
+
+        const screeningHash = JSON.stringify(state.apps);
+        if(screeningHash !== lastRenderedState.screening) {
+            const tbody = document.getElementById('table-screening');
+            if(tbody) {
+                tbody.innerHTML = '';
+                state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
+                    const eval = evalApplicant(app);
+                    let actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm">Review</button>`;
+                    const status = app.status || 'Pending';
+                    const statusColor = status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500';
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100">
+                            <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewApp(${app.id})">
+                                ${app.name}<br>
+                                <span class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</span>
+                            </td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${status}</span></td>
+                            <td class="p-5 text-right">${actionButton}</td>
+                        </tr>`;
+                });
+            }
+            lastRenderedState.screening = screeningHash;
+        }
+
+        const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
+        if(maintHash !== lastRenderedState.maint) {
+            const activeList = document.getElementById('list-maint-active'); 
+            const histList = document.getElementById('list-maint-history'); 
+            if(activeList && histList) {
+                activeList.innerHTML = ''; histList.innerHTML = '';
+                state.maint.filter(m => m.status === 'Active').forEach(m => { 
+                    const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown', unit: '?'}; 
+                    activeList.innerHTML += `<div class="p-4 flex justify-between items-start bg-white border-b border-slate-100 hover:bg-slate-50 transition"><div><div class="flex items-center gap-2 mb-1"><span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Unit ${t.unit}</span><span class="text-xs font-bold text-slate-700">${t.name}</span></div><p class="font-bold text-slate-800 text-sm">${m.issue}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition shadow-sm">Mark Done</button></div>`; 
+                }); 
+                state.maint.filter(m => m.status === 'Completed').forEach(m => { 
+                    const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown'};
+                    histList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white opacity-75 border-b border-slate-100"><div><p class="font-medium text-slate-600 text-sm line-through">${m.issue}</p><p class="text-xs text-slate-400">${t.name}</p></div><button onclick="viewMaintNote(${m.id})" class="text-indigo-500 text-xs font-bold">View Notes</button></div>`; 
+                });
+            }
+            lastRenderedState.maint = maintHash;
+        }
+
+        if(currentChatId) renderMessages();
+        if(activeTab === 'messages') renderChatList();
+
+        renderFinancials();
+        renderReports(); 
+    }
+
     function calculateGlobalStats() {
         let revenue = 0, overdue = 0;
         const now = new Date();
-        now.setHours(0,0,0,0); // Compare dates without time
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        
+        const curM = now.getMonth();
+        const curY = now.getFullYear();
+        const grace = parseInt(state.settings.grace_period || 0);
+
         state.payments.forEach(p => { 
-            const pDate = new Date(p.date || p.created_at); 
-            if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) revenue += p.amount; 
+            const pd = parseDateStr(p.date); 
+            if(pd.getMonth() === curM && pd.getFullYear() === curY) revenue += p.amount; 
         });
-        
+
         state.invoices.forEach(inv => { 
             if(inv.status !== 'Paid') { 
-                const dueDate = new Date(inv.date);
-                // Only overdue if Due Date is strictly BEFORE today
-                if (dueDate < now) {
-                    const bal = inv.total - (inv.amount_paid || 0); 
-                    if(bal > 0) overdue += bal; 
+                const bal = inv.total - (inv.amount_paid || 0);
+                const invDate = parseDateStr(inv.date);
+                const dueDate = new Date(invDate);
+                dueDate.setDate(dueDate.getDate() + grace);
+                
+                if (now > dueDate) {
+                    overdue += (bal + parseFloat(state.settings.late_fee_amount || 0));
                 }
             } 
         });
         return { revenue, overdue };
     }
 
-    function renderAll() {
-        updateBadge('messages', state.notifications.messages); 
-        updateBadge('maintenance', state.notifications.maintenance); 
-        updateBadge('screening', state.notifications.screening);
-        const stats = calculateGlobalStats();
-        // ... (Chart updates same as before) ...
-        setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
-        setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
-        
-        // ... (Render Tenants, Listings, Screening, Maintenance, Chat, Expenses same as before) ...
-        // ... (Calling renderFinancials & renderReports) ...
-        
-        // Re-render logic ensures tables update
-        renderFinancials();
-    }
-    
-    function updateBadge(id, count) { 
-        const el = document.getElementById('badge-' + id); 
-        if(!el) return;
-        const isViewing = activeTab === id;
-        if(count > 0 && !isViewing) { el.innerText = count; el.classList.remove('hidden-section'); } 
-        else { el.classList.add('hidden-section'); } 
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icon = type === 'success' ? '<i class="fas fa-check-circle text-emerald-500 text-xl"></i>' : '<i class="fas fa-exclamation-circle text-rose-500 text-xl"></i>';
+        toast.innerHTML = `${icon}<span class="font-bold text-sm text-slate-700">${message}</span>`;
+        container.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
-    // --- FIX #5: SETTINGS SAVE ---
+    function openPlatformConfirm(title, message, callback) {
+        setText('plat-conf-title', title);
+        setText('plat-conf-msg', message);
+        document.getElementById('modal-platform-confirm').classList.remove('hidden-section');
+        document.getElementById('modal-platform-confirm').classList.add('flex');
+        platformConfirmCallback = callback;
+    }
+
+    function closePlatformConfirm(confirmed) {
+        document.getElementById('modal-platform-confirm').classList.add('hidden-section');
+        document.getElementById('modal-platform-confirm').classList.remove('flex');
+        if(confirmed && platformConfirmCallback) platformConfirmCallback();
+        platformConfirmCallback = null;
+    }
+
+    function openPrompt(title, callback) {
+        setText('prompt-title', title);
+        document.getElementById('prompt-input').value = '';
+        document.getElementById('modal-prompt').classList.remove('hidden-section');
+        document.getElementById('modal-prompt').classList.add('flex');
+        promptCallback = callback;
+    }
+
+    function closePrompt(confirmed) {
+        document.getElementById('modal-prompt').classList.add('hidden-section');
+        document.getElementById('modal-prompt').classList.remove('flex');
+        if (confirmed && promptCallback) promptCallback(document.getElementById('prompt-input').value);
+        promptCallback = null;
+    }
+
     async function act_saveSettings(e) { 
         e.preventDefault(); 
         const ownerId = localStorage.getItem('kozeyy_user_id');
-        
-        const payload = { 
+        const data = { 
             owner_id: ownerId,
             stripe_connect_id: document.getElementById('set-stripe-id').value, 
-            late_fee_amount: parseFloat(document.getElementById('fee-amount').value), 
-            grace_period: parseInt(document.getElementById('fee-grace').value),     
-            min_credit_score: parseInt(document.getElementById('set-min-score').value)||600,
-            min_income_ratio: parseFloat(document.getElementById('set-min-income').value)||2.5,
+            late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0, 
+            grace_period: parseInt(document.getElementById('fee-grace').value) || 0,     
+            min_credit_score: parseInt(document.getElementById('set-min-score').value) || 600,
+            min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
             require_no_evictions: document.getElementById('set-no-evict').checked,
-            require_no_criminal_history: document.getElementById('set-no-crim').checked
-        };
-        
-        // Upsert settings
-        const { data: existing } = await supabaseClient.from('settings').select('id').eq('owner_id', ownerId).maybeSingle();
-        
-        let error;
-        if (existing) {
-             const res = await supabaseClient.from('settings').update(payload).eq('owner_id', ownerId);
-             error = res.error;
-        } else {
-             const res = await supabaseClient.from('settings').insert([payload]);
-             error = res.error;
-        }
-
-        if (error) { showToast("Save Failed: " + error.message, 'error'); } 
-        else { showToast("Configuration Saved"); }
-    }
-
-    // --- SAVE TENANT ---
-    async function act_saveTenant(e) { 
-        e.preventDefault(); 
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
-
-        const data = { 
-            owner_id: ownerId, 
-            name: document.getElementById('t-name').value, 
-            email: document.getElementById('t-email').value, 
-            phone: document.getElementById('t-phone').value, 
-            unit: document.getElementById('t-unit').value, 
-            rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
-            lease_start: document.getElementById('t-start').value||null, 
-            lease_end: document.getElementById('t-end').value||null, 
-            status: document.getElementById('t-status').value, 
-            address: document.getElementById('t-addr').value, 
-            city: document.getElementById('t-city').value, 
-            state: document.getElementById('t-state').value, 
-            zip: document.getElementById('t-zip').value 
+            require_no_criminal_history: document.getElementById('set-no-crim').checked,
+            late_fee_method: 'Fixed'
         }; 
 
-        if(editTenantId) await supabaseClient.from('tenants').update(data).eq('id', editTenantId); 
-        else await supabaseClient.from('tenants').insert([data]); 
+        const { error } = await supabaseClient.from('settings').upsert([data], { onConflict: 'owner_id' }); 
         
-        closeModal('modal-tenant'); await fetchData(); renderAll(); 
+        if (error) { showToast("Save Failed: " + error.message, 'error'); } 
+        else { showToast("Configuration Saved"); fetchData(); }
     }
 
-    // --- FIX #1: INVOICE DATE LOGIC ---
     function logic_generatePreview() { 
         const tidSelect = document.getElementById('inv-tenant').value; 
         if(!tidSelect) return showToast("Please select a tenant", 'error'); 
-        const tid = parseInt(tidSelect); 
-        const tenant = state.tenants.find(t => t.id === tid); 
         
-        // Use user selected date
-        const dateInput = document.getElementById('inv-date').value; 
-        
-        // --- FIX #3: LATE FEE CALCULATION ---
-        // Late fees are usually calculated at payment time or automatically via a scheduled job.
-        // For manual invoices, we trust the owner's line items. 
-        // If they want to add a late fee, they add it as a line item.
-        
+        const tenant = state.tenants.find(t => t.id == tidSelect); 
+        const date = document.getElementById('inv-date').value; 
         const currentTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); 
-        draftInvoice = { tenantId: tid, tenantName: tenant.name, items: JSON.parse(JSON.stringify(invItems)), total: currentTotal, date: dateInput }; 
         
+        draftInvoice = { 
+            tenantId: parseInt(tidSelect), 
+            tenantName: tenant.name, 
+            items: JSON.parse(JSON.stringify(invItems)), 
+            total: currentTotal, 
+            date: date 
+        }; 
+
         setText('prev-name', tenant.name); 
-        setText('prev-date', new Date(dateInput).toLocaleDateString()); 
+        setText('prev-date', new Date(date).toLocaleDateString()); 
         setText('prev-total-due', `$${currentTotal.toLocaleString()}`); 
         
-        const tbody = document.getElementById('prev-items-body'); tbody.innerHTML = ''; 
-        invItems.forEach(i => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; }); 
+        const tbody = document.getElementById('prev-items-body'); 
+        tbody.innerHTML = ''; 
+        invItems.forEach(i => { 
+            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; 
+        }); 
         
         document.getElementById('inv-step-input').classList.add('hidden-section'); 
         document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
@@ -903,105 +1030,281 @@
     async function logic_confirmInvoice() { 
         if(!draftInvoice) return; 
         const btn = document.getElementById('btn-confirm-inv');
-        btn.disabled = true; btn.innerText = "Sending...";
+        btn.disabled = true; 
+        btn.innerText = "Sending...";
 
-        try {
-            const ownerId = localStorage.getItem('kozeyy_user_id');
-            const file = document.getElementById('inv-doc').files[0]; 
-            let docUrl = null; 
-            if (file) docUrl = await uploadFile(file, 'invoices'); 
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const { error } = await supabaseClient.from('invoices').insert([{ 
+            owner_id: ownerId,
+            tenant_id: draftInvoice.tenantId, 
+            tenant_name: draftInvoice.tenantName, 
+            items: draftInvoice.items, 
+            total: draftInvoice.total, 
+            date: draftInvoice.date, 
+            status: 'Unpaid'
+        }]); 
 
-            // Fix #1: Saving the correct date to DB
-            const { error } = await supabaseClient.from('invoices').insert([{ 
-                owner_id: ownerId,          
-                tenant_id: draftInvoice.tenantId, 
-                tenant_name: draftInvoice.tenantName, 
-                items: draftInvoice.items, 
-                total: draftInvoice.total, 
-                date: draftInvoice.date, // <--- User Selected Date
-                status: 'Unpaid', 
-                doc_url: docUrl 
-            }]); 
-
-            if(error) throw error;
-            closeModal('modal-invoice'); await initSystem(); showToast("Invoice Created Successfully"); 
-        } catch(err) {
-            console.error(err);
-            showToast("Error creating invoice: " + err.message, 'error');
-            btn.disabled = false; btn.innerText = "Send Invoice";
+        if(!error) {
+            closeModal('modal-invoice'); 
+            await initSystem(); 
+            showToast("Invoice Sent Successfully"); 
+        } else {
+            showToast("Error: " + error.message, 'error');
+            btn.disabled = false;
+            btn.innerText = "Send Invoice";
         }
     }
-    
+
     function act_viewInvoice(id) {
         const inv = state.invoices.find(i => i.id === id);
         if(!inv) return;
-        setText('prev-name', inv.tenant_name || 'Unknown');
+
+        setText('prev-name', inv.tenant_name || 'Tenant');
         setText('prev-date', new Date(inv.date).toLocaleDateString());
-        setText('prev-total-due', `$${(inv.total || 0).toLocaleString()}`);
-        setText('inv-modal-title', `Invoice #${inv.id}`);
+        
+        const grace = parseInt(state.settings.grace_period || 0);
+        const invDate = parseDateStr(inv.date);
+        const dueDate = new Date(invDate);
+        dueDate.setDate(dueDate.getDate() + grace);
+        const isOverdue = new Date() > dueDate && inv.status !== 'Paid';
+        
+        let displayTotal = inv.total;
         const tbody = document.getElementById('prev-items-body');
         tbody.innerHTML = '';
-        if(inv.items) {
-            inv.items.forEach(item => { tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2 text-slate-600">${item.desc}</td><td class="py-2 text-right font-medium text-slate-800">$${(item.amount||0).toLocaleString()}</td></tr>`; });
+        
+        (inv.items || []).forEach(item => {
+            tbody.innerHTML += `<tr class="border-b border-slate-100"><td class="py-2">${item.desc}</td><td class="py-2 text-right">$${item.amount.toLocaleString()}</td></tr>`;
+        });
+
+        if(isOverdue) {
+            const fee = parseFloat(state.settings.late_fee_amount || 0);
+            displayTotal += fee;
+            tbody.innerHTML += `<tr class="text-rose-600 font-bold"><td>Late Fee Applied</td><td class="text-right">+$${fee.toLocaleString()}</td></tr>`;
         }
+
+        setText('prev-total-due', `$${displayTotal.toLocaleString()}`);
         document.getElementById('inv-step-input').classList.add('hidden-section');
         document.getElementById('inv-step-preview').classList.remove('hidden-section');
-        document.getElementById('inv-actions-create').classList.remove('flex');
-        document.getElementById('inv-actions-create').classList.add('hidden-section');
-        const viewActions = document.getElementById('inv-actions-view');
-        viewActions.classList.remove('hidden-section');
         
-        // --- FIX #2: DOWNLOAD PDF BUTTON ---
-        viewActions.innerHTML = `<div class="flex gap-2"><button onclick="downloadOwnerInvoicePDF('Invoice_${id}')" class="flex-1 py-3 border border-slate-300 text-slate-600 rounded-xl font-bold shadow-sm hover:bg-slate-50"><i class="fas fa-download"></i> Download</button><button onclick="closeModal('modal-invoice')" class="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold shadow hover:bg-slate-900">Close</button></div>`;
+        const actCont = document.getElementById('inv-actions-view');
+        actCont.innerHTML = `
+            <div class="flex gap-2">
+                <button onclick="downloadPDF(${inv.id})" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-sm">Download PDF</button>
+                <button onclick="closeModal('modal-invoice')" class="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold">Close</button>
+            </div>`;
+        actCont.classList.remove('hidden-section');
+        document.getElementById('inv-actions-create').classList.add('hidden-section');
         openModal('modal-invoice');
     }
 
-    // --- FIX #2: PDF FUNCTION ---
-    function downloadOwnerInvoicePDF(filename) {
-        const element = document.getElementById('invoice-preview-paper'); 
-        const opt = { margin: 0.5, filename: `${filename}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+    function downloadPDF(id) {
+        const element = document.getElementById('invoice-preview-area');
+        const opt = {
+            margin: 0.5,
+            filename: `Invoice_${id}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
         html2pdf().set(opt).from(element).save();
     }
 
-    // --- CHAT ---
-    async function sendMsg() { 
-        const i=document.getElementById('input-chat'); 
-        if(i.value && currentChatId) { 
-            const ownerId = localStorage.getItem('kozeyy_user_id');
-            const newMsg = {
-                owner_id: ownerId, 
-                tenant_id: currentChatId, 
-                from:'Owner', 
-                text:i.value, 
-                time: new Date().toISOString()
-            };
-            state.msgs.push({ ...newMsg, created_at: new Date().toISOString() });
-            renderMessages(true);
-            const val = i.value; i.value=''; 
-            await supabaseClient.from('msgs').insert([newMsg]);
-            await fetchData(); 
+    function renderFinancials() {
+        const filterVal = document.getElementById('filter-financials').value;
+        const tbody = document.getElementById('table-financials');
+        tbody.innerHTML = '';
+        
+        const grace = parseInt(state.settings.grace_period || 0);
+        const now = new Date();
+        let outstanding = 0;
+
+        state.invoices.forEach(inv => {
+            if (filterVal !== 'all' && inv.tenant_id != filterVal) return;
+            
+            const invDate = parseDateStr(inv.date);
+            const dueDate = new Date(invDate);
+            dueDate.setDate(dueDate.getDate() + grace);
+            
+            const isOverdue = now > dueDate && inv.status !== 'Paid';
+            const bal = inv.total - (inv.amount_paid || 0);
+            const displayBal = isOverdue ? (bal + parseFloat(state.settings.late_fee_amount || 0)) : bal;
+            
+            if(inv.status !== 'Paid') outstanding += displayBal;
+
+            const statusClass = inv.status === 'Paid' ? 'bg-emerald-50 text-emerald-600' : (isOverdue ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600');
+            const statusLabel = inv.status === 'Paid' ? 'Paid' : (isOverdue ? 'Overdue' : 'Unpaid');
+
+            tbody.innerHTML += `
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td class="p-5 text-sm">${new Date(inv.date).toLocaleDateString()}</td>
+                    <td class="p-5 text-sm font-bold">${inv.tenant_name}</td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-[10px] font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td>
+                    <td class="p-5 text-sm truncate max-w-[150px]">${inv.items[0].desc}</td>
+                    <td class="p-5 text-right font-bold">$${displayBal.toLocaleString()}</td>
+                    <td class="p-5 text-right"><span class="px-2 py-1 rounded text-[10px] font-bold uppercase ${statusClass}">${statusLabel}</span></td>
+                    <td class="p-5 text-right"><button onclick="act_viewInvoice(${inv.id})" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
+                </tr>`;
+        });
+
+        state.payments.forEach(p => {
+            if (filterVal !== 'all' && p.tenant_id != filterVal) return;
+            const t = state.tenants.find(x => x.id == p.tenant_id) || {name:'-'}
+            tbody.innerHTML += `
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td class="p-5 text-sm">${new Date(p.date).toLocaleDateString()}</td>
+                    <td class="p-5 text-sm font-bold">${t.name}</td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-[10px] font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
+                    <td class="p-5 text-sm text-slate-400 italic">Received</td>
+                    <td class="p-5 text-right font-bold text-emerald-600">+$${p.amount.toLocaleString()}</td>
+                    <td class="p-5 text-right">-</td>
+                    <td class="p-5 text-right">-</td>
+                </tr>`;
+        });
+
+        setText('fin-open-bal', `$${outstanding.toLocaleString()}`);
+        document.getElementById('fin-summary-container').classList.remove('hidden-section');
+    }
+
+    function navTo(view) {
+        activeTab = view;
+        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
+        document.getElementById('view-' + view).classList.remove('hidden-section');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
+        const link = document.getElementById('link-' + view);
+        if(link) link.classList.add('sidebar-active');
+        
+        if(view === 'financials') populateFinFilter();
+        if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
+        if(view === 'settings') { renderSettings(); } 
+    }
+
+    function renderSettings() {
+        const s = state.settings;
+        if(!s) return;
+        document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
+        document.getElementById('fee-amount').value = s.late_fee_amount || 50; 
+        document.getElementById('fee-grace').value = s.grace_period || 5; 
+        document.getElementById('set-min-score').value = s.min_credit_score || 650;
+        document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
+        document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
+        document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
+    }
+
+    function loadUserProfile() { 
+        const savedProfile = localStorage.getItem('kozeyy_profile'); 
+        if (savedProfile) { 
+            const user = JSON.parse(savedProfile); 
+            setText('owner-name-display', user.name || 'Owner'); 
+            const initialBox = document.getElementById('owner-initials-display');
+            if(initialBox) initialBox.innerText = user.initials || 'OW';
         } 
     }
 
-    // --- UTILS ---
-    function setText(id, text) { const el = document.getElementById(id); if(el && el.innerText !== text) el.innerText = text; }
+    // Modal helpers
     function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); }
-    function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
-    function navTo(view) { activeTab = view; document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section')); document.getElementById('view-' + view).classList.remove('hidden-section'); if(view==='settings') renderSettings(); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
     
-    function renderSettings() { 
-        const s = state.settings; 
-        if(document.getElementById('set-stripe-id')) document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
-        if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.late_fee_amount || 50; 
-        if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 5; 
-        if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = s.min_credit_score || 650;
-        if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
-        if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
-        if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
+    function logic_invMode(m) { 
+        invMode = m; 
+        document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
+        document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
+        document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); 
+        logic_resetInvoice(); 
     }
-    // ... (Remainder of standard utility functions like act_viewTenant, uploadFile etc.) ...
+
+    function logic_resetInvoice() { 
+        const tid = document.getElementById('inv-tenant').value; 
+        invItems = []; 
+        if (tid && invMode === 'fixed') { 
+            const t = state.tenants.find(x => x.id == tid); 
+            if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; 
+        } else if (invMode === 'variable') {
+            invItems.push({desc:'', amount:0});
+        }
+        renderInvItems(); 
+    }
+
+    function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
+    function updateInvItem(idx, key, val) { invItems[idx][key] = key === 'amount' ? (parseFloat(val) || 0) : val; }
+    function renderInvItems() { 
+        const c = document.getElementById('inv-items-container'); 
+        c.innerHTML=''; 
+        invItems.forEach((r,i) => { 
+            const ro = invMode==='fixed'?'readonly':''; 
+            c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}></div>`; 
+        }); 
+    }
+    
+    function resetForms() {
+        document.getElementById('inv-step-input').classList.remove('hidden-section');
+        document.getElementById('inv-step-preview').classList.add('hidden-section');
+        document.getElementById('inv-actions-create').classList.remove('hidden-section');
+        document.getElementById('inv-actions-view').classList.add('hidden-section');
+        const btn = document.getElementById('btn-confirm-inv');
+        if(btn) { btn.disabled = false; btn.innerText = "Send Invoice"; }
+    }
+
+    function openInvoiceModal() { 
+        const s = document.getElementById('inv-tenant');
+        s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>';
+        state.tenants.filter(t => t.status === 'Active').forEach(t => {
+            s.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+        });
+        document.getElementById('inv-date').valueAsDate = new Date();
+        openModal('modal-invoice');
+        logic_invMode('fixed');
+    }
+
+    function toggleSidebar() { 
+        const sidebar = document.getElementById('sidebar'); 
+        const overlay = document.getElementById('mobile-overlay'); 
+        sidebar.classList.toggle('-translate-x-full'); 
+        overlay.classList.toggle('hidden'); 
+    }
+
+    function updateBadge(id, count) { 
+        const el = document.getElementById('badge-' + id); 
+        if(!el) return;
+        if(count > 0) { el.innerText = count; el.classList.remove('hidden-section'); } 
+        else { el.classList.add('hidden-section'); } 
+    }
+
+    function populateFinFilter() { 
+        const sel = document.getElementById('filter-financials'); 
+        sel.innerHTML = '<option value="all">All Tenants</option>'; 
+        state.tenants.forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); 
+    }
+
+    function evalApplicant(app) {
+        const crit = state.settings || { min_credit_score: 600, min_income_ratio: 2.5 };
+        const incomeRatio = app.income / app.rent;
+        if(app.score < (crit.min_credit_score - 50)) return { status: 'Deny', color: 'bg-rose-100 text-rose-700' };
+        if(app.score < crit.min_credit_score || incomeRatio < crit.min_income_ratio) return { status: 'Conditional', color: 'bg-amber-100 text-amber-700' };
+        return { status: 'Meets Criteria', color: 'bg-emerald-100 text-emerald-700' };
+    }
+
+    function renderReports() {
+        const totalRev = state.payments.reduce((sum, p) => sum + p.amount, 0);
+        const totalExp = state.expenses.reduce((sum, e) => sum + e.amount, 0);
+        setText('report-income', `$${totalRev.toLocaleString()}`);
+        setText('report-expense', `$${totalExp.toLocaleString()}`);
+        setText('report-noi', `$${(totalRev - totalExp).toLocaleString()}`);
+    }
+
+    function updateFileName(inputId, labelId) { 
+        const input = document.getElementById(inputId); 
+        const label = document.getElementById(labelId); 
+        if(input.files && input.files[0]) label.innerText = input.files[0].name;
+    }
+
+    function updateFileCount() {
+        const input = document.getElementById('l-img-file');
+        const label = document.getElementById('l-file-count');
+        if (input.files) label.innerText = `${input.files.length} file(s) selected`;
+    }
+
+    loadUserProfile();
+    initSystem();
 </script>
 </body>
 </html>
-    </script>
