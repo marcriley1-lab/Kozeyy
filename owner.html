@@ -978,40 +978,57 @@
         }
 
         // Screening
+       // Screening
         const screeningHash = JSON.stringify(state.apps);
         if(screeningHash !== lastRenderedState.screening) {
             const tbody = document.getElementById('table-screening');
             if(tbody) {
                 tbody.innerHTML = '';
                 state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
+                    
+                    // --- 1. DETERMINE STATUS LABEL & COLOR ---
+                    let displayStatus = app.status;
+                    let statusColor = "bg-slate-100 text-slate-500";
+                    
+                    if(app.status === 'Pending') {
+                        if(!app.score || app.score === 0) {
+                            displayStatus = 'Pending Screening';
+                            statusColor = "bg-slate-100 text-slate-500";
+                        } else {
+                            displayStatus = 'Ready for Review'; // Score exists, waiting for you
+                            statusColor = "bg-indigo-100 text-indigo-700";
+                        }
+                    }
+                    else if (app.status === 'Ready for Review') statusColor = "bg-indigo-100 text-indigo-700";
+                    else if (app.status === 'Approved') statusColor = "bg-emerald-100 text-emerald-700";
+                    else if (app.status === 'Deny') statusColor = "bg-rose-100 text-rose-700";
+                    else if (app.status === 'Lease Sent') statusColor = "bg-purple-100 text-purple-700";
+                    else if (app.status === 'Completed' || app.status === 'Active') statusColor = "bg-blue-100 text-blue-700";
+
+                    // --- 2. EVALUATION LABEL ---
                     const eval = evalApplicant(app);
                     
+                    // --- 3. ACTION BUTTONS ---
                     let actionButton = '';
-                    const status = app.status || 'Pending';
-                    
-                    if(status === 'Approved') {
+                    if(app.status === 'Approved') {
                         actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700 block text-center w-full md:w-auto">Upload Lease</a>`;
                     } 
-                    else if (status === 'Lease Uploaded') {
+                    else if (app.status === 'Lease Uploaded') {
                         actionButton = `<div class="flex items-center justify-end gap-2"><i class="fas fa-file-pdf text-slate-400 text-lg" title="Lease Attached"></i><button onclick="act_initiateSendLease(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700">Send Lease</button></div>`;
                     } 
-                    else if (status === 'Lease Sent') {
+                    else if (app.status === 'Lease Sent') {
                         actionButton = `<button onclick="act_initiateFinalize(${app.id})" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-purple-700">Finalize</button>`;
                     } 
-                    else if (status === 'Completed' || status === 'Active') {
+                    else if (app.status === 'Completed' || app.status === 'Active') {
                         actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Tenant Active</span>`;
                     } 
-                    else if (status === 'Deny') {
+                    else if (app.status === 'Deny') {
                         actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
                     } 
                     else {
+                        // Default "Review" button for Pending/Ready states
                         actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm">Review</button>`;
                     }
-
-                    const statusColor = status === 'Approved' ? 'bg-emerald-100 text-emerald-700' : 
-                                      (status === 'Lease Uploaded' ? 'bg-blue-50 text-blue-700' : 
-                                      (status === 'Lease Sent' ? 'bg-purple-100 text-purple-700' : 
-                                      (status === 'Completed' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500')));
 
                     tbody.innerHTML += `
                         <tr class="border-b border-slate-100">
@@ -1020,7 +1037,7 @@
                                 <span class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</span>
                             </td>
                             <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
-                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${status}</span></td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${displayStatus}</span></td>
                             <td class="p-5 text-right">${actionButton}</td>
                         </tr>`;
                 });
@@ -1662,15 +1679,15 @@ function toggleFeeVisibility() {
             document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600">Yes</span>' : '<span class="text-emerald-600">No</span>';
 
             // Show Decision Buttons OR Final Status
-            if (app.status === 'Pending') {
-                document.getElementById('sd-actions').classList.remove('hidden-section');
-            } else {
-                const b = document.getElementById('sd-banner');
-                b.classList.remove('hidden-section');
-                b.innerText = app.status;
-                b.className = `p-4 rounded-xl border font-bold text-center mb-4 ${app.status==='Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`;
-                document.getElementById('sd-email-option').classList.remove('hidden-section');
-            }
+           // Show Decision Buttons if Pending OR Ready for Review
+        if (app.status === 'Pending' || app.status === 'Ready for Review') {
+            document.getElementById('sd-actions').classList.remove('hidden-section');
+        } else {
+            const b = document.getElementById('sd-banner');
+            b.classList.remove('hidden-section');
+            b.innerText = app.status;
+            b.className = `p-4 rounded-xl border font-bold text-center mb-4 ${app.status==='Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`;
+            document.getElementById('sd-email-option').classList.remove('hidden-section');
         }
         openModal('modal-screening-detail');
     }
@@ -1683,13 +1700,13 @@ function toggleFeeVisibility() {
         
         if(!score) return showToast("Please enter score", 'error');
 
-        // Save to DB and keep status as 'Pending' so the Owner sees the data and decision buttons next time
+        // STATUS UPDATE: Change status to 'Ready for Review'
         const { error } = await supabaseClient.from('apps').update({
             score: parseInt(score),
             income: parseFloat(income),
             evictions: bgIssues,
             criminal: bgIssues,
-            status: 'Pending' 
+            status: 'Ready for Review' 
         }).eq('id', currentAppId);
         
         if(error) {
@@ -1697,7 +1714,7 @@ function toggleFeeVisibility() {
         } else {
             showToast("Report saved");
             await fetchData();
-            act_viewApp(currentAppId); // Refresh modal to show the new data
+            act_viewApp(currentAppId); // Refresh modal to show data
         }
     }
 
@@ -2228,6 +2245,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
