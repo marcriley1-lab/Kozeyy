@@ -571,9 +571,9 @@
                                 ${contactHtml}
 
                                 <div class="mt-auto pt-4 border-t border-slate-100">
-                                    <a href="applicant.html?listing_id=${l.id}" class="block w-full bg-slate-900 text-white text-center py-4 rounded-xl font-bold hover:bg-indigo-600 transition shadow-lg text-lg">
-                                        Apply Now
-                                    </a>
+                                    <button onclick="handleApplyClick(${l.id})" class="block w-full bg-slate-900 text-white text-center py-4 rounded-xl font-bold hover:bg-indigo-600 transition shadow-lg text-lg">
+    Apply Now
+</button>
                                 </div>
                             </div>
                         </div>
@@ -649,6 +649,18 @@
         }
     });
 
+        function handleApplyClick(listingId) {
+    const userId = localStorage.getItem('kozeyy_user_id');
+    
+    if (userId) {
+        // Logged In -> Go straight to application
+        window.location.href = `applicant.html?listing_id=${listingId}`;
+    } else {
+        // Not Logged In -> Go to Signup first (with the return ticket)
+        window.location.href = `signup.html?listing_id=${listingId}`;
+    }
+}
 </script>
 </body>
 </html>
+
