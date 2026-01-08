@@ -1640,55 +1640,89 @@ function toggleFeeVisibility() {
     }
 
     // --- 2. View Applicant (Decides Concierge vs API view) ---
-    function act_viewApp(id) {
+function act_viewApp(id) {
         currentAppId = id;
         const app = state.apps.find(a => a.id === id);
         
-        // Fill basic info
-        document.getElementById('sd-name').innerText = app.name;
+        // --- 1. POPULATE DATA ---
+        setText('sd-name', app.name);
+        const hasScore = app.score && app.score > 0;
+        const isVerified = hasScore;
+        
+        const incomeLabel = isVerified ? "(Verified)" : "(Self-Reported)";
+        setText('sd-income', `$${(app.income||0).toLocaleString()} ${incomeLabel}`);
+        
+        const ratio = app.rent > 0 ? (app.income / app.rent).toFixed(1) : '0';
+        setText('sd-ratio', ratio);
+        
+        if (isVerified) {
+            document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
+            document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
+        } else {
+            document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
+            document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
+        }
+
+        setText('sd-score', hasScore ? app.score : "Pending");
+
+        // --- 2. RESET UI ---
+        ['sd-pending-msg', 'sd-api-start', 'sd-admin-panel', 'sd-actions', 'sd-email-option', 'sd-banner'].forEach(id => document.getElementById(id).classList.add('hidden-section'));
+        document.getElementById('sd-data-display').classList.remove('hidden-section');
+        
         document.getElementById('input-manual-score').value = app.score || '';
         document.getElementById('input-manual-income').value = app.income || '';
 
-        const hasScore = app.score && app.score > 0;
-        
-        // CHECK DB SETTINGS (Hidden from Owner UI, but available in state)
-        // You set this key directly in Supabase Table Editor
-        const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
+        // --- 3. DETERMINE STATE & ACTION ---
+        const status = app.status || 'Pending';
+        const banner = document.getElementById('sd-banner');
+        const emailOpt = document.getElementById('sd-email-option'); // The Action Container
 
-        // Reset UI: Hide all sections first
-        ['sd-pending-msg', 'sd-api-start', 'sd-admin-panel', 'sd-data-display', 'sd-actions', 'sd-email-option', 'sd-banner'].forEach(id => document.getElementById(id).classList.add('hidden-section'));
-
-        if (!hasScore) {
-            // CASE: NO RESULTS YET
-            if (hasApiKey) {
-                // API Key Exists -> Show "Run Instant Check"
-                document.getElementById('sd-api-start').classList.remove('hidden-section');
-            } else {
-                // No Key -> Show "Concierge / Processing"
-                document.getElementById('sd-pending-msg').classList.remove('hidden-section');
-            }
-        } else {
-            // CASE: RESULTS EXIST (Either from API or Manual Entry)
-            document.getElementById('sd-data-display').classList.remove('hidden-section');
+        if (status === 'Approved') {
+            // APPROVED -> SHOW LEASE BUTTON
+            banner.classList.remove('hidden-section');
+            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
+            banner.innerText = "Application Approved";
             
-            // Populate Data
-            document.getElementById('sd-score').innerText = app.score;
-            document.getElementById('sd-income').innerText = `$${(app.income||0).toLocaleString()}`;
-            document.getElementById('sd-ratio').innerText = app.rent > 0 ? (app.income/app.rent).toFixed(1) : '0';
-            document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600">Yes</span>' : '<span class="text-emerald-600">No</span>';
-            document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600">Yes</span>' : '<span class="text-emerald-600">No</span>';
+            emailOpt.classList.remove('hidden-section');
+            emailOpt.querySelector('p').innerText = "Ready for Lease.";
+            // Ensure button is visible/enabled
+            const btn = emailOpt.querySelector('button');
+            btn.classList.remove('hidden-section');
+            btn.onclick = () => act_initiateSendLease(currentAppId);
+            btn.innerText = "Proceed to Lease";
 
-            // Show Decision Buttons OR Final Status
-           // Show Decision Buttons if Pending OR Ready for Review
-        if (app.status === 'Pending' || app.status === 'Ready for Review') {
-            document.getElementById('sd-actions').classList.remove('hidden-section');
+        } else if (status === 'Deny') {
+            // DENIED
+            banner.classList.remove('hidden-section');
+            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200";
+            banner.innerText = "Application Denied";
+            
+        } else if (status === 'Conditional') {
+            // CONDITIONAL -> SHOW WAITING MESSAGE (NO BUTTON)
+            banner.classList.remove('hidden-section');
+            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-amber-100 text-amber-700 border-amber-200";
+            
+            const conditionText = app.notes ? `Condition Sent: ${app.notes}` : "Conditional Offer Sent";
+            banner.innerText = conditionText;
+            
+            emailOpt.classList.remove('hidden-section');
+            // Show waiting message
+            emailOpt.querySelector('p').innerHTML = `<i class="fas fa-clock text-amber-500"></i> Waiting for applicant to accept.`;
+            
+            // HIDE the "Proceed to Lease" button so you can't click it yet
+            const btn = emailOpt.querySelector('button');
+            btn.classList.add('hidden-section');
+            
         } else {
-            const b = document.getElementById('sd-banner');
-            b.classList.remove('hidden-section');
-            b.innerText = app.status;
-            b.className = `p-4 rounded-xl border font-bold text-center mb-4 ${app.status==='Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`;
-            document.getElementById('sd-email-option').classList.remove('hidden-section');
-        }}
+            // PENDING / REVIEW
+            if (!hasScore) {
+                const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
+                if (hasApiKey) document.getElementById('sd-api-start').classList.remove('hidden-section');
+                else document.getElementById('sd-pending-msg').classList.remove('hidden-section');
+            }
+            document.getElementById('sd-actions').classList.remove('hidden-section');
+        }
+
         openModal('modal-screening-detail');
     }
 
@@ -1730,13 +1764,46 @@ function toggleFeeVisibility() {
         });
     }
 
-    async function act_screenDecision(decision) { 
-        if(currentAppId) { 
-            await supabaseClient.from('apps').update({ status: decision }).eq('id', currentAppId); 
+    async function act_screenDecision(decision) {
+        if (!currentAppId) return;
+
+        let conditionNote = null;
+
+        // 1. If Conditional, ASK FOR DETAILS
+        if (decision === 'Conditional') {
+            // We use the existing 'openPrompt' helper you already have
+            openPrompt("Enter Condition (e.g. Double Deposit):", async (val) => {
+                if (!val) return showToast("Condition required", 'error');
+                
+                // Save decision WITH the note
+                await saveDecisionToDB('Conditional', val);
+            });
+            return; // Stop here, wait for prompt callback
+        }
+
+        // 2. If Approve/Deny, just save immediately
+        await saveDecisionToDB(decision, null);
+    }
+
+    // Helper to actually save to Supabase
+    async function saveDecisionToDB(status, note) {
+        // Update the app status AND store the condition note
+        // (Ensure you have a 'notes' column in your 'apps' table, or just use a generic field)
+        const updateData = { status: status };
+        if(note) updateData.notes = note; // We'll save the condition in 'notes'
+
+        const { error } = await supabaseClient.from('apps').update(updateData).eq('id', currentAppId);
+
+        if (error) {
+            showToast("Error saving: " + error.message, 'error');
+        } else {
             closeModal('modal-screening-detail');
-            await fetchData(); 
+            await fetchData();
             renderAll();
-        } 
+            
+            if (status === 'Conditional') showToast("Conditional Offer Saved");
+            else showToast(`Application ${status}`);
+        }
     }
 
     function act_initiateSendLease(appId) {
@@ -2245,6 +2312,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
