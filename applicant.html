@@ -170,307 +170,328 @@
     <div id="processingModal" class="hidden fixed inset-0 bg-slate-900/80 z-[60] flex flex-col items-center justify-center backdrop-blur-sm text-white"><div class="loader mb-4 border-t-white"></div><h2 class="text-xl font-bold mb-2">Connecting to Stripe</h2><p class="text-sm opacity-80">Do not close this window...</p></div>
 
     <script>
-        const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
-        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        
-        let supabaseClient = null;
-        try { if(window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
+    // --- CONFIGURATION ---
+    const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
+    const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+    
+    let supabaseClient = null;
+    try { if(window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e) {}
 
-        let currentListingId = null;
-        let selectedProp = null;
-        let appData = { evictions: false, criminal: false };
+    let currentListingId = null;
+    let selectedProp = null;
+    let appData = { evictions: false, criminal: false };
 
-        function getStepFromUrl() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const step = urlParams.get('step');
-            if (step === 'success') return 'success';
-            return parseInt(step) || 1;
+    function getStepFromUrl() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const step = urlParams.get('step');
+        if (step === 'success') return 'success';
+        return parseInt(step) || 1;
+    }
+
+    // --- MAIN INITIALIZATION (Includes Gatekeeper) ---
+    window.onload = async function() {
+        // 1. SECURITY GATEKEEPER: Force Signup if not logged in
+        const userId = localStorage.getItem('kozeyy_user_id');
+        const userRole = localStorage.getItem('kozeyy_role');
+
+        if (!userId || !userRole) {
+            const params = new URLSearchParams(window.location.search);
+            const lid = params.get('listing_id');
+            // Redirect to signup and pass the listing ID along
+            window.location.href = `signup.html${lid ? '?listing_id='+lid : ''}`;
+            return; // Stop running this page
         }
 
-        // --- FIXED WINDOW.ONLOAD ---
-        window.onload = async function() {
-            // 1. SECURITY CHECK (MOVED HERE)
-            const userId = localStorage.getItem('kozeyy_user_id');
-            const userRole = localStorage.getItem('kozeyy_role');
-
-            if (!userId || !userRole) {
-                const params = new URLSearchParams(window.location.search);
-                const lid = params.get('listing_id');
-                window.location.href = `signup.html${lid ? '?listing_id='+lid : ''}`;
-                return;
+        // 2. Handle Payment Success Return
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
+            const appId = urlParams.get('app_id');
+            if(appId && supabaseClient) {
+                try { await supabaseClient.from('apps').update({ payment_status: 'Paid', status: 'Pending Screening' }).eq('id', appId); } catch(e) {}
             }
-            // ---------------------------
+            window.location.href = 'applicantportal.html';
+            return;
+        }
 
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            // REDIRECT TO PORTAL AFTER PAYMENT
-            if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
-                const appId = urlParams.get('app_id');
-                if(appId && supabaseClient) {
-                    try { await supabaseClient.from('apps').update({ payment_status: 'Paid', status: 'Pending Screening' }).eq('id', appId); } catch(e) {}
-                }
-                window.location.href = 'applicantportal.html';
-                return;
+        // 3. Load Listing Data
+        currentListingId = urlParams.get('listing_id');
+        if (!currentListingId) {
+            // Check local storage for backup
+            const storedLid = localStorage.getItem('pending_application_lid');
+            if (storedLid) {
+                currentListingId = storedLid;
+                const newUrl = new URL(window.location);
+                newUrl.searchParams.set('listing_id', currentListingId);
+                window.history.replaceState({}, '', newUrl);
             }
+        }
 
-            currentListingId = urlParams.get('listing_id');
-            if (!currentListingId) {
-                const storedLid = localStorage.getItem('pending_application_lid');
-                if (storedLid) {
-                    currentListingId = storedLid;
-                    const newUrl = new URL(window.location);
-                    newUrl.searchParams.set('listing_id', currentListingId);
-                    window.history.replaceState({}, '', newUrl);
-                }
-            }
-
-            loadSessionData();
-            
-            try {
-                if(supabaseClient && currentListingId) {
-                    const { data: prop, error } = await supabaseClient.from('listings').select('*').eq('id', currentListingId).single();
-                    if (prop) {
-                        selectedProp = prop;
-                        updatePropUI(selectedProp);
-                        
-                        if(prop.owner_id) {
-                            const { data: settings } = await supabaseClient.from('settings').select('*').eq('owner_id', prop.owner_id).maybeSingle();
-                            if(settings) {
-                                const evictContainer = document.getElementById('container-evict');
-                                const crimContainer = document.getElementById('container-crim');
-                                
-                                if (settings.require_no_evictions === false) {
-                                    evictContainer.classList.add('hidden');
-                                    appData.evictions = false;
-                                }
-                                
-                                if (settings.require_no_criminal_history === false) {
-                                    crimContainer.classList.add('hidden');
-                                    appData.criminal = false;
-                                }
+        loadSessionData();
+        
+        try {
+            if(supabaseClient && currentListingId) {
+                const { data: prop, error } = await supabaseClient.from('listings').select('*').eq('id', currentListingId).single();
+                
+                if (prop) {
+                    selectedProp = prop;
+                    updatePropUI(selectedProp); // Calls the fixed UI function
+                    
+                    // Fetch settings for conditional questions
+                    if(prop.owner_id) {
+                        const { data: settings } = await supabaseClient.from('settings').select('*').eq('owner_id', prop.owner_id).maybeSingle();
+                        if(settings) {
+                            const evictContainer = document.getElementById('container-evict');
+                            const crimContainer = document.getElementById('container-crim');
+                            
+                            if (settings.require_no_evictions === false) {
+                                evictContainer.classList.add('hidden');
+                                appData.evictions = false;
+                            }
+                            
+                            if (settings.require_no_criminal_history === false) {
+                                crimContainer.classList.add('hidden');
+                                appData.criminal = false;
                             }
                         }
                     }
                 }
-            } catch (err) { console.warn("Fetch error:", err); }
+            }
+        } catch (err) { console.warn("Fetch error:", err); }
 
-            renderStep(getStepFromUrl());
-            window.addEventListener('popstate', (event) => { renderStep(getStepFromUrl()); });
+        renderStep(getStepFromUrl());
+        window.addEventListener('popstate', (event) => { renderStep(getStepFromUrl()); });
+    };
+
+    // --- UI UPDATES (Fixed Column Name) ---
+    function updatePropUI(prop) {
+        // FIX: Use 'address' (DB column) instead of 'addr'
+        const address = prop.address || prop.addr || 'Unknown Address';
+        
+        const addrParts = address.split(',');
+        document.getElementById('prop-addr').innerText = addrParts[0];
+        document.getElementById('prop-city').innerText = addrParts.length > 1 ? addrParts.slice(1).join(',') : address;
+        
+        const imgEl = document.getElementById('prop-img');
+        // Handle array of images or single image string
+        let imgSrc = '';
+        if (Array.isArray(prop.images) && prop.images.length > 0) imgSrc = prop.images[0];
+        else imgSrc = prop.image_url || prop.img || '';
+        
+        if(imgSrc && imgSrc.trim() !== "") imgEl.src = imgSrc;
+
+        document.getElementById('prop-price').innerText = `$${parseInt(prop.price).toLocaleString()}`;
+        document.getElementById('prop-beds').innerText = prop.beds || '-';
+        document.getElementById('prop-baths').innerText = prop.baths || '-';
+        document.getElementById('prop-sqft').innerText = prop.sqft ? prop.sqft.toLocaleString() : '-';
+        document.getElementById('rev-prop').innerText = addrParts[0];
+    }
+
+    function cancelApp() {
+        if(confirm("Are you sure you want to cancel? Your progress will be lost.")) {
+            localStorage.removeItem('pending_application_lid');
+            sessionStorage.removeItem('kozeyy_app_data');
+            window.location.href = 'index.html';
+        }
+    }
+
+    function showError(msg, elId = null) {
+        const banner = document.getElementById('error-banner');
+        document.getElementById('error-text').innerText = msg;
+        banner.classList.remove('hidden');
+        banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if(elId) { const el = document.getElementById(elId); if(el) { el.classList.add('input-error'); el.focus(); } }
+    }
+
+    function clearErrors() {
+        document.getElementById('error-banner').classList.add('hidden');
+        document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+    }
+
+    function toggleLoader(show) { document.getElementById('processingModal').classList.toggle('hidden', !show); }
+
+    function validateStep(step) {
+        clearErrors();
+        if (step === 1) {
+            if (!document.getElementById('inp-fname').value.trim()) return showError("First Name required.", 'inp-fname');
+            if (!document.getElementById('inp-lname').value.trim()) return showError("Last Name required.", 'inp-lname');
+            if (!document.getElementById('inp-email').value.includes('@')) return showError("Valid email required.", 'inp-email');
+            if (document.getElementById('inp-phone').value.length < 10) return showError("Valid phone required.", 'inp-phone');
+        }
+        if (step === 2) {
+            if (!document.getElementById('inp-employer').value.trim()) return showError("Employer required.", 'inp-employer');
+            if (parseFloat(document.getElementById('inp-income').value) <= 0) return showError("Valid income required.", 'inp-income');
+        }
+        return true;
+    }
+
+    function saveSessionData() {
+        try {
+            const inputs = document.querySelectorAll('input');
+            const data = {};
+            inputs.forEach(input => {
+                if(input.type === 'radio' || input.type === 'checkbox') {
+                    const key = input.id || (input.name + '-' + input.value);
+                    data[key] = input.checked;
+                } else { if(input.id) data[input.id] = input.value; }
+            });
+            sessionStorage.setItem('kozeyy_app_data', JSON.stringify(data));
+        } catch(e) {}
+    }
+
+    function loadSessionData() {
+        try {
+            const saved = sessionStorage.getItem('kozeyy_app_data');
+            if(!saved) return;
+            const data = JSON.parse(saved);
+            Object.keys(data).forEach(key => {
+                const el = document.getElementById(key);
+                if(el) {
+                    if(el.type === 'checkbox' || el.type === 'radio') el.checked = data[key];
+                    else el.value = data[key];
+                }
+            });
+        } catch(e) {}
+    }
+
+    function renderStep(step) {
+        document.querySelectorAll('.step-section').forEach(el => el.classList.add('hidden-step'));
+        document.getElementById('view-success').classList.add('hidden-step');
+        document.getElementById('steps-container').style.display = 'flex';
+
+        if(step === 'success') {
+            document.getElementById('view-success').classList.remove('hidden-step');
+            document.getElementById('steps-container').style.display = 'none'; 
+            return;
+        }
+
+        const activeStepEl = document.getElementById(`step-${step}`);
+        if(activeStepEl) activeStepEl.classList.remove('hidden-step');
+
+        for(let i=1; i<=4; i++) {
+            const el = document.getElementById(`step-ind-${i}`);
+            if(!el) continue;
+            if(i === step) el.className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-indigo-600 border-indigo-600 text-white transition-all";
+            else if (i < step) {
+                el.className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-emerald-500 border-emerald-500 text-white transition-all";
+                el.innerHTML = '<i class="fas fa-check"></i>';
+            } else {
+                el.className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all";
+                el.innerText = i;
+            }
+        }
+        
+        if(step === 4) {
+             const fname = document.getElementById('inp-fname').value;
+             const lname = document.getElementById('inp-lname').value;
+             const income = document.getElementById('inp-income').value;
+             if(fname) document.getElementById('rev-name').innerText = `${fname} ${lname}`;
+             if(income) document.getElementById('rev-income').innerText = `$${parseInt(income).toLocaleString()}/mo`;
+             if(selectedProp) {
+                 const address = selectedProp.address || selectedProp.addr || '';
+                 document.getElementById('rev-prop').innerText = address.split(',')[0];
+             }
+        }
+    }
+
+    function navigateToStep(step) {
+        const currentStep = getStepFromUrl();
+        if(step > currentStep && typeof currentStep === 'number') {
+            if(!validateStep(currentStep)) return; 
+        }
+        saveSessionData();
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('step', step);
+        if(currentListingId) newUrl.searchParams.set('listing_id', currentListingId);
+        window.history.pushState({ step: step }, '', newUrl);
+        renderStep(step);
+        window.scrollTo(0,0);
+    }
+
+    function updateHistory(key, val) {
+        appData[key] = val;
+        saveSessionData();
+    }
+
+    // --- SUBMIT LOGIC ---
+    async function submitApplication() {
+        clearErrors();
+        const btn = document.getElementById('btn-submit');
+        
+        // 1. Get User ID (Real user only)
+        let userId = localStorage.getItem('kozeyy_user_id');
+        
+        if (!userId) {
+            showError("User session lost. Please log in again.");
+            setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+            return;
+        }
+
+        // Gather Data
+        const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
+        const inputEmail = document.getElementById('inp-email').value;
+        const inputPhone = document.getElementById('inp-phone').value;
+        const inputIncome = parseFloat(document.getElementById('inp-income').value);
+        const inputJob = document.getElementById('inp-job').value;
+        const mockScore = Math.floor(Math.random() * (820 - 550 + 1) + 550);
+
+        const newApp = {
+            user_id: userId,
+            name: inputName,
+            email: inputEmail,
+            phone: inputPhone,
+            score: mockScore,
+            income: inputIncome,
+            listing_id: currentListingId ? parseInt(currentListingId) : null,
+            rent: selectedProp ? parseInt(selectedProp.price) : 0,
+            job: inputJob || 'Not Listed',
+            status: 'Unpaid',
+            payment_status: 'Unpaid',
+            evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
+            criminal: document.querySelector('input[name="crim"]:checked').value === 'yes'
         };
 
-        function updatePropUI(prop) {
-            const addrParts = prop.addr.split(',');
-            document.getElementById('prop-addr').innerText = addrParts[0];
-            document.getElementById('prop-city').innerText = addrParts.length > 1 ? addrParts.slice(1).join(',') : prop.addr;
+        try {
+            toggleLoader(true);
             
-            const imgEl = document.getElementById('prop-img');
-            const imgSrc = prop.img || prop.image || prop.image_url;
-            if(imgSrc && imgSrc.trim() !== "") imgEl.src = imgSrc;
+            if(!supabaseClient) throw new Error("Database connection not ready.");
+            
+            // 1. Save Application to DB
+            const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
+            if (error) throw error;
+            const savedAppId = data[0].id;
 
-            document.getElementById('prop-price').innerText = `$${parseInt(prop.price).toLocaleString()}`;
-            document.getElementById('prop-beds').innerText = prop.beds || '-';
-            document.getElementById('prop-baths').innerText = prop.baths || '-';
-            document.getElementById('prop-sqft').innerText = prop.sqft ? prop.sqft.toLocaleString() : '-';
-            document.getElementById('rev-prop').innerText = addrParts[0];
-        }
+            // 2. Call Backend for Stripe
+            const response = await fetch(FUNCTION_URL, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_KEY}` 
+                },
+                body: JSON.stringify({ 
+                    action: 'pay-application-fee', 
+                    appId: savedAppId,
+                    applicantEmail: inputEmail,
+                    applicantName: inputName
+                })
+            });
 
-        function cancelApp() {
-            if(confirm("Are you sure you want to cancel? Your progress will be lost.")) {
-                localStorage.removeItem('pending_application_lid');
-                sessionStorage.removeItem('kozeyy_app_data');
-                window.location.href = 'index.html';
-            }
-        }
+            const session = await response.json();
+            if(session.error) throw new Error(session.error);
 
-        function showError(msg, elId = null) {
-            const banner = document.getElementById('error-banner');
-            document.getElementById('error-text').innerText = msg;
-            banner.classList.remove('hidden');
-            banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            if(elId) { const el = document.getElementById(elId); if(el) { el.classList.add('input-error'); el.focus(); } }
-        }
-
-        function clearErrors() {
-            document.getElementById('error-banner').classList.add('hidden');
-            document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
-        }
-
-        function toggleLoader(show) { document.getElementById('processingModal').classList.toggle('hidden', !show); }
-
-        function validateStep(step) {
-            clearErrors();
-            if (step === 1) {
-                if (!document.getElementById('inp-fname').value.trim()) return showError("First Name required.", 'inp-fname');
-                if (!document.getElementById('inp-lname').value.trim()) return showError("Last Name required.", 'inp-lname');
-                if (!document.getElementById('inp-email').value.includes('@')) return showError("Valid email required.", 'inp-email');
-                if (document.getElementById('inp-phone').value.length < 10) return showError("Valid phone required.", 'inp-phone');
-            }
-            if (step === 2) {
-                if (!document.getElementById('inp-employer').value.trim()) return showError("Employer required.", 'inp-employer');
-                if (parseFloat(document.getElementById('inp-income').value) <= 0) return showError("Valid income required.", 'inp-income');
-            }
-            return true;
-        }
-
-        function saveSessionData() {
-            try {
-                const inputs = document.querySelectorAll('input');
-                const data = {};
-                inputs.forEach(input => {
-                    if(input.type === 'radio' || input.type === 'checkbox') {
-                        const key = input.id || (input.name + '-' + input.value);
-                        data[key] = input.checked;
-                    } else { if(input.id) data[input.id] = input.value; }
-                });
-                sessionStorage.setItem('kozeyy_app_data', JSON.stringify(data));
-            } catch(e) {}
-        }
-
-        function loadSessionData() {
-            try {
-                const saved = sessionStorage.getItem('kozeyy_app_data');
-                if(!saved) return;
-                const data = JSON.parse(saved);
-                Object.keys(data).forEach(key => {
-                    const el = document.getElementById(key);
-                    if(el) {
-                        if(el.type === 'checkbox' || el.type === 'radio') el.checked = data[key];
-                        else el.value = data[key];
-                    }
-                });
-            } catch(e) {}
-        }
-
-        function renderStep(step) {
-            document.querySelectorAll('.step-section').forEach(el => el.classList.add('hidden-step'));
-            document.getElementById('view-success').classList.add('hidden-step');
-            document.getElementById('steps-container').style.display = 'flex';
-
-            if(step === 'success') {
-                document.getElementById('view-success').classList.remove('hidden-step');
-                document.getElementById('steps-container').style.display = 'none'; 
-                return;
-            }
-
-            const activeStepEl = document.getElementById(`step-${step}`);
-            if(activeStepEl) activeStepEl.classList.remove('hidden-step');
-
-            for(let i=1; i<=4; i++) {
-                const el = document.getElementById(`step-ind-${i}`);
-                if(!el) continue;
-                if(i === step) el.className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-indigo-600 border-indigo-600 text-white transition-all";
-                else if (i < step) {
-                    el.className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-emerald-500 border-emerald-500 text-white transition-all";
-                    el.innerHTML = '<i class="fas fa-check"></i>';
-                } else {
-                    el.className = "w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all";
-                    el.innerText = i;
-                }
+            if(session.url) {
+                window.location.href = session.url;
+            } else {
+                throw new Error("Payment redirect failed.");
             }
             
-            if(step === 4) {
-                 const fname = document.getElementById('inp-fname').value;
-                 const lname = document.getElementById('inp-lname').value;
-                 const income = document.getElementById('inp-income').value;
-                 if(fname) document.getElementById('rev-name').innerText = `${fname} ${lname}`;
-                 if(income) document.getElementById('rev-income').innerText = `$${parseInt(income).toLocaleString()}/mo`;
-                 if(selectedProp) document.getElementById('rev-prop').innerText = selectedProp.addr.split(',')[0];
-            }
+        } catch (err) {
+            console.error(err);
+            toggleLoader(false);
+            showError("Error: " + err.message);
+            btn.disabled = false;
         }
-
-        function navigateToStep(step) {
-            const currentStep = getStepFromUrl();
-            if(step > currentStep && typeof currentStep === 'number') {
-                if(!validateStep(currentStep)) return; 
-            }
-            saveSessionData();
-            const newUrl = new URL(window.location);
-            newUrl.searchParams.set('step', step);
-            if(currentListingId) newUrl.searchParams.set('listing_id', currentListingId);
-            window.history.pushState({ step: step }, '', newUrl);
-            renderStep(step);
-            window.scrollTo(0,0);
-        }
-
-        function updateHistory(key, val) {
-            appData[key] = val;
-            saveSessionData();
-        }
-
-        // --- FIXED SUBMIT FUNCTION ---
-        async function submitApplication() {
-            clearErrors();
-            const btn = document.getElementById('btn-submit');
-            
-            // 1. Get User ID (DO NOT GENERATE NEW ONE)
-            let userId = localStorage.getItem('kozeyy_user_id');
-            if(!userId) {
-                // Fail-safe: if they somehow got here without ID, send to signup
-                window.location.href = 'signup.html';
-                return;
-            }
-
-            // Gather Data
-            const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
-            const inputEmail = document.getElementById('inp-email').value;
-            const inputPhone = document.getElementById('inp-phone').value;
-            const inputIncome = parseFloat(document.getElementById('inp-income').value);
-            const inputJob = document.getElementById('inp-job').value;
-            const mockScore = Math.floor(Math.random() * (820 - 550 + 1) + 550);
-
-            const newApp = {
-                user_id: userId,
-                name: inputName,
-                email: inputEmail,
-                phone: inputPhone,
-                score: mockScore,
-                income: inputIncome,
-                listing_id: currentListingId ? parseInt(currentListingId) : null,
-                rent: selectedProp ? parseInt(selectedProp.price) : 0,
-                job: inputJob || 'Not Listed',
-                status: 'Unpaid',
-                payment_status: 'Unpaid',
-                evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
-                criminal: document.querySelector('input[name="crim"]:checked').value === 'yes'
-            };
-
-            try {
-                toggleLoader(true);
-                
-                if(!supabaseClient) throw new Error("Database connection not ready.");
-                
-                const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
-                if (error) throw error;
-                const savedAppId = data[0].id;
-
-                const response = await fetch(FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-                    body: JSON.stringify({ 
-                        action: 'pay-application-fee', 
-                        appId: savedAppId,
-                        applicantEmail: inputEmail,
-                        applicantName: inputName
-                    })
-                });
-
-                const session = await response.json();
-                if(session.error) throw new Error(session.error);
-
-                if(session.url) {
-                    window.location.href = session.url;
-                } else {
-                    throw new Error("Payment redirect failed.");
-                }
-                
-            } catch (err) {
-                console.error(err);
-                toggleLoader(false);
-                showError("Error: " + err.message);
-                btn.disabled = false;
-            }
-        }
-    </script>
+    }
+</script>
 </body>
 </html>
