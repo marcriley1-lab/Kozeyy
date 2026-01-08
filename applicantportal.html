@@ -89,6 +89,34 @@
                     <div class="absolute -right-10 -top-10 w-40 h-40 bg-gradient-to-br from-slate-50 to-transparent rounded-full opacity-50"></div>
                 </div>
 
+                <div id="condition-card" class="bg-amber-500 text-white p-8 rounded-3xl shadow-xl shadow-amber-200 hidden-section relative overflow-hidden mb-8">
+    <div class="relative z-10">
+        <div class="flex flex-col md:flex-row items-start gap-6">
+            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl border border-white/20 shrink-0">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-xl font-bold mb-2">Action Required: Conditional Approval</h3>
+                <p class="text-amber-50 text-sm mb-4">Your application is approved pending the following condition from the property owner:</p>
+                
+                <div class="bg-white/10 border border-white/20 p-4 rounded-xl mb-6 font-medium italic">
+                    "<span id="condition-note-text">Loading...</span>"
+                </div>
+
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="respondToCondition('Accept')" class="bg-white text-amber-700 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-amber-50 transition flex items-center gap-2">
+                        <i class="fas fa-check-circle"></i> I Accept Condition
+                    </button>
+                    <button onclick="respondToCondition('Reject')" class="bg-amber-700 text-white border border-amber-600 px-6 py-3 rounded-xl font-bold hover:bg-amber-800 transition">
+                        Withdraw Application
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="absolute -right-10 -bottom-20 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
+</div>
+
                 <div id="action-card" class="bg-indigo-600 text-white p-8 rounded-3xl shadow-xl shadow-indigo-200 hidden-section relative overflow-hidden">
                     <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 justify-between">
                         <div class="flex items-center gap-5">
@@ -296,6 +324,19 @@
                     statusIcon.className = "fas fa-times";
                     statusIconBg.className = "w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
                     break;
+                    case 'Conditional':
+                    statusText.innerText = "Pending Your Response";
+                    statusText.className = "text-3xl font-extrabold text-amber-500 brand-font mb-2";
+                    statusDesc.innerText = "The owner has set a condition for your approval. Please review and respond below.";
+                    statusIcon.className = "fas fa-clipboard-check";
+                    statusIconBg.className = "w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center flex-shrink-0 text-2xl animate-pulse";
+                    
+                    // Show the condition card
+                    document.getElementById('condition-card').classList.remove('hidden-section');
+                    // Populate the note (ensure your database 'apps' table has a 'notes' column)
+                    const note = currentUserApp.notes || "Additional security deposit required.";
+                    document.getElementById('condition-note-text').innerText = note;
+                    break;
             }
         }
 
@@ -329,6 +370,51 @@
         function closeModal() {
             document.getElementById('platform-modal').classList.add('hidden-modal');
         }
+
+        async function respondToCondition(response) {
+            if (!currentUserApp) return;
+
+            let newStatus;
+            let title, msg;
+
+            if (response === 'Accept') {
+                newStatus = 'Approved';
+                title = "Condition Accepted";
+                msg = "Great! We have notified the property owner. You will receive a lease agreement shortly.";
+            } else {
+                newStatus = 'Withdrawn';
+                title = "Application Withdrawn";
+                msg = "Your application has been withdrawn. Best of luck in your search.";
+            }
+
+            if (!confirm(`Are you sure you want to ${response.toLowerCase()} this condition?`)) return;
+
+            // Optimistic UI Update
+            document.getElementById('condition-card').classList.add('hidden-section');
+            document.getElementById('view-loading').classList.remove('hidden-section');
+            document.getElementById('view-dashboard').classList.add('hidden-section');
+
+            try {
+                const { error } = await supabaseClient
+                    .from('apps')
+                    .update({ status: newStatus })
+                    .eq('id', currentUserApp.id);
+
+                if (error) throw error;
+
+                // Reload to fetch fresh state and render new status
+                setTimeout(() => {
+                    showModal(title, msg);
+                    fetchApplication(); 
+                }, 1000);
+
+            } catch (err) {
+                console.error(err);
+                alert("Error updating status: " + err.message);
+                fetchApplication(); // Revert UI on error
+            }
+        }
     </script>
 </body>
 </html>
+
