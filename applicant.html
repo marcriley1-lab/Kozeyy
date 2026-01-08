@@ -188,16 +188,28 @@
             return parseInt(step) || 1;
         }
 
+        // --- FIXED WINDOW.ONLOAD ---
         window.onload = async function() {
+            // 1. SECURITY CHECK (MOVED HERE)
+            const userId = localStorage.getItem('kozeyy_user_id');
+            const userRole = localStorage.getItem('kozeyy_role');
+
+            if (!userId || !userRole) {
+                const params = new URLSearchParams(window.location.search);
+                const lid = params.get('listing_id');
+                window.location.href = `signup.html${lid ? '?listing_id='+lid : ''}`;
+                return;
+            }
+            // ---------------------------
+
             const urlParams = new URLSearchParams(window.location.search);
             
-            // --- 3. REDIRECT TO PORTAL AFTER PAYMENT ---
+            // REDIRECT TO PORTAL AFTER PAYMENT
             if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
                 const appId = urlParams.get('app_id');
                 if(appId && supabaseClient) {
                     try { await supabaseClient.from('apps').update({ payment_status: 'Paid', status: 'Pending Screening' }).eq('id', appId); } catch(e) {}
                 }
-                // Redirect immediately
                 window.location.href = 'applicantportal.html';
                 return;
             }
@@ -222,17 +234,15 @@
                         selectedProp = prop;
                         updatePropUI(selectedProp);
                         
-                        // --- 2. FETCH OWNER SETTINGS FOR CONDITIONAL QUESTIONS ---
                         if(prop.owner_id) {
                             const { data: settings } = await supabaseClient.from('settings').select('*').eq('owner_id', prop.owner_id).maybeSingle();
                             if(settings) {
                                 const evictContainer = document.getElementById('container-evict');
                                 const crimContainer = document.getElementById('container-crim');
                                 
-                                // If require_no_evictions is explicitly false, hide the question
                                 if (settings.require_no_evictions === false) {
                                     evictContainer.classList.add('hidden');
-                                    appData.evictions = false; // Default to no
+                                    appData.evictions = false;
                                 }
                                 
                                 if (settings.require_no_criminal_history === false) {
@@ -299,9 +309,6 @@
             if (step === 2) {
                 if (!document.getElementById('inp-employer').value.trim()) return showError("Employer required.", 'inp-employer');
                 if (parseFloat(document.getElementById('inp-income').value) <= 0) return showError("Valid income required.", 'inp-income');
-            }
-            if (step === 3) {
-                // SSN Validation Removed
             }
             return true;
         }
@@ -391,34 +398,23 @@
             saveSessionData();
         }
 
-        // --- SUBMIT LOGIC (STRIPE INTEGRATED) ---
-    async function submitApplication() {
+        // --- FIXED SUBMIT FUNCTION ---
+        async function submitApplication() {
             clearErrors();
             const btn = document.getElementById('btn-submit');
             
-            // 1. Get or Create ID
-           let userId = localStorage.getItem('kozeyy_user_id');
-
-// In applicant.html script
-window.onload = async function() {
-    const userId = localStorage.getItem('kozeyy_user_id');
-    const userRole = localStorage.getItem('kozeyy_role');
-
-    // SECURITY CHECK: If no ID or no Role, send back to Signup
-    if (!userId || !userRole) {
-        const params = new URLSearchParams(window.location.search);
-        const lid = params.get('listing_id');
-        window.location.href = `signup.html${lid ? '?listing_id='+lid : ''}`;
-        return;
-    }
+            // 1. Get User ID (DO NOT GENERATE NEW ONE)
+            let userId = localStorage.getItem('kozeyy_user_id');
+            if(!userId) {
+                // Fail-safe: if they somehow got here without ID, send to signup
+                window.location.href = 'signup.html';
+                return;
+            }
 
             // Gather Data
             const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
             const inputEmail = document.getElementById('inp-email').value;
-            
-            // 🛑 NEW: Capture the phone number
             const inputPhone = document.getElementById('inp-phone').value;
-
             const inputIncome = parseFloat(document.getElementById('inp-income').value);
             const inputJob = document.getElementById('inp-job').value;
             const mockScore = Math.floor(Math.random() * (820 - 550 + 1) + 550);
@@ -426,11 +422,8 @@ window.onload = async function() {
             const newApp = {
                 user_id: userId,
                 name: inputName,
-                
-                // 🛑 NEW: Add these two lines to save them to Supabase
                 email: inputEmail,
                 phone: inputPhone,
-
                 score: mockScore,
                 income: inputIncome,
                 listing_id: currentListingId ? parseInt(currentListingId) : null,
@@ -447,18 +440,13 @@ window.onload = async function() {
                 
                 if(!supabaseClient) throw new Error("Database connection not ready.");
                 
-                // 1. Save Application to DB
                 const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
                 if (error) throw error;
                 const savedAppId = data[0].id;
 
-                // 2. Call Backend for Stripe
                 const response = await fetch(FUNCTION_URL, {
                     method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${SUPABASE_KEY}` 
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
                     body: JSON.stringify({ 
                         action: 'pay-application-fee', 
                         appId: savedAppId,
