@@ -1688,7 +1688,7 @@ function toggleFeeVisibility() {
             b.innerText = app.status;
             b.className = `p-4 rounded-xl border font-bold text-center mb-4 ${app.status==='Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`;
             document.getElementById('sd-email-option').classList.remove('hidden-section');
-        }
+        }}
         openModal('modal-screening-detail');
     }
 
@@ -2245,6 +2245,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
