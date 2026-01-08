@@ -1432,8 +1432,13 @@ function toggleFeeVisibility() {
     
     // Screening Logic
     function evalApplicant(app) {
+        if (!app.score || app.score === 0) {
+            return { status: 'Pending Review', color: 'bg-slate-100 text-slate-500 border-slate-200' };
+        }
+
         const crit = state.settings || { min_credit_score: 600, min_income_ratio: 2.5 };
         const incomeRatio = app.income / app.rent;
+        
         if(app.score < (crit.min_credit_score - 50)) return { status: 'Does Not Meet', color: 'bg-rose-100 text-rose-700 border-rose-200' };
         if(app.score < crit.min_credit_score || incomeRatio < crit.min_income_ratio) return { status: 'Conditional', color: 'bg-amber-100 text-amber-700 border-amber-200' };
         return { status: 'Meets Criteria', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
@@ -2223,6 +2228,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
