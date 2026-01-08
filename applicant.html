@@ -169,7 +169,7 @@
 
     <div id="processingModal" class="hidden fixed inset-0 bg-slate-900/80 z-[60] flex flex-col items-center justify-center backdrop-blur-sm text-white"><div class="loader mb-4 border-t-white"></div><h2 class="text-xl font-bold mb-2">Connecting to Stripe</h2><p class="text-sm opacity-80">Do not close this window...</p></div>
 
-    <script>
+  <script>
     // --- CONFIGURATION ---
     const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
     const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
@@ -265,7 +265,7 @@
 
     // --- UI UPDATES (Fixed Column Name) ---
     function updatePropUI(prop) {
-        // FIX: Use 'address' (DB column) instead of 'addr'
+        // FIX: Check both 'address' (DB column) and 'addr' (legacy) to prevent crashes
         const address = prop.address || prop.addr || 'Unknown Address';
         
         const addrParts = address.split(',');
