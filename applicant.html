@@ -399,15 +399,16 @@
             // 1. Get or Create ID
            let userId = localStorage.getItem('kozeyy_user_id');
 
+// In applicant.html script
 window.onload = async function() {
-    // SECURITY CHECK: Kick them out if not logged in
-    if (!userId) {
-        // Save where they were trying to go
-        const urlParams = new URLSearchParams(window.location.search);
-        const lid = urlParams.get('listing_id');
-        
-        // Send to signup with the return ticket
-        window.location.href = `signup.html?listing_id=${lid}`; 
+    const userId = localStorage.getItem('kozeyy_user_id');
+    const userRole = localStorage.getItem('kozeyy_role');
+
+    // SECURITY CHECK: If no ID or no Role, send back to Signup
+    if (!userId || !userRole) {
+        const params = new URLSearchParams(window.location.search);
+        const lid = params.get('listing_id');
+        window.location.href = `signup.html${lid ? '?listing_id='+lid : ''}`;
         return;
     }
 
