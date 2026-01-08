@@ -1612,7 +1612,94 @@ function toggleFeeVisibility() {
 
     function act_viewTenant(id) { const t = state.tenants.find(x => x.id === id); if(!t) return; setText('vt-name', t.name); setText('vt-email', t.email); setText('vt-phone', t.phone||'-'); setText('vt-addr', `${t.address||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); setText('vt-unit', t.unit||'-'); setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); setText('vt-status', t.status); setText('vt-start', t.lease_start||'-'); setText('vt-end', t.lease_end||'-'); openModal('modal-view-tenant'); }
     
-    function act_viewApp(id) { currentAppId = id; const app = state.apps.find(a => a.id === id); const eval = evalApplicant(app); setText('sd-name', app.name); setText('sd-score', app.score); setText('sd-income', `$${app.income.toLocaleString()}`); setText('sd-ratio', (app.income / app.rent).toFixed(1)); document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes</span>' : '<span class="text-emerald-600 font-bold">None</span>'; document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Found</span>' : '<span class="text-emerald-600 font-bold">Clear</span>'; setText('sd-job', app.job||'Unemployed'); document.getElementById('sd-employ').innerHTML = app.job !== 'Not Listed' ? '<span class="text-emerald-600 font-bold">Verified</span>' : '<span class="text-amber-600 font-bold">Pending</span>'; const ban = document.getElementById('sd-banner'); const actions = document.getElementById('sd-actions'); const emailOpt = document.getElementById('sd-email-option'); if(app.status === 'Approved') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200"; ban.innerText = "Approved"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else if (app.status === 'Deny') { ban.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200"; ban.innerText = "Denied"; actions.classList.add('hidden-section'); emailOpt.classList.remove('hidden-section'); } else { ban.className = `p-4 rounded-xl border font-bold text-center mb-4 ${eval.color}`; ban.innerText = eval.status; actions.classList.remove('hidden-section'); emailOpt.classList.add('hidden-section'); } openModal('modal-screening-detail'); }
+    // --- 1. Toggle Secret Admin Panel ---
+    function toggleAdminPanel() { 
+        document.getElementById('sd-admin-panel').classList.toggle('hidden-section'); 
+    }
+
+    // --- 2. View Applicant (Decides Concierge vs API view) ---
+    function act_viewApp(id) {
+        currentAppId = id;
+        const app = state.apps.find(a => a.id === id);
+        
+        // Fill basic info
+        document.getElementById('sd-name').innerText = app.name;
+        document.getElementById('input-manual-score').value = app.score || '';
+        document.getElementById('input-manual-income').value = app.income || '';
+
+        const hasScore = app.score && app.score > 0;
+        
+        // CHECK DB SETTINGS (Hidden from Owner UI, but available in state)
+        // You set this key directly in Supabase Table Editor
+        const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
+
+        // Reset UI: Hide all sections first
+        ['sd-pending-msg', 'sd-api-start', 'sd-admin-panel', 'sd-data-display', 'sd-actions', 'sd-email-option', 'sd-banner'].forEach(id => document.getElementById(id).classList.add('hidden-section'));
+
+        if (!hasScore) {
+            // CASE: NO RESULTS YET
+            if (hasApiKey) {
+                // API Key Exists -> Show "Run Instant Check"
+                document.getElementById('sd-api-start').classList.remove('hidden-section');
+            } else {
+                // No Key -> Show "Concierge / Processing"
+                document.getElementById('sd-pending-msg').classList.remove('hidden-section');
+            }
+        } else {
+            // CASE: RESULTS EXIST (Either from API or Manual Entry)
+            document.getElementById('sd-data-display').classList.remove('hidden-section');
+            
+            // Populate Data
+            document.getElementById('sd-score').innerText = app.score;
+            document.getElementById('sd-income').innerText = `$${(app.income||0).toLocaleString()}`;
+            document.getElementById('sd-ratio').innerText = app.rent > 0 ? (app.income/app.rent).toFixed(1) : '0';
+            document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600">Yes</span>' : '<span class="text-emerald-600">No</span>';
+            document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600">Yes</span>' : '<span class="text-emerald-600">No</span>';
+
+            // Show Decision Buttons OR Final Status
+            if (app.status === 'Pending') {
+                document.getElementById('sd-actions').classList.remove('hidden-section');
+            } else {
+                const b = document.getElementById('sd-banner');
+                b.classList.remove('hidden-section');
+                b.innerText = app.status;
+                b.className = `p-4 rounded-xl border font-bold text-center mb-4 ${app.status==='Approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`;
+                document.getElementById('sd-email-option').classList.remove('hidden-section');
+            }
+        }
+        openModal('modal-screening-detail');
+    }
+
+    // --- 3. Save Manual Results (Concierge Action) ---
+    async function act_saveScreeningResults() {
+        const score = document.getElementById('input-manual-score').value;
+        const income = document.getElementById('input-manual-income').value;
+        const bgIssues = document.getElementById('input-manual-bg').value === 'issues';
+        
+        if(!score) return showToast("Please enter score", 'error');
+
+        // Save to DB and keep status as 'Pending' so the Owner sees the data and decision buttons next time
+        const { error } = await supabaseClient.from('apps').update({
+            score: parseInt(score),
+            income: parseFloat(income),
+            evictions: bgIssues,
+            criminal: bgIssues,
+            status: 'Pending' 
+        }).eq('id', currentAppId);
+        
+        if(error) {
+            showToast("Error saving: " + error.message, 'error');
+        } else {
+            showToast("Report saved");
+            await fetchData();
+            act_viewApp(currentAppId); // Refresh modal to show the new data
+        }
+    }
+
+    // Placeholder for when you get the API key
+    function runAutoScreening() { 
+        showToast("Connecting to Screening API...", 'success');
+    }
     
     function act_initiateApproval() {
         openPlatformConfirm("Approve Applicant?", "This will mark the applicant as approved and send them an email notification. The next step will be to upload the lease.", async () => {
@@ -2136,6 +2223,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
