@@ -535,27 +535,87 @@
 
             const currentInvStr = JSON.stringify(invoices);
             if (currentInvStr !== lastRenderedState.invoices) {
-                const unpaid = invoices.filter(i => { const bal = i.total - (i.amount_paid || 0); return bal > 0 && i.status !== 'Paid'; });
-                const totalDue = unpaid.reduce((sum, i) => sum + (i.total - (i.amount_paid || 0)), 0);
-                document.getElementById('total-balance').innerText = `$${totalDue.toLocaleString()}`;
+                // 1. Filter Unpaid Invoices
+                const unpaid = invoices.filter(i => { 
+                    const bal = i.total - (i.amount_paid || 0); 
+                    return bal > 0 && i.status !== 'Paid'; 
+                });
+
+                // 2. Calculate Grand Total (Base + Fees) & Generate HTML
+                let grandTotal = 0;
+                const now = new Date();
                 
-                const badge = document.getElementById('payment-status-badge');
                 const uCont = document.getElementById('unpaid-container'); 
+                uCont.innerHTML = ''; // Clear list
                 
-                if(totalDue > 0) { 
-                    badge.className = "bg-rose-100 text-rose-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = `${unpaid.length} Due`; 
-                    document.getElementById('payment-due-date').innerText = `Due: ${unpaid[0].date || 'Immediately'}`; 
-                    uCont.innerHTML = '';
+                if(unpaid.length > 0) { 
                     unpaid.forEach(i => { 
-                        const currentBalance = i.total - (i.amount_paid || 0);
-                        uCont.innerHTML += `<div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4"><div class="w-full md:w-auto"><div class="flex items-center gap-2"><p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p><button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button></div><p class="text-xs text-rose-500 mt-2 font-bold">Due: ${i.date || 'Immediate'}</p></div><div class="flex items-center justify-between w-full md:w-auto gap-4"><div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${currentBalance.toLocaleString()}</span></div><button onclick="viewInvoice(${i.id})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2"><span>Pay Now</span><i class="fas fa-lock text-[10px] opacity-70"></i></button></div></div>`; 
+                        // A. Calculate Base
+                        const currentBaseBalance = i.total - (i.amount_paid || 0);
+
+                        // B. Calculate Late Fee (Same logic as viewInvoice)
+                        const invDate = new Date(i.date);
+                        const grace = i.grace_period !== undefined ? i.grace_period : 5;
+                        const dueDate = new Date(invDate);
+                        dueDate.setDate(dueDate.getDate() + grace);
+
+                        const isOverdue = now > dueDate;
+                        let daysOverdue = 0;
+                        if(isOverdue) {
+                            const diffTime = Math.abs(now - dueDate);
+                            daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+                        }
+
+                        // Use the helper function we added earlier
+                        const lateFee = isOverdue ? calculateLateFee(i.total, i, daysOverdue) : 0;
+                        const finalDisplayAmount = currentBaseBalance + lateFee;
+                        
+                        // Add to Grand Total
+                        grandTotal += finalDisplayAmount;
+
+                        // C. Render Row with Final Amount
+                        uCont.innerHTML += `
+                        <div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4">
+                            <div class="w-full md:w-auto">
+                                <div class="flex items-center gap-2">
+                                    <p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p>
+                                    <button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button>
+                                </div>
+                                <p class="text-xs ${isOverdue ? 'text-rose-500 font-bold' : 'text-slate-400'} mt-2">
+                                    ${isOverdue ? `Overdue (Includes $${lateFee.toFixed(2)} fee)` : `Due: ${i.date}`}
+                                </p>
+                            </div>
+                            <div class="flex items-center justify-between w-full md:w-auto gap-4">
+                                <div class="text-right md:text-left">
+                                    <span class="font-extrabold text-2xl text-slate-900">$${finalDisplayAmount.toLocaleString()}</span>
+                                </div>
+                                <button onclick="viewInvoice(${i.id})" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2">
+                                    <span>Pay Now</span>
+                                    <i class="fas fa-lock text-[10px] opacity-70"></i>
+                                </button>
+                            </div>
+                        </div>`; 
                     });
+
+                    // Update Top "Current Balance" Card with the accurate total
+                    document.getElementById('total-balance').innerText = `$${grandTotal.toLocaleString()}`;
+                    
+                    const badge = document.getElementById('payment-status-badge');
+                    badge.className = "bg-rose-100 text-rose-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; 
+                    badge.innerText = `${unpaid.length} Due`; 
+                    document.getElementById('payment-due-date').innerText = `Total Due Now`;
+
                 } else { 
-                    badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; badge.innerText = "All Paid"; 
+                    // No Unpaid Invoices
+                    document.getElementById('total-balance').innerText = `$0.00`;
+                    const badge = document.getElementById('payment-status-badge');
+                    badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; 
+                    badge.innerText = "All Paid"; 
                     document.getElementById('payment-due-date').innerText = "No upcoming payments";
                     uCont.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3"><i class="fas fa-check text-emerald-400 text-xl"></i></div><p class="text-sm font-medium text-slate-600">You're all caught up!</p></div>`;
                 }
 
+                // Render History (Paid Items)
                 const hBody = document.getElementById('history-body'); const hMob = document.getElementById('history-mobile');
                 hBody.innerHTML = ''; hMob.innerHTML = '';
                 const historyItems = invoices.filter(i => i.status === 'Paid');
@@ -564,7 +624,7 @@
                     hBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">No payment history</td></tr>';
                 } else {
                     historyItems.forEach(i => { 
-                        const totalAmt = i.total; 
+                        const totalAmt = i.total; // Paid items don't strictly need recalculation of past fees for display history, relying on stored totals
                         hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.id}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice(${i.id})" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
                         hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice(${i.id})"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.id}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
                     });
@@ -941,3 +1001,4 @@
     </script>
 </body>
 </html>
+
