@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -684,14 +685,46 @@
             e.preventDefault();
             const desc = document.getElementById('m-desc').value;
             const cat = document.getElementById('m-cat').value;
+            
+            // 1. GET OWNER ID FROM LOADED USER DATA
+            const ownerId = globalData.user ? globalData.user.owner_id : null;
+
             if(desc) { 
                 const dateIso = new Date().toISOString();
-                const newReq = { tenant_id: USER_ID, issue: `${cat}: ${desc}`, category: cat, description: desc, status: 'Active', created_at: dateIso };
+                
+                // Optimistic Update
+                const newReq = { 
+                    tenant_id: USER_ID, 
+                    issue: `${cat}: ${desc}`, 
+                    category: cat, 
+                    description: desc, 
+                    status: 'Active', 
+                    created_at: dateIso 
+                };
                 optimisticMaint.push(newReq);
                 localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-                toggleModal('requestModal'); e.target.reset(); render(true); 
-                const dbPayload = { tenant_id: USER_ID, issue: `${cat}: ${desc}`, category: cat, description: desc, status: 'Active' };
-                await supabaseClient.from('maintenance').insert([dbPayload]); 
+                
+                toggleModal('requestModal'); 
+                e.target.reset(); 
+                render(true); 
+
+                // 2. INSERT TO DB WITH OWNER ID
+                const dbPayload = { 
+                    tenant_id: USER_ID, 
+                    owner_id: ownerId, // <--- Added Here
+                    issue: `${cat}: ${desc}`, 
+                    category: cat, 
+                    description: desc, 
+                    status: 'Active' 
+                };
+                
+                try {
+                    const { error } = await supabaseClient.from('maintenance').insert([dbPayload]);
+                    if (error) throw error;
+                } catch(err) {
+                    console.error("Maintenance submit error:", err);
+                    alert("There was a network error saving your request. It will retry automatically.");
+                }
             }
         }
         
@@ -716,22 +749,55 @@
             const inv = globalData.invoices.find(i => i.id === id);
             if(!inv) return;
             
+            // --- 1. LATE FEE LOGIC START ---
+            const now = new Date();
+            const invDate = new Date(inv.date); // Assuming YYYY-MM-DD
+            const grace = inv.grace_period !== undefined ? inv.grace_period : 5; // Default 5 if missing
+            
+            // Calculate Due Date
+            const dueDate = new Date(invDate);
+            dueDate.setDate(dueDate.getDate() + grace);
+            
+            // Check Overdue Status
+            // Only apply fees if balance > 0 and today is past due date
+            const currentBaseBalance = inv.total - (inv.amount_paid || 0);
+            const isOverdue = now > dueDate && currentBaseBalance > 0 && inv.status !== 'Paid';
+            
+            let daysOverdue = 0;
+            if(isOverdue) {
+                const diffTime = Math.abs(now - dueDate);
+                daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            }
+
+            const lateFee = isOverdue ? calculateLateFee(inv.total, inv, daysOverdue) : 0;
+            const finalTotalDue = currentBaseBalance + lateFee;
+            // --- LATE FEE LOGIC END ---
+
             document.getElementById('inv-id').innerText = inv.id;
             document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
             
-            const currentBalance = inv.total - (inv.amount_paid || 0);
-            const alreadyPaid = inv.amount_paid || 0;
-            
             document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
-            document.getElementById('inv-prev-pay').innerText = `$${alreadyPaid.toLocaleString()}`;
-            document.getElementById('inv-fwd-bal').innerText = `$${currentBalance.toLocaleString()}`;
+            document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid||0).toLocaleString()}`;
+            document.getElementById('inv-fwd-bal').innerText = `$${currentBaseBalance.toLocaleString()}`;
             
             const tbody = document.getElementById('inv-items-body'); 
             tbody.innerHTML = '';
+            
+            // Render Standard Items
             (inv.items || []).forEach(item => { 
                 tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; 
             });
             
+            // Render Late Fee Row if applicable
+            if(lateFee > 0) {
+                 const type = inv.fee_type || 'Fixed';
+                 let label = "Late Fee";
+                 if(type === 'Daily') label += ` (${daysOverdue} days overdue)`;
+                 if(type === 'Percentage') label += ` (${inv.fee_value}%)`;
+                 
+                 tbody.innerHTML += `<tr class="bg-rose-50"><td class="p-3 text-rose-600 font-bold">${label}</td><td class="p-3 text-right font-bold text-rose-600">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+            }
+
             const attEl = document.getElementById('inv-attachment'); 
             const docLink = inv.doc_url || inv.doc;
             if(docLink) { 
@@ -743,25 +809,28 @@
             const totalEl = document.getElementById('inv-total');
             const payBtnContainer = document.getElementById('inv-pay-btn-container');
 
-            if(currentBalance <= 0 || inv.status === 'Paid') { 
+            if(currentBaseBalance <= 0 || inv.status === 'Paid') { 
                 feeSection.classList.add('hidden-section'); 
                 totalEl.innerText = `$0.00`; 
                 payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date ? new Date(inv.paid_date).toLocaleDateString() : 'Unknown'}</div>`; 
             } else { 
-                totalEl.innerText = `$${currentBalance.toLocaleString()}`; 
+                totalEl.innerText = `$${finalTotalDue.toLocaleString(undefined, {minimumFractionDigits: 2})}`; 
+                
                 if (inv.landlord_stripe_id) {
                     feeSection.classList.remove('hidden-section');
                     const achFee = 2.50;
-                    const cardFee = currentBalance * 0.029;
-                    const achTotal = currentBalance + achFee;
-                    const cardTotal = currentBalance + cardFee;
+                    const cardFee = finalTotalDue * 0.029; // Calculate on Final Total
+                    const achTotal = finalTotalDue + achFee;
+                    const cardTotal = finalTotalDue + cardFee;
+                    
+                    // PASS FINAL TOTALS TO STRIPE FUNCTION
                     payBtnContainer.innerHTML = `
                         <div class="space-y-3 mt-4">
-                            <button onclick="initStripePayment(${inv.id}, ${currentBalance}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
+                            <button onclick="initStripePayment(${inv.id}, ${finalTotalDue}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
                                 <div class="flex items-center gap-2"><i class="fas fa-university"></i> Bank Transfer</div>
                                 <span class="text-sm group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                             </button>
-                            <button onclick="initStripePayment(${inv.id}, ${currentBalance}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
+                            <button onclick="initStripePayment(${inv.id}, ${finalTotalDue}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
                                 <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card Payment</div>
                                 <span class="text-sm group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                             </button>
@@ -772,7 +841,7 @@
                     payBtnContainer.innerHTML = `
                         <div class="mt-6 p-4 bg-orange-50 border border-orange-100 rounded-xl text-center">
                             <p class="text-orange-800 font-bold text-sm mb-1"><i class="fas fa-info-circle"></i> Online Payment Unavailable</p>
-                            <p class="text-orange-600 text-xs">The owner has not enabled online payments for this invoice. Please pay via check or your agreed method.</p>
+                            <p class="text-orange-600 text-xs">The owner has not enabled online payments for this invoice.</p>
                         </div>
                         <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600 mt-4">Close</button>
                     `;
@@ -848,6 +917,22 @@
             }
         }
 
+// --- HELPER: LATE FEE CALCULATION ---
+    function calculateLateFee(total, invoice, daysOverdue = 1) {
+        // If fees are disabled or not configured on this invoice, return 0
+        if (invoice.fee_enabled === false) return 0;
+
+        const type = invoice.fee_type || 'Fixed'; 
+        const value = parseFloat(invoice.fee_value || 0);
+
+        if (type === 'Percentage') {
+            return total * (value / 100);
+        }
+        if (type === 'Daily') {
+            return value * daysOverdue;
+        }
+        return value; // Fixed
+    }
         // Init
         render(false);
         checkReturnParams();
