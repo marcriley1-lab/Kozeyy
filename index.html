@@ -649,18 +649,22 @@
         }
     });
 
-        function handleApplyClick(listingId) {
+        // In index.html script (scroll to bottom)
+function handleApplyClick(listingId) {
     const userId = localStorage.getItem('kozeyy_user_id');
+    // We check for 'kozeyy_role' to confirm they are a real user
+    const userRole = localStorage.getItem('kozeyy_role'); 
     
-    if (userId) {
-        // Logged In -> Go straight to application
+    if (userId && userRole) {
+        // Real Account -> Go to Application
         window.location.href = `applicant.html?listing_id=${listingId}`;
     } else {
-        // Not Logged In -> Go to Signup first (with the return ticket)
+        // Guest/No Account -> Go to Signup
         window.location.href = `signup.html?listing_id=${listingId}`;
     }
 }
 </script>
 </body>
 </html>
+
 
