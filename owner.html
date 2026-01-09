@@ -2307,10 +2307,10 @@ function act_viewApp(id) {
         // 4. Reset Items
         logic_resetInvoice(); 
     }
-   function logic_resetInvoice() { 
+  function logic_resetInvoice() { 
         const tid = document.getElementById('inv-tenant').value; 
         
-        // 1. Standard Reset (Rent/Items)
+        // 1. Standard Reset
         invItems = []; 
         if (tid && invMode === 'fixed') { 
             const t = state.tenants.find(x => x.id == tid); 
@@ -2318,38 +2318,47 @@ function act_viewApp(id) {
         } else if (invMode === 'variable') logic_addRow(); 
         renderInvItems(); 
 
-        // 2. RECURRING LOGIC (The Fix)
+        // 2. RECURRING LOGIC
         editingRecurringId = null;
         const statusEl = document.getElementById('inv-recur-status');
         const checkbox = document.getElementById('inv-recurring');
         
-        // Default to unchecked/hidden first
+        // Reset defaults
         if(statusEl) statusEl.classList.add('hidden-section');
         checkbox.checked = false; 
         
         if(tid && state.recurring_invoices) {
-            // Use loose equality (==) to match string "12" with number 12
             const existing = state.recurring_invoices.find(r => r.tenant_id == tid && r.active);
             
             if(existing) {
                 editingRecurringId = existing.id; 
                 
-                // A. Show Status Text
-                if(statusEl) {
-                    statusEl.innerText = `(Active: Day ${existing.day})`;
-                    statusEl.classList.remove('hidden-section');
-                }
-
-                // B. AUTO-CHECK THE BOX (Only if in Fixed mode)
-                // This ensures the toggle is ON and values are visible when you return
+                // A. Auto-Check the box
                 if (invMode === 'fixed') {
                     checkbox.checked = true;
+                }
+
+                // B. Calculate Next Run Date
+                const dayInput = existing.day || 1;
+                const now = new Date();
+                let nextRun = new Date(now.getFullYear(), now.getMonth(), dayInput);
+                
+                // If the day has passed this month, move to next month
+                if (now.getDate() >= dayInput) {
+                    nextRun.setMonth(nextRun.getMonth() + 1);
+                }
+                
+                const dateStr = nextRun.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+
+                // C. Update the Label
+                if(statusEl) {
+                    statusEl.innerText = `(Next: ${dateStr})`;
+                    statusEl.classList.remove('hidden-section');
                 }
             }
         }
 
-        // 3. Sync UI state
-        // This will now OPEN the panel and PRE-FILL the values immediately
+        // 3. Sync UI (Opens the panel and pre-fills inputs)
         toggleRecurringOptions(); 
     }
     
@@ -2657,6 +2666,7 @@ function updateNextDate() {
 </script>
 </body>
 </html>
+
 
 
 
