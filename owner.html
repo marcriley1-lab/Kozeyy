@@ -2275,7 +2275,35 @@ function act_viewApp(id) {
         }
     }
     
-    function logic_invMode(m) { invMode = m; document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); logic_resetInvoice(); }
+   function logic_invMode(m) { 
+        invMode = m; 
+        
+        // 1. Update Buttons Visuals
+        document.getElementById('btn-fixed').className = m==='fixed' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-emerald-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
+        document.getElementById('btn-variable').className = m==='variable' ? "flex-1 py-2 rounded-md font-bold text-sm bg-white shadow text-indigo-700 border" : "flex-1 py-2 rounded-md font-bold text-sm text-slate-500"; 
+        
+        // 2. Show/Hide "Add Item" button
+        document.getElementById('btn-add-row').classList.toggle('hidden-section', m==='fixed'); 
+        
+        // 3. SAFETY CHECK: Disable Recurring for Variable
+        const recurWrapper = document.getElementById('inv-recurring-wrapper');
+        const recurInput = document.getElementById('inv-recurring');
+        
+        if (m === 'variable') {
+            recurInput.checked = false;    // Force uncheck
+            recurInput.disabled = true;    // Prevent clicking
+            recurWrapper.classList.add('opacity-50', 'pointer-events-none'); // Visual feedback
+        } else {
+            recurInput.disabled = false;   // Re-enable
+            recurWrapper.classList.remove('opacity-50', 'pointer-events-none');
+        }
+        
+        // Ensure options hide if we just forced it unchecked
+        toggleRecurringOptions();
+        
+        // 4. Reset Items
+        logic_resetInvoice(); 
+    }
     function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
     function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
     function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
@@ -2485,6 +2513,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
