@@ -2307,7 +2307,7 @@ function act_viewApp(id) {
         // 4. Reset Items
         logic_resetInvoice(); 
     }
- function logic_resetInvoice() { 
+function logic_resetInvoice() { 
         const tid = document.getElementById('inv-tenant').value; 
         
         // 1. Standard Reset (Rent Items)
@@ -2335,6 +2335,7 @@ function act_viewApp(id) {
                 editingRecurringId = existing.id; 
                 
                 // A. Auto-Turn ON the Toggle
+                // Only for Fixed mode, as variable doesn't support recurring in this logic
                 if (invMode === 'fixed') {
                     checkbox.checked = true;
                 }
@@ -2344,23 +2345,39 @@ function act_viewApp(id) {
                 const now = new Date();
                 let nextRun = new Date(now.getFullYear(), now.getMonth(), dayInput);
                 
-                // If today is past the scheduled day, move to next month
+                // If today is past the scheduled day (or is today), move to next month
+                // Note: Cron usually runs early morning. If it's the same day, we assume it runs next month
                 if (now.getDate() >= dayInput) {
                     nextRun.setMonth(nextRun.getMonth() + 1);
                 }
                 
                 const dateStr = nextRun.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
-                // C. Update the Label to be Explicit
+                // C. Update the Label to show specific date
                 if(statusEl) {
-                    statusEl.innerText = `(Next Scheduled Date: ${dateStr})`;
+                    statusEl.innerText = `(Next Scheduled: ${dateStr})`;
                     statusEl.classList.remove('hidden-section');
                 }
             }
         }
 
-        // 4. SYNC UI (IMPORTANT: This is now OUTSIDE the 'if' block so it runs every time)
+        // 4. SYNC UI 
+        // This ensures the input fields appear immediately because we set checked = true above
         toggleRecurringOptions(); 
+    }
+
+    function updateNextDate() {
+        const dayInput = parseInt(document.getElementById('inv-recur-day').value) || 1;
+        const now = new Date();
+        let nextRun = new Date(now.getFullYear(), now.getMonth(), dayInput);
+
+        // Logic: If today is the 15th and they pick the 5th, send NEXT month.
+        if (now.getDate() >= dayInput) {
+            nextRun.setMonth(nextRun.getMonth() + 1);
+        }
+
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        document.getElementById('inv-recur-next').innerText = nextRun.toLocaleDateString(undefined, options);
     }
     
     function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
@@ -2667,6 +2684,7 @@ function updateNextDate() {
 </script>
 </body>
 </html>
+
 
 
 
