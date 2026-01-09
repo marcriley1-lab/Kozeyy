@@ -1203,12 +1203,41 @@
     }
 
     async function act_completeMaint(id) { 
+        // 1. Prompt for notes
         openPrompt("Resolution Notes (Optional):", async (n) => {
             const note = n || "Completed";
-            const m = state.maint.find(x => x.id === id);
-            if(m) { m.status = 'Completed'; m.completed_date = new Date().toISOString(); m.notes = note; renderAll(); }
-            const { data, error } = await supabaseClient.from('maintenance').update({ status: 'Completed', completed_date: new Date().toISOString(), notes: note }).eq('id', id).select();
-            if (error) { showToast("Update failed: " + error.message, 'error'); await fetchData(); renderAll(); }
+            
+            // 2. Update Database
+            const { data, error } = await supabaseClient
+                .from('maintenance')
+                .update({ status: 'Completed', completed_date: new Date().toISOString(), notes: note })
+                .eq('id', id)
+                .select()
+                .single(); // Get the updated row back so we can find the tenant
+            
+            if (error) { 
+                showToast("Update failed: " + error.message, 'error'); 
+            } else {
+                // 3. SEND EMAIL TO TENANT
+                // We need to find the tenant's email using the tenant_id from the maintenance request
+                const maintReq = data;
+                if(maintReq && maintReq.tenant_id) {
+                    const tenant = state.tenants.find(t => t.id === maintReq.tenant_id);
+                    if(tenant && tenant.email) {
+                        await sendEmail(tenant.email, "Maintenance Request Completed", `
+                            <h2>Maintenance Update</h2>
+                            <p>Hi ${tenant.name},</p>
+                            <p>The maintenance request for <strong>"${maintReq.issue}"</strong> has been marked as <strong>Completed</strong>.</p>
+                            <p><strong>Notes:</strong> ${note}</p>
+                            <p>If this issue persists, please let us know.</p>
+                        `);
+                    }
+                }
+
+                await fetchData(); 
+                renderAll();
+                showToast("Request completed and Tenant notified");
+            }
         });
     }
     
@@ -2378,6 +2407,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
