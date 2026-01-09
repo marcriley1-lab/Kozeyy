@@ -836,110 +836,105 @@
             }
         }
         
-        function viewInvoice(id) {
-            const inv = globalData.invoices.find(i => i.id === id);
-            if(!inv) return;
-            
-            // --- 1. LATE FEE LOGIC START ---
-            const now = new Date();
-            const invDate = new Date(inv.date); // Assuming YYYY-MM-DD
-            const grace = inv.grace_period !== undefined ? inv.grace_period : 5; // Default 5 if missing
-            
-            // Calculate Due Date
-            const dueDate = new Date(invDate);
-            dueDate.setDate(dueDate.getDate() + grace);
-            
-            // Check Overdue Status
-            // Only apply fees if balance > 0 and today is past due date
-            const currentBaseBalance = inv.total - (inv.amount_paid || 0);
-            const isOverdue = now > dueDate && currentBaseBalance > 0 && inv.status !== 'Paid';
-            
-            let daysOverdue = 0;
-            if(isOverdue) {
-                const diffTime = Math.abs(now - dueDate);
-                daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            }
-
-            const lateFee = isOverdue ? calculateLateFee(inv.total, inv, daysOverdue) : 0;
-            const finalTotalDue = currentBaseBalance + lateFee;
-            // --- LATE FEE LOGIC END ---
-
-            document.getElementById('inv-id').innerText = inv.id;
-            document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
-            
-            document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
-            document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid||0).toLocaleString()}`;
-            document.getElementById('inv-fwd-bal').innerText = `$${currentBaseBalance.toLocaleString()}`;
-            
-            const tbody = document.getElementById('inv-items-body'); 
-            tbody.innerHTML = '';
-            
-            // Render Standard Items
-            (inv.items || []).forEach(item => { 
-                tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; 
-            });
-            
-            // Render Late Fee Row if applicable
-            if(lateFee > 0) {
-                 const type = inv.fee_type || 'Fixed';
-                 let label = "Late Fee";
-                 if(type === 'Daily') label += ` (${daysOverdue} days overdue)`;
-                 if(type === 'Percentage') label += ` (${inv.fee_value}%)`;
-                 
-                 tbody.innerHTML += `<tr class="bg-rose-50"><td class="p-3 text-rose-600 font-bold">${label}</td><td class="p-3 text-right font-bold text-rose-600">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
-            }
-
-            const attEl = document.getElementById('inv-attachment'); 
-            const docLink = inv.doc_url || inv.doc;
-            if(docLink) { 
-                attEl.classList.remove('hidden-section'); 
-                document.getElementById('inv-doc-name').innerHTML = `<a href="${docLink}" target="_blank" class="hover:underline">View Document</a>`;
-            } else { attEl.classList.add('hidden-section'); }
-            
-            const feeSection = document.getElementById('inv-fees-section'); 
-            const totalEl = document.getElementById('inv-total');
-            const payBtnContainer = document.getElementById('inv-pay-btn-container');
-
-            if(currentBaseBalance <= 0 || inv.status === 'Paid') { 
-                feeSection.classList.add('hidden-section'); 
-                totalEl.innerText = `$0.00`; 
-                payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date ? new Date(inv.paid_date).toLocaleDateString() : 'Unknown'}</div>`; 
-            } else { 
-                totalEl.innerText = `$${finalTotalDue.toLocaleString(undefined, {minimumFractionDigits: 2})}`; 
-                
-                if (inv.landlord_stripe_id) {
-                    feeSection.classList.remove('hidden-section');
-                    const achFee = 2.50;
-                    const cardFee = finalTotalDue * 0.029; // Calculate on Final Total
-                    const achTotal = finalTotalDue + achFee;
-                    const cardTotal = finalTotalDue + cardFee;
-                    
-                    // PASS FINAL TOTALS TO STRIPE FUNCTION
-                    payBtnContainer.innerHTML = `
-                        <div class="space-y-3 mt-4">
-                            <button onclick="initStripePayment(${inv.id}, ${finalTotalDue}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
-                                <div class="flex items-center gap-2"><i class="fas fa-university"></i> Bank Transfer</div>
-                                <span class="text-sm group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                            </button>
-                            <button onclick="initStripePayment(${inv.id}, ${finalTotalDue}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
-                                <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card Payment</div>
-                                <span class="text-sm group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
-                            </button>
-                            <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600">Cancel</button>
-                        </div>`;
-                } else {
-                    feeSection.classList.add('hidden-section');
-                    payBtnContainer.innerHTML = `
-                        <div class="mt-6 p-4 bg-orange-50 border border-orange-100 rounded-xl text-center">
-                            <p class="text-orange-800 font-bold text-sm mb-1"><i class="fas fa-info-circle"></i> Online Payment Unavailable</p>
-                            <p class="text-orange-600 text-xs">The owner has not enabled online payments for this invoice.</p>
-                        </div>
-                        <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600 mt-4">Close</button>
-                    `;
-                }
-            }
-            toggleModal('invoiceModal');
+       function viewInvoice(id) {
+        const inv = globalData.invoices.find(i => i.id === id);
+        if(!inv) return;
+        
+        // --- 1. LATE FEE LOGIC ---
+        const now = new Date();
+        const invDate = new Date(inv.date);
+        const grace = inv.grace_period !== undefined ? inv.grace_period : 5;
+        
+        const dueDate = new Date(invDate);
+        dueDate.setDate(dueDate.getDate() + grace);
+        
+        const currentBaseBalance = inv.total - (inv.amount_paid || 0);
+        const isOverdue = now > dueDate && currentBaseBalance > 0 && inv.status !== 'Paid';
+        
+        let daysOverdue = 0;
+        if(isOverdue) {
+            const diffTime = Math.abs(now - dueDate);
+            daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
         }
+
+        const lateFee = isOverdue ? calculateLateFee(inv.total, inv, daysOverdue) : 0;
+        const finalTotalDue = currentBaseBalance + lateFee;
+
+        // --- 2. RENDER UI ---
+        document.getElementById('inv-id').innerText = inv.id;
+        document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
+        document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
+        document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid||0).toLocaleString()}`;
+        document.getElementById('inv-fwd-bal').innerText = `$${currentBaseBalance.toLocaleString()}`;
+        
+        const tbody = document.getElementById('inv-items-body'); 
+        tbody.innerHTML = '';
+        (inv.items || []).forEach(item => { 
+            tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; 
+        });
+        
+        if(lateFee > 0) {
+             const type = inv.fee_type || 'Fixed';
+             let label = "Late Fee";
+             if(type === 'Daily') label += ` (${daysOverdue} days overdue)`;
+             if(type === 'Percentage') label += ` (${inv.fee_value}%)`;
+             tbody.innerHTML += `<tr class="bg-rose-50"><td class="p-3 text-rose-600 font-bold">${label}</td><td class="p-3 text-right font-bold text-rose-600">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+        }
+
+        const attEl = document.getElementById('inv-attachment'); 
+        const docLink = inv.doc_url || inv.doc;
+        if(docLink) { 
+            attEl.classList.remove('hidden-section'); 
+            document.getElementById('inv-doc-name').innerHTML = `<a href="${docLink}" target="_blank" class="hover:underline">View Document</a>`;
+        } else { attEl.classList.add('hidden-section'); }
+        
+        const feeSection = document.getElementById('inv-fees-section'); 
+        const totalEl = document.getElementById('inv-total');
+        const payBtnContainer = document.getElementById('inv-pay-btn-container');
+
+        if(currentBaseBalance <= 0 || inv.status === 'Paid') { 
+            feeSection.classList.add('hidden-section'); 
+            totalEl.innerText = `$0.00`; 
+            payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date ? new Date(inv.paid_date).toLocaleDateString() : 'Unknown'}</div>`; 
+        } else { 
+            // Display Total (Rent + Late Fee)
+            totalEl.innerText = `$${finalTotalDue.toLocaleString(undefined, {minimumFractionDigits: 2})}`; 
+            
+            if (inv.landlord_stripe_id) {
+                feeSection.classList.remove('hidden-section');
+                
+                // --- FEE CONFIGURATION ---
+                const achFee = 2.50; // Flat fee
+                const cardFee = (finalTotalDue * 0.03); // 3% to cover Stripe's 2.9% + 30c
+                
+                const achTotal = finalTotalDue + achFee;
+                const cardTotal = finalTotalDue + cardFee;
+                
+                payBtnContainer.innerHTML = `
+                    <div class="space-y-3 mt-4">
+                        <button onclick="initStripePayment(${inv.id}, ${finalTotalDue}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
+                            <div class="flex items-center gap-2"><i class="fas fa-university"></i> Bank Transfer (ACH)</div>
+                            <span class="text-sm group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </button>
+                        <button onclick="initStripePayment(${inv.id}, ${finalTotalDue}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
+                            <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card Payment</div>
+                            <span class="text-sm group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        </button>
+                        <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600">Cancel</button>
+                    </div>`;
+            } else {
+                feeSection.classList.add('hidden-section');
+                payBtnContainer.innerHTML = `
+                    <div class="mt-6 p-4 bg-orange-50 border border-orange-100 rounded-xl text-center">
+                        <p class="text-orange-800 font-bold text-sm mb-1"><i class="fas fa-info-circle"></i> Online Payment Unavailable</p>
+                        <p class="text-orange-600 text-xs">The owner has not enabled online payments for this invoice.</p>
+                    </div>
+                    <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600 mt-4">Close</button>
+                `;
+            }
+        }
+        toggleModal('invoiceModal');
+    }
 
         async function initStripePayment(invoiceId, baseAmount, method, fee) {
             toggleModal('invoiceModal'); 
@@ -1032,5 +1027,6 @@
     </script>
 </body>
 </html>
+
 
 
