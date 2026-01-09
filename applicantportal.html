@@ -257,7 +257,7 @@
             }
         }
 
-        function renderDashboard() {
+   function renderDashboard() {
             if(!currentUserApp) return;
             document.getElementById('view-loading').classList.add('hidden-section');
             document.getElementById('view-dashboard').classList.remove('hidden-section');
@@ -279,11 +279,13 @@
             
             const actionCard = document.getElementById('action-card');
             const tenantCard = document.getElementById('tenant-card');
+            const conditionCard = document.getElementById('condition-card'); // <--- 1. Get the element
 
-            // Reset UI
+            // --- 2. RESET UI (Hide everything first) ---
             banner.classList.remove('hidden-section');
             actionCard.classList.add('hidden-section');
             tenantCard.classList.add('hidden-section');
+            if(conditionCard) conditionCard.classList.add('hidden-section');
 
             switch(currentUserApp.status) {
                 case 'Pending':
@@ -417,4 +419,5 @@
     </script>
 </body>
 </html>
+
 
