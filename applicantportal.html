@@ -279,24 +279,45 @@
             
             const actionCard = document.getElementById('action-card');
             const tenantCard = document.getElementById('tenant-card');
-            const conditionCard = document.getElementById('condition-card'); // <--- 1. Get the element
+            
+            // 1. GET THE CONDITION CARD ELEMENT
+            const conditionCard = document.getElementById('condition-card'); // <--- FIX ADDED
 
-            // --- 2. RESET UI (Hide everything first) ---
+            // 2. RESET UI (Hide EVERYTHING first)
             banner.classList.remove('hidden-section');
             actionCard.classList.add('hidden-section');
             tenantCard.classList.add('hidden-section');
-            if(conditionCard) conditionCard.classList.add('hidden-section');
+            
+            // 3. FORCE HIDE CONDITION CARD
+            if(conditionCard) conditionCard.classList.add('hidden-section'); // <--- FIX ADDED
 
             switch(currentUserApp.status) {
                 case 'Pending':
                 case 'Unpaid':
                 case 'Paid':
+                case 'Ready for Review': // Added this to cover the new status
                     statusText.innerText = "Under Review";
                     statusText.className = "text-3xl font-extrabold text-slate-800 brand-font mb-2";
                     statusDesc.innerText = "The property owner is currently reviewing your application details and background check.";
                     statusIcon.className = "fas fa-sync fa-spin";
                     statusIconBg.className = "w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
                     break;
+                    
+                case 'Conditional':
+                    statusText.innerText = "Pending Your Response";
+                    statusText.className = "text-3xl font-extrabold text-amber-500 brand-font mb-2";
+                    statusDesc.innerText = "The owner has set a condition for your approval. Please review and respond below.";
+                    statusIcon.className = "fas fa-clipboard-check";
+                    statusIconBg.className = "w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center flex-shrink-0 text-2xl animate-pulse";
+                    
+                    // ONLY SHOW CARD HERE
+                    if(conditionCard) {
+                        conditionCard.classList.remove('hidden-section');
+                        const note = currentUserApp.notes || "Additional security deposit required.";
+                        document.getElementById('condition-note-text').innerText = note;
+                    }
+                    break;
+
                 case 'Approved':
                 case 'Lease Uploaded':
                     statusText.innerText = "Approved!";
@@ -305,6 +326,7 @@
                     statusIcon.className = "fas fa-check";
                     statusIconBg.className = "w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
                     break;
+
                 case 'Lease Sent':
                     statusText.innerText = "Action Required";
                     statusText.className = "text-3xl font-extrabold text-indigo-600 brand-font mb-2";
@@ -313,31 +335,20 @@
                     statusIconBg.className = "w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl animate-pulse";
                     actionCard.classList.remove('hidden-section');
                     break;
+
                 case 'Completed':
                 case 'Active':
-                    // Hide main banner, show tenant card
                     banner.classList.add('hidden-section');
                     tenantCard.classList.remove('hidden-section');
                     break;
+
                 case 'Deny':
-                    statusText.innerText = "Declined";
+                case 'Withdrawn':
+                    statusText.innerText = "Closed";
                     statusText.className = "text-3xl font-extrabold text-rose-600 brand-font mb-2";
-                    statusDesc.innerText = "We are unable to proceed with your application at this time. An email with more details has been sent.";
+                    statusDesc.innerText = "This application is no longer active.";
                     statusIcon.className = "fas fa-times";
                     statusIconBg.className = "w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
-                    break;
-                    case 'Conditional':
-                    statusText.innerText = "Pending Your Response";
-                    statusText.className = "text-3xl font-extrabold text-amber-500 brand-font mb-2";
-                    statusDesc.innerText = "The owner has set a condition for your approval. Please review and respond below.";
-                    statusIcon.className = "fas fa-clipboard-check";
-                    statusIconBg.className = "w-16 h-16 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center flex-shrink-0 text-2xl animate-pulse";
-                    
-                    // Show the condition card
-                    document.getElementById('condition-card').classList.remove('hidden-section');
-                    // Populate the note (ensure your database 'apps' table has a 'notes' column)
-                    const note = currentUserApp.notes || "Additional security deposit required.";
-                    document.getElementById('condition-note-text').innerText = note;
                     break;
             }
         }
@@ -419,5 +430,6 @@
     </script>
 </body>
 </html>
+
 
 
