@@ -2626,30 +2626,12 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
             showToast("Email failed to send", "error");
         }
     }
-function updateNextDate() {
-        const dayInput = parseInt(document.getElementById('inv-recur-day').value) || 1;
-        const now = new Date();
-        let nextRun = new Date(now.getFullYear(), now.getMonth(), dayInput);
-
-        // Logic: If today is the 15th and they pick the 5th, send NEXT month.
-        // If today is the 15th and they pick the 20th, send THIS month.
-        // (Assuming you want to skip today if the cron already ran, strict > comparison)
-        if (now.getDate() >= dayInput) {
-            nextRun.setMonth(nextRun.getMonth() + 1);
-        }
-
-        // Handle "Feb 31st" edge cases (JS auto-rolls to March, which is confusing)
-        // This simple check ensures we don't display "March 3" when they asked for "Feb 31"
-        // (It just displays the calculated date, which is fine for MVP)
-        
-        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-        document.getElementById('inv-recur-next').innerText = nextRun.toLocaleDateString(undefined, options);
-    }
     
     initSystem();
 </script>
 </body>
 </html>
+
 
 
 
