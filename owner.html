@@ -2307,10 +2307,10 @@ function act_viewApp(id) {
         // 4. Reset Items
         logic_resetInvoice(); 
     }
-    function logic_resetInvoice() { 
+   function logic_resetInvoice() { 
         const tid = document.getElementById('inv-tenant').value; 
         
-        // 1. Standard Reset
+        // 1. Standard Reset (Rent/Items)
         invItems = []; 
         if (tid && invMode === 'fixed') { 
             const t = state.tenants.find(x => x.id == tid); 
@@ -2318,28 +2318,41 @@ function act_viewApp(id) {
         } else if (invMode === 'variable') logic_addRow(); 
         renderInvItems(); 
 
-        // 2. NEW: Check for Existing Recurring Schedule
+        // 2. RECURRING LOGIC (The Fix)
         editingRecurringId = null;
         const statusEl = document.getElementById('inv-recur-status');
         const checkbox = document.getElementById('inv-recurring');
         
-        // Reset UI first
+        // Default to unchecked/hidden first
         if(statusEl) statusEl.classList.add('hidden-section');
         checkbox.checked = false; 
-        toggleRecurringOptions(); // Hide the options panel
-
+        
         if(tid && state.recurring_invoices) {
-            // Find active schedule for this tenant
+            // Use loose equality (==) to match string "12" with number 12
             const existing = state.recurring_invoices.find(r => r.tenant_id == tid && r.active);
+            
             if(existing) {
-                editingRecurringId = existing.id; // Store ID for later
+                editingRecurringId = existing.id; 
+                
+                // A. Show Status Text
                 if(statusEl) {
                     statusEl.innerText = `(Active: Day ${existing.day})`;
                     statusEl.classList.remove('hidden-section');
                 }
+
+                // B. AUTO-CHECK THE BOX (Only if in Fixed mode)
+                // This ensures the toggle is ON and values are visible when you return
+                if (invMode === 'fixed') {
+                    checkbox.checked = true;
+                }
             }
         }
+
+        // 3. Sync UI state
+        // This will now OPEN the panel and PRE-FILL the values immediately
+        toggleRecurringOptions(); 
     }
+    
     function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
     function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
     function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); }
@@ -2644,6 +2657,7 @@ function updateNextDate() {
 </script>
 </body>
 </html>
+
 
 
 
