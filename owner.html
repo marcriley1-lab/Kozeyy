@@ -2606,31 +2606,27 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     return value; // Fixed
 }
     // --- EMAIL HELPER FUNCTION ---
-    async function sendEmail(to, subject, htmlContent) {
-        console.log(`Attempting to send email to ${to}...`);
-        
-        // Define your email parameters (must match your EmailJS template variables)
-        const templateParams = {
-            to_email: to,
-            subject: subject,
-            message: htmlContent // Ensure your EmailJS template uses {{{message}}} for HTML support
-        };
+async function sendEmail(to, subject, type, data) {
+    console.log(`Sending ${type} email to ${to}...`);
+    
+    try {
+        const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
+            body: { to, subject, type, data }
+        });
 
-        try {
-            // Replace 'YOUR_SERVICE_ID' and 'YOUR_TEMPLATE_ID' with actual IDs from EmailJS
-            await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
-            console.log("Email sent successfully!");
-            showToast("Notification email sent", "success");
-        } catch (error) {
-            console.error("Email failed:", error);
-            showToast("Email failed to send", "error");
-        }
+        if (error) throw error;
+        console.log("Email sent successfully!", result);
+        // Optional: showToast("Notification sent");
+    } catch (e) {
+        console.error("Email failed:", e);
     }
+}
     
     initSystem();
 </script>
 </body>
 </html>
+
 
 
 
