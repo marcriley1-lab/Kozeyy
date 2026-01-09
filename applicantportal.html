@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init("YOUR_PUBLIC_KEY_HERE"); 
+   })();
+</script>
     <style>
         body { font-family: 'Inter', sans-serif; }
         h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
@@ -363,12 +369,49 @@
             document.getElementById('modal-sign').classList.remove('flex');
         }
 
-        async function signLease() {
-            closeSigningModal();
-            // Optimistic UI Update - In a real app, this would be a DB call
-            showModal("Signature Received!", "You have successfully signed the lease. We have notified the owner to counter-sign and finalize.");
-            // Ideally: update status to 'Signed' in DB here
+       // Add this helper at the bottom of your script if missing
+    async function sendEmail(to, subject, htmlContent) {
+        try {
+            await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
+                to_email: to,
+                subject: subject,
+                message: htmlContent
+            });
+        } catch (e) { console.error(e); }
+    }
+
+    async function signLease() {
+        closeSigningModal();
+        
+        if(!currentUserApp) return;
+
+        // 1. Update Database Status
+        await supabaseClient.from('apps').update({ status: 'Lease Signed' }).eq('id', currentUserApp.id);
+        
+        // Update Tenant Record too (if exists)
+        const { data: tenant } = await supabaseClient.from('tenants').select('id').eq('email', currentUserApp.email).maybeSingle();
+        if(tenant) {
+            await supabaseClient.from('tenants').update({ status: 'Lease Signed' }).eq('id', tenant.id);
         }
+
+        // 2. Notify Owner
+        if(currentUserApp.owner_id) {
+             const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', currentUserApp.owner_id).single();
+             if(owner && owner.email) {
+                 await sendEmail(owner.email, "Action Required: Lease Signed", `
+                    <h2>Lease Signed by ${currentUserApp.name}</h2>
+                    <p>The applicant has digitally signed the lease agreement.</p>
+                    <p>Please log in to countersign and finalize the move-in.</p>
+                    <a href="https://kozeyy.com/owner.html">Finalize Lease</a>
+                 `);
+             }
+        }
+
+        // 3. UI Feedback
+        showModal("Signature Received!", "You have successfully signed the lease. The owner has been notified to finalize the agreement.");
+        // Refresh data to update status banner
+        setTimeout(fetchApplication, 2000);
+    }
 
         function logout() {
             localStorage.removeItem('kozeyy_user_id'); // Only clear ID, not all (preserve listing state if needed)
@@ -430,6 +473,7 @@
     </script>
 </body>
 </html>
+
 
 
 
