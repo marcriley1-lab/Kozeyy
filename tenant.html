@@ -11,6 +11,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init("YOUR_PUBLIC_KEY_HERE"); 
+   })();
+</script>
     
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -741,52 +747,77 @@
             }
         }
 
-        async function handleMaintSubmit(e) {
-            e.preventDefault();
-            const desc = document.getElementById('m-desc').value;
-            const cat = document.getElementById('m-cat').value;
+        // --- EMAIL HELPER ---
+    async function sendEmail(to, subject, htmlContent) {
+        if(!to || !to.includes('@')) return;
+        try {
+            await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
+                to_email: to,
+                subject: subject,
+                message: htmlContent
+            });
+            console.log("Email sent to " + to);
+        } catch (e) { console.error("Email error:", e); }
+    }
+
+    async function handleMaintSubmit(e) {
+        e.preventDefault();
+        const desc = document.getElementById('m-desc').value;
+        const cat = document.getElementById('m-cat').value;
+        
+        // 1. Get User & Owner Info
+        const tenantName = globalData.user ? globalData.user.name : "Tenant";
+        const ownerId = globalData.user ? globalData.user.owner_id : null;
+
+        if(desc && ownerId) { 
+            // 2. Optimistic UI Update
+            const dateIso = new Date().toISOString();
+            const newReq = { 
+                tenant_id: USER_ID, 
+                issue: `${cat}: ${desc}`, 
+                category: cat, 
+                description: desc, 
+                status: 'Active', 
+                created_at: dateIso 
+            };
+            optimisticMaint.push(newReq);
+            localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
             
-            // 1. GET OWNER ID FROM LOADED USER DATA
-            const ownerId = globalData.user ? globalData.user.owner_id : null;
+            toggleModal('requestModal'); 
+            e.target.reset(); 
+            render(true); 
 
-            if(desc) { 
-                const dateIso = new Date().toISOString();
-                
-                // Optimistic Update
-                const newReq = { 
+            // 3. Save to Database
+            try {
+                const { error } = await supabaseClient.from('maintenance').insert([{ 
                     tenant_id: USER_ID, 
-                    issue: `${cat}: ${desc}`, 
-                    category: cat, 
-                    description: desc, 
-                    status: 'Active', 
-                    created_at: dateIso 
-                };
-                optimisticMaint.push(newReq);
-                localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-                
-                toggleModal('requestModal'); 
-                e.target.reset(); 
-                render(true); 
-
-                // 2. INSERT TO DB WITH OWNER ID
-                const dbPayload = { 
-                    tenant_id: USER_ID, 
-                    owner_id: ownerId, // <--- Added Here
+                    owner_id: ownerId, 
                     issue: `${cat}: ${desc}`, 
                     category: cat, 
                     description: desc, 
                     status: 'Active' 
-                };
+                }]);
+                if (error) throw error;
+
+                // 4. FETCH OWNER EMAIL & SEND ALERT
+                const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', ownerId).single();
                 
-                try {
-                    const { error } = await supabaseClient.from('maintenance').insert([dbPayload]);
-                    if (error) throw error;
-                } catch(err) {
-                    console.error("Maintenance submit error:", err);
-                    alert("There was a network error saving your request. It will retry automatically.");
+                if(owner && owner.email) {
+                    await sendEmail(owner.email, "New Maintenance Request", `
+                        <h2>New Request from ${tenantName}</h2>
+                        <p><strong>Category:</strong> ${cat}</p>
+                        <p><strong>Issue:</strong> ${desc}</p>
+                        <p>Login to your dashboard to manage this request.</p>
+                        <a href="https://kozeyy.com/owner.html">View Dashboard</a>
+                    `);
                 }
+
+            } catch(err) {
+                console.error("Maintenance submit error:", err);
+                alert("Saved locally, but network error occurred.");
             }
         }
+    }
         
         async function checkReturnParams() {
             const params = new URLSearchParams(window.location.search);
@@ -1001,4 +1032,5 @@
     </script>
 </body>
 </html>
+
 
