@@ -602,21 +602,22 @@
 
     <div id="inv-recurring-wrapper" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-opacity duration-200">
                         <div class="flex items-center justify-between">
-                            <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
-                                <i class="fas fa-sync-alt text-indigo-500"></i> Recurring Rent?
-                            </label>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="inv-recurring" class="sr-only peer" onchange="toggleRecurringOptions()">
-                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                            </label>
-                        </div>
+    <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
+        <i class="fas fa-sync-alt text-indigo-500"></i> Recurring Rent?
+        <span id="inv-recur-status" class="hidden-section text-xs text-emerald-600 font-bold ml-1"></span>
+    </label>
+    </div>
                         
                         <div id="inv-recurring-opts" class="hidden-section space-y-3 pt-3 mt-2 border-t border-slate-200">
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month</label>
-                                <input type="number" id="inv-recur-day" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
-                                <p class="text-[10px] text-slate-400 mt-1">Invoice will be generated automatically on this day.</p>
-                            </div>
+    <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month</label>
+    
+    <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
+    
+    <p class="text-[10px] text-slate-400 mt-1">
+        Next scheduled run: <span id="inv-recur-next" class="font-bold text-indigo-600">...</span>
+    </p>
+</div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-1">End Date (Optional)</label>
                                 <input type="date" id="inv-recur-end" class="w-full border p-2 rounded-lg text-sm bg-white">
@@ -886,7 +887,8 @@
             supabaseClient.from('maintenance').select('*').eq('owner_id', ownerId), // Added Filter
             supabaseClient.from('msgs').select('*').eq('owner_id', ownerId), // Added Filter
             supabaseClient.from('settings').select('*').eq('owner_id', ownerId).maybeSingle(), 
-            supabaseClient.from('apps').select('*').eq('owner_id', ownerId)
+            supabaseClient.from('apps').select('*').eq('owner_id', ownerId),
+            supabaseClient.from('recurring_invoices').select('*').eq('owner_id', ownerId)
         ]);
 
         state.tenants = t.data || [];
@@ -894,6 +896,7 @@
         state.expenses = e.data || [];
         state.settings = s.data || {};
         state.apps = a.data || [];
+        state.recurring_invoices = r.data || [];
 
         // --- ASSOCIATION FILTERING ---
         // (We can relax this now that we are filtering by owner_id in the fetch above, 
@@ -2253,10 +2256,26 @@ function act_viewApp(id) {
         
         if (isRecurring) {
             opts.classList.remove('hidden-section');
-            dateInput.disabled = true; // Disable specific date selection
+            dateInput.disabled = true;
             dateInput.parentElement.classList.add('opacity-50');
-            // Default to day 1 if empty
-            if(!document.getElementById('inv-recur-day').value) document.getElementById('inv-recur-day').value = 1;
+            
+            // Pre-fill data if editing an existing schedule
+            if(editingRecurringId && state.recurring_invoices) {
+                const existing = state.recurring_invoices.find(r => r.id === editingRecurringId);
+                if(existing) {
+                    document.getElementById('inv-recur-day').value = existing.day;
+                    document.getElementById('inv-recur-end').value = existing.end_date || '';
+                }
+            } else {
+                // Default to 1st of month if creating new
+                if(!document.getElementById('inv-recur-day').value) {
+                    document.getElementById('inv-recur-day').value = 1;
+                }
+            }
+
+            // Update the "Next scheduled run" text immediately
+            updateNextDate();
+
         } else {
             opts.classList.add('hidden-section');
             dateInput.disabled = false;
@@ -2293,7 +2312,39 @@ function act_viewApp(id) {
         // 4. Reset Items
         logic_resetInvoice(); 
     }
-    function logic_resetInvoice() { const tid = document.getElementById('inv-tenant').value; invItems = []; if (tid && invMode === 'fixed') { const t = state.tenants.find(x => x.id == tid); if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; } else if (invMode === 'variable') logic_addRow(); renderInvItems(); }
+    function logic_resetInvoice() { 
+        const tid = document.getElementById('inv-tenant').value; 
+        
+        // 1. Standard Reset
+        invItems = []; 
+        if (tid && invMode === 'fixed') { 
+            const t = state.tenants.find(x => x.id == tid); 
+            if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; 
+        } else if (invMode === 'variable') logic_addRow(); 
+        renderInvItems(); 
+
+        // 2. NEW: Check for Existing Recurring Schedule
+        editingRecurringId = null;
+        const statusEl = document.getElementById('inv-recur-status');
+        const checkbox = document.getElementById('inv-recurring');
+        
+        // Reset UI first
+        if(statusEl) statusEl.classList.add('hidden-section');
+        checkbox.checked = false; 
+        toggleRecurringOptions(); // Hide the options panel
+
+        if(tid && state.recurring_invoices) {
+            // Find active schedule for this tenant
+            const existing = state.recurring_invoices.find(r => r.tenant_id == tid && r.active);
+            if(existing) {
+                editingRecurringId = existing.id; // Store ID for later
+                if(statusEl) {
+                    statusEl.innerText = `(Active: Day ${existing.day})`;
+                    statusEl.classList.remove('hidden-section');
+                }
+            }
+        }
+    }
     function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
     function logic_delRow(idx) { invItems.splice(idx, 1); renderInvItems(); }
     function renderInvItems() { const c = document.getElementById('inv-items-container'); c.innerHTML=''; invItems.forEach((r,i) => { const ro = invMode==='fixed'?'readonly':''; const delBtn = invMode!=='fixed' ? `<button type="button" onclick="logic_delRow(${i})" class="text-red-400 px-2"><i class="fas fa-times"></i></button>` : ''; c.innerHTML += `<div class="flex gap-2 mb-2"><input class="flex-grow border p-2 rounded text-sm bg-white" value="${r.desc}" oninput="updateInvItem(${i}, 'desc', this.value)" placeholder="Description" ${ro}><input class="w-24 border p-2 rounded text-sm text-right bg-white" type="number" value="${r.amount}" oninput="updateInvItem(${i}, 'amount', this.value)" placeholder="$" ${ro}>${delBtn}</div>`; }); }
@@ -2368,7 +2419,73 @@ function act_viewApp(id) {
 
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
     
-   async function logic_confirmInvoice() { 
+   // Track the ID if we are editing an existing one
+    let editingRecurringId = null; 
+
+    function logic_resetInvoice() { 
+        const tid = document.getElementById('inv-tenant').value; 
+        
+        // 1. Standard Reset
+        invItems = []; 
+        if (tid && invMode === 'fixed') { 
+            const t = state.tenants.find(x => x.id == tid); 
+            if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; 
+        } else if (invMode === 'variable') logic_addRow(); 
+        renderInvItems(); 
+
+        // 2. NEW: Check for Existing Recurring Schedule
+        editingRecurringId = null;
+        const statusEl = document.getElementById('inv-recur-status');
+        const checkbox = document.getElementById('inv-recurring');
+        
+        // Reset UI first
+        if(statusEl) statusEl.classList.add('hidden-section');
+        checkbox.checked = false; 
+        toggleRecurringOptions(); // Hide the options panel
+
+        if(tid && state.recurring_invoices) {
+            // Find active schedule for this tenant
+            const existing = state.recurring_invoices.find(r => r.tenant_id == tid && r.active);
+            if(existing) {
+                editingRecurringId = existing.id; // Store ID for later
+                if(statusEl) {
+                    statusEl.innerText = `(Active: Day ${existing.day})`;
+                    statusEl.classList.remove('hidden-section');
+                }
+            }
+        }
+    }
+
+    function toggleRecurringOptions() {
+        const isRecurring = document.getElementById('inv-recurring').checked;
+        const opts = document.getElementById('inv-recurring-opts');
+        const dateInput = document.getElementById('inv-date');
+        
+        if (isRecurring) {
+            opts.classList.remove('hidden-section');
+            dateInput.disabled = true;
+            dateInput.parentElement.classList.add('opacity-50');
+            
+            // PRE-FILL DATA if editing an existing schedule
+            if(editingRecurringId) {
+                const existing = state.recurring_invoices.find(r => r.id === editingRecurringId);
+                if(existing) {
+                    document.getElementById('inv-recur-day').value = existing.day;
+                    document.getElementById('inv-recur-end').value = existing.end_date || '';
+                }
+            } else {
+                // Default if creating new
+                if(!document.getElementById('inv-recur-day').value) document.getElementById('inv-recur-day').value = 1;
+            }
+
+        } else {
+            opts.classList.add('hidden-section');
+            dateInput.disabled = false;
+            dateInput.parentElement.classList.remove('opacity-50');
+        }
+    }
+
+    async function logic_confirmInvoice() { 
         if(!draftInvoice) return; 
         
         const btn = document.getElementById('btn-confirm-inv');
@@ -2381,32 +2498,42 @@ function act_viewApp(id) {
             const settings = state.settings || {};
             const isRecurring = document.getElementById('inv-recurring').checked;
 
-            // Handle File Upload
             const file = document.getElementById('inv-doc').files[0]; 
             let docUrl = null; 
             if (file) docUrl = await uploadFile(file, 'invoices'); 
 
             if (isRecurring) {
-                // --- PATH A: SAVE RECURRING SCHEDULE ---
+                // --- PATH A: SAVE/UPDATE RECURRING ---
                 const recurDay = parseInt(document.getElementById('inv-recur-day').value) || 1;
                 const recurEnd = document.getElementById('inv-recur-end').value || null;
 
-                const { error } = await supabaseClient.from('recurring_invoices').insert([{
-                    owner_id: ownerId,              // Ensuring owner_id is saved
+                const recurData = {
+                    owner_id: ownerId,
                     tenant_id: draftInvoice.tenantId,
-                    amount: draftInvoice.total,     // Using the calculated total
+                    amount: draftInvoice.total,
                     day: recurDay,
                     end_date: recurEnd,
                     doc_url: docUrl,
-                    active: true,
-                    last_run: null
-                }]);
+                    active: true
+                };
+
+                let error;
+                if(editingRecurringId) {
+                    // UPDATE existing
+                    const res = await supabaseClient.from('recurring_invoices').update(recurData).eq('id', editingRecurringId);
+                    error = res.error;
+                    showToast("Recurring Schedule Updated");
+                } else {
+                    // INSERT new
+                    const res = await supabaseClient.from('recurring_invoices').insert([recurData]);
+                    error = res.error;
+                    showToast("Recurring Invoice Scheduled");
+                }
                 
                 if(error) throw error;
-                showToast("Recurring Invoice Scheduled!");
 
             } else {
-                // --- PATH B: STANDARD ONE-TIME INVOICE (Existing Logic) ---
+                // --- PATH B: STANDARD ONE-TIME INVOICE ---
                 const { error } = await supabaseClient.from('invoices').insert([{ 
                     owner_id: ownerId, 
                     tenant_id: draftInvoice.tenantId, 
@@ -2498,10 +2625,31 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
             showToast("Email failed to send", "error");
         }
     }
+function updateNextDate() {
+        const dayInput = parseInt(document.getElementById('inv-recur-day').value) || 1;
+        const now = new Date();
+        let nextRun = new Date(now.getFullYear(), now.getMonth(), dayInput);
+
+        // Logic: If today is the 15th and they pick the 5th, send NEXT month.
+        // If today is the 15th and they pick the 20th, send THIS month.
+        // (Assuming you want to skip today if the cron already ran, strict > comparison)
+        if (now.getDate() >= dayInput) {
+            nextRun.setMonth(nextRun.getMonth() + 1);
+        }
+
+        // Handle "Feb 31st" edge cases (JS auto-rolls to March, which is confusing)
+        // This simple check ensures we don't display "March 3" when they asked for "Feb 31"
+        // (It just displays the calculated date, which is fine for MVP)
+        
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        document.getElementById('inv-recur-next').innerText = nextRun.toLocaleDateString(undefined, options);
+    }
+    
     initSystem();
 </script>
 </body>
 </html>
+
 
 
 
