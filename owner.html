@@ -2457,40 +2457,6 @@ function logic_resetInvoice() {
    // Track the ID if we are editing an existing one
     let editingRecurringId = null; 
 
-    function logic_resetInvoice() { 
-        const tid = document.getElementById('inv-tenant').value; 
-        
-        // 1. Standard Reset
-        invItems = []; 
-        if (tid && invMode === 'fixed') { 
-            const t = state.tenants.find(x => x.id == tid); 
-            if (t) invItems = [{ desc: 'Monthly Rent', amount: parseFloat(t.rent_amount || 0) }]; 
-        } else if (invMode === 'variable') logic_addRow(); 
-        renderInvItems(); 
-
-        // 2. NEW: Check for Existing Recurring Schedule
-        editingRecurringId = null;
-        const statusEl = document.getElementById('inv-recur-status');
-        const checkbox = document.getElementById('inv-recurring');
-        
-        // Reset UI first
-        if(statusEl) statusEl.classList.add('hidden-section');
-        checkbox.checked = false; 
-        toggleRecurringOptions(); // Hide the options panel
-
-        if(tid && state.recurring_invoices) {
-            // Find active schedule for this tenant
-            const existing = state.recurring_invoices.find(r => r.tenant_id == tid && r.active);
-            if(existing) {
-                editingRecurringId = existing.id; // Store ID for later
-                if(statusEl) {
-                    statusEl.innerText = `(Active: Day ${existing.day})`;
-                    statusEl.classList.remove('hidden-section');
-                }
-            }
-        }
-    }
-
     function toggleRecurringOptions() {
         const isRecurring = document.getElementById('inv-recurring').checked;
         const opts = document.getElementById('inv-recurring-opts');
@@ -2684,6 +2650,7 @@ function updateNextDate() {
 </script>
 </body>
 </html>
+
 
 
 
