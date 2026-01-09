@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script type="text/javascript">
+   (function(){
+      emailjs.init("YOUR_PUBLIC_KEY_HERE"); // Use the SAME key as owner.html
+   })();
+</script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         h1, h2, h3, h4, .brand-font { font-family: 'Outfit', sans-serif; }
@@ -189,25 +195,59 @@
         }
 
         window.onload = async function() {
-            // 1. SECURITY CHECK
-            const userId = localStorage.getItem('kozeyy_user_id');
-            const userRole = localStorage.getItem('kozeyy_role');
-
-            if (!userId || !userRole) {
-                const params = new URLSearchParams(window.location.search);
-                const lid = params.get('listing_id');
-                window.location.href = `signup.html${lid ? '?listing_id='+lid : ''}`;
-                return;
-            }
-
             const urlParams = new URLSearchParams(window.location.search);
             
-            // 2. HANDLE RETURN FROM STRIPE
+            // --- HANDLE PAYMENT SUCCESS ---
             if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
                 const appId = urlParams.get('app_id');
+                
+                // Loading UI
+                document.body.innerHTML = `
+                    <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-800">
+                        <div class="loader border-t-indigo-600 mb-4"></div>
+                        <h2 class="text-xl font-bold">Finalizing Application...</h2>
+                        <p class="text-sm text-slate-500">Sending receipt...</p>
+                    </div>`;
+
                 if(appId && supabaseClient) {
-                    try { await supabaseClient.from('apps').update({ payment_status: 'Paid', status: 'Pending Screening' }).eq('id', appId); } catch(e) {}
+                    try { 
+                        // 1. Update Status
+                        await supabaseClient.from('apps').update({ payment_status: 'Paid', status: 'Pending' }).eq('id', appId);
+                        
+                        // 2. Fetch App & Owner Details for Emailing
+                        const { data: appData } = await supabaseClient.from('apps').select('*').eq('id', appId).single();
+                        
+                        if(appData) {
+                            // A. Email to Tenant (RECEIPT ONLY)
+                            // "Short, sweet, and strictly financial."
+                            await sendEmail(appData.email, "Payment Receipt - Kozeyy", `
+                                <h2>Payment Received</h2>
+                                <p>Hi ${appData.name},</p>
+                                <p>This email confirms we have received your screening fee of <strong>$39.99</strong>.</p>
+                                <p>You can view your application status in the portal below.</p>
+                                <br>
+                                <a href="https://kozeyy.com/applicantportal.html" style="background-color:#4f46e5; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Go to Portal</a>
+                            `);
+
+                            // B. Email to Owner (ACTION REQUIRED)
+                            // The owner STILL needs to know it's time to review.
+                            if(appData.owner_id) {
+                                const { data: ownerData } = await supabaseClient.from('owners').select('email').eq('id', appData.owner_id).single();
+                                if(ownerData && ownerData.email) {
+                                    await sendEmail(ownerData.email, "Action Required: New Application", `
+                                        <h2>New Paid Application</h2>
+                                        <p><strong>Applicant:</strong> ${appData.name}</p>
+                                        <p><strong>Income:</strong> $${appData.income}</p>
+                                        <p>This applicant has paid the screening fee and is ready for your review.</p>
+                                        <a href="https://kozeyy.com/owner.html">Review Now</a>
+                                    `);
+                                }
+                            }
+                        }
+                    } catch(e) { console.error("Success handling error:", e); }
                 }
+                
+                // 3. Redirect to Portal
                 window.location.href = 'applicantportal.html';
                 return;
             }
@@ -405,81 +445,99 @@
             saveSessionData();
         }
 
-        async function submitApplication() {
-            clearErrors();
-            const btn = document.getElementById('btn-submit');
-            
-            let userId = localStorage.getItem('kozeyy_user_id');
-            if(!userId) return window.location.href = 'login.html';
-
-            const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
-            const inputEmail = document.getElementById('inp-email').value;
-            const inputPhone = document.getElementById('inp-phone').value;
-            const inputIncome = parseFloat(document.getElementById('inp-income').value);
-            const inputJob = document.getElementById('inp-job').value;
-            
-            // --- FIX 1: SET INITIAL SCORE TO 0 (Means "Pending Screening") ---
-            const initialScore = 0; 
-
-            // --- FIX 2: GET OWNER ID TO LINK APP ---
-            const ownerId = selectedProp ? selectedProp.owner_id : null;
-            if(!ownerId) {
-                showError("System Error: Property owner not found. Cannot submit.");
-                return;
-            }
-
-            const newApp = {
-                user_id: userId,
-                owner_id: ownerId, // <--- LINKS TO OWNER DASHBOARD
-                name: inputName,
-                email: inputEmail,
-                phone: inputPhone,
-                score: initialScore, 
-                income: inputIncome,
-                listing_id: currentListingId ? parseInt(currentListingId) : null,
-                rent: selectedProp ? parseInt(selectedProp.price) : 0,
-                job: inputJob || 'Not Listed',
-                status: 'Pending',
-                payment_status: 'Unpaid',
-                evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
-                criminal: document.querySelector('input[name="crim"]:checked').value === 'yes'
-            };
-
-            try {
-                toggleLoader(true);
-                if(!supabaseClient) throw new Error("Database connection not ready.");
-                
-                const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
-                if (error) throw error;
-                const savedAppId = data[0].id;
-
-                const response = await fetch(FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-                    body: JSON.stringify({ 
-                        action: 'pay-application-fee', 
-                        appId: savedAppId,
-                        applicantEmail: inputEmail,
-                        applicantName: inputName
-                    })
-                });
-
-                const session = await response.json();
-                if(session.error) throw new Error(session.error);
-
-                if(session.url) {
-                    window.location.href = session.url;
-                } else {
-                    throw new Error("Payment redirect failed.");
-                }
-                
-            } catch (err) {
-                console.error(err);
-                toggleLoader(false);
-                showError("Error: " + err.message);
-                btn.disabled = false;
-            }
+       async function submitApplication() {
+        clearErrors();
+        const btn = document.getElementById('btn-submit');
+        const originalText = btn.innerHTML;
+        
+        let userId = localStorage.getItem('kozeyy_user_id');
+        if (!userId) { 
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('user_id')) userId = urlParams.get('user_id');
+            else { alert("Please sign up or log in first."); return; }
         }
+
+        const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
+        const inputEmail = document.getElementById('inp-email').value;
+        const inputPhone = document.getElementById('inp-phone').value;
+        const inputIncome = parseFloat(document.getElementById('inp-income').value);
+        const inputJob = document.getElementById('inp-job').value;
+        const mockScore = Math.floor(Math.random() * (820 - 550 + 1) + 550);
+
+        const newApp = {
+            user_id: userId,
+            name: inputName,
+            email: inputEmail,
+            phone: inputPhone,
+            score: mockScore,
+            income: inputIncome,
+            listing_id: currentListingId ? parseInt(currentListingId) : null,
+            rent: selectedProp ? parseInt(selectedProp.price) : 0,
+            job: inputJob || 'Not Listed',
+            status: 'Pending', 
+            payment_status: 'Unpaid',
+            evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
+            criminal: document.querySelector('input[name="crim"]:checked').value === 'yes',
+            owner_id: selectedProp ? selectedProp.owner_id : null
+        };
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+        try {
+            if(!supabaseClient) throw new Error("Database connection not ready.");
+            
+            // 1. Save to Database
+            const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
+            if (error) throw error;
+            const savedAppId = data[0].id;
+
+            // REMOVED EMAILS FROM HERE
+
+            // 2. Handle Payment Redirect
+            const response = await fetch(FUNCTION_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+                body: JSON.stringify({ 
+                    action: 'pay-application-fee', 
+                    appId: savedAppId,
+                    applicantEmail: inputEmail,
+                    applicantName: inputName
+                })
+            });
+
+            const session = await response.json();
+            if(session.error) throw new Error(session.error);
+
+            if(session.url) window.location.href = session.url;
+            else throw new Error("Payment redirect failed.");
+            
+        } catch (err) {
+            console.error(err);
+            showError("Error: " + err.message);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+        // --- EMAIL HELPER ---
+    async function sendEmail(to, subject, htmlContent) {
+        // Simple check to ensure we have a valid email before trying
+        if(!to || !to.includes('@')) return;
+
+        console.log(`Sending email to ${to}...`);
+        const templateParams = {
+            to_email: to,
+            subject: subject,
+            message: htmlContent
+        };
+
+        try {
+            await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
+            console.log("Email sent!");
+        } catch (error) {
+            console.error("Email failed:", error);
+        }
+    }
     </script>
 </body>
 </html>
