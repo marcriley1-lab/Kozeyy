@@ -600,30 +600,33 @@
     <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
 </div>
 
-    <div id="inv-recurring-wrapper" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-opacity duration-200">
-                        <div class="flex items-center justify-between">
-    <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
-        <i class="fas fa-sync-alt text-indigo-500"></i> Recurring Rent?
-        <span id="inv-recur-status" class="hidden-section text-xs text-emerald-600 font-bold ml-1"></span>
-    </label>
+   <div id="inv-recurring-wrapper" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-opacity duration-200">
+    <div class="flex items-center justify-between">
+        <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
+            <i class="fas fa-sync-alt text-indigo-500"></i> Recurring Rent?
+            <span id="inv-recur-status" class="hidden-section text-xs text-emerald-600 font-bold ml-1"></span>
+        </label>
+
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="inv-recurring" class="sr-only peer" onchange="toggleRecurringOptions()">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
     </div>
-                        
-                        <div id="inv-recurring-opts" class="hidden-section space-y-3 pt-3 mt-2 border-t border-slate-200">
-                            <div>
-    <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month</label>
     
-    <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
-    
-    <p class="text-[10px] text-slate-400 mt-1">
-        Next scheduled run: <span id="inv-recur-next" class="font-bold text-indigo-600">...</span>
-    </p>
+    <div id="inv-recurring-opts" class="hidden-section space-y-3 pt-3 mt-2 border-t border-slate-200">
+        <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month</label>
+            <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
+            <p class="text-[10px] text-slate-400 mt-1">
+                Next scheduled run: <span id="inv-recur-next" class="font-bold text-indigo-600">...</span>
+            </p>
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-slate-500 mb-1">End Date (Optional)</label>
+            <input type="date" id="inv-recur-end" class="w-full border p-2 rounded-lg text-sm bg-white">
+        </div>
+    </div>
 </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1">End Date (Optional)</label>
-                                <input type="date" id="inv-recur-end" class="w-full border p-2 rounded-lg text-sm bg-white">
-                            </div>
-                        </div>
-                    </div>
 
                     <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font hover:bg-indigo-700 transition">Preview Invoice</button>
                 </form>
@@ -2259,7 +2262,7 @@ function act_viewApp(id) {
             dateInput.disabled = true;
             dateInput.parentElement.classList.add('opacity-50');
             
-            // Pre-fill data if editing an existing schedule
+            // Pre-fill Logic
             if(editingRecurringId && state.recurring_invoices) {
                 const existing = state.recurring_invoices.find(r => r.id === editingRecurringId);
                 if(existing) {
@@ -2267,13 +2270,10 @@ function act_viewApp(id) {
                     document.getElementById('inv-recur-end').value = existing.end_date || '';
                 }
             } else {
-                // Default to 1st of month if creating new
                 if(!document.getElementById('inv-recur-day').value) {
                     document.getElementById('inv-recur-day').value = 1;
                 }
             }
-
-            // Update the "Next scheduled run" text immediately
             updateNextDate();
 
         } else {
@@ -2649,6 +2649,7 @@ function updateNextDate() {
 </script>
 </body>
 </html>
+
 
 
 
