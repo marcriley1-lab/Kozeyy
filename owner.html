@@ -1854,9 +1854,11 @@ function act_viewApp(id) {
             const app = state.apps.find(a => a.id === appId);
             if(!app) return;
             
+            // 1. Update App Status
             await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', appId);
             const ownerId = localStorage.getItem('kozeyy_user_id');
 
+            // 2. Create/Update Tenant Record
             const existing = state.tenants.find(t => t.email === app.email);
             if(existing) {
                 await supabaseClient.from('tenants').update({ status: 'Active', owner_id: ownerId }).eq('id', existing.id);
@@ -1870,12 +1872,24 @@ function act_viewApp(id) {
                 }]);
             }
             
+            // 3. SEND WELCOME EMAIL
+            if(app.email) {
+                await sendEmail(app.email, "Welcome Home! - Account Active", `
+                    <h2>Welcome to Kozeyy!</h2>
+                    <p>Hi ${app.name},</p>
+                    <p>Your lease is finalized and your tenant account is now <strong>Active</strong>.</p>
+                    <p>You can now log in to the Tenant Portal to pay rent and submit maintenance requests.</p>
+                    <br>
+                    <a href="https://kozeyy.com/tenant.html" style="background-color:#10b981; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Login to Portal</a>
+                `);
+            }
+            
             await fetchData();
             renderAll();
-            showToast("Tenant finalized and active!");
+            showToast("Tenant finalized and Welcome email sent!");
         });
     }
-
+    
     async function act_saveSettings(e) { 
         e.preventDefault(); 
         const ownerId = localStorage.getItem('kozeyy_user_id');
@@ -1908,7 +1922,7 @@ function act_viewApp(id) {
 
     function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
     
-  async function confirmPay() { 
+ async function confirmPay() { 
         let tid = document.getElementById('pay-tenant-id').value; 
         const sel = document.getElementById('pay-tenant-select'); 
         const ownerId = localStorage.getItem('kozeyy_user_id'); 
@@ -1931,39 +1945,41 @@ function act_viewApp(id) {
                 return; 
             }
 
-            // 2. Auto-apply to oldest open invoices
+            // 2. Apply to Invoices (Existing Logic)
             const openInvoices = state.invoices
                 .filter(i => i.tenant_id === tid && i.status !== 'Paid')
                 .sort((a,b) => new Date(a.date) - new Date(b.date)); 
             
+            let remainingAmt = amt;
             for(const inv of openInvoices) { 
-                if (amt <= 0) break; 
-                
+                if (remainingAmt <= 0) break; 
                 const due = inv.total - (inv.amount_paid || 0); 
-                const pay = Math.min(amt, due); 
+                const pay = Math.min(remainingAmt, due); 
                 const newPaid = (inv.amount_paid || 0) + pay; 
                 const newStatus = newPaid >= inv.total ? 'Paid' : 'Unpaid'; 
                 
-                // --- FIX: Prepare Update Object ---
-                const updateData = { 
-                    amount_paid: newPaid, 
-                    status: newStatus 
-                };
-                
-                // ONLY add paid_date if it is being marked Paid right now
-                if (newStatus === 'Paid') {
-                    updateData.paid_date = new Date().toISOString();
-                }
-                // ----------------------------------
+                const updateData = { amount_paid: newPaid, status: newStatus };
+                if (newStatus === 'Paid') updateData.paid_date = new Date().toISOString();
 
                 await supabaseClient.from('invoices').update(updateData).eq('id', inv.id); 
-                
-                amt -= pay; 
+                remainingAmt -= pay; 
             } 
             
+            // 3. SEND RECEIPT EMAIL
+            const tenant = state.tenants.find(t => t.id === tid);
+            if(tenant && tenant.email) {
+                 await sendEmail(tenant.email, "Rent Payment Receipt", `
+                    <h2>Payment Received</h2>
+                    <p>Hi ${tenant.name},</p>
+                    <p>This is a receipt for your payment of <strong>$${amt.toLocaleString()}</strong>.</p>
+                    <p>Date: ${new Date().toLocaleDateString()}</p>
+                    <p>Thank you!</p>
+                `);
+            }
+
             closeModal('modal-pay'); 
             await initSystem(); 
-            showToast("Payment Recorded & Applied"); 
+            showToast("Payment Recorded & Receipt Sent"); 
         } 
     }
     
@@ -2362,6 +2378,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
