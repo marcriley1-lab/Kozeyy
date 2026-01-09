@@ -2323,36 +2323,34 @@ function act_viewApp(id) {
         const statusEl = document.getElementById('inv-recur-status');
         const checkbox = document.getElementById('inv-recurring');
         
-        // Reset defaults (Start with toggle OFF and text HIDDEN)
+        // Reset defaults (Start hidden and unchecked)
         if(statusEl) statusEl.classList.add('hidden-section');
         checkbox.checked = false; 
         
         // 3. Check for Existing Schedule
         if(tid && state.recurring_invoices) {
-            // Note: We use '==' to match string IDs from HTML with number IDs from DB
             const existing = state.recurring_invoices.find(r => r.tenant_id == tid && r.active);
             
             if(existing) {
                 editingRecurringId = existing.id; 
                 
-                // A. Auto-Turn ON the Toggle (This was the missing piece)
+                // A. Auto-Turn ON the Toggle
                 if (invMode === 'fixed') {
                     checkbox.checked = true;
                 }
 
-                // B. Calculate "Next Run" Date to replace "Active: Day X"
+                // B. Calculate "Next Run" Date
                 const dayInput = existing.day || 1;
                 const now = new Date();
                 let nextRun = new Date(now.getFullYear(), now.getMonth(), dayInput);
                 
-                // If today is past the scheduled day, move to next month
                 if (now.getDate() >= dayInput) {
                     nextRun.setMonth(nextRun.getMonth() + 1);
                 }
                 
                 const dateStr = nextRun.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
-                // C. Update the Label Text (e.g. "(Next: Oct 24, 2023)")
+                // C. Update Label
                 if(statusEl) {
                     statusEl.innerText = `(Next: ${dateStr})`;
                     statusEl.classList.remove('hidden-section');
@@ -2360,11 +2358,7 @@ function act_viewApp(id) {
             }
         }
 
-        // 4. Sync the UI (Opens the panel and pre-fills inputs)
-        toggleRecurringOptions(); 
-    }
-
-        // 3. Sync UI (Opens the panel and pre-fills inputs)
+        // 4. Sync UI (This MUST be outside all 'if' statements)
         toggleRecurringOptions(); 
     }
     
@@ -2672,6 +2666,7 @@ function updateNextDate() {
 </script>
 </body>
 </html>
+
 
 
 
