@@ -11,6 +11,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script type="text/javascript">
+   (function(){
+      // Replace with your actual Public Key from EmailJS dashboard
+      emailjs.init("YOUR_PUBLIC_KEY_HERE"); 
+   })();
+</script>
     <style> 
         .rotate-180 { transform: rotate(180deg); }
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -1758,9 +1765,22 @@ function act_viewApp(id) {
     }
     
     function act_initiateApproval() {
-        openPlatformConfirm("Approve Applicant?", "This will mark the applicant as approved and send them an email notification. The next step will be to upload the lease.", async () => {
-             act_screenDecision('Approved');
-             showToast("Approval email sent to applicant.");
+        openPlatformConfirm("Approve Applicant?", "This will mark the applicant as approved and send them an email notification.", async () => {
+             // 1. Update Database
+             await act_screenDecision('Approved');
+             
+             // 2. Send Email
+             const app = state.apps.find(a => a.id === currentAppId);
+             if(app && app.email) {
+                 const subject = "Application Approved! - Next Steps";
+                 const msg = `
+                    <h2>Congratulations, ${app.name}!</h2>
+                    <p>Your application for <strong>${app.rent}</strong> has been approved.</p>
+                    <p>Please log in to your portal to view the next steps and sign your lease.</p>
+                    <a href="https://kozeyy.com/applicantportal.html">Go to Portal</a>
+                 `;
+                 await sendEmail(app.email, subject, msg);
+             }
         });
     }
 
@@ -1806,17 +1826,26 @@ function act_viewApp(id) {
         }
     }
 
-    function act_initiateSendLease(appId) {
-        openPlatformConfirm("Send Lease?", "This will email the uploaded lease to the applicant for their signature.", async () => {
+   function act_initiateSendLease(appId) {
+        openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
+            // 1. Update Database
             await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
+            
+            // 2. Send Email
             const app = state.apps.find(a => a.id === appId);
-            if(app) {
-                const existing = state.tenants.find(t => t.email === app.email);
-                if(existing) await supabaseClient.from('tenants').update({ status: 'Lease Sent' }).eq('id', existing.id);
+            if(app && app.email) {
+                 const subject = "Action Required: Sign Your Lease";
+                 const msg = `
+                    <h2>Lease Ready</h2>
+                    <p>Hello ${app.name}, your lease agreement is ready for review and digital signature.</p>
+                    <p><strong>Action Required:</strong> Please log in immediately to sign.</p>
+                    <a href="https://kozeyy.com/applicantportal.html">View Lease</a>
+                 `;
+                 await sendEmail(app.email, subject, msg);
             }
+
             await fetchData();
             renderAll();
-            showToast("Lease sent to applicant.");
         });
     }
 
@@ -2308,10 +2337,32 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     }
     return value; // Fixed
 }
+    // --- EMAIL HELPER FUNCTION ---
+    async function sendEmail(to, subject, htmlContent) {
+        console.log(`Attempting to send email to ${to}...`);
+        
+        // Define your email parameters (must match your EmailJS template variables)
+        const templateParams = {
+            to_email: to,
+            subject: subject,
+            message: htmlContent // Ensure your EmailJS template uses {{{message}}} for HTML support
+        };
+
+        try {
+            // Replace 'YOUR_SERVICE_ID' and 'YOUR_TEMPLATE_ID' with actual IDs from EmailJS
+            await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
+            console.log("Email sent successfully!");
+            showToast("Notification email sent", "success");
+        } catch (error) {
+            console.error("Email failed:", error);
+            showToast("Email failed to send", "error");
+        }
+    }
     initSystem();
 </script>
 </body>
 </html>
+
 
 
 
