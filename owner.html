@@ -600,6 +600,17 @@
     <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
 </div>
 
+    <div id="inv-recurring-wrapper" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-opacity duration-200">
+    <div class="flex items-center justify-between">
+        <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
+            <i class="fas fa-sync-alt text-indigo-500"></i> Recurring Rent?
+        </label>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="inv-recurring" class="sr-only peer" onchange="toggleRecurringOptions()">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
+    </div>
+                    
 <div class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
     <div class="flex items-center justify-between">
         <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
@@ -2474,6 +2485,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
