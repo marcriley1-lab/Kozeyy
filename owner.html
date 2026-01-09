@@ -867,43 +867,39 @@
     }
 
    // --- UPDATED FETCH DATA (Safety Check Added) ---
-    async function fetchData() {
+   async function fetchData() {
         // 1. GET OWNER ID
         const ownerId = localStorage.getItem('kozeyy_user_id');
 
-        // 2. SAFETY CHECK: Validate ID format
-        // If ID is missing OR it is too short (like "9"), force logout
         if(!ownerId || ownerId.length < 20) {
             console.warn("Invalid or missing Owner ID. Redirecting to login.");
-            localStorage.removeItem('kozeyy_user_id'); // Clear bad data
+            localStorage.removeItem('kozeyy_user_id'); 
             window.location.href = 'login.html';
             return;
         }
 
-        // 3. EXECUTE REQUESTS
-        const [t, l, i, p, e, m, msg, s, a] = await Promise.all([
+        // 2. EXECUTE REQUESTS (Added 'r' to the list below)
+        const [t, l, i, p, e, m, msg, s, a, r] = await Promise.all([
             supabaseClient.from('tenants').select('*').eq('owner_id', ownerId), 
             supabaseClient.from('listings').select('*').eq('owner_id', ownerId),
             supabaseClient.from('invoices').select('*').eq('owner_id', ownerId), 
-            supabaseClient.from('payments').select('*').eq('owner_id', ownerId), // Added Filter
+            supabaseClient.from('payments').select('*').eq('owner_id', ownerId),
             supabaseClient.from('expenses').select('*').eq('owner_id', ownerId),
-            supabaseClient.from('maintenance').select('*').eq('owner_id', ownerId), // Added Filter
-            supabaseClient.from('msgs').select('*').eq('owner_id', ownerId), // Added Filter
+            supabaseClient.from('maintenance').select('*').eq('owner_id', ownerId),
+            supabaseClient.from('msgs').select('*').eq('owner_id', ownerId),
             supabaseClient.from('settings').select('*').eq('owner_id', ownerId).maybeSingle(), 
             supabaseClient.from('apps').select('*').eq('owner_id', ownerId),
             supabaseClient.from('recurring_invoices').select('*').eq('owner_id', ownerId)
         ]);
 
+        // 3. STORE DATA
         state.tenants = t.data || [];
         state.listings = l.data || [];
         state.expenses = e.data || [];
         state.settings = s.data || {};
         state.apps = a.data || [];
-        state.recurring_invoices = r.data || [];
+        state.recurring_invoices = r.data || []; // Now 'r' exists!
 
-        // --- ASSOCIATION FILTERING ---
-        // (We can relax this now that we are filtering by owner_id in the fetch above, 
-        // but keeping it doesn't hurt for extra safety)
         const myTenantIds = new Set(state.tenants.map(tn => tn.id));
 
         state.invoices = (i.data || []).filter(x => myTenantIds.has(x.tenant_id));
@@ -911,9 +907,8 @@
         state.maint = (m.data || []);
         
         const serverMsgs = msg.data || [];
-        state.msgs = serverMsgs; // Now strictly filtered by owner_id from DB
+        state.msgs = serverMsgs; 
         
-        // Mark locally read messages
         state.msgs.forEach(x => { if(locallyReadMsgIds.has(String(x.id))) x.read_at = new Date().toISOString(); });
 
         state.notifications.messages = state.msgs.filter(x => x.from === 'Tenant' && !x.read_at).length;
@@ -2649,6 +2644,7 @@ function updateNextDate() {
 </script>
 </body>
 </html>
+
 
 
 
