@@ -226,6 +226,17 @@
         </div>
     </div>
 
+    <div id="modal-confirm" class="hidden-modal fixed inset-0 bg-slate-900/80 z-[70] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+            <h3 class="text-xl font-bold mb-2 text-slate-900 brand-font" id="confirm-title">Confirm</h3>
+            <p class="text-slate-500 mb-8" id="confirm-msg">Are you sure?</p>
+            <div class="flex gap-3">
+                <button onclick="closeConfirm(false)" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition">Cancel</button>
+                <button onclick="closeConfirm(true)" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
@@ -435,51 +446,69 @@
         }
 
         async function respondToCondition(response) {
-            if (!currentUserApp) return;
+        if (!currentUserApp) return;
 
-            let newStatus;
-            let title, msg;
+        let newStatus;
+        let title, msg;
 
-            if (response === 'Accept') {
-                newStatus = 'Approved';
-                title = "Condition Accepted";
-                msg = "Great! We have notified the property owner. You will receive a lease agreement shortly.";
-            } else {
-                newStatus = 'Withdrawn';
-                title = "Application Withdrawn";
-                msg = "Your application has been withdrawn. Best of luck in your search.";
-            }
-
-            if (!confirm(`Are you sure you want to ${response.toLowerCase()} this condition?`)) return;
-
-            // Optimistic UI Update
-            document.getElementById('condition-card').classList.add('hidden-section');
-            document.getElementById('view-loading').classList.remove('hidden-section');
-            document.getElementById('view-dashboard').classList.add('hidden-section');
-
-            try {
-                const { error } = await supabaseClient
-                    .from('apps')
-                    .update({ status: newStatus })
-                    .eq('id', currentUserApp.id);
-
-                if (error) throw error;
-
-                // Reload to fetch fresh state and render new status
-                setTimeout(() => {
-                    showModal(title, msg);
-                    fetchApplication(); 
-                }, 1000);
-
-            } catch (err) {
-                console.error(err);
-                alert("Error updating status: " + err.message);
-                fetchApplication(); // Revert UI on error
-            }
+        if (response === 'Accept') {
+            newStatus = 'Approved';
+            title = "Condition Accepted";
+            msg = "Great! We have notified the property owner. You will receive a lease agreement shortly.";
+        } else {
+            newStatus = 'Withdrawn';
+            title = "Application Withdrawn";
+            msg = "Your application has been withdrawn. Best of luck in your search.";
         }
+
+        // REPLACED NATIVE CONFIRM WITH CUSTOM MODAL
+        openConfirm(
+            `Confirm ${response}?`, 
+            `Are you sure you want to ${response.toLowerCase()} this condition?`, 
+            async () => {
+                // Optimistic UI Update
+                document.getElementById('condition-card').classList.add('hidden-section');
+                document.getElementById('view-loading').classList.remove('hidden-section');
+                document.getElementById('view-dashboard').classList.add('hidden-section');
+
+                try {
+                    const { error } = await supabaseClient
+                        .from('apps')
+                        .update({ status: newStatus })
+                        .eq('id', currentUserApp.id);
+
+                    if (error) throw error;
+
+                    // Reload to fetch fresh state and render new status
+                    setTimeout(() => {
+                        showModal(title, msg);
+                        fetchApplication(); 
+                    }, 1000);
+
+                } catch (err) {
+                    console.error(err);
+                    showModal("Error", "Error updating status: " + err.message); // REPLACED ALERT
+                    fetchApplication(); // Revert UI on error
+                }
+            }
+        );
+    }
+        let confirmCallback = null;
+    function openConfirm(title, msg, callback) {
+        document.getElementById('confirm-title').innerText = title;
+        document.getElementById('confirm-msg').innerText = msg;
+        document.getElementById('modal-confirm').classList.remove('hidden-modal');
+        confirmCallback = callback;
+    }
+    function closeConfirm(val) {
+        document.getElementById('modal-confirm').classList.add('hidden-modal');
+        if(val && confirmCallback) confirmCallback();
+        confirmCallback = null;
+    }
     </script>
 </body>
 </html>
+
 
 
 
