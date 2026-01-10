@@ -35,6 +35,14 @@
         /* Loading Spinner */
         .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #6366f1; width: 20px; height: 20px; -webkit-animation: spin 1s linear infinite; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* TOAST NOTIFICATIONS */
+    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+    .toast { background: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border-left: 4px solid #6366f1; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; align-items: center; gap: 12px; min-width: 300px; }
+    .toast.show { transform: translateX(0); }
+    .toast.error { border-left-color: #f43f5e; }
+    .toast.success { border-left-color: #10b981; }
+        
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800 bg-slate-50">
@@ -391,6 +399,22 @@
         <div class="loader mb-4 border-t-white"></div>
         <h2 class="text-xl font-bold mb-2">Connecting to Stripe</h2>
         <p class="text-sm opacity-80">Do not close this window...</p>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <div id="modal-platform-confirm" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center">
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
+                <i class="fas fa-question"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2 text-slate-900" id="plat-conf-title">Confirm Action</h3>
+            <p class="text-sm text-slate-500 mb-6" id="plat-conf-msg">Are you sure you want to proceed?</p>
+            <div class="flex gap-3">
+                <button onclick="closePlatformConfirm(false)" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition">Cancel</button>
+                <button onclick="closePlatformConfirm(true)" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition">Confirm</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -822,70 +846,38 @@
                 }
 
             } catch(err) {
-                console.error("Maintenance submit error:", err);
-                alert("Saved locally, but network error occurred.");
-            }
+        console.error("Maintenance submit error:", err);
+        showToast("Saved locally, but network error occurred.", 'error'); // REPLACED ALERT
+    }
         }
     }
         
         async function checkReturnParams() {
         const params = new URLSearchParams(window.location.search);
-        
-        // 1. Handle Credit Reporting Subscription Return
         if (params.get('sub') === 'active') {
             toggleModal('processingModal'); 
             try { 
                 await supabaseClient.from('tenants').update({ credit_reporting: true }).eq('id', USER_ID); 
                 if (globalData.user) globalData.user.credit_reporting = true; 
-                alert("Credit Reporting Activated Successfully! 🚀"); 
+                showToast("Credit Reporting Activated Successfully! 🚀"); // REPLACED ALERT
                 window.history.replaceState({}, document.title, window.location.pathname); 
                 render(false); 
-            } catch(e) { 
-                console.error(e); 
-            } 
+            } catch(e) { console.error(e); } 
             toggleModal('processingModal'); 
         }
-
-        // 2. Handle Stripe Payment Success Return
         if (params.get('success') === 'true') {
             const paidInvoiceId = params.get('invoice_id');
             if(paidInvoiceId) {
                 toggleModal('processingModal');
                 try { 
-                    // Fetch invoice details first to get the amount for the email
-                    const { data: inv } = await supabaseClient.from('invoices').select('total, tenant_id').eq('id', paidInvoiceId).single(); 
-                    
+                    const { data: inv } = await supabaseClient.from('invoices').select('total').eq('id', paidInvoiceId).single(); 
                     if(inv) { 
-                        // A. Update Invoice Status in Database
-                        await supabaseClient.from('invoices').update({ 
-                            status: 'Paid', 
-                            amount_paid: inv.total, 
-                            paid_date: new Date().toISOString() 
-                        }).eq('id', paidInvoiceId); 
-                        
-                        // B. SEND RECEIPT EMAIL (New Edge Function Logic)
-                        if(globalData.user && globalData.user.email) {
-                            await sendEmail(
-                                globalData.user.email,
-                                "Payment Confirmation",
-                                'receipt',
-                                {
-                                    name: globalData.user.name,
-                                    amount: inv.total.toLocaleString(undefined, {minimumFractionDigits: 2}),
-                                    date: new Date().toLocaleDateString(),
-                                    link: "https://kozeyy.com/tenant.html"
-                                }
-                            );
-                        }
-                        
-                        alert("Payment Successful! A receipt has been emailed to you."); 
+                        await supabaseClient.from('invoices').update({ status: 'Paid', amount_paid: inv.total, paid_date: new Date().toISOString() }).eq('id', paidInvoiceId); 
+                        showToast("Payment Successful! Thank you."); // REPLACED ALERT
                     } 
-                } catch(e) { 
-                    console.error("Update failed", e); 
-                } 
+                } catch(e) { console.error("Update failed", e); } 
                 toggleModal('processingModal');
             }
-            // Clear URL params so refresh doesn't re-trigger
             window.history.replaceState({}, document.title, window.location.pathname);
             render(false);
         }
@@ -1003,7 +995,10 @@
                 });
                 const session = await response.json(); if(session.error) throw new Error(session.error);
                 const result = await stripe.redirectToCheckout({ sessionId: session.id }); if (result.error) throw new Error(result.error.message);
-            } catch (err) { toggleModal('processingModal'); alert("Payment Error: " + err.message); }
+            } catch (err) { 
+        toggleModal('processingModal'); 
+        showToast("Payment Error: " + err.message, 'error'); // REPLACED ALERT
+    }
         }
 
         function downloadInvoicePDF() {
@@ -1014,50 +1009,82 @@
         }
 
         async function handleCreditToggle() {
-            const checkBox = document.getElementById('toggle-credit');
-            if (checkBox.checked) {
-                if(confirm("Activate Credit Reporting ($10/mo)?\nProceed to secure payment?")) {
+        const checkBox = document.getElementById('toggle-credit');
+        if (checkBox.checked) {
+            // REPLACED CONFIRM
+            openPlatformConfirm(
+                "Activate Credit Reporting?", 
+                "This will start a $10/mo subscription. Proceed to secure payment?",
+                async () => {
                     toggleModal('processingModal');
                     try {
                         const response = await fetch(FUNCTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: JSON.stringify({ action: 'subscribe', tenantId: USER_ID }) });
-                        const data = await response.json(); if (data.error) throw new Error(data.error); if(data.url) window.location.href = data.url; else throw new Error("No URL returned");
-                    } catch(err) { toggleModal('processingModal'); alert("Error: " + err.message); checkBox.checked = false; }
-                } else { checkBox.checked = false; }
-            } else {
-                checkBox.checked = true; 
-                if(confirm("To prevent accidental double-billing, please cancel directly in the Billing Portal.\n\nYour subscription will remain active until the end of the current billing period.")) { openStripePortal(); }
-            }
+                        const data = await response.json(); 
+                        if (data.error) throw new Error(data.error); 
+                        if(data.url) window.location.href = data.url; else throw new Error("No URL returned");
+                    } catch(err) { 
+                        toggleModal('processingModal'); 
+                        showToast("Error: " + err.message, 'error'); 
+                        checkBox.checked = false; 
+                    }
+                }
+            );
+            // If they don't confirm, we need to revert the checkbox. 
+            // The modal is async, so we revert initially and re-check if they confirm (or just let logic handle it).
+            // Simpler approach: Revert immediately, let confirm callback handle logic.
+            checkBox.checked = false; 
+
+        } else {
+            // REPLACED CONFIRM
+            checkBox.checked = true; // Keep it checked until they confirm cancellation
+            openPlatformConfirm(
+                "Cancel Subscription?",
+                "To prevent accidental double-billing, please cancel directly in the Billing Portal. Proceed?",
+                () => {
+                    openStripePortal();
+                }
+            );
         }
+    }
 
         async function openStripePortal() {
             toggleModal('processingModal');
             try {
                 const response = await fetch(FUNCTION_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, body: JSON.stringify({ action: 'create-portal-session', tenantId: USER_ID }) });
                 const data = await response.json(); if(data.url) window.location.href = data.url; else throw new Error("Failed to create portal session");
-            } catch(err) { toggleModal('processingModal'); alert("Error: " + err.message); }
+            } catch(err) { 
+        toggleModal('processingModal'); 
+        showToast("Error: " + err.message, 'error'); // REPLACED ALERT
+    }
         }
         
-        async function uploadInsurance() { const input = document.createElement('input'); input.type = 'file'; input.onchange = async () => { await supabaseClient.from('tenants').update({ insurance: true }).eq('id', USER_ID); alert("Uploaded!"); render(false); }; input.click(); }
-        async function resetInsurance() { if(confirm("Remove policy?")) { await supabaseClient.from('tenants').update({ insurance: false }).eq('id', USER_ID); render(false); } }
+        async function uploadInsurance() { 
+        const input = document.createElement('input'); 
+        input.type = 'file'; 
+        input.onchange = async () => { 
+            await supabaseClient.from('tenants').update({ insurance: true }).eq('id', USER_ID); 
+            showToast("Insurance Policy Uploaded!"); // REPLACED ALERT
+            render(false); 
+        }; 
+        input.click(); 
+    }
+
+    async function resetInsurance() { 
+        openPlatformConfirm("Remove Policy?", "Are you sure you want to remove your insurance policy?", async () => {
+            await supabaseClient.from('tenants').update({ insurance: false }).eq('id', USER_ID); 
+            render(false); 
+        });
+    }
         function toggleModal(id) { const el = document.getElementById(id); if(el) el.classList.toggle('hidden-section'); }
 
         // --- ACCOUNT EDIT LOGIC ---
-        async function handleSettingsUpdate(e) {
-            e.preventDefault();
-            const email = document.getElementById('edit-email').value;
-            const phone = document.getElementById('edit-phone').value;
-            toggleModal('processingModal');
-            
-            const { error } = await supabaseClient.from('tenants').update({ email, phone }).eq('id', USER_ID);
-            
-            toggleModal('processingModal');
-            if(error) alert("Error updating profile: " + error.message);
-            else { 
-                toggleModal('settingsModal'); 
-                render(false); 
-            }
-        }
-
+       // Inside handleSettingsUpdate
+    if(error) showToast("Error updating profile: " + error.message, 'error'); // REPLACED ALERT
+    else { 
+        toggleModal('settingsModal'); 
+        showToast("Profile updated successfully");
+        render(false); 
+    }
 // --- HELPER: LATE FEE CALCULATION ---
     function calculateLateFee(total, invoice, daysOverdue = 1) {
         // If fees are disabled or not configured on this invoice, return 0
@@ -1074,6 +1101,39 @@
         }
         return value; // Fixed
     }
+
+        // --- UI HELPERS ---
+    let platformConfirmCallback = null;
+
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icon = type === 'success' ? '<i class="fas fa-check-circle text-emerald-500 text-xl"></i>' : '<i class="fas fa-exclamation-circle text-rose-500 text-xl"></i>';
+        toast.innerHTML = `${icon}<span class="font-bold text-sm text-slate-700">${message}</span>`;
+        container.appendChild(toast);
+        
+        requestAnimationFrame(() => toast.classList.add('show'));
+        setTimeout(() => { 
+            toast.classList.remove('show'); 
+            setTimeout(() => toast.remove(), 300); 
+        }, 3000);
+    }
+
+    function openPlatformConfirm(title, message, callback) {
+        document.getElementById('plat-conf-title').innerText = title;
+        document.getElementById('plat-conf-msg').innerText = message;
+        document.getElementById('modal-platform-confirm').classList.remove('hidden-section');
+        platformConfirmCallback = callback;
+    }
+
+    function closePlatformConfirm(confirmed) {
+        document.getElementById('modal-platform-confirm').classList.add('hidden-section');
+        if(confirmed && platformConfirmCallback) {
+            platformConfirmCallback();
+        }
+        platformConfirmCallback = null;
+    }
         // Init
         render(false);
         checkReturnParams();
@@ -1082,6 +1142,7 @@
     </script>
 </body>
 </html>
+
 
 
 
