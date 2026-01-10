@@ -9,11 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-<script type="text/javascript">
-   (function(){
-      emailjs.init("YOUR_PUBLIC_KEY_HERE"); 
-   })();
-</script>
+
     <style>
         body { font-family: 'Inter', sans-serif; }
         h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
@@ -369,18 +365,23 @@
             document.getElementById('modal-sign').classList.remove('flex');
         }
 
-       // Add this helper at the bottom of your script if missing
-    async function sendEmail(to, subject, htmlContent) {
-        try {
-            await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
-                to_email: to,
-                subject: subject,
-                message: htmlContent
-            });
-        } catch (e) { console.error(e); }
-    }
+   // --- EMAIL HELPER (Edge Function) ---
+    async function sendEmail(to, subject, type, data) {
+        if(!to || !to.includes('@')) return;
 
-    async function signLease() {
+        try {
+            const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
+                body: { to, subject, type, data }
+            });
+
+            if (error) throw error;
+            console.log("Email sent successfully:", result);
+        } catch (e) { 
+            console.error("Email failed:", e); 
+        }
+    }
+        
+   async function signLease() {
         closeSigningModal();
         
         if(!currentUserApp) return;
@@ -394,21 +395,27 @@
             await supabaseClient.from('tenants').update({ status: 'Lease Signed' }).eq('id', tenant.id);
         }
 
-        // 2. Notify Owner
+        // 2. Notify Owner (UPDATED)
         if(currentUserApp.owner_id) {
              const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', currentUserApp.owner_id).single();
+             
              if(owner && owner.email) {
-                 await sendEmail(owner.email, "Action Required: Lease Signed", `
-                    <h2>Lease Signed by ${currentUserApp.name}</h2>
-                    <p>The applicant has digitally signed the lease agreement.</p>
-                    <p>Please log in to countersign and finalize the move-in.</p>
-                    <a href="https://kozeyy.com/owner.html">Finalize Lease</a>
-                 `);
+                 await sendEmail(
+                     owner.email, 
+                     "Action Required: Lease Signed", 
+                     'alert', // Use the 'alert' template type
+                     {
+                        title: `Lease Signed by ${currentUserApp.name}`,
+                        message: "The applicant has digitally signed the lease agreement. Please log in to your dashboard to countersign and finalize the move-in.",
+                        actionLink: "https://kozeyy.com/owner.html"
+                     }
+                 );
              }
         }
 
         // 3. UI Feedback
         showModal("Signature Received!", "You have successfully signed the lease. The owner has been notified to finalize the agreement.");
+        
         // Refresh data to update status banner
         setTimeout(fetchApplication, 2000);
     }
@@ -473,6 +480,7 @@
     </script>
 </body>
 </html>
+
 
 
 
