@@ -1085,13 +1085,24 @@
         function toggleModal(id) { const el = document.getElementById(id); if(el) el.classList.toggle('hidden-section'); }
 
         // --- ACCOUNT EDIT LOGIC ---
-       // Inside handleSettingsUpdate
-    if(error) showToast("Error updating profile: " + error.message, 'error'); // REPLACED ALERT
-    else { 
-        toggleModal('settingsModal'); 
-        showToast("Profile updated successfully");
-        render(false); 
-    }
+       async function handleSettingsUpdate(e) {
+            e.preventDefault();
+            const email = document.getElementById('edit-email').value;
+            const phone = document.getElementById('edit-phone').value;
+            toggleModal('processingModal');
+            
+            const { error } = await supabaseClient.from('tenants').update({ email, phone }).eq('id', USER_ID);
+            
+            toggleModal('processingModal');
+            
+            if(error) {
+                showToast("Error updating profile: " + error.message, 'error');
+            } else { 
+                toggleModal('settingsModal'); 
+                showToast("Profile updated successfully");
+                render(false); 
+            }
+        }
 // --- HELPER: LATE FEE CALCULATION ---
     function calculateLateFee(total, invoice, daysOverdue = 1) {
         // If fees are disabled or not configured on this invoice, return 0
@@ -1149,6 +1160,7 @@
     </script>
 </body>
 </html>
+
 
 
 
