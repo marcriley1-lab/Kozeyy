@@ -1227,7 +1227,7 @@
         return publicUrl;
     }
 
-    async function act_completeMaint(id) { 
+   async function act_completeMaint(id) { 
         // 1. Prompt for notes
         openPrompt("Resolution Notes (Optional):", async (n) => {
             const note = n || "Completed";
@@ -1238,24 +1238,26 @@
                 .update({ status: 'Completed', completed_date: new Date().toISOString(), notes: note })
                 .eq('id', id)
                 .select()
-                .single(); // Get the updated row back so we can find the tenant
+                .single(); 
             
             if (error) { 
                 showToast("Update failed: " + error.message, 'error'); 
             } else {
-                // 3. SEND EMAIL TO TENANT
-                // We need to find the tenant's email using the tenant_id from the maintenance request
+                // 3. SEND EMAIL TO TENANT (UPDATED)
                 const maintReq = data;
                 if(maintReq && maintReq.tenant_id) {
                     const tenant = state.tenants.find(t => t.id === maintReq.tenant_id);
                     if(tenant && tenant.email) {
-                        await sendEmail(tenant.email, "Maintenance Request Completed", `
-                            <h2>Maintenance Update</h2>
-                            <p>Hi ${tenant.name},</p>
-                            <p>The maintenance request for <strong>"${maintReq.issue}"</strong> has been marked as <strong>Completed</strong>.</p>
-                            <p><strong>Notes:</strong> ${note}</p>
-                            <p>If this issue persists, please let us know.</p>
-                        `);
+                        await sendEmail(
+                            tenant.email, 
+                            "Maintenance Request Completed", 
+                            'alert', 
+                            { 
+                                title: "Maintenance Completed",
+                                message: `Your request for "${maintReq.issue}" has been marked as completed. Notes: ${note}`,
+                                actionLink: "https://kozeyy.com/tenant.html"
+                            }
+                        );
                     }
                 }
 
@@ -1819,21 +1821,22 @@ function act_viewApp(id) {
     }
     
     function act_initiateApproval() {
-        openPlatformConfirm("Approve Applicant?", "This will mark the applicant as approved and send them an email notification.", async () => {
-             // 1. Update Database
+        openPlatformConfirm("Approve Applicant?", "This will mark the applicant as approved.", async () => {
              await act_screenDecision('Approved');
              
-             // 2. Send Email
+             // SEND EMAIL (UPDATED)
              const app = state.apps.find(a => a.id === currentAppId);
              if(app && app.email) {
-                 const subject = "Application Approved! - Next Steps";
-                 const msg = `
-                    <h2>Congratulations, ${app.name}!</h2>
-                    <p>Your application for <strong>${app.rent}</strong> has been approved.</p>
-                    <p>Please log in to your portal to view the next steps and sign your lease.</p>
-                    <a href="https://kozeyy.com/applicantportal.html">Go to Portal</a>
-                 `;
-                 await sendEmail(app.email, subject, msg);
+                 await sendEmail(
+                     app.email, 
+                     "Application Approved! - Next Steps", 
+                     'alert',
+                     {
+                         title: `Congratulations, ${app.name}!`,
+                         message: `Your application for the property at $${app.rent}/mo has been approved. Please log in to view the next steps.`,
+                         actionLink: "https://kozeyy.com/applicantportal.html"
+                     }
+                 );
              }
         });
     }
@@ -1880,39 +1883,39 @@ function act_viewApp(id) {
         }
     }
 
-   function act_initiateSendLease(appId) {
+  function act_initiateSendLease(appId) {
         openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
-            // 1. Update Database
             await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
             
-            // 2. Send Email
+            // SEND EMAIL (UPDATED)
             const app = state.apps.find(a => a.id === appId);
             if(app && app.email) {
-                 const subject = "Action Required: Sign Your Lease";
-                 const msg = `
-                    <h2>Lease Ready</h2>
-                    <p>Hello ${app.name}, your lease agreement is ready for review and digital signature.</p>
-                    <p><strong>Action Required:</strong> Please log in immediately to sign.</p>
-                    <a href="https://kozeyy.com/applicantportal.html">View Lease</a>
-                 `;
-                 await sendEmail(app.email, subject, msg);
+                 await sendEmail(
+                     app.email, 
+                     "Action Required: Sign Your Lease", 
+                     'alert',
+                     {
+                         title: "Lease Ready for Signature",
+                         message: "Your lease agreement is ready for review. Please sign it digitally to finalize your move-in.",
+                         actionLink: "https://kozeyy.com/applicantportal.html"
+                     }
+                 );
             }
 
             await fetchData();
             renderAll();
+            showToast("Lease notification sent");
         });
     }
 
     function act_initiateFinalize(appId) {
-        openPlatformConfirm("Finalize Tenant?", "Confirm the lease has been signed. This will convert the applicant to an Active tenant.", async () => {
+        openPlatformConfirm("Finalize Tenant?", "Confirm lease signed. Converts applicant to Active tenant.", async () => {
             const app = state.apps.find(a => a.id === appId);
             if(!app) return;
             
-            // 1. Update App Status
             await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', appId);
             const ownerId = localStorage.getItem('kozeyy_user_id');
 
-            // 2. Create/Update Tenant Record
             const existing = state.tenants.find(t => t.email === app.email);
             if(existing) {
                 await supabaseClient.from('tenants').update({ status: 'Active', owner_id: ownerId }).eq('id', existing.id);
@@ -1926,16 +1929,17 @@ function act_viewApp(id) {
                 }]);
             }
             
-            // 3. SEND WELCOME EMAIL
+            // SEND EMAIL (UPDATED - Uses 'welcome' template)
             if(app.email) {
-                await sendEmail(app.email, "Welcome Home! - Account Active", `
-                    <h2>Welcome to Kozeyy!</h2>
-                    <p>Hi ${app.name},</p>
-                    <p>Your lease is finalized and your tenant account is now <strong>Active</strong>.</p>
-                    <p>You can now log in to the Tenant Portal to pay rent and submit maintenance requests.</p>
-                    <br>
-                    <a href="https://kozeyy.com/tenant.html" style="background-color:#10b981; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Login to Portal</a>
-                `);
+                await sendEmail(
+                    app.email, 
+                    "Welcome to Kozeyy!", 
+                    'welcome',
+                    {
+                        name: app.name,
+                        link: "https://kozeyy.com/tenant.html"
+                    }
+                );
             }
             
             await fetchData();
@@ -1976,7 +1980,7 @@ function act_viewApp(id) {
 
     function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
     
- async function confirmPay() { 
+async function confirmPay() { 
         let tid = document.getElementById('pay-tenant-id').value; 
         const sel = document.getElementById('pay-tenant-select'); 
         const ownerId = localStorage.getItem('kozeyy_user_id'); 
@@ -2019,16 +2023,20 @@ function act_viewApp(id) {
                 remainingAmt -= pay; 
             } 
             
-            // 3. SEND RECEIPT EMAIL
+            // 3. SEND RECEIPT EMAIL (UPDATED)
             const tenant = state.tenants.find(t => t.id === tid);
             if(tenant && tenant.email) {
-                 await sendEmail(tenant.email, "Rent Payment Receipt", `
-                    <h2>Payment Received</h2>
-                    <p>Hi ${tenant.name},</p>
-                    <p>This is a receipt for your payment of <strong>$${amt.toLocaleString()}</strong>.</p>
-                    <p>Date: ${new Date().toLocaleDateString()}</p>
-                    <p>Thank you!</p>
-                `);
+                 await sendEmail(
+                     tenant.email, 
+                     "Rent Payment Receipt", 
+                     'receipt', 
+                     { 
+                        name: tenant.name, 
+                        amount: amt.toLocaleString(undefined, {minimumFractionDigits: 2}), 
+                        date: new Date().toLocaleDateString(),
+                        link: "https://kozeyy.com/tenant.html"
+                     }
+                 );
             }
 
             closeModal('modal-pay'); 
@@ -2605,27 +2613,34 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     }
     return value; // Fixed
 }
-    // --- EMAIL HELPER FUNCTION ---
-async function sendEmail(to, subject, type, data) {
-    console.log(`Sending ${type} email to ${to}...`);
     
-    try {
-        const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
-            body: { to, subject, type, data }
-        });
+// --- EMAIL HELPER FUNCTION (Supabase Edge Function) ---
+    async function sendEmail(to, subject, type, data) {
+        if (!to || !to.includes('@')) {
+            console.warn("Skipping email: Invalid address", to);
+            return;
+        }
+        
+        console.log(`Sending ${type} email to ${to}...`);
+        
+        try {
+            const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
+                body: { to, subject, type, data }
+            });
 
-        if (error) throw error;
-        console.log("Email sent successfully!", result);
-        // Optional: showToast("Notification sent");
-    } catch (e) {
-        console.error("Email failed:", e);
+            if (error) throw error;
+            console.log("Email sent successfully!", result);
+        } catch (e) {
+            console.error("Email failed:", e);
+            showToast("Notification email failed to send", "error");
+        }
     }
-}
     
     initSystem();
 </script>
 </body>
 </html>
+
 
 
 
