@@ -2407,16 +2407,73 @@ async function confirmPay() {
     }
 
     function toggleRecurringOptions() {
-        const isRecurring = document.getElementById('inv-recurring').checked;
+        const checkbox = document.getElementById('inv-recurring');
+        const isRecurring = checkbox.checked;
         const opts = document.getElementById('inv-recurring-opts');
         const dateInput = document.getElementById('inv-date');
+        const statusEl = document.getElementById('inv-recur-status');
         
+        // CASE 1: User is turning OFF an EXISTING active schedule
+        if (!isRecurring && editingRecurringId) {
+            // 1. Visually revert the check immediately (prevent accidental uncheck)
+            checkbox.checked = true;
+
+            // 2. Ask for Confirmation
+            openPlatformConfirm(
+                "End Recurring Billing?", 
+                "This will cancel the active recurring schedule for this tenant. No future automatic invoices will be sent.",
+                async () => {
+                    // 3. User Confirmed: Deactivate in Database
+                    const btn = document.querySelector('#modal-platform-confirm button.bg-indigo-600');
+                    const originalText = btn.innerText;
+                    btn.innerText = "Stopping...";
+                    
+                    try {
+                        const { error } = await supabaseClient
+                            .from('recurring_invoices')
+                            .update({ active: false })
+                            .eq('id', editingRecurringId);
+                        
+                        if(error) throw error;
+                        
+                        showToast("Recurring billing stopped.");
+                        
+                        // 4. Update UI State to reflect "Stopped"
+                        editingRecurringId = null; // Clear the ID tracking
+                        checkbox.checked = false;  // Now we actually uncheck it
+                        opts.classList.add('hidden-section'); // Hide the options
+                        
+                        // Re-enable the date input for a potential one-off invoice
+                        dateInput.disabled = false;
+                        dateInput.parentElement.classList.remove('opacity-50');
+                        
+                        // Clear the status text
+                        if(statusEl) {
+                            statusEl.innerText = "";
+                            statusEl.classList.add('hidden-section');
+                        }
+
+                        // 5. Refresh Data (so the system knows it's gone)
+                        await fetchData();
+                        
+                    } catch(err) {
+                        console.error(err);
+                        showToast("Error stopping recurrence: " + err.message, "error");
+                    } finally {
+                        btn.innerText = originalText;
+                    }
+                }
+            );
+            return; // Stop here. Don't run the standard toggle logic yet.
+        }
+
+        // CASE 2: Standard Toggle (Creating New or editing UI)
         if (isRecurring) {
             opts.classList.remove('hidden-section');
             dateInput.disabled = true;
             dateInput.parentElement.classList.add('opacity-50');
             
-            // Pre-fill Logic
+            // Pre-fill data if we have it locally
             if(editingRecurringId && state.recurring_invoices) {
                 const existing = state.recurring_invoices.find(r => r.id === editingRecurringId);
                 if(existing) {
@@ -2431,6 +2488,7 @@ async function confirmPay() {
             updateNextDate();
 
         } else {
+            // Unchecked (Clean slate)
             opts.classList.add('hidden-section');
             dateInput.disabled = false;
             dateInput.parentElement.classList.remove('opacity-50');
@@ -2791,6 +2849,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 </script>
 </body>
 </html>
+
 
 
 
