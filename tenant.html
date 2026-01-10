@@ -12,11 +12,6 @@
     <script src="https://js.stripe.com/v3/"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-<script type="text/javascript">
-   (function(){
-      emailjs.init("YOUR_PUBLIC_KEY_HERE"); 
-   })();
-</script>
     
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -747,36 +742,47 @@
             }
         }
 
-        // --- EMAIL HELPER ---
-    async function sendEmail(to, subject, htmlContent) {
+    // --- EMAIL HELPER (Edge Function) ---
+    async function sendEmail(to, subject, type, data) {
         if(!to || !to.includes('@')) return;
+        
+        console.log(`Sending ${type} email to ${to}...`);
+        
         try {
-            await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', {
-                to_email: to,
-                subject: subject,
-                message: htmlContent
+            const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
+                body: { to, subject, type, data }
             });
-            console.log("Email sent to " + to);
-        } catch (e) { console.error("Email error:", e); }
+
+            if (error) throw error;
+            console.log("Email sent!", result);
+        } catch (e) { 
+            console.error("Email error:", e); 
+        }
     }
 
-    async function handleMaintSubmit(e) {
+  async function handleMaintSubmit(e) {
         e.preventDefault();
         const desc = document.getElementById('m-desc').value;
         const cat = document.getElementById('m-cat').value;
-        
+        const allowEntry = document.getElementById('entry').checked; 
+
         // 1. Get User & Owner Info
         const tenantName = globalData.user ? globalData.user.name : "Tenant";
         const ownerId = globalData.user ? globalData.user.owner_id : null;
 
         if(desc && ownerId) { 
+            // Formatted Description for Database
+            const permText = allowEntry ? "[Entry Permitted]" : "[Call for Entry]";
+            const fullDesc = `${desc} \n\n${permText}`;
+            const issueTitle = `${cat}: ${desc.substring(0, 30)}...`;
+
             // 2. Optimistic UI Update
             const dateIso = new Date().toISOString();
             const newReq = { 
                 tenant_id: USER_ID, 
-                issue: `${cat}: ${desc}`, 
+                issue: issueTitle, 
                 category: cat, 
-                description: desc, 
+                description: fullDesc, 
                 status: 'Active', 
                 created_at: dateIso 
             };
@@ -792,24 +798,27 @@
                 const { error } = await supabaseClient.from('maintenance').insert([{ 
                     tenant_id: USER_ID, 
                     owner_id: ownerId, 
-                    issue: `${cat}: ${desc}`, 
+                    issue: issueTitle, 
                     category: cat, 
-                    description: desc, 
+                    description: fullDesc, 
                     status: 'Active' 
                 }]);
                 if (error) throw error;
 
-                // 4. FETCH OWNER EMAIL & SEND ALERT
+                // 4. SEND EMAIL TO OWNER (Updated)
                 const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', ownerId).single();
                 
                 if(owner && owner.email) {
-                    await sendEmail(owner.email, "New Maintenance Request", `
-                        <h2>New Request from ${tenantName}</h2>
-                        <p><strong>Category:</strong> ${cat}</p>
-                        <p><strong>Issue:</strong> ${desc}</p>
-                        <p>Login to your dashboard to manage this request.</p>
-                        <a href="https://kozeyy.com/owner.html">View Dashboard</a>
-                    `);
+                    await sendEmail(
+                        owner.email, 
+                        "New Maintenance Request", 
+                        'alert', 
+                        {
+                            title: `New Request from ${tenantName}`,
+                            message: `<strong>Category:</strong> ${cat}<br><strong>Issue:</strong> ${desc}<br><br><strong>Entry Permission:</strong> ${allowEntry ? 'YES ✅' : 'NO ❌'}`,
+                            actionLink: "https://kozeyy.com/owner.html"
+                        }
+                    );
                 }
 
             } catch(err) {
@@ -820,21 +829,67 @@
     }
         
         async function checkReturnParams() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.get('sub') === 'active') {
-                toggleModal('processingModal'); 
-                try { await supabaseClient.from('tenants').update({ credit_reporting: true }).eq('id', USER_ID); if (globalData.user) globalData.user.credit_reporting = true; alert("Credit Reporting Activated Successfully! 🚀"); window.history.replaceState({}, document.title, window.location.pathname); render(false); } catch(e) { console.error(e); } toggleModal('processingModal'); 
-            }
-            if (params.get('success') === 'true') {
-                const paidInvoiceId = params.get('invoice_id');
-                if(paidInvoiceId) {
-                    toggleModal('processingModal');
-                    try { const { data: inv } = await supabaseClient.from('invoices').select('total').eq('id', paidInvoiceId).single(); if(inv) { await supabaseClient.from('invoices').update({ status: 'Paid', amount_paid: inv.total, paid_date: new Date().toISOString() }).eq('id', paidInvoiceId); alert("Payment Successful! Thank you."); } } catch(e) { console.error("Update failed", e); } toggleModal('processingModal');
-                }
-                window.history.replaceState({}, document.title, window.location.pathname);
-                render(false);
-            }
+        const params = new URLSearchParams(window.location.search);
+        
+        // 1. Handle Credit Reporting Subscription Return
+        if (params.get('sub') === 'active') {
+            toggleModal('processingModal'); 
+            try { 
+                await supabaseClient.from('tenants').update({ credit_reporting: true }).eq('id', USER_ID); 
+                if (globalData.user) globalData.user.credit_reporting = true; 
+                alert("Credit Reporting Activated Successfully! 🚀"); 
+                window.history.replaceState({}, document.title, window.location.pathname); 
+                render(false); 
+            } catch(e) { 
+                console.error(e); 
+            } 
+            toggleModal('processingModal'); 
         }
+
+        // 2. Handle Stripe Payment Success Return
+        if (params.get('success') === 'true') {
+            const paidInvoiceId = params.get('invoice_id');
+            if(paidInvoiceId) {
+                toggleModal('processingModal');
+                try { 
+                    // Fetch invoice details first to get the amount for the email
+                    const { data: inv } = await supabaseClient.from('invoices').select('total, tenant_id').eq('id', paidInvoiceId).single(); 
+                    
+                    if(inv) { 
+                        // A. Update Invoice Status in Database
+                        await supabaseClient.from('invoices').update({ 
+                            status: 'Paid', 
+                            amount_paid: inv.total, 
+                            paid_date: new Date().toISOString() 
+                        }).eq('id', paidInvoiceId); 
+                        
+                        // B. SEND RECEIPT EMAIL (New Edge Function Logic)
+                        if(globalData.user && globalData.user.email) {
+                            await sendEmail(
+                                globalData.user.email,
+                                "Payment Confirmation",
+                                'receipt',
+                                {
+                                    name: globalData.user.name,
+                                    amount: inv.total.toLocaleString(undefined, {minimumFractionDigits: 2}),
+                                    date: new Date().toLocaleDateString(),
+                                    link: "https://kozeyy.com/tenant.html"
+                                }
+                            );
+                        }
+                        
+                        alert("Payment Successful! A receipt has been emailed to you."); 
+                    } 
+                } catch(e) { 
+                    console.error("Update failed", e); 
+                } 
+                toggleModal('processingModal');
+            }
+            // Clear URL params so refresh doesn't re-trigger
+            window.history.replaceState({}, document.title, window.location.pathname);
+            render(false);
+        }
+    }
         
        function viewInvoice(id) {
         const inv = globalData.invoices.find(i => i.id === id);
@@ -1027,6 +1082,7 @@
     </script>
 </body>
 </html>
+
 
 
 
