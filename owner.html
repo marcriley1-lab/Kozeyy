@@ -96,10 +96,15 @@
             </a>
         </nav>
         
-        <div class="p-6 border-t border-indigo-900 bg-indigo-950 flex flex-col gap-2">
-            <button onclick="initSystem()" class="flex items-center text-xs text-indigo-300 hover:text-white transition"><i class="fas fa-sync-alt mr-2"></i> Refresh Data</button>
-            <a href="login.html" class="flex items-center text-xs text-rose-300 hover:text-white transition"><i class="fas fa-sign-out-alt mr-2"></i> Sign Out</a>
-        </div>
+        <div class="p-6 border-t border-indigo-900 bg-indigo-950 flex flex-col gap-3">
+    <a href="mailto:help@kozeyy.com?subject=Kozeyy%20Feedback" class="flex items-center text-xs text-indigo-300 hover:text-white transition">
+        <i class="fas fa-comment-dots mr-2"></i> Contact & Feedback
+    </a>
+    
+    <button onclick="signOut()" class="flex items-center text-xs text-rose-300 hover:text-white transition w-full text-left">
+        <i class="fas fa-sign-out-alt mr-2"></i> Sign Out
+    </button>
+</div>
     </aside>
 
     <main class="flex-1 flex flex-col overflow-hidden relative w-full">
@@ -114,15 +119,16 @@
                 </h2>
             </div>
             
-            <div class="flex items-center gap-4 md:gap-6">
-                <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
-                    <div class="text-right hidden md:block">
-                        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Landlord</p>
-                        <p class="text-xs text-slate-500">Property Owner</p>
-                    </div>
-                    <div class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font" id="owner-initials-display">LL</div>
-                </div>
-            </div>
+            <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
+    <div class="text-right hidden md:block">
+        <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Landlord</p>
+        <p class="text-xs text-slate-500">Property Owner</p>
+    </div>
+    
+    <div onclick="signOut()" class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font cursor-pointer hover:ring-4 ring-indigo-100 transition" id="owner-initials-display" title="Click to Sign Out">
+        LL
+    </div>
+</div>
         </header>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 bg-slate-50 scroll-smooth pb-32" id="app-content">
@@ -2844,11 +2850,19 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
             showToast("Notification email failed to send", "error");
         }
     }
+
+function signOut() {
+        if(confirm("Are you sure you want to sign out?")) {
+            localStorage.removeItem('kozeyy_user_id');
+            window.location.href = 'login.html';
+        }
+    }
     
     initSystem();
 </script>
 </body>
 </html>
+
 
 
 
