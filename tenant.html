@@ -815,73 +815,82 @@
         }
     }
 
-  async function handleMaintSubmit(e) {
-        e.preventDefault();
-        const desc = document.getElementById('m-desc').value;
-        const cat = document.getElementById('m-cat').value;
-        const allowEntry = document.getElementById('entry').checked; 
+ async function handleMaintSubmit(e) {
+    e.preventDefault();
+    const desc = document.getElementById('m-desc').value;
+    const cat = document.getElementById('m-cat').value;
+    const allowEntry = document.getElementById('entry').checked; 
 
-        // 1. Get User & Owner Info
-        const tenantName = globalData.user ? globalData.user.name : "Tenant";
-        const ownerId = globalData.user ? globalData.user.owner_id : null;
+    const tenantName = globalData.user ? globalData.user.name : "Tenant";
+    const ownerId = globalData.user ? globalData.user.owner_id : null;
 
-        if(desc && ownerId) { 
-            // Formatted Description for Database
-            const permText = allowEntry ? "[Entry Permitted]" : "[Call for Entry]";
-            const fullDesc = `${desc} \n\n${permText}`;
-            const issueTitle = `${cat}: ${desc.substring(0, 30)}...`;
-
-            // 2. Optimistic UI Update
-            const dateIso = new Date().toISOString();
-            const newReq = { 
-                tenant_id: USER_ID, 
-                issue: issueTitle, 
-                category: cat, 
-                description: fullDesc, 
-                status: 'Active', 
-                created_at: dateIso 
-            };
-            optimisticMaint.push(newReq);
-            localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-            
-            toggleModal('requestModal'); 
-            e.target.reset(); 
-            render(true); 
-
-            // 3. Save to Database
-            try {
-                const { error } = await supabaseClient.from('maintenance').insert([{ 
-                    tenant_id: USER_ID, 
-                    owner_id: ownerId, 
-                    issue: issueTitle, 
-                    category: cat, 
-                    description: fullDesc, 
-                    status: 'Active' 
-                }]);
-                if (error) throw error;
-
-                // 4. SEND EMAIL TO OWNER (Updated)
-                const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', ownerId).single();
-                
-                if(owner && owner.email) {
-                    await sendEmail(
-                        owner.email, 
-                        "New Maintenance Request", 
-                        'alert', 
-                        {
-                            title: `New Request from ${tenantName}`,
-                            message: `<strong>Category:</strong> ${cat}<br><strong>Issue:</strong> ${desc}<br><br><strong>Entry Permission:</strong> ${allowEntry ? 'YES ✅' : 'NO ❌'}`,
-                            actionLink: "https://kozeyy.com/owner.html"
-                        }
-                    );
-                }
-
-            } catch(err) {
-        console.error("Maintenance submit error:", err);
-        showToast("Saved locally, but network error occurred.", 'error'); // REPLACED ALERT
+    // 1. Validation Check
+    if (!ownerId) {
+        showToast("Error: Cannot find property owner to notify.", 'error');
+        return;
     }
+
+    const permText = allowEntry ? "[Entry Permitted]" : "[Call for Entry]";
+    const fullDesc = `${desc} \n\n${permText}`;
+    const issueTitle = `${cat}: ${desc.substring(0, 30)}...`;
+
+    // 2. UI Updates (Optimistic)
+    toggleModal('requestModal'); 
+    e.target.reset(); 
+    
+    // Add to local list immediately
+    const dateIso = new Date().toISOString();
+    optimisticMaint.push({ 
+        tenant_id: USER_ID, 
+        issue: issueTitle, 
+        category: cat, 
+        description: fullDesc, 
+        status: 'Active', 
+        created_at: dateIso 
+    });
+    localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
+    render(true); 
+
+    try {
+        // 3. Database Insert (CRITICAL)
+        const { error } = await supabaseClient.from('maintenance').insert([{ 
+            tenant_id: USER_ID, 
+            owner_id: ownerId, 
+            issue: issueTitle, 
+            category: cat, 
+            description: fullDesc, 
+            status: 'Active' 
+        }]);
+        
+        if (error) throw error; // If this fails, we jump to Catch block
+
+        showToast("Request sent successfully!", "success");
+
+        // 4. Email Notification (NON-CRITICAL)
+        // We put this in its own try/catch so email failures don't scare the user
+        try {
+            const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', ownerId).single();
+            if(owner && owner.email) {
+                await sendEmail(owner.email, "New Maintenance Request", 'alert', {
+                    title: `New Request from ${tenantName}`,
+                    message: `<strong>Category:</strong> ${cat}<br><strong>Issue:</strong> ${desc}<br><strong>Entry:</strong> ${allowEntry ? 'Yes' : 'No'}`,
+                    actionLink: "https://kozeyy.com/owner.html"
+                });
+            }
+        } catch (emailErr) {
+            console.warn("Email failed to send, but DB saved:", emailErr);
+            // Optional: fail silently or log to system, but don't alert user
         }
+
+    } catch(err) {
+        console.error("Maintenance submit error:", err);
+        // Remove the optimistic item since it actually failed
+        optimisticMaint.pop();
+        localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
+        render(true);
+        showToast("Network error: Request not saved.", 'error');
     }
+}
         
         async function checkReturnParams() {
         const params = new URLSearchParams(window.location.search);
@@ -1190,6 +1199,7 @@
     </script>
 </body>
 </html>
+
 
 
 
