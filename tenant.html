@@ -1078,7 +1078,7 @@ if (globalData.user && globalData.user.owner_id) {
             html2pdf().set(opt).from(element).save();
         }
 
-       async function handleCreditToggle() {
+      async function handleCreditToggle() {
     const checkBox = document.getElementById('toggle-credit');
     
     if (checkBox.checked) {
@@ -1088,7 +1088,10 @@ if (globalData.user && globalData.user.owner_id) {
             async () => {
                 toggleModal('processingModal');
                 try {
-                    // Update: You typically don't just "subscribe", you create a checkout session
+                    // --- IMPORTANT: REPLACE THIS WITH YOUR ACTUAL STRIPE PRICE ID ---
+                    // Example: 'price_1QjXy...' found in your Stripe Dashboard > Products
+                    const MY_STRIPE_PRICE_ID = 'price_1QjXy...'; 
+
                     const response = await fetch(FUNCTION_URL, { 
                         method: 'POST', 
                         headers: { 
@@ -1096,17 +1099,16 @@ if (globalData.user && globalData.user.owner_id) {
                             'Authorization': `Bearer ${SUPABASE_KEY}` 
                         }, 
                         body: JSON.stringify({ 
-                            action: 'create-checkout-session', // Reusing your checkout logic
+                            action: 'create-checkout-session', 
                             tenantId: USER_ID,
-                            priceId: 'price_YOUR_STRIPE_PRICE_ID_HERE', // <--- Add your Stripe Price ID
-                            mode: 'subscription' // Tell backend this is a recurring sub
+                            priceId: MY_STRIPE_PRICE_ID, 
+                            mode: 'subscription' 
                         }) 
                     });
                     
                     const data = await response.json(); 
                     if (data.error) throw new Error(data.error); 
                     
-                    // Redirect to Stripe Checkout
                     if (data.id) {
                          const result = await stripe.redirectToCheckout({ sessionId: data.id });
                          if (result.error) throw result.error;
@@ -1118,9 +1120,27 @@ if (globalData.user && globalData.user.owner_id) {
                 }
             }
         );
-        checkBox.checked = false; // Reset UI until confirmed
+        checkBox.checked = false; // Uncheck visually until they actually pay
     } else {
-        // ... (Cancellation logic remains the same)
+        // --- CANCELLATION LOGIC ---
+        openPlatformConfirm(
+            "Disable Reporting?", 
+            "This will cancel your $10/mo subscription. Are you sure?",
+            async () => {
+                // Ideally, you call your backend here to cancel the Stripe sub.
+                // For now, we just update the local UI and Database status.
+                try {
+                    await supabaseClient.from('tenants').update({ credit_reporting: false }).eq('id', USER_ID);
+                    if(globalData.user) globalData.user.credit_reporting = false;
+                    showToast("Credit reporting disabled.");
+                } catch(e) {
+                    checkBox.checked = true; // Revert if failed
+                    showToast("Error disabling feature.", 'error');
+                }
+            }
+        );
+        // Keep it checked until they confirm cancellation
+        checkBox.checked = true;
     }
 }
         async function openStripePortal() {
@@ -1229,6 +1249,7 @@ if (globalData.user && globalData.user.owner_id) {
     </script>
 </body>
 </html>
+
 
 
 
