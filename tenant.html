@@ -438,7 +438,8 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
         // ** REPLACE WITH LIVE KEY WHEN READY **
         const STRIPE_PK = 'pk_test_51Sjto1Pss9fRgCwA8IwK1oX4kY4jaAwsPKWE3hCVTCpuv0xmv1iQxOoJ0EFmU1JuKCSnfCYmn8UR1Ygxhp2d0Gyg001o4lzsne'; 
-        
+
+        let cachedOwnerName = null;
         let stripe = null;
         try { stripe = Stripe(STRIPE_PK); } catch(e) { console.error('Stripe Init Error', e); }
         
@@ -472,14 +473,30 @@
                 globalData.user = u.data || { name: "Guest User", email: "", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
                 globalData.invoices = i.data || [];
                 
-                // Fetch Owner Name Logic
-                if (globalData.user && globalData.user.owner_id) {
-                    const { data: owner } = await supabaseClient.from('owners').select('name').eq('id', globalData.user.owner_id).maybeSingle();
-                    if (owner && owner.name) {
-                        const headerName = document.getElementById('msg-header-name');
-                        if (headerName) headerName.innerText = owner.name;
-                    }
-                }
+if (globalData.user && globalData.user.owner_id) {
+    // 1. Only fetch if we haven't cached it yet
+    if (!cachedOwnerName) {
+        const { data: owner } = await supabaseClient
+            .from('owners')
+            .select('name')
+            .eq('id', globalData.user.owner_id)
+            .maybeSingle();
+            
+        if (owner && owner.name) {
+            cachedOwnerName = owner.name;
+        } else {
+            // Fallback if no name found in DB
+            cachedOwnerName = "Property Manager"; 
+        }
+    }
+
+    // 2. Always update the header if we have a name
+    const headerName = document.getElementById('msg-header-name');
+    if (headerName && cachedOwnerName) {
+        headerName.innerText = cachedOwnerName;
+    }
+}
+// ------------------------
                 
                 // Message Merge
                 const serverMsgs = m.data || [];
@@ -785,14 +802,27 @@
             const wasAtBottom = chatBox.scrollHeight - chatBox.scrollTop === chatBox.clientHeight;
             chatBox.innerHTML = '';
             if(msgs.length === 0) { chatBox.innerHTML = `<div class="h-full flex flex-col items-center justify-center text-slate-400 opacity-60"><i class="fas fa-comment-slash text-4xl mb-2"></i><p class="text-sm">No messages yet</p></div>`; } 
-            else {
-                msgs.forEach(m => {
-                    const align = m.from === 'Tenant' ? 'justify-end' : 'justify-start'; 
-                    const color = m.from === 'Tenant' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
-                    const d = new Date(m.created_at);
-                    const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
-                    chatBox.innerHTML += `<div class="flex ${align} mb-3 fade-in"><div class="flex flex-col ${m.from === 'Tenant' ? 'items-end' : 'items-start'} max-w-[85%]"><div class="px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">${m.text}</div><span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span></div></div>`;
-                });
+            else msgs.forEach(m => {
+    const isTenant = m.from === 'Tenant';
+    const align = isTenant ? 'justify-end' : 'justify-start'; 
+    const color = isTenant ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-700 rounded-bl-none'; 
+    const d = new Date(m.created_at);
+    const ts = d.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'});
+    
+    // logic to display name above owner messages only
+    const nameLabel = !isTenant ? `<span class="text-[10px] text-slate-400 ml-1 mb-1 block">${cachedOwnerName || 'Owner'}</span>` : '';
+
+    chatBox.innerHTML += `
+        <div class="flex ${align} mb-3 fade-in">
+            <div class="flex flex-col ${isTenant ? 'items-end' : 'items-start'} max-w-[85%]">
+                ${nameLabel}
+                <div class="px-4 py-2 rounded-2xl ${color} text-sm shadow-sm">
+                    ${m.text}
+                </div>
+                <span class="text-[10px] text-slate-400 mt-1 mx-1">${ts}</span>
+            </div>
+        </div>`;
+});
                 if(wasAtBottom) chatBox.scrollTop = chatBox.scrollHeight;
             }
         }
@@ -1199,6 +1229,7 @@
     </script>
 </body>
 </html>
+
 
 
 
