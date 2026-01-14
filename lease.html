@@ -1,4 +1,3 @@
-<!-- START OF FILE lease.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -45,7 +44,7 @@
                 
                 <form onsubmit="saveLease(event)" class="space-y-4">
                     <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition cursor-pointer relative" id="file-container">
-                        <input type="file" id="lease-file" required class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileUpload(this)">
+                        <input type="file" id="lease-file" accept=".pdf" required class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileUpload(this)">
                         <span class="text-slate-400 font-bold text-sm pointer-events-none" id="file-label">Click to select PDF</span>
                     </div>
                     
@@ -53,7 +52,7 @@
                     <input type="number" required class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Rent" id="lease-rent">
 
                     <button class="block w-full bg-emerald-600 text-white text-center py-4 rounded-xl font-bold hover:bg-emerald-700 transition">
-                        Save Lease
+                        Save & Upload Lease
                     </button>
                 </form>
             </div>
@@ -95,24 +94,52 @@
                 return; 
             }
 
-            btn.innerText = "Saving...";
+            btn.innerText = "Uploading...";
             btn.disabled = true;
 
             try {
-                // In a real app, upload file to Storage here
                 const rentVal = parseFloat(document.getElementById('lease-rent').value);
+                const file = fileInput.files[0];
 
                 if(supabaseClient && appId) {
-                    // Update status to 'Lease Uploaded' (Owner needs to click "Send" next)
+                    
+                    // 1. Upload File to 'leases' Bucket
+                    const fileExt = file.name.split('.').pop();
+                    const fileName = `${appId}_lease_${Date.now()}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabaseClient
+                        .storage
+                        .from('leases') // Ensure this bucket exists in Supabase
+                        .upload(fileName, file);
+
+                    if (uploadError) throw new Error("Storage Upload Failed: " + uploadError.message);
+
+                    // 2. Get Public URL
+                    const { data: urlData } = supabaseClient
+                        .storage
+                        .from('leases')
+                        .getPublicUrl(fileName);
+                        
+                    const publicUrl = urlData.publicUrl;
+
+                    // 3. Save URL to 'apps' Table & Update Status
                     const { error: appError } = await supabaseClient
                         .from('apps')
-                        .update({ status: 'Lease Uploaded', rent: rentVal })
+                        .update({ 
+                            status: 'Lease Uploaded', 
+                            rent: rentVal,
+                            lease_url: publicUrl // This is the key piece missing before!
+                        })
                         .eq('id', appId);
                     
-                    // Create/Update Tenant record with 'Lease Uploaded' status
+                    if (appError) throw new Error("Database Update Failed: " + appError.message);
+
+                    // 4. Create/Update Tenant record (Syncing data)
+                    const ownerId = localStorage.getItem('kozeyy_user_id') || '00000000-0000-0000-0000-000000000001';
                     const { data: existing } = await supabaseClient.from('tenants').select('id').eq('email', appEmail).maybeSingle();
+                    
                     const tenantData = {
-                        owner_id: localStorage.getItem('kozeyy_user_id') || '00000000-0000-0000-0000-000000000001',
+                        owner_id: ownerId,
                         name: appName || "New Tenant",
                         email: appEmail || "tenant@example.com",
                         rent_amount: rentVal,
@@ -126,7 +153,7 @@
                     }
                 }
                 
-                // Redirect back to owner screening with query param
+                // Redirect back to owner screening with success flag
                 window.location.href = "owner.html?tab=screening&action=lease_uploaded";
 
             } catch(err) {
