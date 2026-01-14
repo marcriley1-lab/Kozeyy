@@ -11,7 +11,8 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script type="text/javascript">
    (function(){
-      emailjs.init("YOUR_PUBLIC_KEY_HERE"); // Use the SAME key as owner.html
+      // Replace with your actual Public Key
+      emailjs.init("YOUR_PUBLIC_KEY_HERE"); 
    })();
 </script>
     <style>
@@ -85,10 +86,26 @@
         <div class="w-full md:w-2/3 order-2 md:order-1">
             <div class="flex justify-between mb-8 relative" id="steps-container">
                 <div class="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -z-10 -translate-y-1/2 rounded"></div>
-                <button onclick="navigateToStep(1)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer"><div id="step-ind-1" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-indigo-600 border-indigo-600 text-white transition-all">1</div><span class="text-xs font-bold text-slate-600">Contact</span></button>
-                <button onclick="navigateToStep(2)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer"><div id="step-ind-2" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">2</div><span class="text-xs font-bold text-slate-400">Financial</span></button>
-                <button onclick="navigateToStep(3)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer"><div id="step-ind-3" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">3</div><span class="text-xs font-bold text-slate-400">History</span></button>
-                <button onclick="navigateToStep(4)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer"><div id="step-ind-4" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">4</div><span class="text-xs font-bold text-slate-400">Review</span></button>
+                
+                <button onclick="navigateToStep(1)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
+                    <div id="step-ind-1" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-indigo-600 border-indigo-600 text-white transition-all">1</div>
+                    <span class="text-xs font-bold text-slate-600">Contact</span>
+                </button>
+                
+                <button onclick="navigateToStep(2)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
+                    <div id="step-ind-2" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">2</div>
+                    <span class="text-xs font-bold text-slate-400">Financial</span>
+                </button>
+                
+                <button id="btn-step-3" onclick="navigateToStep(3)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
+                    <div id="step-ind-3" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">3</div>
+                    <span class="text-xs font-bold text-slate-400">History</span>
+                </button>
+                
+                <button onclick="navigateToStep(4)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
+                    <div id="step-ind-4" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">4</div>
+                    <span class="text-xs font-bold text-slate-400">Review</span>
+                </button>
             </div>
 
             <div id="error-banner" class="hidden mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm font-medium flex items-start gap-2">
@@ -186,6 +203,7 @@
         let currentListingId = null;
         let selectedProp = null;
         let appData = { evictions: false, criminal: false };
+        let skipHistoryStep = false; // New flag for conditional logic
 
         function getStepFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -201,7 +219,6 @@
             if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
                 const appId = urlParams.get('app_id');
                 
-                // Loading UI
                 document.body.innerHTML = `
                     <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-800">
                         <div class="loader border-t-indigo-600 mb-4"></div>
@@ -211,15 +228,11 @@
 
                 if(appId && supabaseClient) {
                     try { 
-                        // 1. Update Status
                         await supabaseClient.from('apps').update({ payment_status: 'Paid', status: 'Pending' }).eq('id', appId);
                         
-                        // 2. Fetch App & Owner Details for Emailing
                         const { data: appData } = await supabaseClient.from('apps').select('*').eq('id', appId).single();
                         
                         if(appData) {
-                            // A. Email to Tenant (RECEIPT ONLY)
-                            // "Short, sweet, and strictly financial."
                             await sendEmail(appData.email, "Payment Receipt - Kozeyy", `
                                 <h2>Payment Received</h2>
                                 <p>Hi ${appData.name},</p>
@@ -229,8 +242,6 @@
                                 <a href="https://kozeyy.com/applicantportal.html" style="background-color:#4f46e5; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Go to Portal</a>
                             `);
 
-                            // B. Email to Owner (ACTION REQUIRED)
-                            // The owner STILL needs to know it's time to review.
                             if(appData.owner_id) {
                                 const { data: ownerData } = await supabaseClient.from('owners').select('email').eq('id', appData.owner_id).single();
                                 if(ownerData && ownerData.email) {
@@ -246,8 +257,6 @@
                         }
                     } catch(e) { console.error("Success handling error:", e); }
                 }
-                
-                // 3. Redirect to Portal
                 window.location.href = 'applicantportal.html';
                 return;
             }
@@ -279,14 +288,25 @@
                                 const evictContainer = document.getElementById('container-evict');
                                 const crimContainer = document.getElementById('container-crim');
                                 
+                                let evictDisabled = false;
+                                let crimDisabled = false;
+
                                 if (settings.require_no_evictions === false) {
                                     evictContainer.classList.add('hidden');
                                     appData.evictions = false;
+                                    evictDisabled = true;
                                 }
                                 
                                 if (settings.require_no_criminal_history === false) {
                                     crimContainer.classList.add('hidden');
                                     appData.criminal = false;
+                                    crimDisabled = true;
+                                }
+
+                                // 2. If BOTH are disabled, set flag to skip Step 3 entirely
+                                if (evictDisabled && crimDisabled) {
+                                    skipHistoryStep = true;
+                                    document.getElementById('btn-step-3').classList.add('hidden'); // Hide from Nav Bar
                                 }
                             }
                         }
@@ -299,13 +319,11 @@
         };
 
         function updatePropUI(prop) {
-            // Address Handling (DB uses 'address', fallback to 'addr')
             const address = prop.address || prop.addr || 'Unknown Address';
             const addrParts = address.split(',');
             document.getElementById('prop-addr').innerText = addrParts[0];
             document.getElementById('prop-city').innerText = addrParts.length > 1 ? addrParts.slice(1).join(',') : address;
             
-            // Image Handling
             const imgEl = document.getElementById('prop-img');
             let imgSrc = '';
             if (Array.isArray(prop.images) && prop.images.length > 0) imgSrc = prop.images[0];
@@ -428,6 +446,17 @@
 
         function navigateToStep(step) {
             const currentStep = getStepFromUrl();
+
+            // --- Conditional Logic for Skipping Step 3 ---
+            // If going forward (Next) from 2, jump to 4
+            if (currentStep === 2 && step === 3 && skipHistoryStep) {
+                step = 4;
+            }
+            // If going backward (Back) from 4, jump to 2
+            else if (currentStep === 4 && step === 3 && skipHistoryStep) {
+                step = 2;
+            }
+
             if(step > currentStep && typeof currentStep === 'number') {
                 if(!validateStep(currentStep)) return; 
             }
@@ -462,14 +491,17 @@
         const inputPhone = document.getElementById('inp-phone').value;
         const inputIncome = parseFloat(document.getElementById('inp-income').value);
         const inputJob = document.getElementById('inp-job').value;
-        const mockScore = Math.floor(Math.random() * (820 - 550 + 1) + 550);
+        
+        // 1. FIXED: Removed Mock Score. Score is now NULL.
+        // The Admin (Concierge) will fill this in manually after running RentPrep.
+        const score = null;
 
         const newApp = {
             user_id: userId,
             name: inputName,
             email: inputEmail,
             phone: inputPhone,
-            score: mockScore,
+            score: score, // Value is null
             income: inputIncome,
             listing_id: currentListingId ? parseInt(currentListingId) : null,
             rent: selectedProp ? parseInt(selectedProp.price) : 0,
@@ -487,14 +519,12 @@
         try {
             if(!supabaseClient) throw new Error("Database connection not ready.");
             
-            // 1. Save to Database
+            // Save to Database
             const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
             if (error) throw error;
             const savedAppId = data[0].id;
 
-            // REMOVED EMAILS FROM HERE
-
-            // 2. Handle Payment Redirect
+            // Handle Payment Redirect
             const response = await fetch(FUNCTION_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
@@ -521,22 +551,15 @@
     }
         // --- EMAIL HELPER ---
     async function sendEmail(to, subject, htmlContent) {
-        // Simple check to ensure we have a valid email before trying
         if(!to || !to.includes('@')) return;
-
-        console.log(`Sending email to ${to}...`);
         const templateParams = {
             to_email: to,
             subject: subject,
             message: htmlContent
         };
-
         try {
             await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
-            console.log("Email sent!");
-        } catch (error) {
-            console.error("Email failed:", error);
-        }
+        } catch (error) { console.error("Email failed:", error); }
     }
     </script>
 </body>
