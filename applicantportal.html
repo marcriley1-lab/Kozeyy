@@ -24,6 +24,8 @@
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
+        
+        iframe { width: 100%; height: 100%; border: none; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col bg-[url('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&auto=format&fit=crop&w=2666&q=80')] bg-cover bg-center bg-fixed bg-no-repeat">
@@ -80,10 +82,14 @@
                             <i id="status-icon" class="fas fa-spinner fa-spin"></i>
                         </div>
                         
-                        <div>
+                        <div class="flex-1">
                             <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Current Status</p>
                             <h2 class="text-3xl font-extrabold text-slate-800 brand-font mb-2" id="status-text">Processing</h2>
-                            <p class="text-slate-600 font-medium leading-relaxed max-w-md" id="status-desc">Your application is currently under review by our leasing team.</p>
+                            <p class="text-slate-600 font-medium leading-relaxed" id="status-desc">Your application is currently under review by our leasing team.</p>
+                            
+                            <button id="btn-adverse-action" onclick="openAdverseAction()" class="hidden-section mt-4 text-xs font-bold text-rose-600 hover:text-rose-800 underline decoration-rose-300 underline-offset-4">
+                                <i class="fas fa-file-contract mr-1"></i> View Adverse Action Notice
+                            </button>
                         </div>
                     </div>
                     
@@ -91,32 +97,32 @@
                 </div>
 
                 <div id="condition-card" class="bg-amber-500 text-white p-8 rounded-3xl shadow-xl shadow-amber-200 hidden-section relative overflow-hidden mb-8">
-    <div class="relative z-10">
-        <div class="flex flex-col md:flex-row items-start gap-6">
-            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl border border-white/20 shrink-0">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="flex-1">
-                <h3 class="text-xl font-bold mb-2">Action Required: Conditional Approval</h3>
-                <p class="text-amber-50 text-sm mb-4">Your application is approved pending the following condition from the property owner:</p>
-                
-                <div class="bg-white/10 border border-white/20 p-4 rounded-xl mb-6 font-medium italic">
-                    "<span id="condition-note-text">Loading...</span>"
-                </div>
+                    <div class="relative z-10">
+                        <div class="flex flex-col md:flex-row items-start gap-6">
+                            <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center text-2xl border border-white/20 shrink-0">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold mb-2">Action Required: Conditional Approval</h3>
+                                <p class="text-amber-50 text-sm mb-4">Your application is approved pending the following condition from the property owner:</p>
+                                
+                                <div class="bg-white/10 border border-white/20 p-4 rounded-xl mb-6 font-medium italic">
+                                    "<span id="condition-note-text">Loading...</span>"
+                                </div>
 
-                <div class="flex flex-wrap gap-3">
-                    <button onclick="respondToCondition('Accept')" class="bg-white text-amber-700 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-amber-50 transition flex items-center gap-2">
-                        <i class="fas fa-check-circle"></i> I Accept Condition
-                    </button>
-                    <button onclick="respondToCondition('Reject')" class="bg-amber-700 text-white border border-amber-600 px-6 py-3 rounded-xl font-bold hover:bg-amber-800 transition">
-                        Withdraw Application
-                    </button>
+                                <div class="flex flex-wrap gap-3">
+                                    <button onclick="respondToCondition('Accept')" class="bg-white text-amber-700 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-amber-50 transition flex items-center gap-2">
+                                        <i class="fas fa-check-circle"></i> I Accept Condition
+                                    </button>
+                                    <button onclick="respondToCondition('Reject')" class="bg-amber-700 text-white border border-amber-600 px-6 py-3 rounded-xl font-bold hover:bg-amber-800 transition">
+                                        Withdraw Application
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="absolute -right-10 -bottom-20 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
                 </div>
-            </div>
-        </div>
-    </div>
-    <div class="absolute -right-10 -bottom-20 w-64 h-64 bg-white opacity-10 rounded-full blur-3xl pointer-events-none"></div>
-</div>
 
                 <div id="action-card" class="bg-indigo-600 text-white p-8 rounded-3xl shadow-xl shadow-indigo-200 hidden-section relative overflow-hidden">
                     <div class="relative z-10 flex flex-col md:flex-row items-center gap-6 justify-between">
@@ -157,7 +163,7 @@
     </main>
 
     <div id="modal-sign" class="hidden-section fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center backdrop-blur-md p-4 fade-in">
-        <div class="bg-white w-full max-w-3xl h-[85vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/20">
+        <div class="bg-white w-full max-w-4xl h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/20">
             <div class="p-5 border-b flex justify-between items-center bg-slate-50">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
@@ -170,46 +176,76 @@
                 </button>
             </div>
             
-            <div class="flex-1 bg-slate-100 p-4 md:p-8 overflow-y-auto">
-                <div class="bg-white min-h-full p-8 md:p-12 shadow-sm mx-auto max-w-2xl rounded-xl border border-slate-200">
+            <div class="flex-1 bg-slate-100 p-0 relative">
+                <div id="lease-loading" class="absolute inset-0 flex items-center justify-center text-slate-400">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                        <p class="text-xs font-bold uppercase">Loading Document...</p>
+                    </div>
+                </div>
+                
+                <iframe id="lease-frame" class="w-full h-full relative z-10 hidden-section"></iframe>
+
+                <div id="lease-text-fallback" class="bg-white min-h-full p-8 md:p-12 shadow-sm mx-auto max-w-2xl hidden-section overflow-y-auto">
                     <h2 class="text-center font-serif font-bold text-3xl mb-1 text-slate-900">RESIDENTIAL LEASE AGREEMENT</h2>
                     <p class="text-center text-slate-400 text-xs uppercase tracking-widest mb-10">State of Georgia</p>
-                    
                     <div class="space-y-6 text-slate-700 text-sm leading-relaxed font-serif">
                         <p>This Lease Agreement (the "Agreement") is made and entered into on this day by and between <strong>Kozeyy Property Management</strong> ("Landlord") and <strong id="lease-name" class="bg-yellow-100 px-1">Tenant Name</strong> ("Tenant").</p>
-                        
                         <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 my-6 font-sans">
                             <h4 class="font-bold text-slate-900 mb-4 border-b pb-2">Lease Summary</h4>
                             <div class="grid grid-cols-2 gap-4">
                                 <div><p class="text-xs text-slate-400 uppercase font-bold">Monthly Rent</p><p class="font-bold text-lg text-slate-800" id="lease-rent">$0.00</p></div>
                                 <div><p class="text-xs text-slate-400 uppercase font-bold">Lease Term</p><p class="font-bold text-lg text-slate-800">12 Months</p></div>
-                                <div><p class="text-xs text-slate-400 uppercase font-bold">Security Deposit</p><p class="font-bold text-lg text-slate-800">1 Month Rent</p></div>
-                                <div><p class="text-xs text-slate-400 uppercase font-bold">Start Date</p><p class="font-bold text-lg text-slate-800">Immediate</p></div>
                             </div>
-                        </div>
-
-                        <p><strong>1. PREMISES.</strong> Landlord hereby leases to Tenant and Tenant hereby leases from Landlord the premises described in the application.</p>
-                        <p><strong>2. RENT.</strong> Tenant agrees to pay the Monthly Rent on the 1st day of each month.</p>
-                        <p><strong>3. UTILITIES.</strong> Tenant shall be responsible for all utilities and services connection to the Premises.</p>
-                        
-                        <div class="h-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 my-8">
-                            <i class="fas fa-signature text-2xl mb-2 opacity-50"></i>
-                            <span class="text-xs font-bold uppercase">Digital Signature Required Below</span>
                         </div>
                     </div>
                 </div>
             </div>
             
-            <div class="p-5 border-t bg-white flex justify-between items-center gap-4">
-                <div class="hidden md:block text-xs text-slate-400 font-medium">
+            <div class="p-5 border-t bg-white flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="text-xs text-slate-400 font-medium">
                     <i class="fas fa-lock text-emerald-500 mr-1"></i> Document secured by Kozeyy Sign™
                 </div>
                 <div class="flex gap-3 w-full md:w-auto">
+                    <a id="btn-download-lease" href="#" target="_blank" class="hidden-section flex-1 md:flex-none px-6 py-3 rounded-xl font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 transition text-center">
+                        <i class="fas fa-download mr-1"></i> Download
+                    </a>
                     <button onclick="closeSigningModal()" class="flex-1 md:flex-none px-6 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition">Cancel</button>
                     <button onclick="signLease()" class="flex-1 md:flex-none bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition flex items-center justify-center gap-2">
-                        <i class="fas fa-pen-nib"></i> Sign Agreement
+                        <i class="fas fa-pen-nib"></i> I Agree & Sign
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-adverse" class="hidden-modal fixed inset-0 bg-slate-900/80 z-[80] flex items-center justify-center backdrop-blur-md p-4">
+        <div class="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-6 border-b border-slate-100">
+                <h3 class="text-xl font-bold text-slate-800 brand-font">Statement of Denial (Adverse Action)</h3>
+            </div>
+            <div class="p-8 overflow-y-auto text-sm text-slate-600 space-y-4">
+                <p>Dear Applicant,</p>
+                <p>Thank you for your application to rent housing at our property. We regret to inform you that your application has been denied.</p>
+                
+                <div class="bg-rose-50 p-4 rounded-xl border border-rose-100 text-rose-800 font-bold">
+                    Reason: Does not meet screening criteria (Credit Score, Income Ratio, or Background History).
+                </div>
+
+                <h4 class="font-bold text-slate-800 mt-4">Fair Credit Reporting Act Disclosure</h4>
+                <p>If this decision was based, in whole or in part, on information contained in a consumer credit report, you have the right to obtain a free copy of your credit report from the consumer reporting agency that compiled the report. You generally have the right to receive a free copy of the report if you request it within 60 days of receiving this notice.</p>
+                
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 text-xs">
+                    <p class="font-bold">Consumer Reporting Agency:</p>
+                    <p>RentPrep / TransUnion</p>
+                    <p>P.O. Box 2000, Chester, PA 19016</p>
+                    <p>www.transunion.com/myoptions</p>
+                </div>
+                
+                <p>You also have the right to dispute the accuracy or completeness of any information contained in the report directly with the consumer reporting agency.</p>
+            </div>
+            <div class="p-6 border-t border-slate-100 bg-slate-50 text-right">
+                <button onclick="document.getElementById('modal-adverse').classList.add('hidden-modal')" class="bg-slate-800 text-white px-6 py-3 rounded-xl font-bold hover:bg-slate-900 transition">Close Notice</button>
             </div>
         </div>
     </div>
@@ -222,17 +258,6 @@
             <h3 class="text-2xl font-bold mb-2 text-slate-900 brand-font" id="modal-title">Info</h3>
             <p class="text-slate-500 mb-8 leading-relaxed" id="modal-msg">Message.</p>
             <button onclick="closeModal()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-lg transition">Got it, thanks!</button>
-        </div>
-    </div>
-
-    <div id="modal-confirm" class="hidden-modal fixed inset-0 bg-slate-900/80 z-[70] flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center">
-            <h3 class="text-xl font-bold mb-2 text-slate-900 brand-font" id="confirm-title">Confirm</h3>
-            <p class="text-slate-500 mb-8" id="confirm-msg">Are you sure?</p>
-            <div class="flex gap-3">
-                <button onclick="closeConfirm(false)" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition">Cancel</button>
-                <button onclick="closeConfirm(true)" class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition">Confirm</button>
-            </div>
         </div>
     </div>
 
@@ -268,8 +293,12 @@
             const { data, error } = await supabaseClient.from('apps').select('*').eq('user_id', userId).order('created_at', {ascending:false}).limit(1).maybeSingle();
             
             if(data) {
-                currentUserApp = data;
-                renderDashboard();
+                // Check if status changed to force re-render
+                if(!currentUserApp || currentUserApp.status !== data.status || currentUserApp.id !== data.id) {
+                    currentUserApp = data;
+                    renderDashboard();
+                }
+                currentUserApp = data; // Keep sync
             } else {
                 document.getElementById('view-loading').innerHTML = `
                     <div class="bg-white/10 backdrop-blur-md p-8 rounded-3xl border border-white/20 inline-block">
@@ -288,18 +317,19 @@
             document.getElementById('dash-name').innerText = currentUserApp.name;
             document.getElementById('dash-id').innerText = currentUserApp.id;
             
-            // Lease Modal Values
+            // Lease Modal Values (Fallback text updates)
             const leaseName = document.getElementById('lease-name');
             if(leaseName) leaseName.innerText = currentUserApp.name;
             
             const leaseRent = document.getElementById('lease-rent');
-            if(leaseRent) leaseRent.innerText = `$${parseInt(currentUserApp.rent).toLocaleString()}`;
+            if(leaseRent) leaseRent.innerText = `$${parseInt(currentUserApp.rent || 0).toLocaleString()}`;
 
             const banner = document.getElementById('status-banner');
             const statusText = document.getElementById('status-text');
             const statusDesc = document.getElementById('status-desc');
             const statusIcon = document.getElementById('status-icon');
             const statusIconBg = document.getElementById('status-icon-bg');
+            const btnAdverse = document.getElementById('btn-adverse-action');
             
             const actionCard = document.getElementById('action-card');
             const tenantCard = document.getElementById('tenant-card');
@@ -310,6 +340,7 @@
             actionCard.classList.add('hidden-section');
             tenantCard.classList.add('hidden-section');
             if(conditionCard) conditionCard.classList.add('hidden-section');
+            btnAdverse.classList.add('hidden-section'); // Hide by default
 
             switch(currentUserApp.status) {
                 case 'Pending':
@@ -355,21 +386,82 @@
                     actionCard.classList.remove('hidden-section');
                     break;
 
+                // NEW: Handle Signed State Correctly
+                case 'Lease Signed':
+                    statusText.innerText = "Lease Signed";
+                    statusText.className = "text-3xl font-extrabold text-purple-600 brand-font mb-2";
+                    statusDesc.innerText = "You have signed the lease! We are now waiting for the landlord to countersign and finalize the agreement.";
+                    statusIcon.className = "fas fa-file-signature";
+                    statusIconBg.className = "w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
+                    break;
+
                 case 'Completed':
                 case 'Active':
                     banner.classList.add('hidden-section');
                     tenantCard.classList.remove('hidden-section');
                     break;
 
+                // NEW: Explicit Denial with Adverse Action
                 case 'Deny':
-                case 'Withdrawn':
-                    statusText.innerText = "Closed";
+                    statusText.innerText = "Application Denied";
                     statusText.className = "text-3xl font-extrabold text-rose-600 brand-font mb-2";
-                    statusDesc.innerText = "This application is no longer active.";
+                    statusDesc.innerText = "We regret to inform you that your application has been declined based on our screening criteria.";
                     statusIcon.className = "fas fa-times";
                     statusIconBg.className = "w-16 h-16 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
+                    btnAdverse.classList.remove('hidden-section'); // Show the button
+                    break;
+
+                case 'Withdrawn':
+                    statusText.innerText = "Withdrawn";
+                    statusText.className = "text-3xl font-extrabold text-slate-400 brand-font mb-2";
+                    statusDesc.innerText = "This application was withdrawn by the applicant.";
+                    statusIcon.className = "fas fa-minus-circle";
+                    statusIconBg.className = "w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center flex-shrink-0 text-2xl";
                     break;
             }
+        }
+
+        // --- NEW: Adverse Action Modal ---
+        function openAdverseAction() {
+            document.getElementById('modal-adverse').classList.remove('hidden-modal');
+        }
+
+        function openSigningModal() {
+            const frame = document.getElementById('lease-frame');
+            const fallback = document.getElementById('lease-text-fallback');
+            const loader = document.getElementById('lease-loading');
+            const btnDown = document.getElementById('btn-download-lease');
+
+            document.getElementById('modal-sign').classList.remove('hidden-section');
+            document.getElementById('modal-sign').classList.add('flex');
+            
+            // Logic to show Real File vs Mock Text
+            if(currentUserApp && currentUserApp.lease_url) {
+                // Show Real PDF
+                fallback.classList.add('hidden-section');
+                frame.classList.remove('hidden-section');
+                frame.src = currentUserApp.lease_url;
+                
+                // Set download link
+                btnDown.href = currentUserApp.lease_url;
+                btnDown.classList.remove('hidden-section');
+
+                // Hide loader after a moment
+                frame.onload = () => loader.classList.add('hidden-section');
+            } else {
+                // Show Fallback
+                loader.classList.add('hidden-section');
+                frame.classList.add('hidden-section');
+                btnDown.classList.add('hidden-section');
+                fallback.classList.remove('hidden-section');
+            }
+        }
+
+        function closeSigningModal() {
+            document.getElementById('modal-sign').classList.add('hidden-section');
+            document.getElementById('modal-sign').classList.remove('flex');
+            // Clear src to stop processing/playing if it was media
+            document.getElementById('lease-frame').src = "";
         }
 
         // --- NEW EMAIL HELPER (Uses Supabase Edge Function) ---
@@ -388,6 +480,10 @@
         async function signLease() {
             closeSigningModal();
             if(!currentUserApp) return;
+            
+            // Optimistic UI Update immediately
+            currentUserApp.status = 'Lease Signed';
+            renderDashboard();
 
             // 1. Update Database Status
             await supabaseClient.from('apps').update({ status: 'Lease Signed' }).eq('id', currentUserApp.id);
@@ -398,7 +494,7 @@
                 await supabaseClient.from('tenants').update({ status: 'Lease Signed' }).eq('id', tenant.id);
             }
 
-            // 2. Notify Owner (Updated to use new Email System)
+            // 2. Notify Owner
             if(currentUserApp.owner_id) {
                  const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', currentUserApp.owner_id).single();
                  if(owner && owner.email) {
@@ -416,6 +512,8 @@
             }
 
             showModal("Signature Received!", "You have successfully signed the lease. The owner has been notified to finalize the agreement.");
+            
+            // Re-fetch to ensure sync
             setTimeout(fetchApplication, 2000);
         }
 
@@ -434,12 +532,10 @@
                 msg = "Your application has been withdrawn. Best of luck in your search.";
             }
 
-            // USE CUSTOM CONFIRM MODAL
             openConfirm(
                 `Confirm ${response}?`, 
                 `Are you sure you want to ${response.toLowerCase()} this condition?`, 
                 async () => {
-                    // Optimistic UI Update
                     document.getElementById('condition-card').classList.add('hidden-section');
                     document.getElementById('view-loading').classList.remove('hidden-section');
                     document.getElementById('view-dashboard').classList.add('hidden-section');
@@ -467,16 +563,6 @@
         }
 
         // --- UI HELPERS ---
-        function openSigningModal() {
-            document.getElementById('modal-sign').classList.remove('hidden-section');
-            document.getElementById('modal-sign').classList.add('flex');
-        }
-
-        function closeSigningModal() {
-            document.getElementById('modal-sign').classList.add('hidden-section');
-            document.getElementById('modal-sign').classList.remove('flex');
-        }
-
         function showModal(title, msg) {
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-msg').innerText = msg;
@@ -509,11 +595,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
