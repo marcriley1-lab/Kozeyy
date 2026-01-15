@@ -1870,28 +1870,38 @@ function toggleFeeVisibility() {
 
         try {
             const ownerId = localStorage.getItem('kozeyy_user_id');
+            
+            // 1. Handle File Upload
             const file = document.getElementById('ex-doc').files[0];
             let docUrl = null;
             if (file) docUrl = await uploadFile(file, 'receipts'); 
             
+            // 2. Prepare Data Object
             const data = { 
                 owner_id: ownerId, 
                 date: document.getElementById('ex-date').value, 
                 vendor: document.getElementById('ex-vendor').value, 
                 category: document.getElementById('ex-cat').value, 
                 property_address: document.getElementById('ex-prop').value, 
-                amount: parseFloat(document.getElementById('ex-amount').value)||0, 
-                receipt_url: docUrl 
+                amount: parseFloat(document.getElementById('ex-amount').value)||0
             }; 
+            
+            // 3. Only include receipt_url if a new file was uploaded (Fix for Issue #5)
+            if (docUrl) {
+                data.receipt_url = docUrl;
+            }
+            // Note: If no new file (docUrl is null), we simply omit the key, 
+            // causing Supabase to keep the existing value during UPDATE.
             
             let result;
             if(editExpenseId) {
                 result = await supabaseClient.from('expenses').update(data).eq('id', editExpenseId); 
             } else {
+                // For inserts, we need to explicitly set URL if it exists, otherwise it's null by default
+                if(docUrl) data.receipt_url = docUrl;
                 result = await supabaseClient.from('expenses').insert([data]); 
             }
 
-            // CRITICAL FIX: Check for error!
             if (result.error) throw result.error;
             
             closeModal('modal-expense'); 
@@ -1907,7 +1917,6 @@ function toggleFeeVisibility() {
             btn.disabled = false;
         }
     }
-
     function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.category; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.property_address; openModal('modal-expense'); }
     async function act_delExpense(id) { openPlatformConfirm("Delete Expense?", "Confirm deletion.", async () => { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); }); }
 
@@ -1927,16 +1936,13 @@ function act_viewApp(id) {
         setText('sd-name', app.name);
         const hasScore = app.score && app.score > 0;
         
-        // If Lease is signed, income is definitely verified by now
-        const isVerified = hasScore || app.status === 'Lease Signed' || app.status === 'Active';
-        
+        const isVerified = hasScore || app.status === 'Lease Signed' || app.status === 'Active' || app.status === 'Completed';
         const incomeLabel = isVerified ? "(Verified)" : "(Self-Reported)";
         setText('sd-income', `$${(app.income||0).toLocaleString()} ${incomeLabel}`);
         
         const ratio = app.rent > 0 ? (app.income / app.rent).toFixed(1) : '0';
         setText('sd-ratio', ratio);
         
-        // Handle Boolean vs String legacy data for records
         const hasEvict = String(app.evictions) === 'true';
         const hasCrim = String(app.criminal) === 'true';
 
@@ -1964,19 +1970,36 @@ function act_viewApp(id) {
         const banner = document.getElementById('sd-banner');
         const emailOpt = document.getElementById('sd-email-option'); 
 
-        // FIX #3: Handle Lease Signed logic in detail view
+        // CASE: Lease Signed (Show Countersign)
         if (app.status === 'Lease Signed') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
             banner.innerHTML = `<i class="fas fa-pen-fancy mr-2"></i> Lease Signed by Applicant`;
             
             emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Review the document and apply your signature.";
+            emailOpt.querySelector('p').innerText = "Tenant has signed. Review & Countersign.";
             const btn = emailOpt.querySelector('button');
             btn.classList.remove('hidden-section');
             btn.onclick = () => act_openCountersign(currentAppId);
-            btn.innerHTML = `<i class="fas fa-file-contract mr-2"></i> Review & Countersign`;
-            return; // Stop here, show the countersign option
+            btn.innerHTML = `<i class="fas fa-file-contract mr-2"></i> Countersign & Activate`;
+            return;
+        }
+
+        // CASE: Lease Sent (Show Status + Manual Override)
+        if (app.status === 'Lease Sent') {
+            banner.classList.remove('hidden-section');
+            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-purple-50 text-purple-700 border-purple-200";
+            banner.innerHTML = `<i class="fas fa-clock mr-2"></i> Waiting for Tenant Signature`;
+            
+            emailOpt.classList.remove('hidden-section');
+            emailOpt.querySelector('p').innerText = "Lease sent. Tenant must sign in their portal.";
+            
+            // Allow manual override if they signed offline
+            const btn = emailOpt.querySelector('button');
+            btn.classList.remove('hidden-section');
+            btn.onclick = () => act_initiateFinalize(currentAppId); // Direct finalize
+            btn.innerHTML = `<i class="fas fa-check-circle mr-2"></i> Mark Signed Manually`;
+            return;
         }
 
         if (app.status === 'Approved') {
@@ -1985,7 +2008,7 @@ function act_viewApp(id) {
             banner.innerText = "Application Approved";
             
             emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Ready for Lease.";
+            emailOpt.querySelector('p').innerText = "Next Step: Send Lease Agreement.";
             const btn = emailOpt.querySelector('button');
             btn.classList.remove('hidden-section');
             btn.onclick = () => act_initiateSendLease(currentAppId);
@@ -1999,25 +2022,22 @@ function act_viewApp(id) {
         } else if (app.status === 'Conditional') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-amber-100 text-amber-700 border-amber-200";
-            const conditionText = app.notes ? `Condition Sent: ${app.notes}` : "Conditional Offer Sent";
+            const conditionText = app.notes ? `Condition: ${app.notes}` : "Conditional Offer Sent";
             banner.innerText = conditionText;
             
             emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerHTML = `<i class="fas fa-clock text-amber-500"></i> Waiting for applicant to accept.`;
+            emailOpt.querySelector('p').innerHTML = `<i class="fas fa-clock text-amber-500"></i> Waiting for applicant response.`;
             emailOpt.querySelector('button').classList.add('hidden-section');
             
         } else {
             // PENDING / REVIEW STATES
-            // FIX #2: If no score, HIDE the Approve/Deny buttons.
             if (!hasScore) {
                 const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
                 if (hasApiKey) document.getElementById('sd-api-start').classList.remove('hidden-section');
                 else document.getElementById('sd-pending-msg').classList.remove('hidden-section');
                 
-                // Ensure actions are HIDDEN
                 document.getElementById('sd-actions').classList.add('hidden-section');
             } else {
-                // Score exists (either from API or Admin Override), Show Actions
                 document.getElementById('sd-actions').classList.remove('hidden-section');
             }
         }
@@ -2516,18 +2536,19 @@ async function confirmPay() {
         const dateInput = document.getElementById('inv-date');
         const statusEl = document.getElementById('inv-recur-status');
         
-        // CASE 1: User is turning OFF an EXISTING active schedule
+        // CASE 1: Turning OFF an existing recurring schedule
+        // We check editingRecurringId OR if the logic knows a schedule exists
         if (!isRecurring && editingRecurringId) {
-            // 1. Visually revert check immediately to prevent state mismatch
+            // 1. Visually revert immediately so it doesn't look "Off" until confirmed
             checkbox.checked = true;
 
-            // 2. Use Platform Confirm (Not browser alert)
+            // 2. Trigger Platform Confirm
             openPlatformConfirm(
                 "Stop Recurring Billing?", 
                 "This will cancel future automatic invoices for this tenant.",
                 async () => {
-                    // 3. User Confirmed -> Proceed to disable in DB
                     try {
+                        // 3. Update DB
                         const { error } = await supabaseClient
                             .from('recurring_invoices')
                             .update({ active: false })
@@ -2539,33 +2560,36 @@ async function confirmPay() {
                         
                         // 4. Update UI State to reflect "Stopped"
                         editingRecurringId = null; 
-                        checkbox.checked = false; // Uncheck it for real
+                        checkbox.checked = false; // Now uncheck for real
                         opts.classList.add('hidden-section');
                         
-                        // Re-enable date for standard invoice
+                        // 5. Reset Date Input to Today (Fix for Issue #3)
                         dateInput.disabled = false;
                         dateInput.parentElement.classList.remove('opacity-50');
+                        dateInput.value = new Date().toISOString().split('T')[0];
                         
-                        // UPDATE: Clear the schedule text immediately
+                        // 6. Clear "Next Scheduled" text (Fix for Issue #3 & #4)
                         if(statusEl) {
                             statusEl.innerText = "";
                             statusEl.classList.add('hidden-section');
                         }
-                        // Clear the "Next run" text
                         document.getElementById('inv-recur-next').innerText = "...";
 
+                        // 7. Refresh Data to persist state
                         await fetchData();
                         
                     } catch(err) {
                         console.error(err);
                         showToast("Error: " + err.message, "error");
+                        // Revert checkbox if error
+                        checkbox.checked = true; 
                     }
                 }
             );
             return; 
         }
 
-        // CASE 2: Standard Toggle (Creating New or View)
+        // CASE 2: Standard Toggle (Creating New or Viewing)
         if (isRecurring) {
             opts.classList.remove('hidden-section');
             dateInput.disabled = true;
@@ -2583,12 +2607,12 @@ async function confirmPay() {
             updateNextDate();
 
         } else {
-            // Unchecked (Clean slate)
+            // Unchecked (Clean slate / New Invoice)
             opts.classList.add('hidden-section');
             dateInput.disabled = false;
             dateInput.parentElement.classList.remove('opacity-50');
+            dateInput.value = new Date().toISOString().split('T')[0]; // Ensure fresh date
             
-            // UPDATE: Clear schedule text on unchecked
             if(statusEl) statusEl.classList.add('hidden-section');
             document.getElementById('inv-recur-next').innerText = "...";
         }
@@ -3064,6 +3088,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
