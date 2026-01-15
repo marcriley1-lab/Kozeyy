@@ -972,7 +972,7 @@
             return;
         }
 
-        // 2. EXECUTE REQUESTS (Added 'r' to the list below)
+        // 2. EXECUTE REQUESTS
         const [t, l, i, p, e, m, msg, s, a, r] = await Promise.all([
             supabaseClient.from('tenants').select('*').eq('owner_id', ownerId), 
             supabaseClient.from('listings').select('*').eq('owner_id', ownerId),
@@ -992,19 +992,23 @@
         state.expenses = e.data || [];
         state.settings = s.data || {};
         state.apps = a.data || [];
-        state.recurring_invoices = r.data || []; // Now 'r' exists!
+        state.recurring_invoices = r.data || [];
 
-        const myTenantIds = new Set(state.tenants.map(tn => tn.id));
-
-        state.invoices = (i.data || []).filter(x => myTenantIds.has(x.tenant_id));
+        // UPDATE: Removed filter to show all invoices (including from archived/deleted tenants)
+        state.invoices = i.data || [];
+        
         state.payments = (p.data || []);
         state.maint = (m.data || []);
         
         const serverMsgs = msg.data || [];
         state.msgs = serverMsgs; 
         
-        state.msgs.forEach(x => { if(locallyReadMsgIds.has(String(x.id))) x.read_at = new Date().toISOString(); });
+        // Mark locally read messages as read in UI
+        state.msgs.forEach(x => { 
+            if(locallyReadMsgIds.has(String(x.id))) x.read_at = new Date().toISOString(); 
+        });
 
+        // Update Notification Counts
         state.notifications.messages = state.msgs.filter(x => x.from === 'Tenant' && !x.read_at).length;
         state.notifications.maintenance = state.maint.filter(x => x.status === 'Active' && !viewedMaintIds.has(String(x.id))).length;
         state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
@@ -1164,6 +1168,9 @@
         updateBadge('screening', state.notifications.screening);
         updateBadge('maintenance', state.notifications.maintenance);
         updateBadge('messages', state.notifications.messages);
+          renderFinancials();
+        renderExpenses();
+        renderReports();
     }
 
     function renderReports() {
@@ -2964,6 +2971,50 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     }
     return value; // Fixed
 }
+
+    function renderExpenses() {
+        const filterVal = document.getElementById('filter-expenses').value;
+        const tbody = document.getElementById('table-expenses');
+        const totalDisplay = document.getElementById('exp-total-display');
+        
+        if(!tbody) return;
+
+        tbody.innerHTML = '';
+        let total = 0;
+
+        state.expenses.forEach(e => {
+            // Filter logic: 'all' or matches property address
+            if(filterVal !== 'all' && e.property_address !== filterVal) return;
+
+            total += (e.amount || 0);
+            
+            const date = e.date ? new Date(e.date).toLocaleDateString() : '-';
+            const receiptHtml = e.receipt_url 
+                ? `<a href="${e.receipt_url}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs"><i class="fas fa-file-invoice mr-1"></i> View</a>` 
+                : `<span class="text-slate-400 text-xs">-</span>`;
+
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-5 text-sm font-medium text-slate-500">${date}</td>
+                    <td class="p-5 text-sm font-bold text-slate-700 hidden md:table-cell">${e.property_address || '-'}</td>
+                    <td class="p-5 text-sm text-slate-700">${e.vendor || '-'}</td>
+                    <td class="p-5 text-sm text-slate-500 hidden md:table-cell"><span class="px-2 py-1 bg-slate-100 rounded text-xs">${e.category}</span></td>
+                    <td class="p-5 text-right font-bold text-rose-600">-$${(e.amount||0).toLocaleString()}</td>
+                    <td class="p-5 text-center hidden md:table-cell">${receiptHtml}</td>
+                    <td class="p-5 text-right">
+                        <button onclick="act_editExpense(${e.id})" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-edit"></i></button>
+                        <button onclick="act_delExpense(${e.id})" class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        if(state.expenses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No expenses recorded</td></tr>';
+        }
+        
+        if(totalDisplay) totalDisplay.innerText = `$${total.toLocaleString()}`;
+    }
     
 // --- EMAIL HELPER FUNCTION (Supabase Edge Function) ---
     async function sendEmail(to, subject, type, data) {
@@ -3002,6 +3053,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
