@@ -1010,227 +1010,30 @@
         state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
     }
     // --- 2. RENDER LOGIC ---
- function renderAll() {
-        updateBadge('messages', state.notifications.messages); 
-        updateBadge('maintenance', state.notifications.maintenance); 
-        updateBadge('screening', state.notifications.screening);
+// Inside renderAll() ... find the screening loop:
+    // state.apps.sort(...).forEach(app => { ...
 
-        const stats = calculateGlobalStats();
-        const activeMaint = state.maint.filter(m=>m.status==='Active').length;
-        
-        const totalUnits = state.tenants.filter(t => t.status !== 'Archived').length;
-        const occupiedUnits = state.tenants.filter(t => t.status === 'Active').length;
-        const occupancyPct = totalUnits > 0 ? Math.round((occupiedUnits / totalUnits) * 100) : 0;
-
-        setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
-        setText('dash-maintenance', activeMaint); 
-        setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
-        setText('dash-occupancy', `${occupancyPct}%`);
-        
-        if(chartInstance) {
-            // FIX: Now mapping all 3 data points correctly
-            chartInstance.data.datasets[0].data = [stats.revenue, stats.outstanding, stats.overdue];
-            chartInstance.update();
-        } else if(document.getElementById('revenueChart')) {
-            initChart(stats);
-        }
-
-        // Tenants
-        const tenantHash = JSON.stringify(state.tenants);
-        const statusFilter = document.getElementById('filter-tenant-status') ? document.getElementById('filter-tenant-status').value : 'Active';
-        const combinedHash = tenantHash + statusFilter;
-
-        if(combinedHash !== lastRenderedState.tenants) {
-            const tbody = document.getElementById('table-tenants'); 
-            if(tbody) {
-                tbody.innerHTML = '';
-                state.tenants
-                    .filter(t => statusFilter === 'all' ? true : t.status === statusFilter)
-                    .sort((a, b) => getLastName(a.name||'').localeCompare(getLastName(b.name||'')))
-                    .forEach(t => { 
-                        const st = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : (t.status === 'Vacant' ? 'bg-orange-100 text-orange-700' : 'bg-slate-100 text-slate-500');
-                        const moveOutBtn = t.status === 'Active' ? `<button onclick="act_moveOut(${t.id})" class="text-amber-500 hover:text-amber-700" title="Move Out"><i class="fas fa-box-open"></i></button>` : '';
-                        
-                        tbody.innerHTML += `
-                        <tr class="border-b border-slate-100">
-                            <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewTenant(${t.id})">
-                                ${t.name}<br>
-                                <span class="text-xs text-slate-400 font-normal">${t.email}</span>
-                                <div class="text-xs text-slate-500 mt-0.5">${t.phone || ''}</div>
-                            </td>
-                            <td class="p-5 text-sm hidden md:table-cell">${t.address || '-'}</td>
-                            <td class="p-5 text-sm hidden md:table-cell">${t.unit || '-'}</td>
-                            <td class="p-5 text-sm hidden md:table-cell">$${parseInt(t.rent_amount || 0).toLocaleString()}</td>
-                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${st}">${t.status}</span></td>
-                            <td class="p-5 text-right">
-                                <div class="flex justify-end gap-3">
-                                    <button onclick="act_editTenant(${t.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button>
-                                    ${moveOutBtn}
-                                    <button onclick="act_delTenant(${t.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
-                                </div>
-                            </td>
-                        </tr>`; 
-                });
+            // ... (previous status checks)
+            else if (app.status === 'Approved') {
+                statusColor = "bg-emerald-100 text-emerald-700";
+                // Action: Link to Upload Page
+                actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Upload Lease</a>`;
             }
-            lastRenderedState.tenants = combinedHash;
-        }
-
-        // Listings
-        const listingHash = JSON.stringify(state.listings);
-        if(listingHash !== lastRenderedState.listings) {
-            const grid = document.getElementById('grid-listings');
-            if(grid) {
-                grid.innerHTML = '';
-                state.listings.forEach(l => {
-                    const displayImg = (l.images && l.images.length > 0) ? l.images[0] : (l.image_url || 'https://images.unsplash.com/photo-1568605114967-8130f3a36994');
-                    grid.innerHTML += `
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
-                        <div class="h-32 bg-slate-200 relative">
-                            <img src="${displayImg}" class="w-full h-full object-cover">
-                            <div class="absolute top-2 right-2 bg-white px-2 py-1 rounded text-xs font-bold shadow">$${l.price}</div>
-                        </div>
-                        <div class="p-4 flex-1">
-                            <h4 class="font-bold text-slate-800">${l.address}</h4>
-                            <p class="text-xs text-slate-500 mb-3">${l.beds} Bed • ${l.baths} Bath • ${l.sqft} sqft</p>
-                            <div class="flex gap-2 mt-auto">
-                                <button onclick="act_editListing(${l.id})" class="flex-1 border border-slate-200 text-slate-600 py-2 rounded-xl text-xs font-bold hover:bg-slate-50">Edit</button>
-                                <button onclick="showShareModal(${l.id})" class="flex-1 bg-indigo-600 text-white py-2 rounded-xl text-xs font-bold hover:bg-indigo-700">Share</button>
-                            </div>
-                        </div>
-                    </div>`;
-                });
+            // NEW: Handle the step AFTER upload
+            else if (app.status === 'Lease Uploaded') {
+                statusColor = "bg-teal-100 text-teal-700";
+                // Action: Send the uploaded lease
+                actionButton = `<button onclick="act_initiateSendLease(${app.id})" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">Send Lease</button>`;
             }
-            lastRenderedState.listings = listingHash;
-        }
-
-      // ... inside renderAll() ...
-        // REPLACE the Screening section block with this:
-        const screeningHash = JSON.stringify(state.apps);
-        if(screeningHash !== lastRenderedState.screening) {
-            const tbody = document.getElementById('table-screening');
-            if(tbody) {
-                tbody.innerHTML = '';
-                state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
-                    
-                    let displayStatus = app.status;
-                    let statusColor = "bg-slate-100 text-slate-500";
-                    let actionButton = '';
-
-                    if(app.status === 'Pending') {
-                        displayStatus = 'Pending';
-                        actionButton = `<button onclick="act_viewApp(${app.id})" class="text-slate-400 font-bold text-xs"><i class="fas fa-eye"></i> View</button>`;
-                    }
-                    else if (app.status === 'Ready for Review') {
-                        statusColor = "bg-indigo-100 text-indigo-700";
-                        actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm bg-indigo-50 px-3 py-1 rounded hover:bg-indigo-100">Review</button>`;
-                    }
-                    else if (app.status === 'Approved') {
-                        statusColor = "bg-emerald-100 text-emerald-700";
-                        // Button opens modal to trigger "Send Lease"
-                        actionButton = `<button onclick="act_viewApp(${app.id})" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Send Lease</button>`;
-                    }
-                    else if (app.status === 'Lease Sent') {
-                        statusColor = "bg-purple-100 text-purple-700";
-                        actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
-                    }
-                    else if (app.status === 'Lease Signed') {
-                        statusColor = "bg-blue-100 text-blue-800";
-                        actionButton = `<button onclick="act_openCountersign(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700 animate-pulse">Countersign</button>`;
-                    }
-                    else if (app.status === 'Conditional') {
-                        statusColor = "bg-amber-100 text-amber-700";
-                        actionButton = `<span class="text-amber-600 text-xs font-bold">Conditional</span>`;
-                    }
-                    else if (app.status === 'Active' || app.status === 'Completed') {
-                        statusColor = "bg-slate-100 text-slate-600";
-                        displayStatus = "Active";
-                        actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Active</span>`;
-                    }
-                    else if (app.status === 'Deny') {
-                        statusColor = "bg-rose-100 text-rose-700";
-                        actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
-                    }
-
-                    const eval = evalApplicant(app);
-
-                    tbody.innerHTML += `
-                        <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                            <td class="p-5 font-bold cursor-pointer" onclick="act_viewApp(${app.id})">
-                                ${app.name}
-                                <div class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</div>
-                            </td>
-                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
-                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${displayStatus}</span></td>
-                            <td class="p-5 text-right">${actionButton}</td>
-                        </tr>`;
-                });
+            else if (app.status === 'Lease Sent') {
+                statusColor = "bg-purple-100 text-purple-700";
+                actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
             }
-            lastRenderedState.screening = screeningHash;
-        }
-        // Maintenance
-        const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
-        if(maintHash !== lastRenderedState.maint) {
-            const activeList = document.getElementById('list-maint-active'); 
-            const histList = document.getElementById('list-maint-history'); 
-            if(activeList && histList) {
-                activeList.innerHTML = ''; histList.innerHTML = '';
-                const activeMaintItems = state.maint.filter(m => m.status === 'Active').sort((a,b) => new Date(b.created_at || b.date) - new Date(a.created_at || a.date));
-                const completedMaintItems = state.maint.filter(m => m.status === 'Completed').sort((a,b) => new Date(b.completed_date) - new Date(a.completed_date));
-                if (activeMaintItems.length === 0) activeList.innerHTML = `<div class="p-8 text-center text-slate-400 italic">No active requests</div>`; 
-                else activeMaintItems.forEach(m => { 
-                    const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown', unit: '?'}; 
-                    const displayDate = m.created_at ? new Date(m.created_at).toLocaleDateString() : (m.date ? new Date(m.date).toLocaleDateString() : 'Just now');
-                    activeList.innerHTML += `<div class="p-4 flex justify-between items-start bg-white border-b border-slate-100 hover:bg-slate-50 transition"><div><div class="flex items-center gap-2 mb-1"><span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Unit ${t.unit}</span><span class="text-xs font-bold text-slate-700">${t.name}</span></div><p class="font-bold text-slate-800 text-sm">${m.issue}</p><p class="text-xs text-slate-400 mt-1"><i class="far fa-clock"></i> ${displayDate}</p></div><button onclick="act_completeMaint(${m.id})" class="bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-100 transition shadow-sm">Mark Done</button></div>`; 
-                }); 
-                completedMaintItems.forEach(m => { 
-                    const t = state.tenants.find(x=>x.id==m.tenant_id) || {name:'Unknown'};
-                    histList.innerHTML += `<div class="p-4 flex justify-between items-center bg-white opacity-75 hover:opacity-100 transition border-b border-slate-100"><div><p class="font-medium text-slate-600 text-sm line-through decoration-slate-400">${m.issue}</p><p class="text-xs text-slate-400">${t.name} • Completed: ${m.completed_date ? new Date(m.completed_date).toLocaleDateString() : '-'}</p></div><button onclick="viewMaintNote(${m.id})" class="text-indigo-500 text-xs font-bold hover:text-indigo-700">View Notes</button></div>`; 
-                });
+            else if (app.status === 'Lease Signed') {
+                statusColor = "bg-blue-100 text-blue-800";
+                actionButton = `<button onclick="act_openCountersign(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700 animate-pulse">Countersign</button>`;
             }
-            lastRenderedState.maint = maintHash;
-        }
-
-        if(currentChatId) renderMessages();
-        if(activeTab === 'messages') renderChatList();
-
-       // Expenses Render
-        const expHash = JSON.stringify(state.expenses);
-        if(expHash !== lastRenderedState.expenses) {
-            const exBody = document.getElementById('table-expenses'); 
-            if(exBody) {
-                exBody.innerHTML = '';
-                const fid = document.getElementById('filter-expenses') ? document.getElementById('filter-expenses').value : 'all';
-                let dEx = state.expenses;
-                if (fid !== 'all') dEx = dEx.filter(x => x.property_address === fid);
-                
-                dEx.forEach(x => { 
-                    const fileLink = x.receipt_url ? `<a href="${x.receipt_url}" target="_blank" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-paperclip"></i> View</a>` : '-';
-                    
-                    exBody.innerHTML += `
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                        <td class="p-5 whitespace-nowrap text-xs md:text-sm">${x.date}</td>
-                        <td class="p-5 text-sm font-medium text-slate-600 hidden md:table-cell">${x.property_address || 'General'}</td>
-                        <td class="p-5 text-sm font-bold truncate max-w-[100px] md:max-w-none">${x.vendor}</td>
-                        <td class="p-5 text-sm hidden md:table-cell"><span class="bg-slate-100 px-2 py-1 rounded text-xs">${x.category}</span></td>
-                        <td class="p-5 text-right font-bold text-rose-600">$${x.amount.toLocaleString()}</td>
-                        <td class="p-5 text-center hidden md:table-cell">${fileLink}</td>
-                        <td class="p-5 text-right">
-                            <div class="flex justify-end gap-3">
-                                <button onclick="act_editExpense(${x.id})" class="text-indigo-600 hover:text-indigo-800"><i class="fas fa-edit"></i></button>
-                                <button onclick="act_delExpense(${x.id})" class="text-rose-400 hover:text-rose-600"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>`; 
-                });
-                if(document.getElementById('exp-total-display')) document.getElementById('exp-total-display').innerText = `$${dEx.reduce((a,b)=>a+b.amount,0).toLocaleString()}`;
-            }
-            lastRenderedState.expenses = expHash;
-        }
-
-        renderFinancials();
-        renderReports(); 
-    }
-
+            // ... (rest of checks)
     function renderReports() {
         const totalRev = state.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
         const totalExp = state.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
@@ -1928,70 +1731,61 @@ function act_viewApp(id) {
         currentAppId = id;
         const app = state.apps.find(a => a.id === id);
         
-        // --- 1. POPULATE DATA ---
+        // ... (Keep existing populate data logic for name, income, score, etc.) ...
         setText('sd-name', app.name);
-        
-        // Logic: If lease signed or active, income is verified.
         const isVerified = (app.score && app.score > 0) || ['Lease Signed', 'Active', 'Completed'].includes(app.status);
         const incomeLabel = isVerified ? "(Verified)" : "(Self-Reported)";
-        
         setText('sd-income', `$${(app.income||0).toLocaleString()} ${incomeLabel}`);
         const ratio = app.rent > 0 ? (app.income / app.rent).toFixed(1) : '0';
         setText('sd-ratio', ratio);
-        
-        // Handle Legacy Data Types
-        const hasEvict = String(app.evictions) === 'true';
-        const hasCrim = String(app.criminal) === 'true';
 
-        // Display Background Info
-        if (isVerified) {
-            document.getElementById('sd-evict').innerHTML = hasEvict ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
-            document.getElementById('sd-crim').innerHTML = hasCrim ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
-        } else {
-            document.getElementById('sd-evict').innerHTML = hasEvict ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
-            document.getElementById('sd-crim').innerHTML = hasCrim ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
-        }
-        setText('sd-score', (app.score && app.score > 0) ? app.score : "Pending");
+        // ... (Keep existing background check display logic) ...
 
-        // --- 2. RESET UI SECTIONS ---
+        // --- RESET UI ---
         ['sd-pending-msg', 'sd-api-start', 'sd-admin-panel', 'sd-actions', 'sd-email-option', 'sd-banner'].forEach(eid => document.getElementById(eid).classList.add('hidden-section'));
         document.getElementById('sd-data-display').classList.remove('hidden-section');
-        
-        // Fill Admin Inputs (for manual override)
-        document.getElementById('input-manual-score').value = app.score || '';
-        document.getElementById('input-manual-income').value = app.income || '';
-        document.getElementById('input-manual-evict').value = hasEvict ? 'true' : 'false';
-        document.getElementById('input-manual-crim').value = hasCrim ? 'true' : 'false';
 
-        // --- 3. DETERMINE STATE & BUTTONS ---
+        // --- DETERMINE STATE ---
         const banner = document.getElementById('sd-banner');
         const emailOpt = document.getElementById('sd-email-option'); 
         const emailBtn = emailOpt.querySelector('button');
 
         if (app.status === 'Approved') {
-            // APPROVED: Show "Send Lease" Button
+            // STEP 1: APPROVED -> UPLOAD
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
             banner.innerText = "Application Approved";
             
             emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Next Step: Send Lease Agreement.";
+            emailOpt.querySelector('p').innerText = "Next Step: Upload Lease Agreement.";
             emailBtn.classList.remove('hidden-section');
-            emailBtn.innerText = "Send Lease";
+            emailBtn.innerText = "Upload Lease";
+            emailBtn.onclick = () => window.location.href = `lease.html?id=${currentAppId}&name=${encodeURIComponent(app.name)}`;
+
+        } else if (app.status === 'Lease Uploaded') {
+            // STEP 2: UPLOADED -> SEND
+            banner.classList.remove('hidden-section');
+            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-teal-100 text-teal-700 border-teal-200";
+            banner.innerText = "Lease Document Ready";
+            
+            emailOpt.classList.remove('hidden-section');
+            emailOpt.querySelector('p').innerText = "Lease uploaded. Ready to send to tenant.";
+            emailBtn.classList.remove('hidden-section');
+            emailBtn.innerText = "Send Lease Now";
             emailBtn.onclick = () => act_initiateSendLease(currentAppId);
 
         } else if (app.status === 'Lease Sent') {
-            // SENT: Show Waiting Message (No Buttons)
+            // STEP 3: SENT -> WAITING
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-purple-50 text-purple-700 border-purple-200";
             banner.innerHTML = `<i class="fas fa-clock mr-2"></i> Lease Sent - Waiting for Signature`;
             
             emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Tenant has been notified.";
-            emailBtn.classList.add('hidden-section');
+            emailOpt.querySelector('p').innerText = "Tenant notified.";
+            emailBtn.classList.add('hidden-section'); // No action needed
 
         } else if (app.status === 'Lease Signed') {
-            // SIGNED: Show Countersign Button
+            // STEP 4: SIGNED -> COUNTERSIGN
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
             banner.innerHTML = `<i class="fas fa-pen-fancy mr-2"></i> Signed by Tenant`;
@@ -2001,7 +1795,7 @@ function act_viewApp(id) {
             emailBtn.classList.remove('hidden-section');
             emailBtn.innerText = "Countersign Lease";
             emailBtn.onclick = () => act_openCountersign(currentAppId);
-
+            
         } else if (app.status === 'Deny') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200";
@@ -2011,18 +1805,16 @@ function act_viewApp(id) {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-amber-100 text-amber-700 border-amber-200";
             banner.innerText = app.notes ? `Condition: ${app.notes}` : "Conditional Offer Sent";
-
+            
         } else {
-            // PENDING / READY FOR REVIEW
-            // If no score yet, show API options or Pending msg
-            if (!app.score) {
-                const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
+            // PENDING / REVIEW
+             if (!app.score) {
+                // ... (Keep existing API/Pending logic) ...
+                 const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
                 if (hasApiKey) document.getElementById('sd-api-start').classList.remove('hidden-section');
                 else document.getElementById('sd-pending-msg').classList.remove('hidden-section');
-                
                 document.getElementById('sd-actions').classList.add('hidden-section');
             } else {
-                // Score exists, show Decision Actions
                 document.getElementById('sd-actions').classList.remove('hidden-section');
             }
         }
@@ -3080,6 +2872,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
