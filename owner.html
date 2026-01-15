@@ -1103,74 +1103,70 @@
             lastRenderedState.listings = listingHash;
         }
 
-       // REPLACE the Screening section within renderAll()
-const screeningHash = JSON.stringify(state.apps);
-if(screeningHash !== lastRenderedState.screening) {
-    const tbody = document.getElementById('table-screening');
-    if(tbody) {
-        tbody.innerHTML = '';
-        // Sort by date descending
-        state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
-            
-            let displayStatus = app.status;
-            let statusColor = "bg-slate-100 text-slate-500";
-            let actionButton = '';
+      // ... inside renderAll() ...
+        // REPLACE the Screening section block with this:
+        const screeningHash = JSON.stringify(state.apps);
+        if(screeningHash !== lastRenderedState.screening) {
+            const tbody = document.getElementById('table-screening');
+            if(tbody) {
+                tbody.innerHTML = '';
+                state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
+                    
+                    let displayStatus = app.status;
+                    let statusColor = "bg-slate-100 text-slate-500";
+                    let actionButton = '';
 
-            // Status Logic
-            if(app.status === 'Pending') {
-                displayStatus = 'Pending Screening';
-                statusColor = "bg-slate-100 text-slate-500";
-                // FIX #2: No actions allowed yet
-                actionButton = `<button onclick="act_viewApp(${app.id})" class="text-slate-400 font-bold text-xs"><i class="fas fa-eye"></i> View</button>`;
-            }
-            else if (app.status === 'Ready for Review') {
-                statusColor = "bg-indigo-100 text-indigo-700";
-                actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm bg-indigo-50 px-3 py-1 rounded hover:bg-indigo-100">Review</button>`;
-            }
-            else if (app.status === 'Approved') {
-                statusColor = "bg-emerald-100 text-emerald-700";
-                actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Upload Lease</a>`;
-            }
-            else if (app.status === 'Conditional') {
-                statusColor = "bg-amber-100 text-amber-700";
-                actionButton = `<span class="text-amber-600 text-xs font-bold">Waiting for Applicant</span>`;
-            }
-            else if (app.status === 'Lease Sent') {
-                statusColor = "bg-purple-100 text-purple-700";
-                actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
-            }
-            // FIX #3: Handle Lease Signed Status
-            else if (app.status === 'Lease Signed') {
-                displayStatus = 'Signature Received';
-                statusColor = "bg-blue-100 text-blue-800 border border-blue-200";
-                actionButton = `<button onclick="act_openCountersign(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-blue-700 animate-pulse"><i class="fas fa-file-signature mr-1"></i> Countersign</button>`;
-            }
-            else if (app.status === 'Active') {
-                statusColor = "bg-slate-100 text-slate-600";
-                actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Active</span>`;
-            }
-            else if (app.status === 'Deny') {
-                statusColor = "bg-rose-100 text-rose-700";
-                actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
-            }
+                    if(app.status === 'Pending') {
+                        displayStatus = 'Pending';
+                        actionButton = `<button onclick="act_viewApp(${app.id})" class="text-slate-400 font-bold text-xs"><i class="fas fa-eye"></i> View</button>`;
+                    }
+                    else if (app.status === 'Ready for Review') {
+                        statusColor = "bg-indigo-100 text-indigo-700";
+                        actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm bg-indigo-50 px-3 py-1 rounded hover:bg-indigo-100">Review</button>`;
+                    }
+                    else if (app.status === 'Approved') {
+                        statusColor = "bg-emerald-100 text-emerald-700";
+                        // Button opens modal to trigger "Send Lease"
+                        actionButton = `<button onclick="act_viewApp(${app.id})" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Send Lease</button>`;
+                    }
+                    else if (app.status === 'Lease Sent') {
+                        statusColor = "bg-purple-100 text-purple-700";
+                        actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
+                    }
+                    else if (app.status === 'Lease Signed') {
+                        statusColor = "bg-blue-100 text-blue-800";
+                        actionButton = `<button onclick="act_openCountersign(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700 animate-pulse">Countersign</button>`;
+                    }
+                    else if (app.status === 'Conditional') {
+                        statusColor = "bg-amber-100 text-amber-700";
+                        actionButton = `<span class="text-amber-600 text-xs font-bold">Conditional</span>`;
+                    }
+                    else if (app.status === 'Active' || app.status === 'Completed') {
+                        statusColor = "bg-slate-100 text-slate-600";
+                        displayStatus = "Active";
+                        actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Active</span>`;
+                    }
+                    else if (app.status === 'Deny') {
+                        statusColor = "bg-rose-100 text-rose-700";
+                        actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
+                    }
 
-            const eval = evalApplicant(app);
+                    const eval = evalApplicant(app);
 
-            tbody.innerHTML += `
-                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                    <td class="p-5 font-bold cursor-pointer" onclick="act_viewApp(${app.id})">
-                        ${app.name}
-                        <div class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</div>
-                    </td>
-                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
-                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${displayStatus}</span></td>
-                    <td class="p-5 text-right">${actionButton}</td>
-                </tr>`;
-        });
-    }
-    lastRenderedState.screening = screeningHash;
-}
-
+                    tbody.innerHTML += `
+                        <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                            <td class="p-5 font-bold cursor-pointer" onclick="act_viewApp(${app.id})">
+                                ${app.name}
+                                <div class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</div>
+                            </td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
+                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${displayStatus}</span></td>
+                            <td class="p-5 text-right">${actionButton}</td>
+                        </tr>`;
+                });
+            }
+            lastRenderedState.screening = screeningHash;
+        }
         // Maintenance
         const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
         if(maintHash !== lastRenderedState.maint) {
@@ -1934,18 +1930,20 @@ function act_viewApp(id) {
         
         // --- 1. POPULATE DATA ---
         setText('sd-name', app.name);
-        const hasScore = app.score && app.score > 0;
         
-        const isVerified = hasScore || app.status === 'Lease Signed' || app.status === 'Active' || app.status === 'Completed';
+        // Logic: If lease signed or active, income is verified.
+        const isVerified = (app.score && app.score > 0) || ['Lease Signed', 'Active', 'Completed'].includes(app.status);
         const incomeLabel = isVerified ? "(Verified)" : "(Self-Reported)";
-        setText('sd-income', `$${(app.income||0).toLocaleString()} ${incomeLabel}`);
         
+        setText('sd-income', `$${(app.income||0).toLocaleString()} ${incomeLabel}`);
         const ratio = app.rent > 0 ? (app.income / app.rent).toFixed(1) : '0';
         setText('sd-ratio', ratio);
         
+        // Handle Legacy Data Types
         const hasEvict = String(app.evictions) === 'true';
         const hasCrim = String(app.criminal) === 'true';
 
+        // Display Background Info
         if (isVerified) {
             document.getElementById('sd-evict').innerHTML = hasEvict ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
             document.getElementById('sd-crim').innerHTML = hasCrim ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
@@ -1953,91 +1951,78 @@ function act_viewApp(id) {
             document.getElementById('sd-evict').innerHTML = hasEvict ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
             document.getElementById('sd-crim').innerHTML = hasCrim ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
         }
+        setText('sd-score', (app.score && app.score > 0) ? app.score : "Pending");
 
-        setText('sd-score', hasScore ? app.score : "Pending");
-
-        // --- 2. RESET UI ---
-        ['sd-pending-msg', 'sd-api-start', 'sd-admin-panel', 'sd-actions', 'sd-email-option', 'sd-banner'].forEach(id => document.getElementById(id).classList.add('hidden-section'));
+        // --- 2. RESET UI SECTIONS ---
+        ['sd-pending-msg', 'sd-api-start', 'sd-admin-panel', 'sd-actions', 'sd-email-option', 'sd-banner'].forEach(eid => document.getElementById(eid).classList.add('hidden-section'));
         document.getElementById('sd-data-display').classList.remove('hidden-section');
         
-        // Fill Admin Inputs
+        // Fill Admin Inputs (for manual override)
         document.getElementById('input-manual-score').value = app.score || '';
         document.getElementById('input-manual-income').value = app.income || '';
         document.getElementById('input-manual-evict').value = hasEvict ? 'true' : 'false';
         document.getElementById('input-manual-crim').value = hasCrim ? 'true' : 'false';
 
-        // --- 3. DETERMINE STATE ---
+        // --- 3. DETERMINE STATE & BUTTONS ---
         const banner = document.getElementById('sd-banner');
         const emailOpt = document.getElementById('sd-email-option'); 
-
-        // CASE: Lease Signed (Show Countersign)
-        if (app.status === 'Lease Signed') {
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
-            banner.innerHTML = `<i class="fas fa-pen-fancy mr-2"></i> Lease Signed by Applicant`;
-            
-            emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Tenant has signed. Review & Countersign.";
-            const btn = emailOpt.querySelector('button');
-            btn.classList.remove('hidden-section');
-            btn.onclick = () => act_openCountersign(currentAppId);
-            btn.innerHTML = `<i class="fas fa-file-contract mr-2"></i> Countersign & Activate`;
-            return;
-        }
-
-        // CASE: Lease Sent (Show Status + Manual Override)
-        if (app.status === 'Lease Sent') {
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-purple-50 text-purple-700 border-purple-200";
-            banner.innerHTML = `<i class="fas fa-clock mr-2"></i> Waiting for Tenant Signature`;
-            
-            emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Lease sent. Tenant must sign in their portal.";
-            
-            // Allow manual override if they signed offline
-            const btn = emailOpt.querySelector('button');
-            btn.classList.remove('hidden-section');
-            btn.onclick = () => act_initiateFinalize(currentAppId); // Direct finalize
-            btn.innerHTML = `<i class="fas fa-check-circle mr-2"></i> Mark Signed Manually`;
-            return;
-        }
+        const emailBtn = emailOpt.querySelector('button');
 
         if (app.status === 'Approved') {
+            // APPROVED: Show "Send Lease" Button
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
             banner.innerText = "Application Approved";
             
             emailOpt.classList.remove('hidden-section');
             emailOpt.querySelector('p').innerText = "Next Step: Send Lease Agreement.";
-            const btn = emailOpt.querySelector('button');
-            btn.classList.remove('hidden-section');
-            btn.onclick = () => act_initiateSendLease(currentAppId);
-            btn.innerText = "Proceed to Lease";
+            emailBtn.classList.remove('hidden-section');
+            emailBtn.innerText = "Send Lease";
+            emailBtn.onclick = () => act_initiateSendLease(currentAppId);
+
+        } else if (app.status === 'Lease Sent') {
+            // SENT: Show Waiting Message (No Buttons)
+            banner.classList.remove('hidden-section');
+            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-purple-50 text-purple-700 border-purple-200";
+            banner.innerHTML = `<i class="fas fa-clock mr-2"></i> Lease Sent - Waiting for Signature`;
+            
+            emailOpt.classList.remove('hidden-section');
+            emailOpt.querySelector('p').innerText = "Tenant has been notified.";
+            emailBtn.classList.add('hidden-section');
+
+        } else if (app.status === 'Lease Signed') {
+            // SIGNED: Show Countersign Button
+            banner.classList.remove('hidden-section');
+            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
+            banner.innerHTML = `<i class="fas fa-pen-fancy mr-2"></i> Signed by Tenant`;
+            
+            emailOpt.classList.remove('hidden-section');
+            emailOpt.querySelector('p').innerText = "Review and finalize.";
+            emailBtn.classList.remove('hidden-section');
+            emailBtn.innerText = "Countersign Lease";
+            emailBtn.onclick = () => act_openCountersign(currentAppId);
 
         } else if (app.status === 'Deny') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200";
             banner.innerText = "Application Denied";
-            
+
         } else if (app.status === 'Conditional') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-amber-100 text-amber-700 border-amber-200";
-            const conditionText = app.notes ? `Condition: ${app.notes}` : "Conditional Offer Sent";
-            banner.innerText = conditionText;
-            
-            emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerHTML = `<i class="fas fa-clock text-amber-500"></i> Waiting for applicant response.`;
-            emailOpt.querySelector('button').classList.add('hidden-section');
-            
+            banner.innerText = app.notes ? `Condition: ${app.notes}` : "Conditional Offer Sent";
+
         } else {
-            // PENDING / REVIEW STATES
-            if (!hasScore) {
+            // PENDING / READY FOR REVIEW
+            // If no score yet, show API options or Pending msg
+            if (!app.score) {
                 const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
                 if (hasApiKey) document.getElementById('sd-api-start').classList.remove('hidden-section');
                 else document.getElementById('sd-pending-msg').classList.remove('hidden-section');
                 
                 document.getElementById('sd-actions').classList.add('hidden-section');
             } else {
+                // Score exists, show Decision Actions
                 document.getElementById('sd-actions').classList.remove('hidden-section');
             }
         }
@@ -2141,9 +2126,16 @@ function act_viewApp(id) {
 
   function act_initiateSendLease(appId) {
         openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
-            await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
             
-            // SEND EMAIL (UPDATED)
+            // 1. Update DB Status
+            const { error } = await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
+            
+            if(error) {
+                showToast("Error updating status: " + error.message, "error");
+                return;
+            }
+
+            // 2. SEND EMAIL
             const app = state.apps.find(a => a.id === appId);
             if(app && app.email) {
                  await sendEmail(
@@ -2160,10 +2152,10 @@ function act_viewApp(id) {
 
             await fetchData();
             renderAll();
-            showToast("Lease notification sent");
+            closeModal('modal-screening-detail'); // Close modal after sending
+            showToast("Lease notification sent successfully");
         });
     }
-
     function act_initiateFinalize(appId) {
         openPlatformConfirm("Finalize Tenant?", "Confirm lease signed. Converts applicant to Active tenant.", async () => {
             const app = state.apps.find(a => a.id === appId);
@@ -3088,6 +3080,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
