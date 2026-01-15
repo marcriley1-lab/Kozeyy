@@ -2158,7 +2158,34 @@ function act_viewApp(id) {
     }
     function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
 
-    function initChart(stats = {revenue:0, overdue:0}) { const ctx = document.getElementById('revenueChart'); if(!ctx) return; const context = ctx.getContext('2d'); chartInstance = new Chart(context, { type: 'bar', data: { labels: ['Collected', 'Outstanding', 'Overdue'], datasets: [{ label: 'Financials', data: [stats.revenue, 0, stats.overdue], backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
+    function initChart(stats = {revenue:0, overdue:0}) { 
+        const ctx = document.getElementById('revenueChart'); 
+        if(!ctx) return; 
+        
+        // FIX: Destroy the old chart before creating a new one
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        const context = ctx.getContext('2d'); 
+        chartInstance = new Chart(context, { 
+            type: 'bar', 
+            data: { 
+                labels: ['Collected', 'Outstanding', 'Overdue'], 
+                datasets: [{ 
+                    label: 'Financials', 
+                    data: [stats.revenue, 0, stats.overdue], 
+                    backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], 
+                    borderRadius: 6 
+                }] 
+            }, 
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } } 
+            } 
+        }); 
+    }
     function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart'); if(!ctx) return; const context = ctx.getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(context, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
     function getMonthlyFinancials() { const months = [], revenueData = [], expenseData = []; const today = new Date(); for(let i=5; i>=0; i--) { const d = new Date(today.getFullYear(), today.getMonth() - i, 1); const mKey = d.getMonth(); const yKey = d.getFullYear(); months.push(d.toLocaleString('default', { month: 'short' })); const monthRev = state.payments.reduce((sum, p) => { const pd = parseDateStr(p.date); return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum; }, 0); revenueData.push(monthRev); const monthExp = state.expenses.reduce((sum, e) => { const ed = parseDateStr(e.date); return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum; }, 0); expenseData.push(monthExp); } return { labels: months, revenue: revenueData, expenses: expenseData }; }
 
@@ -2975,6 +3002,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
