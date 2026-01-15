@@ -443,16 +443,16 @@
         </div>
     </div>
 
-    <div id="modal-prompt" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm">
-            <h3 class="text-lg font-bold mb-4" id="prompt-title">Enter Value</h3>
-            <input type="text" id="prompt-input" class="w-full border p-3 rounded-xl bg-slate-50 mb-4" placeholder="Type here...">
-            <div class="flex gap-2">
-                <button onclick="closePrompt(false)" class="flex-1 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
-                <button onclick="closePrompt(true)" class="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm">Confirm</button>
-            </div>
+    <div id="modal-prompt" class="hidden-section fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200">
+        <h3 class="text-lg font-bold mb-4 brand-font" id="prompt-title">Enter Value</h3>
+        <input type="text" id="prompt-input" class="w-full border p-3 rounded-xl bg-slate-50 mb-4 focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Type here...">
+        <div class="flex gap-2">
+            <button onclick="closePrompt(false)" class="flex-1 py-2 bg-slate-100 rounded-xl font-bold text-sm hover:bg-slate-200 transition">Cancel</button>
+            <button onclick="closePrompt(true)" class="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition">Confirm</button>
         </div>
     </div>
+</div>
 
     <div id="modal-share-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
@@ -813,18 +813,41 @@
                 <button onclick="runAutoScreening()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition">Run Instant Check</button>
             </div>
 
-            <div id="sd-admin-panel" class="hidden-section border-t-2 border-dashed border-slate-200 pt-4 mt-4 bg-slate-50 p-4 rounded-xl">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3"> 🔐 Admin Override</p>
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <div><label class="text-[10px] font-bold text-slate-500">Credit Score</label><input id="input-manual-score" type="number" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="e.g. 720"></div>
-                    <div><label class="text-[10px] font-bold text-slate-500">Income Verified</label><input id="input-manual-income" type="number" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="Annual $"></div>
-                </div>
-                <div class="mb-3">
-                    <label class="text-[10px] font-bold text-slate-500">Background Findings</label>
-                    <select id="input-manual-bg" class="w-full border p-2 rounded-lg text-sm bg-white"><option value="clean">✅ Clean Record</option><option value="issues">⚠️ Issues Found</option></select>
-                </div>
-                <button onclick="act_saveScreeningResults()" class="w-full bg-slate-800 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-900 transition"><i class="fas fa-save mr-1"></i> Save Report Data</button>
-            </div>
+           <div id="sd-admin-panel" class="hidden-section border-t-2 border-dashed border-slate-200 pt-4 mt-4 bg-slate-50 p-4 rounded-xl">
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3"> 🔐 Admin Verification Override</p>
+    
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+            <label class="text-[10px] font-bold text-slate-500">Credit Score</label>
+            <input id="input-manual-score" type="number" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="e.g. 720">
+        </div>
+        <div>
+            <label class="text-[10px] font-bold text-slate-500">Verified Income ($/mo)</label>
+            <input id="input-manual-income" type="number" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="Monthly $">
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+            <label class="text-[10px] font-bold text-slate-500">Eviction History</label>
+            <select id="input-manual-evict" class="w-full border p-2 rounded-lg text-sm bg-white">
+                <option value="false">✅ Clean Record</option>
+                <option value="true">⚠️ Record Found</option>
+            </select>
+        </div>
+        <div>
+            <label class="text-[10px] font-bold text-slate-500">Criminal History</label>
+            <select id="input-manual-crim" class="w-full border p-2 rounded-lg text-sm bg-white">
+                <option value="false">✅ Clean Record</option>
+                <option value="true">⚠️ Record Found</option>
+            </select>
+        </div>
+    </div>
+
+    <button onclick="act_saveScreeningResults()" class="w-full bg-slate-800 text-white py-2 rounded-lg text-xs font-bold hover:bg-slate-900 transition shadow-lg">
+        <i class="fas fa-save mr-1"></i> Save & Verify Applicant
+    </button>
+</div>
 
             <div id="sd-data-display" class="hidden-section">
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-2">
@@ -1080,73 +1103,73 @@
             lastRenderedState.listings = listingHash;
         }
 
-        // Screening
-       // Screening
-        const screeningHash = JSON.stringify(state.apps);
-        if(screeningHash !== lastRenderedState.screening) {
-            const tbody = document.getElementById('table-screening');
-            if(tbody) {
-                tbody.innerHTML = '';
-                state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
-                    
-                    // --- 1. DETERMINE STATUS LABEL & COLOR ---
-                    let displayStatus = app.status;
-                    let statusColor = "bg-slate-100 text-slate-500";
-                    
-                    if(app.status === 'Pending') {
-                        if(!app.score || app.score === 0) {
-                            displayStatus = 'Pending Screening';
-                            statusColor = "bg-slate-100 text-slate-500";
-                        } else {
-                            displayStatus = 'Ready for Review'; // Score exists, waiting for you
-                            statusColor = "bg-indigo-100 text-indigo-700";
-                        }
-                    }
-                    else if (app.status === 'Ready for Review') statusColor = "bg-indigo-100 text-indigo-700";
-                    else if (app.status === 'Approved') statusColor = "bg-emerald-100 text-emerald-700";
-                    else if (app.status === 'Deny') statusColor = "bg-rose-100 text-rose-700";
-                    else if (app.status === 'Lease Sent') statusColor = "bg-purple-100 text-purple-700";
-                    else if (app.status === 'Completed' || app.status === 'Active') statusColor = "bg-blue-100 text-blue-700";
+       // REPLACE the Screening section within renderAll()
+const screeningHash = JSON.stringify(state.apps);
+if(screeningHash !== lastRenderedState.screening) {
+    const tbody = document.getElementById('table-screening');
+    if(tbody) {
+        tbody.innerHTML = '';
+        // Sort by date descending
+        state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
+            
+            let displayStatus = app.status;
+            let statusColor = "bg-slate-100 text-slate-500";
+            let actionButton = '';
 
-                    // --- 2. EVALUATION LABEL ---
-                    const eval = evalApplicant(app);
-                    
-                    // --- 3. ACTION BUTTONS ---
-                    let actionButton = '';
-                    if(app.status === 'Approved') {
-                        actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700 block text-center w-full md:w-auto">Upload Lease</a>`;
-                    } 
-                    else if (app.status === 'Lease Uploaded') {
-                        actionButton = `<div class="flex items-center justify-end gap-2"><i class="fas fa-file-pdf text-slate-400 text-lg" title="Lease Attached"></i><button onclick="act_initiateSendLease(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700">Send Lease</button></div>`;
-                    } 
-                    else if (app.status === 'Lease Sent') {
-                        actionButton = `<button onclick="act_initiateFinalize(${app.id})" class="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-purple-700">Finalize</button>`;
-                    } 
-                    else if (app.status === 'Completed' || app.status === 'Active') {
-                        actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Tenant Active</span>`;
-                    } 
-                    else if (app.status === 'Deny') {
-                        actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
-                    } 
-                    else {
-                        // Default "Review" button for Pending/Ready states
-                        actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm">Review</button>`;
-                    }
-
-                    tbody.innerHTML += `
-                        <tr class="border-b border-slate-100">
-                            <td class="p-5 font-bold cursor-pointer hover:text-indigo-600 transition" onclick="act_viewApp(${app.id})">
-                                ${app.name}<br>
-                                <span class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</span>
-                            </td>
-                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
-                            <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${displayStatus}</span></td>
-                            <td class="p-5 text-right">${actionButton}</td>
-                        </tr>`;
-                });
+            // Status Logic
+            if(app.status === 'Pending') {
+                displayStatus = 'Pending Screening';
+                statusColor = "bg-slate-100 text-slate-500";
+                // FIX #2: No actions allowed yet
+                actionButton = `<button onclick="act_viewApp(${app.id})" class="text-slate-400 font-bold text-xs"><i class="fas fa-eye"></i> View</button>`;
             }
-            lastRenderedState.screening = screeningHash;
-        }
+            else if (app.status === 'Ready for Review') {
+                statusColor = "bg-indigo-100 text-indigo-700";
+                actionButton = `<button onclick="act_viewApp(${app.id})" class="text-indigo-600 font-bold text-sm bg-indigo-50 px-3 py-1 rounded hover:bg-indigo-100">Review</button>`;
+            }
+            else if (app.status === 'Approved') {
+                statusColor = "bg-emerald-100 text-emerald-700";
+                actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Upload Lease</a>`;
+            }
+            else if (app.status === 'Conditional') {
+                statusColor = "bg-amber-100 text-amber-700";
+                actionButton = `<span class="text-amber-600 text-xs font-bold">Waiting for Applicant</span>`;
+            }
+            else if (app.status === 'Lease Sent') {
+                statusColor = "bg-purple-100 text-purple-700";
+                actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
+            }
+            // FIX #3: Handle Lease Signed Status
+            else if (app.status === 'Lease Signed') {
+                displayStatus = 'Signature Received';
+                statusColor = "bg-blue-100 text-blue-800 border border-blue-200";
+                actionButton = `<button onclick="act_openCountersign(${app.id})" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-blue-700 animate-pulse"><i class="fas fa-file-signature mr-1"></i> Countersign</button>`;
+            }
+            else if (app.status === 'Active') {
+                statusColor = "bg-slate-100 text-slate-600";
+                actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Active</span>`;
+            }
+            else if (app.status === 'Deny') {
+                statusColor = "bg-rose-100 text-rose-700";
+                actionButton = `<span class="text-rose-400 font-bold text-xs">Denied</span>`;
+            }
+
+            const eval = evalApplicant(app);
+
+            tbody.innerHTML += `
+                <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td class="p-5 font-bold cursor-pointer" onclick="act_viewApp(${app.id})">
+                        ${app.name}
+                        <div class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</div>
+                    </td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${displayStatus}</span></td>
+                    <td class="p-5 text-right">${actionButton}</td>
+                </tr>`;
+        });
+    }
+    lastRenderedState.screening = screeningHash;
+}
 
         // Maintenance
         const maintHash = JSON.stringify(state.maint.sort((a,b)=>a.id-b.id));
@@ -1660,10 +1683,12 @@ function toggleFeeVisibility() {
     // Modal/CRUD
     function openModal(id) { document.getElementById(id).classList.remove('hidden-section'); document.getElementById(id).classList.add('flex'); }
     function closeModal(id) { document.getElementById(id).classList.add('hidden-section'); document.getElementById(id).classList.remove('flex'); resetForms(); }
-    function resetForms() {
+   function resetForms() {
         editTenantId = null;
         editListingId = null;
         editExpenseId = null;
+        // recurring cleanup
+        editingRecurringId = null;
 
         setText('btn-save-tenant', "Save Tenant");
         setText('btn-save-listing', "Post Listing");
@@ -1677,7 +1702,16 @@ function toggleFeeVisibility() {
             if (el) el.value = "";
         });
 
-        updateFileName('inv-doc', 'inv-doc-label');
+        // UPDATE: Explicitly clear Invoice Document & Styles
+        const invDoc = document.getElementById('inv-doc');
+        if(invDoc) invDoc.value = "";
+        
+        const invLabel = document.getElementById('inv-doc-label');
+        if(invLabel) {
+            invLabel.innerText = "Choose File";
+            invLabel.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200');
+        }
+
         updateFileName('ex-doc', 'ex-doc-label');
     }
     function toggleSidebar() { const sidebar = document.getElementById('sidebar'); const overlay = document.getElementById('mobile-overlay'); if (sidebar.classList.contains('-translate-x-full')) { sidebar.classList.remove('-translate-x-full'); overlay.classList.remove('hidden'); } else { sidebar.classList.add('-translate-x-full'); overlay.classList.add('hidden'); } }
@@ -1892,7 +1926,9 @@ function act_viewApp(id) {
         // --- 1. POPULATE DATA ---
         setText('sd-name', app.name);
         const hasScore = app.score && app.score > 0;
-        const isVerified = hasScore;
+        
+        // If Lease is signed, income is definitely verified by now
+        const isVerified = hasScore || app.status === 'Lease Signed' || app.status === 'Active';
         
         const incomeLabel = isVerified ? "(Verified)" : "(Self-Reported)";
         setText('sd-income', `$${(app.income||0).toLocaleString()} ${incomeLabel}`);
@@ -1900,12 +1936,16 @@ function act_viewApp(id) {
         const ratio = app.rent > 0 ? (app.income / app.rent).toFixed(1) : '0';
         setText('sd-ratio', ratio);
         
+        // Handle Boolean vs String legacy data for records
+        const hasEvict = String(app.evictions) === 'true';
+        const hasCrim = String(app.criminal) === 'true';
+
         if (isVerified) {
-            document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
-            document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
+            document.getElementById('sd-evict').innerHTML = hasEvict ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
+            document.getElementById('sd-crim').innerHTML = hasCrim ? '<span class="text-rose-600 font-bold">Record Found</span>' : '<span class="text-emerald-600 font-bold">Verified Clear</span>';
         } else {
-            document.getElementById('sd-evict').innerHTML = app.evictions ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
-            document.getElementById('sd-crim').innerHTML = app.criminal ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
+            document.getElementById('sd-evict').innerHTML = hasEvict ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
+            document.getElementById('sd-crim').innerHTML = hasCrim ? '<span class="text-rose-600 font-bold">Yes (Self-Reported)</span>' : '<span class="text-slate-500">No (Stated)</span>';
         }
 
         setText('sd-score', hasScore ? app.score : "Pending");
@@ -1914,86 +1954,100 @@ function act_viewApp(id) {
         ['sd-pending-msg', 'sd-api-start', 'sd-admin-panel', 'sd-actions', 'sd-email-option', 'sd-banner'].forEach(id => document.getElementById(id).classList.add('hidden-section'));
         document.getElementById('sd-data-display').classList.remove('hidden-section');
         
+        // Fill Admin Inputs
         document.getElementById('input-manual-score').value = app.score || '';
         document.getElementById('input-manual-income').value = app.income || '';
+        document.getElementById('input-manual-evict').value = hasEvict ? 'true' : 'false';
+        document.getElementById('input-manual-crim').value = hasCrim ? 'true' : 'false';
 
-        // --- 3. DETERMINE STATE & ACTION ---
-        const status = app.status || 'Pending';
+        // --- 3. DETERMINE STATE ---
         const banner = document.getElementById('sd-banner');
-        const emailOpt = document.getElementById('sd-email-option'); // The Action Container
+        const emailOpt = document.getElementById('sd-email-option'); 
 
-        if (status === 'Approved') {
-            // APPROVED -> SHOW LEASE BUTTON
+        // FIX #3: Handle Lease Signed logic in detail view
+        if (app.status === 'Lease Signed') {
+            banner.classList.remove('hidden-section');
+            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
+            banner.innerHTML = `<i class="fas fa-pen-fancy mr-2"></i> Lease Signed by Applicant`;
+            
+            emailOpt.classList.remove('hidden-section');
+            emailOpt.querySelector('p').innerText = "Review the document and apply your signature.";
+            const btn = emailOpt.querySelector('button');
+            btn.classList.remove('hidden-section');
+            btn.onclick = () => act_openCountersign(currentAppId);
+            btn.innerHTML = `<i class="fas fa-file-contract mr-2"></i> Review & Countersign`;
+            return; // Stop here, show the countersign option
+        }
+
+        if (app.status === 'Approved') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
             banner.innerText = "Application Approved";
             
             emailOpt.classList.remove('hidden-section');
             emailOpt.querySelector('p').innerText = "Ready for Lease.";
-            // Ensure button is visible/enabled
             const btn = emailOpt.querySelector('button');
             btn.classList.remove('hidden-section');
             btn.onclick = () => act_initiateSendLease(currentAppId);
             btn.innerText = "Proceed to Lease";
 
-        } else if (status === 'Deny') {
-            // DENIED
+        } else if (app.status === 'Deny') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200";
             banner.innerText = "Application Denied";
             
-        } else if (status === 'Conditional') {
-            // CONDITIONAL -> SHOW WAITING MESSAGE (NO BUTTON)
+        } else if (app.status === 'Conditional') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-amber-100 text-amber-700 border-amber-200";
-            
             const conditionText = app.notes ? `Condition Sent: ${app.notes}` : "Conditional Offer Sent";
             banner.innerText = conditionText;
             
             emailOpt.classList.remove('hidden-section');
-            // Show waiting message
             emailOpt.querySelector('p').innerHTML = `<i class="fas fa-clock text-amber-500"></i> Waiting for applicant to accept.`;
-            
-            // HIDE the "Proceed to Lease" button so you can't click it yet
-            const btn = emailOpt.querySelector('button');
-            btn.classList.add('hidden-section');
+            emailOpt.querySelector('button').classList.add('hidden-section');
             
         } else {
-            // PENDING / REVIEW
+            // PENDING / REVIEW STATES
+            // FIX #2: If no score, HIDE the Approve/Deny buttons.
             if (!hasScore) {
                 const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
                 if (hasApiKey) document.getElementById('sd-api-start').classList.remove('hidden-section');
                 else document.getElementById('sd-pending-msg').classList.remove('hidden-section');
+                
+                // Ensure actions are HIDDEN
+                document.getElementById('sd-actions').classList.add('hidden-section');
+            } else {
+                // Score exists (either from API or Admin Override), Show Actions
+                document.getElementById('sd-actions').classList.remove('hidden-section');
             }
-            document.getElementById('sd-actions').classList.remove('hidden-section');
         }
 
         openModal('modal-screening-detail');
     }
-
     // --- 3. Save Manual Results (Concierge Action) ---
-    async function act_saveScreeningResults() {
+  async function act_saveScreeningResults() {
         const score = document.getElementById('input-manual-score').value;
         const income = document.getElementById('input-manual-income').value;
-        const bgIssues = document.getElementById('input-manual-bg').value === 'issues';
+        // UPDATE: Read specific values
+        const evictVal = document.getElementById('input-manual-evict').value === 'true';
+        const crimVal = document.getElementById('input-manual-crim').value === 'true';
         
         if(!score) return showToast("Please enter score", 'error');
 
-        // STATUS UPDATE: Change status to 'Ready for Review'
         const { error } = await supabaseClient.from('apps').update({
             score: parseInt(score),
             income: parseFloat(income),
-            evictions: bgIssues,
-            criminal: bgIssues,
+            evictions: evictVal, // Save actual value
+            criminal: crimVal,   // Save actual value
             status: 'Ready for Review' 
         }).eq('id', currentAppId);
         
         if(error) {
             showToast("Error saving: " + error.message, 'error');
         } else {
-            showToast("Report saved");
+            showToast("Report Verified manually");
             await fetchData();
-            act_viewApp(currentAppId); // Refresh modal to show data
+            act_viewApp(currentAppId); // Refresh modal to show data and enable buttons
         }
     }
 
@@ -2130,20 +2184,18 @@ function act_viewApp(id) {
         });
     }
     
-    async function act_saveSettings(e) { 
+   async function act_saveSettings(e) { 
         e.preventDefault(); 
         const ownerId = localStorage.getItem('kozeyy_user_id');
+        const stripeId = document.getElementById('set-stripe-id').value;
         
         const { error } = await supabaseClient.from('settings').upsert({ 
             owner_id: ownerId, 
-            stripe_connect_id: document.getElementById('set-stripe-id').value, 
-            
-            // NEW: Fee Configuration
+            stripe_connect_id: stripeId, 
             late_fee_enabled: document.getElementById('set-fee-active').checked,
             late_fee_method: document.getElementById('fee-method').value, 
             late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0, 
             grace_period: parseInt(document.getElementById('fee-grace').value) || 0,     
-            
             min_credit_score: parseInt(document.getElementById('set-min-score').value) || 600,
             min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
             require_no_evictions: document.getElementById('set-no-evict').checked,
@@ -2151,8 +2203,22 @@ function act_viewApp(id) {
             require_insurance: false
         }, { onConflict: 'owner_id' });
         
-        if (error) { showToast("Save Failed: " + error.message, 'error'); } 
-        else { showToast("Configuration Saved"); await fetchData(); }
+        if (error) { 
+            showToast("Save Failed: " + error.message, 'error'); 
+        } else { 
+            // UPDATE: Retroactively enable payments for existing unpaid invoices
+            if(stripeId && stripeId.trim() !== '') {
+                await supabaseClient
+                    .from('invoices')
+                    .update({ landlord_stripe_id: stripeId })
+                    .eq('owner_id', ownerId)
+                    .eq('status', 'Unpaid')
+                    .is('landlord_stripe_id', null);
+            }
+
+            showToast("Configuration Saved & Active Invoices Updated"); 
+            await fetchData(); 
+        }
     }
     function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
 
@@ -2338,7 +2404,7 @@ async function confirmPay() {
         openModal('modal-payment-view');
     }
     
-    function openInvoiceModal() { 
+   function openInvoiceModal() { 
         const s = document.getElementById('inv-tenant');
         s.innerHTML = '<option value="" disabled selected>Select a Tenant</option>';
         state.tenants.filter(t => t.status === 'Active').forEach(t => {
@@ -2352,7 +2418,13 @@ async function confirmPay() {
         document.getElementById('inv-actions-view').classList.add('hidden-section');
         
         setText('inv-modal-title', "Create Invoice");
-        document.getElementById('inv-date').valueAsDate = new Date();
+        
+        // UPDATE: Block past dates
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('inv-date');
+        dateInput.value = today;
+        dateInput.min = today; // Prevent selection of previous dates
+
         openModal('modal-invoice');
         logic_invMode('fixed');
     }
@@ -2446,19 +2518,15 @@ async function confirmPay() {
         
         // CASE 1: User is turning OFF an EXISTING active schedule
         if (!isRecurring && editingRecurringId) {
-            // 1. Visually revert the check immediately (prevent accidental uncheck)
+            // 1. Visually revert check immediately to prevent state mismatch
             checkbox.checked = true;
 
-            // 2. Ask for Confirmation
+            // 2. Use Platform Confirm (Not browser alert)
             openPlatformConfirm(
-                "End Recurring Billing?", 
-                "This will cancel the active recurring schedule for this tenant. No future automatic invoices will be sent.",
+                "Stop Recurring Billing?", 
+                "This will cancel future automatic invoices for this tenant.",
                 async () => {
-                    // 3. User Confirmed: Deactivate in Database
-                    const btn = document.querySelector('#modal-platform-confirm button.bg-indigo-600');
-                    const originalText = btn.innerText;
-                    btn.innerText = "Stopping...";
-                    
+                    // 3. User Confirmed -> Proceed to disable in DB
                     try {
                         const { error } = await supabaseClient
                             .from('recurring_invoices')
@@ -2470,41 +2538,39 @@ async function confirmPay() {
                         showToast("Recurring billing stopped.");
                         
                         // 4. Update UI State to reflect "Stopped"
-                        editingRecurringId = null; // Clear the ID tracking
-                        checkbox.checked = false;  // Now we actually uncheck it
-                        opts.classList.add('hidden-section'); // Hide the options
+                        editingRecurringId = null; 
+                        checkbox.checked = false; // Uncheck it for real
+                        opts.classList.add('hidden-section');
                         
-                        // Re-enable the date input for a potential one-off invoice
+                        // Re-enable date for standard invoice
                         dateInput.disabled = false;
                         dateInput.parentElement.classList.remove('opacity-50');
                         
-                        // Clear the status text
+                        // UPDATE: Clear the schedule text immediately
                         if(statusEl) {
                             statusEl.innerText = "";
                             statusEl.classList.add('hidden-section');
                         }
+                        // Clear the "Next run" text
+                        document.getElementById('inv-recur-next').innerText = "...";
 
-                        // 5. Refresh Data (so the system knows it's gone)
                         await fetchData();
                         
                     } catch(err) {
                         console.error(err);
-                        showToast("Error stopping recurrence: " + err.message, "error");
-                    } finally {
-                        btn.innerText = originalText;
+                        showToast("Error: " + err.message, "error");
                     }
                 }
             );
-            return; // Stop here. Don't run the standard toggle logic yet.
+            return; 
         }
 
-        // CASE 2: Standard Toggle (Creating New or editing UI)
+        // CASE 2: Standard Toggle (Creating New or View)
         if (isRecurring) {
             opts.classList.remove('hidden-section');
             dateInput.disabled = true;
             dateInput.parentElement.classList.add('opacity-50');
             
-            // Pre-fill data if we have it locally
             if(editingRecurringId && state.recurring_invoices) {
                 const existing = state.recurring_invoices.find(r => r.id === editingRecurringId);
                 if(existing) {
@@ -2512,9 +2578,7 @@ async function confirmPay() {
                     document.getElementById('inv-recur-end').value = existing.end_date || '';
                 }
             } else {
-                if(!document.getElementById('inv-recur-day').value) {
-                    document.getElementById('inv-recur-day').value = 1;
-                }
+                if(!document.getElementById('inv-recur-day').value) document.getElementById('inv-recur-day').value = 1;
             }
             updateNextDate();
 
@@ -2523,7 +2587,116 @@ async function confirmPay() {
             opts.classList.add('hidden-section');
             dateInput.disabled = false;
             dateInput.parentElement.classList.remove('opacity-50');
+            
+            // UPDATE: Clear schedule text on unchecked
+            if(statusEl) statusEl.classList.add('hidden-section');
+            document.getElementById('inv-recur-next').innerText = "...";
         }
+    }
+// FIX #4: Visual Countersigning Flow
+    function act_openCountersign(appId) {
+        currentAppId = appId;
+        const app = state.apps.find(a => a.id === appId);
+        
+        // Close detail modal, open Platform Confirm styled as a Lease Review
+        closeModal('modal-screening-detail');
+        
+        // We use the Platform Confirm modal but inject custom HTML for the "Signature" experience
+        const confirmModal = document.getElementById('modal-platform-confirm');
+        const contentDiv = confirmModal.querySelector('div'); // The white box
+        
+        // Temporarily store original content to restore later if needed (optional, or just hardcode restore)
+        
+        contentDiv.innerHTML = `
+            <div class="text-left">
+                <div class="flex items-center justify-between mb-4 border-b pb-2">
+                    <h3 class="text-xl font-bold brand-font">Lease Finalization</h3>
+                    <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-bold">Signed by Tenant</span>
+                </div>
+                
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 h-64 overflow-y-auto mb-4 text-xs text-slate-600 font-serif leading-relaxed relative">
+                    <p class="mb-4 text-center font-bold text-sm">RESIDENTIAL LEASE AGREEMENT</p>
+                    <p>This agreement is made between <strong>${document.getElementById('owner-name-display').innerText}</strong> (Landlord) and <strong>${app.name}</strong> (Tenant) for the property at ${app.rent_addr || 'the premise'}.</p>
+                    <p class="mt-2">Monthly Rent: $${app.rent}</p>
+                    <p class="mt-4">... [Lease Terms Redacted for Preview] ...</p>
+                    
+                    <div class="mt-8 border-t border-slate-300 pt-4 flex justify-between items-end">
+                        <div>
+                            <p class="font-dancing text-xl text-blue-900">${app.name}</p>
+                            <p class="border-t border-slate-400 w-32 mt-1"></p>
+                            <p class="text-[10px] uppercase">Tenant Signature</p>
+                            <p class="text-[10px] text-slate-400">${new Date().toLocaleDateString()}</p>
+                        </div>
+                        
+                        <div id="landlord-sig-area" class="cursor-pointer hover:bg-indigo-50 p-2 rounded transition" onclick="applyLandlordSig()">
+                            <p class="text-indigo-600 font-bold text-sm" id="click-sign-prompt"><i class="fas fa-pen mr-1"></i> Click to Sign</p>
+                            <div id="real-sig" class="hidden-section">
+                                <p class="font-dancing text-xl text-indigo-900 font-bold">Approved</p>
+                                <p class="border-t border-slate-400 w-32 mt-1"></p>
+                                <p class="text-[10px] uppercase">Landlord Signature</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="window.location.reload()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-bold text-sm">Cancel</button>
+                    <button id="btn-finalize-lease" disabled onclick="processLeaseFinalization()" class="flex-1 py-3 bg-slate-300 text-white rounded-xl font-bold text-sm transition">Finalize Lease</button>
+                </div>
+            </div>
+        `;
+        
+        confirmModal.classList.remove('hidden-section');
+        confirmModal.classList.add('flex');
+    }
+
+    function applyLandlordSig() {
+        document.getElementById('click-sign-prompt').classList.add('hidden-section');
+        document.getElementById('real-sig').classList.remove('hidden-section');
+        
+        const btn = document.getElementById('btn-finalize-lease');
+        btn.disabled = false;
+        btn.classList.remove('bg-slate-300');
+        btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'shadow-lg');
+    }
+
+    async function processLeaseFinalization() {
+        // Trigger the existing finalize logic but from this new UI
+        const app = state.apps.find(a => a.id === currentAppId);
+        if(!app) return;
+        
+        const btn = document.getElementById('btn-finalize-lease');
+        btn.innerText = "Processing...";
+        
+        await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', currentAppId);
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+
+        // Create/Update Tenant Record
+        const existing = state.tenants.find(t => t.email === app.email);
+        if(existing) {
+            await supabaseClient.from('tenants').update({ status: 'Active', owner_id: ownerId }).eq('id', existing.id);
+        } else {
+            await supabaseClient.from('tenants').insert([{
+                name: app.name,
+                email: app.email,
+                rent_amount: app.rent,
+                status: 'Active',
+                owner_id: ownerId
+            }]);
+        }
+        
+        // Send Welcome Email
+        await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
+        
+        document.getElementById('modal-platform-confirm').classList.add('hidden-section');
+        document.getElementById('modal-platform-confirm').classList.remove('flex');
+        
+        await fetchData();
+        renderAll();
+        showToast("Lease Countersigned & Tenant Activated!");
+        
+        // Restore default modal HTML (Clean up) for next time
+        setTimeout(() => window.location.reload(), 1500); // Simple reload to reset the modal HTML structure cleanly
     }
     
    function logic_invMode(m) { 
@@ -2891,6 +3064,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
