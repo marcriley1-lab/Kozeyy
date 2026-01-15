@@ -1409,19 +1409,18 @@
         else { el.classList.add('hidden-section'); } 
     }
 
-    function calculateGlobalStats() {
+   function calculateGlobalStats() {
         let revenue = 0, overdue = 0, outstanding = 0;
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
         
-        // Settings Fallbacks
         const s = state.settings || {};
         const globalGrace = parseInt(s.grace_period || 0);
         const globalFeeVal = parseFloat(s.late_fee_amount || 0);
         const globalFeeType = s.late_fee_method || 'Fixed';
 
-        // 1. Calculate Revenue (Payments received this month)
+        // 1. Calculate Revenue
         state.payments.forEach(p => { 
             const pDate = parseDateStr(p.date); 
             if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
@@ -1434,20 +1433,16 @@
             if(inv.status !== 'Paid') { 
                 const invDate = parseDateStr(inv.date);
                 
-                // Use Invoice Snapshot rules if available, else Global
                 const grace = inv.grace_period !== undefined ? inv.grace_period : globalGrace;
-                
                 const dueDate = new Date(invDate);
                 dueDate.setDate(dueDate.getDate() + grace);
                 
                 let bal = inv.total - (inv.amount_paid || 0);
                 const isOverdue = now > dueDate;
 
-                // Add Late Fee to balance if overdue (Visual calculation)
                 if (isOverdue) {
                     const iFeeVal = inv.fee_value !== undefined ? inv.fee_value : globalFeeVal;
                     const iFeeType = inv.fee_type || globalFeeType;
-                    
                     let fee = iFeeVal;
                     if(iFeeType === 'Percentage') fee = inv.total * (iFeeVal/100);
                     bal += fee;
@@ -1457,11 +1452,9 @@
                     if(isOverdue) {
                         overdue += bal;
                     } else {
-                        // Only count as "Outstanding" if it's for THIS month 
-                        // (Ignores future recurring invoices per your request)
-                        if(invDate.getMonth() === currentMonth && invDate.getFullYear() === currentYear) {
-                            outstanding += bal;
-                        }
+                        // FIX: Count as outstanding if it's unpaid and NOT overdue.
+                        // We remove the strict month check so late-month invoices don't vanish.
+                        outstanding += bal;
                     }
                 } 
             } 
@@ -2165,13 +2158,15 @@ function act_viewApp(id) {
     }
     function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
 
-    function initChart(stats = {revenue:0, overdue:0}) { 
+   function initChart(stats = {revenue:0, overdue:0}) { 
         const ctx = document.getElementById('revenueChart'); 
         if(!ctx) return; 
         
-        // FIX: Destroy the old chart before creating a new one
+        // FIX: Update existing chart instead of destroying it
         if (chartInstance) {
-            chartInstance.destroy();
+            chartInstance.data.datasets[0].data = [stats.revenue, stats.outstanding, stats.overdue];
+            chartInstance.update();
+            return;
         }
 
         const context = ctx.getContext('2d'); 
@@ -2181,7 +2176,8 @@ function act_viewApp(id) {
                 labels: ['Collected', 'Outstanding', 'Overdue'], 
                 datasets: [{ 
                     label: 'Financials', 
-                    data: [stats.revenue, 0, stats.overdue], 
+                    // Use the stats values passed in
+                    data: [stats.revenue, stats.outstanding, stats.overdue], 
                     backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], 
                     borderRadius: 6 
                 }] 
@@ -3053,6 +3049,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
