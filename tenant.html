@@ -918,15 +918,14 @@
         }
     }
         
-       function viewInvoice(id) {
+      function viewInvoice(id) {
         const inv = globalData.invoices.find(i => i.id === id);
         if(!inv) return;
         
-        // --- 1. LATE FEE LOGIC ---
+        // ... (Keep existing Late Fee Logic & Date Calculations) ...
         const now = new Date();
         const invDate = new Date(inv.date);
         const grace = inv.grace_period !== undefined ? inv.grace_period : 5;
-        
         const dueDate = new Date(invDate);
         dueDate.setDate(dueDate.getDate() + grace);
         
@@ -942,7 +941,7 @@
         const lateFee = isOverdue ? calculateLateFee(inv.total, inv, daysOverdue) : 0;
         const finalTotalDue = currentBaseBalance + lateFee;
 
-        // --- 2. RENDER UI ---
+        // ... (Keep UI rendering for ID, Date, Previous Balance) ...
         document.getElementById('inv-id').innerText = inv.id;
         document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
         document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
@@ -987,10 +986,20 @@
                 
                 // --- FEE CONFIGURATION ---
                 const achFee = 2.50; // Flat fee
-                const cardFee = (finalTotalDue * 0.03); // 3%
+                const cardFee = (finalTotalDue * 0.03); // 3% Confirmed here
                 
                 const achTotal = finalTotalDue + achFee;
                 const cardTotal = finalTotalDue + cardFee;
+
+                // UPDATE: Changed display text to "+3%" to match logic
+                feeSection.innerHTML = `
+                 <div class="flex justify-between text-slate-500 font-bold border-b border-slate-200 pb-1">
+                     <span>Payment Options & Fees</span>
+                 </div>
+                 <div class="text-slate-500">
+                    <div class="flex justify-between"><span>• Bank Transfer (ACH)</span> <span>+$2.50</span></div>
+                    <div class="flex justify-between"><span>• Credit/Debit Card</span> <span>+3%</span></div>
+                 </div>`;
                 
                 payBtnContainer.innerHTML = `
                     <div class="space-y-3 mt-4">
@@ -1005,6 +1014,7 @@
                         <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600">Cancel</button>
                     </div>`;
             } else {
+                // ... (Keep existing manual payment logic) ...
                 feeSection.classList.add('hidden-section');
                 payBtnContainer.innerHTML = `
                     <div class="mt-6 p-5 bg-slate-50 border border-slate-200 rounded-xl">
@@ -1215,6 +1225,7 @@
     </script>
 </body>
 </html>
+
 
 
 
