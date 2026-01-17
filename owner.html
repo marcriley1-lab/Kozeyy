@@ -2557,12 +2557,18 @@ async function confirmPay() {
             }
             updateNextDate();
 
-        } else {
+       } else {
             // Unchecked (Clean slate / New Invoice)
             opts.classList.add('hidden-section');
             dateInput.disabled = false;
             dateInput.parentElement.classList.remove('opacity-50');
-            dateInput.value = new Date().toISOString().split('T')[0]; // Ensure fresh date
+            
+            // --- FIX START: FORCE LOCAL DATE ---
+            // This prevents the date from reverting to "Tomorrow" (UTC)
+            const now = new Date();
+            const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            dateInput.value = localDate; 
+            // --- FIX END ---
             
             if(statusEl) statusEl.classList.add('hidden-section');
             document.getElementById('inv-recur-next').innerText = "...";
@@ -3054,6 +3060,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
