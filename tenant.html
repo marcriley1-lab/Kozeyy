@@ -423,6 +423,7 @@
     </div>
 
     <script>
+
         const storedId = localStorage.getItem('kozeyy_user_id');
         const storedRole = localStorage.getItem('kozeyy_role');
 
@@ -458,6 +459,42 @@
         let lastMaintHash = "";
         let activeTab = "home"; 
 
+          // --- TENANT MASTER CALCULATOR (Consistent with Owner Dashboard) ---
+    function calculateOverdueDetails(inv) {
+        // Tenants don't have access to global 'settings', so we rely on the invoice snapshot
+        // If data is missing, we assume 5 days grace and $0 fee to prevent errors.
+        const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : 5;
+        
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        
+        const parts = (inv.date || '').split('-');
+        const invDate = new Date(parts[0], parts[1]-1, parts[2]);
+        
+        const dueDate = new Date(invDate);
+        dueDate.setHours(0,0,0,0);
+        dueDate.setDate(dueDate.getDate() + grace);
+        
+        const isOverdue = now > dueDate && inv.status !== 'Paid';
+        let daysLate = 0;
+        let fee = 0;
+
+        if(isOverdue) {
+            const diffTime = now - dueDate;
+            daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // Fee Logic
+            if (inv.fee_enabled !== false) {
+                const fType = inv.fee_type || 'Fixed';
+                const fVal = parseFloat(inv.fee_value || 0);
+
+                if (fType === 'Daily') fee = fVal * daysLate;
+                else if (fType === 'Percentage') fee = inv.total * (fVal / 100);
+                else fee = fVal;
+            }
+        }
+        return { isOverdue, daysLate, fee };
+    }
         // --- MAIN RENDER FUNCTION ---
         async function render(skipFetch = false) {
             if(!supabaseClient) return;
@@ -591,38 +628,16 @@
                 uCont.innerHTML = ''; 
                 
                // [Modified Block] inside render() function
+               // [Inside render() function, inside the 'if (currentInvStr !== ...)' block]
+                
                 if(unpaid.length > 0) { 
                     unpaid.forEach(i => { 
                         const currentBaseBalance = i.total - (i.amount_paid || 0);
                         
-                        // --- FIX START: ROBUST DATE PARSING ---
-                        // 1. Parse YYYY-MM-DD manually to prevent UTC timezone shifts
-                        const parts = i.date.split('-'); 
-                        const invDate = new Date(parts[0], parts[1]-1, parts[2]); 
+                        // USE MASTER CALCULATOR
+                        const calc = calculateOverdueDetails(i);
                         
-                        // 2. Force Grace Period to be a Number (Fixes string concatenation bugs)
-                        const grace = parseInt(i.grace_period !== undefined ? i.grace_period : 5);
-                        
-                        // 3. Calculate Due Date
-                        const dueDate = new Date(invDate);
-                        dueDate.setDate(dueDate.getDate() + grace);
-
-                        // 4. Compare "Start of Day" to avoid hour/minute mismatches
-                        const today = new Date();
-                        today.setHours(0,0,0,0);
-                        dueDate.setHours(0,0,0,0);
-
-                        const isOverdue = today > dueDate; 
-                        // --- FIX END ---
-
-                        let daysOverdue = 0;
-                        if(isOverdue) {
-                            const diffTime = Math.abs(today - dueDate);
-                            daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-                        }
-
-                        const lateFee = isOverdue ? calculateLateFee(i.total, i, daysOverdue) : 0;
-                        const finalDisplayAmount = currentBaseBalance + lateFee;
+                        const finalDisplayAmount = currentBaseBalance + calc.fee;
                         grandTotal += finalDisplayAmount;
 
                         const displayDate = new Date(i.date).toLocaleDateString();
@@ -634,8 +649,8 @@
                                     <p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p>
                                     <button onclick="viewInvoice(${i.id})" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button>
                                 </div>
-                                <p class="text-xs ${isOverdue ? 'text-rose-500 font-bold' : 'text-slate-400'} mt-2">
-                                    ${isOverdue ? `Overdue (Includes $${lateFee.toFixed(2)} fee)` : `Due: ${displayDate}`}
+                                <p class="text-xs ${calc.isOverdue ? 'text-rose-500 font-bold' : 'text-slate-400'} mt-2">
+                                    ${calc.isOverdue ? `Overdue (Includes $${calc.fee.toFixed(2)} fee)` : `Due: ${displayDate}`}
                                 </p>
                             </div>
                             <div class="flex items-center justify-between w-full md:w-auto gap-4">
@@ -936,30 +951,17 @@
         }
     }
         
-      function viewInvoice(id) {
+     function viewInvoice(id) {
         const inv = globalData.invoices.find(i => i.id === id);
         if(!inv) return;
         
-        // ... (Keep existing Late Fee Logic & Date Calculations) ...
-        const now = new Date();
-        const invDate = new Date(inv.date);
-        const grace = inv.grace_period !== undefined ? inv.grace_period : 5;
-        const dueDate = new Date(invDate);
-        dueDate.setDate(dueDate.getDate() + grace);
+        // USE MASTER CALCULATOR
+        const calc = calculateOverdueDetails(inv);
         
         const currentBaseBalance = inv.total - (inv.amount_paid || 0);
-        const isOverdue = now > dueDate && currentBaseBalance > 0 && inv.status !== 'Paid';
-        
-        let daysOverdue = 0;
-        if(isOverdue) {
-            const diffTime = Math.abs(now - dueDate);
-            daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        }
+        const finalTotalDue = currentBaseBalance + calc.fee;
 
-        const lateFee = isOverdue ? calculateLateFee(inv.total, inv, daysOverdue) : 0;
-        const finalTotalDue = currentBaseBalance + lateFee;
-
-        // ... (Keep UI rendering for ID, Date, Previous Balance) ...
+        // UI rendering
         document.getElementById('inv-id').innerText = inv.id;
         document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
         document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
@@ -972,12 +974,12 @@
             tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; 
         });
         
-        if(lateFee > 0) {
+        if(calc.fee > 0) {
              const type = inv.fee_type || 'Fixed';
              let label = "Late Fee";
-             if(type === 'Daily') label += ` (${daysOverdue} days overdue)`;
+             if(type === 'Daily') label += ` (${calc.daysLate} days overdue)`;
              if(type === 'Percentage') label += ` (${inv.fee_value}%)`;
-             tbody.innerHTML += `<tr class="bg-rose-50"><td class="p-3 text-rose-600 font-bold">${label}</td><td class="p-3 text-right font-bold text-rose-600">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+             tbody.innerHTML += `<tr class="bg-rose-50"><td class="p-3 text-rose-600 font-bold">${label}</td><td class="p-3 text-right font-bold text-rose-600">+$${calc.fee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
         }
 
         const attEl = document.getElementById('inv-attachment'); 
@@ -996,20 +998,17 @@
             totalEl.innerText = `$0.00`; 
             payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date ? new Date(inv.paid_date).toLocaleDateString() : 'Unknown'}</div>`; 
         } else { 
-            // Display Total (Rent + Late Fee)
             totalEl.innerText = `$${finalTotalDue.toLocaleString(undefined, {minimumFractionDigits: 2})}`; 
             
             if (inv.landlord_stripe_id) {
                 feeSection.classList.remove('hidden-section');
                 
-                // --- FEE CONFIGURATION ---
-                const achFee = 2.50; // Flat fee
-                const cardFee = (finalTotalDue * 0.03); // 3% Confirmed here
+                const achFee = 2.50; 
+                const cardFee = (finalTotalDue * 0.03); 
                 
                 const achTotal = finalTotalDue + achFee;
                 const cardTotal = finalTotalDue + cardFee;
 
-                // UPDATE: Changed display text to "+3%" to match logic
                 feeSection.innerHTML = `
                  <div class="flex justify-between text-slate-500 font-bold border-b border-slate-200 pb-1">
                      <span>Payment Options & Fees</span>
@@ -1032,7 +1031,6 @@
                         <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600">Cancel</button>
                     </div>`;
             } else {
-                // ... (Keep existing manual payment logic) ...
                 feeSection.classList.add('hidden-section');
                 payBtnContainer.innerHTML = `
                     <div class="mt-6 p-5 bg-slate-50 border border-slate-200 rounded-xl">
@@ -1243,6 +1241,7 @@
     </script>
 </body>
 </html>
+
 
 
 
