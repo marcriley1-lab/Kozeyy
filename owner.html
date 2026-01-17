@@ -1686,10 +1686,13 @@ function toggleFeeVisibility() {
         const ownerId = localStorage.getItem('kozeyy_user_id');
         if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
 
+        const email = document.getElementById('t-email').value;
+        const name = document.getElementById('t-name').value;
+
         const data = { 
             owner_id: ownerId, 
-            name: document.getElementById('t-name').value, 
-            email: document.getElementById('t-email').value, 
+            name: name, 
+            email: email, 
             phone: document.getElementById('t-phone').value, 
             unit: document.getElementById('t-unit').value, 
             rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
@@ -1703,9 +1706,31 @@ function toggleFeeVisibility() {
         }; 
 
         if(editTenantId) {
+            // EDIT MODE (No email needed)
             await supabaseClient.from('tenants').update(data).eq('id', editTenantId); 
+            showToast("Tenant updated successfully");
         } else {
-            await supabaseClient.from('tenants').insert([data]); 
+            // NEW TENANT MODE (Send Invite)
+            const { error } = await supabaseClient.from('tenants').insert([data]); 
+            if(error) {
+                showToast("Error adding tenant: " + error.message, 'error');
+                return;
+            }
+
+            // --- NEW: SEND WELCOME EMAIL ---
+            await sendEmail(
+                email, 
+                "Welcome to Kozeyy Resident Portal", 
+                "action", 
+                {
+                    title: "Welcome Home!",
+                    message: `You have been added to the resident portal for ${data.address || 'your new home'}. You can now log in to pay rent and submit maintenance requests.`,
+                    actionLink: "https://kozeyy.com/signup.html", 
+                    actionText: "Create Account"
+                }
+            );
+            
+            showToast("Tenant added and invitation sent");
         }
         
         closeModal('modal-tenant'); 
@@ -2845,7 +2870,7 @@ function logic_resetInvoice() {
    // Track the ID if we are editing an existing one
     let editingRecurringId = null; 
 
-    async function logic_confirmInvoice() { 
+   async function logic_confirmInvoice() { 
         if(!draftInvoice) return; 
         
         const btn = document.getElementById('btn-confirm-inv');
@@ -2863,7 +2888,7 @@ function logic_resetInvoice() {
             if (file) docUrl = await uploadFile(file, 'invoices'); 
 
             if (isRecurring) {
-                // --- PATH A: SAVE/UPDATE RECURRING ---
+                // --- PATH A: RECURRING SCHEDULE (No immediate email) ---
                 const recurDay = parseInt(document.getElementById('inv-recur-day').value) || 1;
                 const recurEnd = document.getElementById('inv-recur-end').value || null;
 
@@ -2879,12 +2904,10 @@ function logic_resetInvoice() {
 
                 let error;
                 if(editingRecurringId) {
-                    // UPDATE existing
                     const res = await supabaseClient.from('recurring_invoices').update(recurData).eq('id', editingRecurringId);
                     error = res.error;
                     showToast("Recurring Schedule Updated");
                 } else {
-                    // INSERT new
                     const res = await supabaseClient.from('recurring_invoices').insert([recurData]);
                     error = res.error;
                     showToast("Recurring Invoice Scheduled");
@@ -2894,7 +2917,7 @@ function logic_resetInvoice() {
 
             } else {
                 // --- PATH B: STANDARD ONE-TIME INVOICE ---
-                const { error } = await supabaseClient.from('invoices').insert([{ 
+                const { data: newInv, error } = await supabaseClient.from('invoices').insert([{ 
                     owner_id: ownerId, 
                     tenant_id: draftInvoice.tenantId, 
                     tenant_name: draftInvoice.tenantName, 
@@ -2908,9 +2931,26 @@ function logic_resetInvoice() {
                     fee_value: parseFloat(settings.late_fee_amount) || 0,
                     grace_period: parseInt(settings.grace_period) || 0,
                     fee_enabled: settings.late_fee_enabled !== false
-                }]); 
+                }]).select().single(); 
 
                 if(error) throw error;
+
+                // --- NEW CODE: SEND EMAIL NOTIFICATION ---
+                const tenant = state.tenants.find(t => t.id === draftInvoice.tenantId);
+                if(tenant && tenant.email) {
+                    await sendEmail(
+                        tenant.email,
+                        "New Invoice Available",
+                        "alert",
+                        {
+                            title: "New Invoice Received",
+                            message: `A new invoice for $${draftInvoice.total.toLocaleString()} is now available in your portal.`,
+                            actionLink: "https://kozeyy.com/tenant.html"
+                        }
+                    );
+                }
+                // ------------------------------------------
+
                 showToast("Invoice Sent Successfully"); 
             }
 
@@ -3046,6 +3086,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
