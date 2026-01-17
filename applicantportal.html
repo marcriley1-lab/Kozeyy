@@ -477,24 +477,31 @@
             }
         }
 
-        async function signLease() {
+       async function signLease() {
             closeSigningModal();
             if(!currentUserApp) return;
             
-            // Optimistic UI Update immediately
+            const timestamp = new Date().toISOString(); // Capture exact time
+
+            // 1. Update Database Status AND Timestamp
+            const { error } = await supabaseClient
+                .from('apps')
+                .update({ 
+                    status: 'Lease Signed',
+                    tenant_signed_at: timestamp 
+                })
+                .eq('id', currentUserApp.id);
+
+            if(error) {
+                showModal("Error", "Failed to save signature: " + error.message);
+                return;
+            }
+            
+            // 2. Optimistic UI Update
             currentUserApp.status = 'Lease Signed';
             renderDashboard();
 
-            // 1. Update Database Status
-            await supabaseClient.from('apps').update({ status: 'Lease Signed' }).eq('id', currentUserApp.id);
-            
-            // Update Tenant Record (if exists)
-            const { data: tenant } = await supabaseClient.from('tenants').select('id').eq('email', currentUserApp.email).maybeSingle();
-            if(tenant) {
-                await supabaseClient.from('tenants').update({ status: 'Lease Signed' }).eq('id', tenant.id);
-            }
-
-            // 2. Notify Owner
+            // 3. Notify Owner
             if(currentUserApp.owner_id) {
                  const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', currentUserApp.owner_id).single();
                  if(owner && owner.email) {
@@ -504,7 +511,7 @@
                          'alert', 
                          {
                             title: `Lease Signed by ${currentUserApp.name}`,
-                            message: `The applicant has digitally signed the lease agreement. Please log in to countersign and finalize the move-in.`,
+                            message: `The applicant signed the lease on ${new Date().toLocaleString()}. Please log in to countersign.`,
                             actionLink: "https://kozeyy.com/owner.html"
                          }
                      );
@@ -512,8 +519,6 @@
             }
 
             showModal("Signature Received!", "You have successfully signed the lease. The owner has been notified to finalize the agreement.");
-            
-            // Re-fetch to ensure sync
             setTimeout(fetchApplication, 2000);
         }
 
@@ -595,4 +600,5 @@
     </script>
 </body>
 </html>
+
 
