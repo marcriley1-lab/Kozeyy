@@ -77,7 +77,7 @@
                         <h4 class="font-bold text-sm text-slate-800 mb-2">Application Fees</h4>
                         <div class="flex justify-between text-sm mb-1"><span class="text-slate-500">Screening Fee</span><span class="font-medium">$35.00</span></div>
                         <div class="flex justify-between text-sm"><span class="text-slate-500">Processing</span><span class="font-medium">$4.99</span></div>
-                        <div class="border-t border-slate-200 mt-2 pt-2 flex justify-between text-sm font-bold"><span class="text-slate-800">Total Due</span><span class="text-indigo-600">$39.99</span></div>
+                        <div class="border-t border-slate-200 mt-2 pt-2 flex justify-between text-sm font-bold"><span class="text-slate-800">Total Due</span><span class="text-indigo-600">$49.99</span></div>
                     </div>
                 </div>
             </div>
@@ -171,7 +171,7 @@
                     <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 mb-6 relative overflow-hidden text-center">
                         <div class="flex justify-center gap-4 mb-4 opacity-50 grayscale"><i class="fab fa-cc-visa text-3xl"></i><i class="fab fa-cc-mastercard text-3xl"></i><i class="fab fa-cc-amex text-3xl"></i><i class="fab fa-cc-discover text-3xl"></i></div>
                         <h4 class="font-bold text-slate-800 text-lg mb-2">Secure Payment Required</h4>
-                        <p class="text-sm text-slate-500 mb-6">You will be redirected to a secure Stripe Checkout page to pay the <strong>$39.99</strong> screening fee.</p>
+                        <p class="text-sm text-slate-500 mb-6">You will be redirected to a secure Stripe Checkout page to pay the <strong>$49.99</strong> screening fee.</p>
                         <button type="button" onclick="submitApplication()" id="btn-submit" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition flex items-center justify-center gap-3"><i class="fas fa-lock"></i><span>Continue to Secure Payment</span></button>
                         <p class="text-xs text-slate-400 mt-4"><i class="fas fa-shield-alt"></i> No credit card data is stored on our servers.</p>
                     </div>
@@ -236,7 +236,7 @@
                             await sendEmail(appData.email, "Payment Receipt - Kozeyy", `
                                 <h2>Payment Received</h2>
                                 <p>Hi ${appData.name},</p>
-                                <p>This email confirms we have received your screening fee of <strong>$39.99</strong>.</p>
+                                <p>This email confirms we have received your screening fee of <strong>$49.99</strong>.</p>
                                 <p>You can view your application status in the portal below.</p>
                                 <br>
                                 <a href="https://kozeyy.com/applicantportal.html" style="background-color:#4f46e5; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Go to Portal</a>
