@@ -151,7 +151,6 @@
                 if(!supabaseClient) throw new Error("Database error");
 
                 // 1. CREATE SECURE USER IN SUPABASE AUTH
-                // This handles password hashing and security automatically.
                 const { data: authData, error: authError } = await supabaseClient.auth.signUp({
                     email: email,
                     password: password,
@@ -166,8 +165,6 @@
 
                 if (authError) throw authError;
 
-                // 2. GET THE NEW SECURE ID
-                // This ID comes from the Auth system, ensuring a secure link.
                 const userId = authData.user.id;
                 const userProfile = { 
                     username, 
@@ -178,55 +175,56 @@
                     initials: (fname[0]+lname[0]).toUpperCase() 
                 };
 
-                // 3. CREATE PUBLIC RECORD (Links the login to your data tables)
+                // 2. CREATE PUBLIC RECORD (Status = Applicant)
                 if(role === 'tenant') {
-                    // Check if a placeholder record already exists (e.g. invited by owner)
-                    const { data: existing } = await supabaseClient
-                        .from('tenants')
-                        .select('*')
-                        .eq('email', email)
-                        .maybeSingle();
+                    // Check if existing placeholder (invited tenant)
+                    const { data: existing } = await supabaseClient.from('tenants').select('*').eq('email', email).maybeSingle();
                     
                     if(existing && (existing.owner_id || existing.status === 'Active')) {
-                        // Claim existing tenant record: Update it with the secure ID
-                        const { error: updateError } = await supabaseClient
-                            .from('tenants')
-                            .update({
-                                id: userId, // CRITICAL: This links the Auth User to the Data
+                        await supabaseClient.from('tenants').update({
+                                id: userId,
                                 name: userProfile.name,
                                 phone: phone,
                                 status: 'Active'
-                            })
-                            .eq('email', email); // Find by email, update the ID
-
-                        if(updateError) throw updateError;
+                            }).eq('email', email);
                     } else {
-                        // Create New Tenant Record
-                        const { error: insertError } = await supabaseClient
-                            .from('tenants')
-                            .insert([{
-                                id: userId, // Link to Auth User
+                        // NEW APPLICANT INSERTION
+                        await supabaseClient.from('tenants').insert([{
+                                id: userId,
                                 name: userProfile.name,
                                 email: email,
                                 phone: phone,
-                                status: 'Applicant',
+                                status: 'Applicant', // Marks them as pending
                                 rent_amount: 0
                             }]);
-                            
-                        if(insertError) throw insertError;
                     }
                 } else {
-                    // CREATE OWNER RECORD
-                    const { error: insertError } = await supabaseClient
-                        .from('owners')
-                        .insert([{
-                            id: userId, // Link to Auth User
+                    // Owner Record
+                    await supabaseClient.from('owners').insert([{
+                            id: userId,
                             name: `${fname} ${lname}`,
                             email: email,
                             phone: phone
                         }]);
+                }
 
-                    if(insertError) throw insertError;
+                // 3. SEND REGISTRATION EMAIL (Distinct from Move-In Email)
+                try {
+                    await supabaseClient.functions.invoke('send-email', {
+                        body: { 
+                            to: email, 
+                            subject: "Account Created - Kozeyy", 
+                            type: "action", // Uses the blue button template
+                            data: { 
+                                title: "Registration Successful",
+                                message: `Hi ${fname}, your account has been created. You can now log in to complete your rental application.`,
+                                actionLink: "https://kozeyy.com/login.html",
+                                actionText: "Log In Now"
+                            } 
+                        }
+                    });
+                } catch (emailErr) {
+                    console.warn("Welcome email failed:", emailErr);
                 }
 
                 // 4. SAVE SESSION & REDIRECT
@@ -234,13 +232,12 @@
                 localStorage.setItem('kozeyy_role', role);
                 localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
 
-                // Handle Redirects
                 if(pendingListingId && role === 'tenant') {
                     window.location.href = `applicant.html?listing_id=${pendingListingId}`;
                 } else if(role === 'owner') {
                     window.location.href = 'owner.html';
                 } else {
-                    window.location.href = 'tenant.html'; // Default for tenants
+                    window.location.href = 'tenant.html';
                 }
 
             } catch(err) {
@@ -250,7 +247,6 @@
                 btn.disabled = false;
             }
         }
-
         function showModal(title, msg) {
             document.getElementById('modal-title').innerText = title;
             document.getElementById('modal-msg').innerText = msg;
@@ -262,4 +258,5 @@
     </script>
 </body>
 </html>
+
 
