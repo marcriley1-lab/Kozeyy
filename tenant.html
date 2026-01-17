@@ -131,6 +131,21 @@
                     </div>
                 </div>
 
+                <div id="lease-badge" class="hidden-section mb-6 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-white text-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+                <i class="fas fa-file-contract"></i>
+            </div>
+            <div>
+                <p class="text-sm font-bold text-indigo-900">Active Lease</p>
+                <p class="text-xs text-indigo-600" id="lease-signed-date">Signed: ...</p>
+            </div>
+        </div>
+        <button onclick="viewMyLease()" class="text-xs font-bold bg-white text-indigo-700 px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-50 transition border border-indigo-100">
+            View PDF
+        </button>
+    </div>
+   
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 relative overflow-hidden">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -509,6 +524,12 @@
 
                 globalData.user = u.data || { name: "Guest User", email: "", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
                 globalData.invoices = i.data || [];
+
+    if(globalData.user.lease_url) {
+        document.getElementById('lease-badge').classList.remove('hidden-section');
+        const date = globalData.user.lease_signed_at ? new Date(globalData.user.lease_signed_at).toLocaleDateString() : 'Active';
+        document.getElementById('lease-signed-date').innerText = `Signed: ${date}`;
+    }
                 
                 // --- OWNER NAME CACHING LOGIC ---
                 if (globalData.user && globalData.user.owner_id) {
@@ -1233,6 +1254,12 @@
         }
         platformConfirmCallback = null;
     }
+
+        function viewMyLease() {
+        const user = globalData.user;
+        if(!user || !user.lease_url) return showToast("No lease document found.", "error");
+        window.open(user.lease_url, '_blank');
+    }
         // Init
         render(false);
         checkReturnParams();
@@ -1241,6 +1268,7 @@
     </script>
 </body>
 </html>
+
 
 
 
