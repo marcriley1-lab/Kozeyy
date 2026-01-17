@@ -1682,15 +1682,18 @@ function toggleFeeVisibility() {
     
     // CRUD Functions
     
-    async function act_saveTenant(e) { 
+   async function act_saveTenant(e) { 
         e.preventDefault(); 
         const ownerId = localStorage.getItem('kozeyy_user_id');
         if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
 
+        const email = document.getElementById('t-email').value;
+        const name = document.getElementById('t-name').value;
+
         const data = { 
             owner_id: ownerId, 
-            name: document.getElementById('t-name').value, 
-            email: document.getElementById('t-email').value, 
+            name: name, 
+            email: email, 
             phone: document.getElementById('t-phone').value, 
             unit: document.getElementById('t-unit').value, 
             rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
@@ -1704,9 +1707,31 @@ function toggleFeeVisibility() {
         }; 
 
         if(editTenantId) {
+            // EDIT MODE
             await supabaseClient.from('tenants').update(data).eq('id', editTenantId); 
+            showToast("Tenant updated successfully");
         } else {
-            await supabaseClient.from('tenants').insert([data]); 
+            // NEW TENANT MODE
+            const { error } = await supabaseClient.from('tenants').insert([data]); 
+            if(error) {
+                showToast("Error adding tenant: " + error.message, 'error');
+                return;
+            }
+
+            // --- SEND WELCOME EMAIL ---
+            await sendEmail(
+                email, 
+                "Welcome to Kozeyy Resident Portal", 
+                "action", 
+                {
+                    title: "Welcome Home!",
+                    message: `You have been added to the resident portal for ${data.address || 'your new home'}. You can now log in to pay rent and submit maintenance requests.`,
+                    actionLink: "https://kozeyy.com/signup.html", 
+                    actionText: "Create Account"
+                }
+            );
+            
+            showToast("Tenant added and invitation sent");
         }
         
         closeModal('modal-tenant'); 
@@ -1881,92 +1906,117 @@ function toggleFeeVisibility() {
 function act_viewApp(id) {
         currentAppId = id;
         const app = state.apps.find(a => a.id === id);
-        
-        // ... (Keep existing populate data logic for name, income, score, etc.) ...
+        if(!app) return;
+
+        // 1. Populate Basic Info
         setText('sd-name', app.name);
         const isVerified = (app.score && app.score > 0) || ['Lease Signed', 'Active', 'Completed'].includes(app.status);
         const incomeLabel = isVerified ? "(Verified)" : "(Self-Reported)";
         setText('sd-income', `$${(app.income||0).toLocaleString()} ${incomeLabel}`);
-        const ratio = app.rent > 0 ? (app.income / app.rent).toFixed(1) : '0';
+        
+        const rent = app.rent || 0;
+        const ratio = rent > 0 ? (app.income / rent).toFixed(1) : 0;
         setText('sd-ratio', ratio);
 
-        // ... (Keep existing background check display logic) ...
+        setText('sd-evict', app.evictions ? 'Yes' : 'No');
+        setText('sd-crim', app.criminal ? 'Yes' : 'No');
 
-        // --- RESET UI ---
-        ['sd-pending-msg', 'sd-api-start', 'sd-admin-panel', 'sd-actions', 'sd-email-option', 'sd-banner'].forEach(eid => document.getElementById(eid).classList.add('hidden-section'));
-        document.getElementById('sd-data-display').classList.remove('hidden-section');
-
-        // --- DETERMINE STATE ---
+        // 2. Reset UI Elements
         const banner = document.getElementById('sd-banner');
-        const emailOpt = document.getElementById('sd-email-option'); 
-        const emailBtn = emailOpt.querySelector('button');
+        const pendingMsg = document.getElementById('sd-pending-msg');
+        const apiStart = document.getElementById('sd-api-start');
+        const dataDisplay = document.getElementById('sd-data-display');
+        const actions = document.getElementById('sd-actions');
+        const emailOpt = document.getElementById('sd-email-option');
+        const adminPanel = document.getElementById('sd-admin-panel');
+        
+        // Hide everything first
+        [banner, pendingMsg, apiStart, dataDisplay, actions, emailOpt, adminPanel].forEach(el => 
+            document.getElementById(el).classList.add('hidden-section')
+        );
 
+        // 3. Status Logic
         if (app.status === 'Approved') {
-            // STEP 1: APPROVED -> UPLOAD
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
             banner.innerText = "Application Approved";
             
             emailOpt.classList.remove('hidden-section');
             emailOpt.querySelector('p').innerText = "Next Step: Upload Lease Agreement.";
-            emailBtn.classList.remove('hidden-section');
-            emailBtn.innerText = "Upload Lease";
-            emailBtn.onclick = () => window.location.href = `lease.html?id=${currentAppId}&name=${encodeURIComponent(app.name)}`;
-
-        } else if (app.status === 'Lease Uploaded') {
-            // STEP 2: UPLOADED -> SEND
+            
+            // Re-render buttons container
+            let btnContainer = document.getElementById('sd-action-buttons');
+            if(!btnContainer) {
+                btnContainer = document.createElement('div');
+                btnContainer.id = 'sd-action-buttons';
+                btnContainer.className = 'flex flex-col gap-2 mt-3';
+                emailOpt.appendChild(btnContainer);
+            }
+            btnContainer.innerHTML = `<a href="lease.html?id=${currentAppId}&name=${encodeURIComponent(app.name)}" class="block w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-center hover:bg-emerald-700">Upload Lease</a>`;
+        } 
+        else if (app.status === 'Lease Uploaded') {
+            // --- OFFLINE / ONLINE LOGIC ---
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-teal-100 text-teal-700 border-teal-200";
             banner.innerText = "Lease Document Ready";
             
             emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Lease uploaded. Ready to send to tenant.";
-            emailBtn.classList.remove('hidden-section');
-            emailBtn.innerText = "Send Lease Now";
-            emailBtn.onclick = () => act_initiateSendLease(currentAppId);
-
-        } else if (app.status === 'Lease Sent') {
-            // STEP 3: SENT -> WAITING
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-purple-50 text-purple-700 border-purple-200";
-            banner.innerHTML = `<i class="fas fa-clock mr-2"></i> Lease Sent - Waiting for Signature`;
+            emailOpt.querySelector('p').innerText = "Choose how to proceed:";
             
-            emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Tenant notified.";
-            emailBtn.classList.add('hidden-section'); // No action needed
+            let btnContainer = document.getElementById('sd-action-buttons');
+            if(!btnContainer) {
+                btnContainer = document.createElement('div');
+                btnContainer.id = 'sd-action-buttons';
+                btnContainer.className = 'flex flex-col gap-2 mt-3';
+                emailOpt.appendChild(btnContainer);
+            }
+            btnContainer.innerHTML = ''; 
 
-        } else if (app.status === 'Lease Signed') {
-            // STEP 4: SIGNED -> COUNTERSIGN
+            // Button 1: Send for Digital Signature
+            const btnSend = document.createElement('button');
+            btnSend.className = "w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow hover:bg-indigo-700";
+            btnSend.innerHTML = `<i class="fas fa-paper-plane mr-2"></i> Send for Digital Signature`;
+            btnSend.onclick = () => act_initiateSendLease(currentAppId);
+            btnContainer.appendChild(btnSend);
+
+            // Button 2: Mark as Already Signed
+            const btnOffline = document.createElement('button');
+            btnOffline.className = "w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-200 border border-slate-200";
+            btnOffline.innerHTML = `<i class="fas fa-check-double mr-2"></i> Already Signed (Skip Sig)`;
+            btnOffline.onclick = () => act_markAsSigned(currentAppId);
+            btnContainer.appendChild(btnOffline);
+        }
+        else if (app.status === 'Lease Signed') {
             banner.classList.remove('hidden-section');
             banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
             banner.innerHTML = `<i class="fas fa-pen-fancy mr-2"></i> Signed by Tenant`;
             
             emailOpt.classList.remove('hidden-section');
             emailOpt.querySelector('p').innerText = "Review and finalize.";
-            emailBtn.classList.remove('hidden-section');
-            emailBtn.innerText = "Countersign Lease";
-            emailBtn.onclick = () => act_openCountersign(currentAppId);
             
-        } else if (app.status === 'Deny') {
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-rose-100 text-rose-700 border-rose-200";
-            banner.innerText = "Application Denied";
-
-        } else if (app.status === 'Conditional') {
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-amber-100 text-amber-700 border-amber-200";
-            banner.innerText = app.notes ? `Condition: ${app.notes}` : "Conditional Offer Sent";
-            
-        } else {
-            // PENDING / REVIEW
-             if (!app.score) {
-                // ... (Keep existing API/Pending logic) ...
+            let btnContainer = document.getElementById('sd-action-buttons');
+            if(!btnContainer) {
+                btnContainer = document.createElement('div');
+                btnContainer.id = 'sd-action-buttons';
+                btnContainer.className = 'flex flex-col gap-2 mt-3';
+                emailOpt.appendChild(btnContainer);
+            }
+            btnContainer.innerHTML = `<button onclick="act_openCountersign(${currentAppId})" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">Countersign Lease</button>`;
+        }
+        else {
+            // Pending / Default Status Logic
+            if (!app.score && app.status === 'Pending') {
                  const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
                 if (hasApiKey) document.getElementById('sd-api-start').classList.remove('hidden-section');
                 else document.getElementById('sd-pending-msg').classList.remove('hidden-section');
-                document.getElementById('sd-actions').classList.add('hidden-section');
-            } else {
+            } else if (app.status === 'Ready for Review') {
+                document.getElementById('sd-data-display').classList.remove('hidden-section');
                 document.getElementById('sd-actions').classList.remove('hidden-section');
+            } else {
+                // Denied, Withdrawn, etc.
+                banner.classList.remove('hidden-section');
+                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-slate-100 text-slate-600 border-slate-200";
+                banner.innerText = `Status: ${app.status}`;
             }
         }
 
@@ -1999,6 +2049,70 @@ function act_viewApp(id) {
         }
     }
 
+function act_markAsSigned(appId) {
+        const app = state.apps.find(a => a.id === appId);
+        if(!app) return;
+
+        openPlatformConfirm(
+            "Confirm Offline Signing", 
+            "You are bypassing the digital signature process.\n\nThis assumes the document you uploaded is ALREADY signed by both parties.",
+            async () => {
+                try {
+                    const ownerId = localStorage.getItem('kozeyy_user_id');
+                    const now = new Date().toISOString();
+
+                    // 1. Update Application (Completed)
+                    await supabaseClient.from('apps').update({ 
+                        status: 'Completed',
+                        tenant_signed_at: now, 
+                        owner_signed_at: now 
+                    }).eq('id', appId);
+
+                    // 2. Create/Update Active Tenant Record
+                    const tenantData = {
+                        name: app.name,
+                        email: app.email,
+                        rent_amount: app.rent,
+                        status: 'Active',
+                        owner_id: ownerId,
+                        lease_url: app.lease_url, // Saves the uploaded PDF as the official lease
+                        lease_signed_at: now
+                    };
+
+                    const { data: existing } = await supabaseClient.from('tenants').select('id').eq('email', app.email).maybeSingle();
+                    
+                    if(existing) {
+                        await supabaseClient.from('tenants').update(tenantData).eq('id', existing.id);
+                    } else {
+                        await supabaseClient.from('tenants').insert([tenantData]);
+                    }
+
+                    // 3. Send Welcome Email
+                    if(app.email) {
+                        await sendEmail(
+                            app.email, 
+                            "Welcome Home! (Lease Active)", 
+                            'welcome',
+                            {
+                                name: app.name,
+                                link: "https://kozeyy.com/tenant.html"
+                            }
+                        );
+                    }
+
+                    closeModal('modal-screening-detail');
+                    await fetchData();
+                    renderAll();
+                    showToast("Lease marked as signed & Tenant activated!");
+
+                } catch(err) {
+                    console.error(err);
+                    showToast("Error: " + err.message, 'error');
+                }
+            }
+        );
+    }
+    
     // Placeholder for when you get the API key
     function runAutoScreening() { 
         showToast("Connecting to Screening API...", 'success');
@@ -2864,7 +2978,6 @@ function logic_resetInvoice() {
             if (file) docUrl = await uploadFile(file, 'invoices'); 
 
             if (isRecurring) {
-                // --- PATH A: SAVE/UPDATE RECURRING ---
                 const recurDay = parseInt(document.getElementById('inv-recur-day').value) || 1;
                 const recurEnd = document.getElementById('inv-recur-end').value || null;
 
@@ -2880,21 +2993,17 @@ function logic_resetInvoice() {
 
                 let error;
                 if(editingRecurringId) {
-                    // UPDATE existing
                     const res = await supabaseClient.from('recurring_invoices').update(recurData).eq('id', editingRecurringId);
                     error = res.error;
                     showToast("Recurring Schedule Updated");
                 } else {
-                    // INSERT new
                     const res = await supabaseClient.from('recurring_invoices').insert([recurData]);
                     error = res.error;
                     showToast("Recurring Invoice Scheduled");
                 }
-                
                 if(error) throw error;
 
             } else {
-                // --- PATH B: STANDARD ONE-TIME INVOICE ---
                 const { error } = await supabaseClient.from('invoices').insert([{ 
                     owner_id: ownerId, 
                     tenant_id: draftInvoice.tenantId, 
@@ -2912,6 +3021,22 @@ function logic_resetInvoice() {
                 }]); 
 
                 if(error) throw error;
+
+                // --- SEND NOTIFICATION EMAIL ---
+                const tenant = state.tenants.find(t => t.id === draftInvoice.tenantId);
+                if(tenant && tenant.email) {
+                    await sendEmail(
+                        tenant.email,
+                        "New Invoice Available",
+                        "alert",
+                        {
+                            title: "New Invoice Received",
+                            message: `A new invoice for $${draftInvoice.total.toLocaleString()} is available in your portal. Due date: ${new Date(draftInvoice.date).toLocaleDateString()}`,
+                            actionLink: "https://kozeyy.com/tenant.html"
+                        }
+                    );
+                }
+
                 showToast("Invoice Sent Successfully"); 
             }
 
@@ -3047,6 +3172,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
