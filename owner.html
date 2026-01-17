@@ -2386,16 +2386,14 @@ async function confirmPay() {
         setText('inv-modal-title', "Create Invoice");
         
         // UPDATE: Block past dates
-        // UPDATE: Use LOCAL time to prevent "tomorrow" bug in evenings
-const now = new Date();
-const year = now.getFullYear();
-const month = String(now.getMonth() + 1).padStart(2, '0');
-const day = String(now.getDate()).padStart(2, '0');
-const localToday = `${year}-${month}-${day}`;
-
-const dateInput = document.getElementById('inv-date');
-dateInput.value = localToday;
-dateInput.min = localToday;
+        // NEW CODE (Fixes the date to your Local Time)
+        const dateInput = document.getElementById('inv-date');
+        const now = new Date();
+        // Manually format YYYY-MM-DD in local time to avoid UTC shifts
+        const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        dateInput.value = localDate;
+        dateInput.min = localDate;
 
         openModal('modal-invoice');
         logic_invMode('fixed');
@@ -3055,6 +3053,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
