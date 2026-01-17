@@ -2385,20 +2385,23 @@ async function confirmPay() {
         
         setText('inv-modal-title', "Create Invoice");
         
-        // UPDATE: Block past dates
-        // NEW CODE (Fixes the date to your Local Time)
-        const dateInput = document.getElementById('inv-date');
+        // --- FIX STARTS HERE ---
+        // 1. Get local date string manually to avoid UTC conversion issues
         const now = new Date();
-        // Manually format YYYY-MM-DD in local time to avoid UTC shifts
-        const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const localDate = `${year}-${month}-${day}`;
+
+        // 2. Set the value
+        const dateInput = document.getElementById('inv-date');
         dateInput.value = localDate;
-        dateInput.min = localDate;
+        // dateInput.min = localDate; // Optional: Comment this out if you want to allow backdating
+        // --- FIX ENDS HERE ---
 
         openModal('modal-invoice');
         logic_invMode('fixed');
     }
-
   function act_viewInvoice(id) {
         const inv = state.invoices.find(i => i.id === id);
         if(!inv) return;
@@ -3053,6 +3056,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
