@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +16,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script type="text/javascript">
-
+   (function(){
+      // Replace with your actual Public Key from EmailJS dashboard
+      emailjs.init("YOUR_PUBLIC_KEY_HERE"); 
+   })();
+</script>
     <style> 
         .rotate-180 { transform: rotate(180deg); }
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
@@ -1998,97 +2003,6 @@ else if (app.status === 'Lease Uploaded') {
         }
     }
 
-        // --- 2. View Applicant (Decides Concierge vs API view) ---
-    function act_viewApp(id) {
-        currentAppId = id;
-        const app = state.apps.find(a => a.id === id);
-        if(!app) return;
-
-        // 1. Populate Basic Info
-        setText('sd-name', app.name);
-        setText('sd-score', app.score || '-');
-        setText('sd-income', '$' + (app.income || 0).toLocaleString());
-        
-        // Calculate Income Ratio
-        const rent = app.rent || 0;
-        const ratio = rent > 0 ? (app.income / rent).toFixed(1) : 0;
-        setText('sd-ratio', ratio);
-
-        setText('sd-evict', app.evictions ? 'Yes' : 'No');
-        setText('sd-crim', app.criminal ? 'Yes' : 'No');
-
-        // 2. Reset UI Elements
-        const banner = document.getElementById('sd-banner');
-        const pendingMsg = document.getElementById('sd-pending-msg');
-        const apiStart = document.getElementById('sd-api-start');
-        const dataDisplay = document.getElementById('sd-data-display');
-        const actions = document.getElementById('sd-actions');
-        const emailOpt = document.getElementById('sd-email-option');
-        const adminPanel = document.getElementById('sd-admin-panel');
-        
-        // Hide everything first
-        [banner, pendingMsg, apiStart, dataDisplay, actions, emailOpt, adminPanel].forEach(el => el.classList.add('hidden-section'));
-
-        // 3. Status Logic
-        if (app.status === 'Pending') {
-            // New applicant, hasn't been screened yet
-            apiStart.classList.remove('hidden-section'); 
-        } 
-        else if (app.status === 'Ready for Review') {
-            // Screening done, show data and Approve/Deny buttons
-            dataDisplay.classList.remove('hidden-section');
-            actions.classList.remove('hidden-section');
-        }
-        else if (app.status === 'Lease Uploaded') {
-            // --- NEW: Offline vs Online Logic ---
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-teal-100 text-teal-700 border-teal-200";
-            banner.innerText = "Lease Document Ready";
-            
-            emailOpt.classList.remove('hidden-section');
-            const pText = emailOpt.querySelector('p');
-            if(pText) pText.innerText = "Choose how to proceed:";
-            
-            // Container for buttons
-            let btnContainer = document.getElementById('sd-action-buttons');
-            if(!btnContainer) {
-                btnContainer = document.createElement('div');
-                btnContainer.id = 'sd-action-buttons';
-                btnContainer.className = 'flex flex-col gap-2 mt-3';
-                emailOpt.appendChild(btnContainer);
-            }
-            btnContainer.innerHTML = ''; // Clear previous
-
-            // Button 1: Send for Digital Signature
-            const btnSend = document.createElement('button');
-            btnSend.className = "w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow hover:bg-indigo-700";
-            btnSend.innerHTML = `<i class="fas fa-paper-plane mr-2"></i> Send for Digital Signature`;
-            btnSend.onclick = () => act_initiateSendLease(currentAppId);
-            btnContainer.appendChild(btnSend);
-
-            // Button 2: Mark as Already Signed
-            const btnOffline = document.createElement('button');
-            btnOffline.className = "w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-200 border border-slate-200";
-            btnOffline.innerHTML = `<i class="fas fa-check-double mr-2"></i> Already Signed (Skip Sig)`;
-            btnOffline.onclick = () => act_markAsSigned(currentAppId);
-            btnContainer.appendChild(btnOffline);
-        }
-        else {
-            // Default view for other statuses (Approved, Active, etc.)
-            dataDisplay.classList.remove('hidden-section');
-            banner.classList.remove('hidden-section');
-            let bannerClass = "bg-slate-100 text-slate-600 border-slate-200";
-            
-            if(app.status === 'Approved') bannerClass = "bg-emerald-100 text-emerald-700 border-emerald-200";
-            if(app.status === 'Deny') bannerClass = "bg-rose-100 text-rose-700 border-rose-200";
-            
-            banner.className = `p-4 rounded-xl border font-bold text-center mb-4 ${bannerClass}`;
-            banner.innerText = `Status: ${app.status}`;
-        }
-
-        openModal('modal-screening-detail');
-    }
-
     function act_markAsSigned(appId) {
         const app = state.apps.find(a => a.id === appId);
         if(!app) return;
@@ -3216,8 +3130,6 @@ function signOut() {
 </script>
 </body>
 </html>
-
-
 
 
 
