@@ -182,12 +182,11 @@
         }
 
         // --- AUTH LOGIC ---
-        // --- AUTH LOGIC ---
         async function handleLogin(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-login');
-            const email = document.getElementById('email').value.trim().toLowerCase();
-            const password = document.getElementById('password').value.trim(); // Note: In a real app, verify password hash here
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
 
             hideError(); 
 
@@ -199,77 +198,58 @@
             try {
                 if(!supabaseClient) throw new Error("Database connection failed.");
 
-                console.log("Checking DB for:", email); 
+                // 1. AUTHENTICATE WITH SUPABASE (Secure Password Check)
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw new Error("Incorrect email or password.");
+
+                // 2. GET USER DETAILS
+                const user = data.user;
+                const userId = user.id;
                 
-                // ---------------------------------------------------------
-                // 1. CHECK OWNERS TABLE FIRST
-                // ---------------------------------------------------------
-                const { data: owners, error: ownerError } = await supabaseClient
-                    .from('owners')
-                    .select('*')
-                    .ilike('email', email)
-                    .limit(1);
+                // We stored 'role' and 'name' inside metadata during signup
+                // If it's missing (legacy user), default to 'tenant'
+                const role = user.user_metadata.role || 'tenant';
+                const fullName = user.user_metadata.name || 'User';
+                const initials = fullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
-                if (ownerError) console.error("Owner lookup error:", ownerError);
+                // 3. SET SESSION DATA
+                const userProfile = { 
+                    name: fullName, 
+                    email: user.email, 
+                    role: role,
+                    initials: initials
+                };
 
-                if (owners && owners.length > 0) {
-                    // OWNER FOUND
-                    const owner = owners[0];
-                    localStorage.setItem('kozeyy_role', 'owner');
-                    localStorage.setItem('kozeyy_user_id', owner.id); // Save the Real UUID
-                    
-                    // Optional: Save profile data for the dashboard header
-                    const profile = { name: owner.name, email: owner.email, initials: owner.name.substring(0,2).toUpperCase() };
-                    localStorage.setItem('kozeyy_profile', JSON.stringify(profile));
+                localStorage.setItem('kozeyy_user_id', userId);
+                localStorage.setItem('kozeyy_role', role);
+                localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
 
+                // 4. REDIRECT
+                if (role === 'owner') {
                     window.location.href = 'owner.html';
-                    return; // Stop here, we are done
-                }
-
-                // ---------------------------------------------------------
-                // 2. IF NOT OWNER, CHECK TENANTS TABLE
-                // ---------------------------------------------------------
-                const { data: tenants, error: tenantError } = await supabaseClient
-                    .from('tenants')
-                    .select('*')
-                    .ilike('email', email)
-                    .limit(1);
-
-                if (tenantError) {
-                    console.error("Tenant lookup error:", tenantError);
-                    throw new Error("System Error"); 
-                }
-
-                if (tenants && tenants.length > 0) {
-                    // TENANT FOUND
-                    const tenant = tenants[0];
-                    localStorage.setItem('kozeyy_role', 'tenant');
-                    localStorage.setItem('kozeyy_user_id', tenant.id);
-                    
+                } else {
+                    // Check if they were applying for a specific listing
                     const pendingListing = localStorage.getItem('pending_application_lid');
                     if(pendingListing) {
                         window.location.href = `applicant.html?listing_id=${pendingListing}`;
                     } else {
                         window.location.href = 'tenant.html';
                     }
-                    return;
                 }
-
-                // ---------------------------------------------------------
-                // 3. NO MATCH FOUND
-                // ---------------------------------------------------------
-                throw new Error("Incorrect email or password.");
 
             } catch (err) {
                 failedAttempts++;
-                console.error("Login Logic Error:", err); 
+                console.error("Login Error:", err); 
                 
-                const msg = err.message.includes("System Error") ? "System Error" : "Incorrect email or password.";
-                
+                // Show generic error to user
                 if (failedAttempts >= 3) {
                     showError("Having trouble?", "Did you forget your password?", true);
                 } else {
-                    showError("Login Failed", msg, false);
+                    showError("Login Failed", "Incorrect email or password.", false);
                 }
 
             } finally {
@@ -278,23 +258,41 @@
                 btn.classList.remove('opacity-75');
             }
         }
+      async function handleForgot(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-forgot');
+    const email = document.getElementById('forgot-email').value.trim();
+    
+    // UI Reset
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Sending...`;
+    btn.disabled = true;
 
-        async function handleForgot(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-forgot');
-            failedAttempts = 0;
-            const originalText = btn.innerText;
-            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Sending...`;
-            btn.disabled = true;
+    try {
+        if(!email) throw new Error("Please enter your email address.");
 
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                document.getElementById('form-forgot').classList.add('hidden-section');
-                document.getElementById('forgot-success').classList.remove('hidden-section');
-            }, 1500);
-        }
+        // CALL SUPABASE AUTH
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + '/update-password.html', 
+        });
+
+        if (error) throw error;
+
+        // Success UI
+        document.getElementById('form-forgot').classList.add('hidden-section');
+        document.getElementById('forgot-success').classList.remove('hidden-section');
+
+    } catch (err) {
+        console.error("Reset Error:", err);
+        alert(err.message || "Failed to send reset email.");
+        
+        // Reset Button on Error
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
     </script>
 </body>
 </html>
+
 
