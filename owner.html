@@ -939,6 +939,46 @@
     let promptCallback = null;
     let platformConfirmCallback = null;
 
+    // --- MASTER CALCULATOR (Fixes Time-of-Day Bugs) ---
+    function calculateOverdueDetails(inv, globalSettings) {
+        // 1. Get Grace Period (Invoice specific or Global default)
+        const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : (parseInt(globalSettings.grace_period || 0));
+        
+        // 2. Normalize Dates (Strip Time to ensure exact day count)
+        const now = new Date();
+        now.setHours(0,0,0,0);
+        
+        // Parse Invoice Date safely
+        const parts = (inv.date || '').split('-');
+        const invDate = new Date(parts[0], parts[1]-1, parts[2]);
+        
+        const dueDate = new Date(invDate);
+        dueDate.setHours(0,0,0,0);
+        dueDate.setDate(dueDate.getDate() + grace);
+        
+        const isOverdue = now > dueDate && inv.status !== 'Paid';
+        let daysLate = 0;
+        let fee = 0;
+
+        if(isOverdue) {
+            const diffTime = now - dueDate;
+            daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            // 3. Calculate Fee
+            const fEnabled = inv.fee_enabled !== undefined ? inv.fee_enabled : (globalSettings.late_fee_enabled !== false);
+            
+            if (fEnabled) {
+                const fType = inv.fee_type || globalSettings.late_fee_method || 'Fixed';
+                const fVal = parseFloat(inv.fee_value !== undefined ? inv.fee_value : (globalSettings.late_fee_amount || 0));
+
+                if (fType === 'Daily') fee = fVal * daysLate; // Fixes the "missing multiplier" bug
+                else if (fType === 'Percentage') fee = inv.total * (fVal / 100);
+                else fee = fVal; // Fixed
+            }
+        }
+        return { isOverdue, daysLate, fee };
+    }
+
     // --- 1. INIT & POLLING ---
     async function initSystem() {
         try {
@@ -1414,11 +1454,6 @@
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
-        
-        const s = state.settings || {};
-        const globalGrace = parseInt(s.grace_period || 0);
-        const globalFeeVal = parseFloat(s.late_fee_amount || 0);
-        const globalFeeType = s.late_fee_method || 'Fixed';
 
         // 1. Calculate Revenue
         state.payments.forEach(p => { 
@@ -1428,35 +1463,18 @@
             }
         });
 
-        // 2. Calculate Outstanding vs Overdue
+        // 2. Calculate Outstanding vs Overdue using Master Function
         state.invoices.forEach(inv => { 
             if(inv.status !== 'Paid') { 
-                const invDate = parseDateStr(inv.date);
-                
-                const grace = inv.grace_period !== undefined ? inv.grace_period : globalGrace;
-                const dueDate = new Date(invDate);
-                dueDate.setDate(dueDate.getDate() + grace);
-                
+                const calc = calculateOverdueDetails(inv, state.settings);
                 let bal = inv.total - (inv.amount_paid || 0);
-                const isOverdue = now > dueDate;
-
-                if (isOverdue) {
-                    const iFeeVal = inv.fee_value !== undefined ? inv.fee_value : globalFeeVal;
-                    const iFeeType = inv.fee_type || globalFeeType;
-                    let fee = iFeeVal;
-                    if(iFeeType === 'Percentage') fee = inv.total * (iFeeVal/100);
-                    bal += fee;
-                }
                 
-                if(bal > 0) { 
-                    if(isOverdue) {
-                        overdue += bal;
-                    } else {
-                        // FIX: Count as outstanding if it's unpaid and NOT overdue.
-                        // We remove the strict month check so late-month invoices don't vanish.
-                        outstanding += bal;
-                    }
-                } 
+                if (calc.isOverdue) {
+                    bal += calc.fee;
+                    overdue += bal;
+                } else {
+                    outstanding += bal;
+                }
             } 
         });
         return { revenue, overdue, outstanding };
@@ -2261,7 +2279,7 @@ async function confirmPay() {
     
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
-   function renderFinancials() {
+  function renderFinancials() {
         const filterVal = document.getElementById('filter-financials').value;
         const tbody = document.getElementById('table-financials');
         const sumContainer = document.getElementById('fin-summary-container');
@@ -2269,11 +2287,6 @@ async function confirmPay() {
 
         tbody.innerHTML = '';
         let transactions = [];
-        const s = state.settings || {};
-        const globalGrace = parseInt(s.grace_period || 0);
-        const globalFeeVal = parseFloat(s.late_fee_amount || 0);
-        const globalFeeType = s.late_fee_method || 'Fixed';
-        const now = new Date();
 
         // Gather Data
         state.invoices.forEach(inv => {
@@ -2296,53 +2309,44 @@ async function confirmPay() {
             const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
             const dateStr = item.displayDate;
             let rowHtml = '';
-
-            // Common classes for hidden columns on mobile
             const hiddenClass = "hidden md:table-cell";
 
             if (isInv) {
-                // Debt Calculation
-                const invDate = parseDateStr(record.date);
-                const grace = record.grace_period !== undefined ? record.grace_period : globalGrace;
-                const dueDate = new Date(invDate);
-                dueDate.setDate(dueDate.getDate() + grace);
-                const isOverdue = now > dueDate && record.status !== 'Paid';
+                // USE MASTER CALCULATION
+                const calc = calculateOverdueDetails(record, state.settings);
+                
                 const baseBal = (record.total || 0) - (record.amount_paid || 0);
                 let currentDebtOnThis = baseBal;
-                if (isOverdue && baseBal > 0) {
-                    const iFeeVal = record.fee_value !== undefined ? record.fee_value : globalFeeVal;
-                    const iFeeType = record.fee_type || globalFeeType;
-                    const fee = iFeeType === 'Percentage' ? record.total * (iFeeVal/100) : iFeeVal;
-                    currentDebtOnThis += fee;
+                
+                if (calc.isOverdue && baseBal > 0) {
+                    currentDebtOnThis += calc.fee;
                 }
+                
                 if (record.status !== 'Paid') totalOutstandingDebt += currentDebtOnThis;
 
                 // UI Variables
-                const statusLabel = record.status === 'Paid' ? 'Paid' : (isOverdue ? 'Overdue' : 'Unpaid');
-                const statusColor = record.status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : (isOverdue ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50');
+                const statusLabel = record.status === 'Paid' ? 'Paid' : (calc.isOverdue ? `Overdue (+${calc.daysLate}d)` : 'Unpaid');
+                const statusColor = record.status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : (calc.isOverdue ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50');
                 const displayAmount = record.total; 
                 const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
                 
-                // INVOICE ROW: Click triggers act_viewInvoice
                 rowHtml = `
                 <tr onclick="act_viewInvoice(${record.id})" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td>
-                    
                     <td class="p-5 text-sm text-slate-500 ${hiddenClass}">${desc}</td>
                     <td class="p-5 text-right font-bold text-slate-800 ${hiddenClass}">$${(displayAmount||0).toLocaleString()}</td>
                     <td class="p-5 text-right ${hiddenClass}"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
                     <td class="p-5 text-right ${hiddenClass}"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
                 </tr>`;
             } else {
-                // PAYMENT ROW: Click triggers act_viewPayment
+                // Payment Row (Unchanged)
                 rowHtml = `
                 <tr onclick="act_viewPayment(${record.id})" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
-                    
                     <td class="p-5 text-sm text-slate-400 italic ${hiddenClass}">Payment Received</td>
                     <td class="p-5 text-right font-bold text-emerald-600 ${hiddenClass}">+$${(record.amount||0).toLocaleString()}</td>
                     <td class="p-5 text-right text-xs text-slate-400 ${hiddenClass}">-</td>
@@ -2356,7 +2360,6 @@ async function confirmPay() {
         sumContainer.classList.remove('hidden-section');
         if (transactions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>'; }
     }
-
     // New Helper Function for Mobile Payment Details
     function act_viewPayment(id) {
         const p = state.payments.find(x => x.id === id);
@@ -2397,33 +2400,17 @@ async function confirmPay() {
         openModal('modal-invoice');
         logic_invMode('fixed');
     }
-  function act_viewInvoice(id) {
+ function act_viewInvoice(id) {
         const inv = state.invoices.find(i => i.id === id);
         if(!inv) return;
 
-        // 1. Determine Dates & Grace Period
-        // Use snapshot grace period if available, otherwise global default
-        const grace = inv.grace_period !== undefined ? inv.grace_period : (parseInt(state.settings.grace_period || 0));
-        const now = new Date();
-        const invDate = parseDateStr(inv.date);
-        const dueDate = new Date(invDate);
-        dueDate.setDate(dueDate.getDate() + grace);
-        
-        // 2. Determine Overdue Status & Days
-        const isOverdue = now > dueDate && inv.status !== 'Paid';
-        let daysOverdue = 0;
-        if(isOverdue) {
-            const diffTime = Math.abs(now - dueDate);
-            daysOverdue = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-        }
-
-        // 3. Calculate Fee using new logic (passing daysOverdue)
-        const lateFee = calculateLateFee(inv.total, inv, daysOverdue);
+        // USE MASTER CALCULATION
+        const calc = calculateOverdueDetails(inv, state.settings);
 
         setText('prev-name', inv.tenant_name || 'Unknown');
         setText('prev-date', new Date(inv.date).toLocaleDateString());
         
-        const currentBal = inv.total + (isOverdue ? lateFee : 0);
+        const currentBal = inv.total + calc.fee;
         setText('prev-total-due', `$${currentBal.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
         setText('inv-modal-title', `Invoice #${inv.id}`);
 
@@ -2433,16 +2420,15 @@ async function confirmPay() {
             tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2 text-slate-600">${item.desc}</td><td class="py-2 text-right font-medium text-slate-800">$${(item.amount||0).toLocaleString()}</td></tr>`;
         });
         
-        // 4. Update the Label Logic for "Daily", "Percentage", or "Fixed"
-        if (isOverdue && lateFee > 0) {
-            const type = inv.fee_type || 'Fixed';
-            const val = inv.fee_value || 0;
+        if (calc.fee > 0) {
+            const type = inv.fee_type || state.settings.late_fee_method || 'Fixed';
+            const val = inv.fee_value !== undefined ? inv.fee_value : state.settings.late_fee_amount;
             
             let feeLabel = `Late Fee`;
             if (type === 'Percentage') feeLabel = `Late Fee (${val}%)`;
-            if (type === 'Daily') feeLabel = `Late Fee ($${val}/day x ${daysOverdue} days)`;
+            if (type === 'Daily') feeLabel = `Late Fee ($${val}/day x ${calc.daysLate} days)`;
 
-            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+            tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${calc.fee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
         }
 
         document.getElementById('inv-step-input').classList.add('hidden-section');
@@ -3060,6 +3046,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
