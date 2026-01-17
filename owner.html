@@ -2519,7 +2519,10 @@ async function confirmPay() {
                         // 5. Reset Date Input to Today (Fix for Issue #3)
                         dateInput.disabled = false;
                         dateInput.parentElement.classList.remove('opacity-50');
-                        dateInput.value = new Date().toISOString().split('T')[0];
+                      // FIX: Use Local Time here too
+            const now = new Date();
+            const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            dateInput.value = localDate;  dateInput.value = new Date().toISOString().split('T')[0];
                         
                         // 6. Clear "Next Scheduled" text (Fix for Issue #3 & #4)
                         if(statusEl) {
@@ -3056,6 +3059,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
