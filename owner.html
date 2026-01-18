@@ -1757,84 +1757,102 @@ function toggleFeeVisibility() {
     async function act_delTenant(id) { openPlatformConfirm("Delete Tenant?", "This cannot be undone.", async () => { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); }); }
     
     async function act_saveListing(e) { 
-        e.preventDefault(); 
-        
-        // --- VALIDATION: Require Contact Info ---
-        const contactInfo = document.getElementById('l-contact').value;
-        if (!contactInfo || contactInfo.trim() === "") {
-            showToast("Contact info is required", "error");
-            document.getElementById('l-contact').focus();
-            return;
-        }
-
-        const btn = document.getElementById('btn-save-listing');
-        const originalText = btn.innerText;
-        btn.innerText = "Uploading Images...";
-        btn.disabled = true;
-
-        const files = document.getElementById('l-img-file').files;
-        let imageUrls = [];
-        
-        try {
-            if (files && files.length > 0) {
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const fileExt = file.name.split('.').pop();
-                    const fileName = `${Date.now()}_${i}.${fileExt}`;
-                    
-                    const { error: uploadError } = await supabaseClient.storage.from('listings').upload(fileName, file);
-                    if (uploadError) throw uploadError;
-                    
-                    const { data } = supabaseClient.storage.from('listings').getPublicUrl(fileName);
-                    imageUrls.push(data.publicUrl);
-                }
-            }
-
-            let ownerId = localStorage.getItem('kozeyy_user_id');
-            if (!ownerId) throw new Error("No owner logged in");
-
-            const listingData = { 
-                owner_id: ownerId, 
-                address: document.getElementById('l-addr').value, 
-                price: parseFloat(document.getElementById('l-price').value), 
-                sqft: parseInt(document.getElementById('l-sqft').value), 
-                beds: parseInt(document.getElementById('l-beds').value), 
-                baths: parseFloat(document.getElementById('l-baths').value), 
-                description: document.getElementById('l-desc').value, 
-                amenities: document.getElementById('l-amen').value, 
-                contact_info: contactInfo, // Use the validated variable
-                date_available: document.getElementById('l-date').value,
-                images: imageUrls, 
-                image_url: imageUrls.length > 0 ? imageUrls[0] : null
-            }; 
-            
-            if(editListingId) {
-                // If editing and no new images uploaded, don't overwrite existing ones
-                if(imageUrls.length === 0) { delete listingData.images; delete listingData.image_url; }
-                const { error } = await supabaseClient.from('listings').update(listingData).eq('id', editListingId);
-                if(error) throw error;
-            } else {
-                const { data, error } = await supabaseClient.from('listings').insert([listingData]).select(); 
-                if(error) throw error;
-                if(data && data[0]) showShareModal(data[0].id);
-            }
-            
-            closeModal('modal-listing'); 
-            await fetchData(); 
-            renderAll();
-            if(!editListingId) showToast("Listing saved!");
-
-        } catch (err) {
-            console.error(err);
-            showToast("Error: " + err.message, 'error');
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-        }
+    e.preventDefault(); 
+    
+    const contactInfo = document.getElementById('l-contact').value;
+    if (!contactInfo || contactInfo.trim() === "") {
+        showToast("Contact info is required", "error");
+        return;
     }
+
+    const btn = document.getElementById('btn-save-listing');
+    const originalText = btn.innerText;
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    const files = document.getElementById('l-img-file').files;
+    let imageUrls = [];
+    
+    try {
+        // Upload new images if they exist
+        if (files && files.length > 0) {
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${i}.${fileExt}`;
+                const { error: uploadError } = await supabaseClient.storage.from('listings').upload(fileName, file);
+                if (uploadError) throw uploadError;
+                const { data } = supabaseClient.storage.from('listings').getPublicUrl(fileName);
+                imageUrls.push(data.publicUrl);
+            }
+        }
+
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const listingData = { 
+            owner_id: ownerId, 
+            address: document.getElementById('l-addr').value, 
+            price: parseFloat(document.getElementById('l-price').value), 
+            sqft: parseInt(document.getElementById('l-sqft').value), 
+            beds: parseInt(document.getElementById('l-beds').value), 
+            baths: parseFloat(document.getElementById('l-baths').value), 
+            description: document.getElementById('l-desc').value, 
+            amenities: document.getElementById('l-amen').value, 
+            contact_info: contactInfo,
+            date_available: document.getElementById('l-date').value
+        }; 
+
+        // If new images were uploaded, add them to the data; otherwise, don't overwrite
+        if (imageUrls.length > 0) {
+            listingData.images = imageUrls;
+            listingData.image_url = imageUrls[0];
+        }
+        
+        if (editListingId) {
+            // PERFORM UPDATE
+            const { error } = await supabaseClient.from('listings').update(listingData).eq('id', editListingId);
+            if (error) throw error;
+            showToast("Listing updated!");
+        } else {
+            // PERFORM INSERT
+            const { data, error } = await supabaseClient.from('listings').insert([listingData]).select(); 
+            if (error) throw error;
+            if (data && data[0]) showShareModal(data[0].id);
+            showToast("Listing posted!");
+        }
+        
+        closeModal('modal-listing'); 
+        await fetchData(); // Refresh the global state
+        renderAll(); // Redraw the UI
+
+    } catch (err) {
+        console.error(err);
+        showToast("Error: " + err.message, 'error');
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+        editListingId = null; // Reset for next use
+    }
+}
     
     function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.address; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.description; document.getElementById('l-amen').value = l.amenities||''; document.getElementById('l-date').value = l.date_available; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
-    async function act_delListing(id) { await supabaseClient.from('listings').delete().eq('id', id); await fetchData(); renderAll(); }
+    async function act_delListing(id) {
+    openPlatformConfirm("Delete Listing?", "This will permanently remove the property from public view.", async () => {
+        try {
+            const { error } = await supabaseClient
+                .from('listings')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            showToast("Listing deleted");
+            await fetchData(); // Sync local state
+            renderAll(); // Remove from UI
+        } catch (err) {
+            showToast("Delete failed: " + err.message, "error");
+        }
+    });
+}
 
     async function act_saveExpense(e) { 
         e.preventDefault(); 
@@ -3172,6 +3190,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
