@@ -574,9 +574,21 @@ function handleApplyClick(listingId) {
         window.location.href = `signup.html?listing_id=${listingId}`;
     }
 }
+
+    window.openListingDetail = function(id) {
+    // This finds the listing in your data and shows a modal or redirects
+    const listing = state.listings.find(l => l.id === id);
+    if (listing) {
+        window.showModal(
+            listing.address, 
+            `Price: $${parseFloat(listing.price).toLocaleString()}/mo\n${listing.description || 'No description provided.'}`
+        );
+    }
+};
 </script>
 </body>
 </html>
+
 
 
 
