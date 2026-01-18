@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -477,92 +478,147 @@
     };
 
     // --- RENTALS & LISTINGS LOGIC ---
-async function fetchListings() {
-    const container = document.getElementById('listings-container');
-    if(!container) return;
-    
-    container.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i><p class="text-slate-500">Loading properties...</p></div>`;
-    
-    try {
-        const { data, error } = await supabaseClient
-            .from('listings')
-            .select('*')
-            .order('created_at', { ascending: false });
+    async function fetchListings() {
+        const container = document.getElementById('listings-container');
+        if(!container) return;
+        
+        // Loading State
+        container.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i><p class="text-slate-500">Loading properties...</p></div>`;
+        
+        try {
+            // Fetch Data
+            const { data, error } = await supabaseClient
+                .from('listings')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-        if(error) throw error;
-        if(!data || data.length === 0) {
-            container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No rentals currently available. Check back soon!</div>`;
-            return;
-        }
-
-        container.innerHTML = '';
-
-        // --- DEFINE DETAIL MODAL OPENER ---
-        window.openListingDetail = function(listingId) {
-            // Strict equality check for UUID strings
-            const l = data.find(x => x.id === listingId);
-            if(!l) return;
+            if(error) throw error;
             
-            const existing = document.getElementById('listing-detail-modal');
-            if(existing) existing.remove();
+            if(!data || data.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No rentals currently available. Check back soon!</div>`;
+                return;
+            }
 
-            // Image Gallery Logic
-            let images = l.images || []; 
-            if (images.length === 0 && l.image_url) images = [l.image_url];
-            if (images.length === 0) images = ['https://via.placeholder.com/800'];
+            // Clear Loading
+            container.innerHTML = '';
 
-            let galleryHtml = images.length === 1 
-                ? `<img src="${images[0]}" class="w-full h-full object-cover">`
-                : `<div class="h-2/3 w-full"><img src="${images[0]}" class="w-full h-full object-cover" id="detail-main-img"></div>
-                   <div class="h-1/3 w-full grid grid-cols-3 gap-2 p-2 overflow-y-auto bg-slate-100">${images.map(img => `<img src="${img}" class="w-full aspect-square object-cover rounded-lg cursor-pointer" onclick="document.getElementById('detail-main-img').src = '${img}'">`).join('')}</div>`;
+            // --- DEFINE DETAIL MODAL OPENER ---
+           window.openListingDetail = function(listingId) {
+                const l = data.find(x => x.id === listingId);
+                if(!l) return;
+                
+                // Remove existing modal if open
+                const existing = document.getElementById('listing-detail-modal');
+                if(existing) existing.remove();
 
-            const amenitiesHtml = (l.amenities || '').split(',').map(a => `<span class="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">${a.trim()}</span>`).join('');
+                // --- NEW IMAGE LOGIC START ---
+                // 1. Consolidate images into an array
+                let images = l.images || []; 
+                if (images.length === 0 && l.image_url) {
+                    images = [l.image_url]; // Fallback to old single image
+                }
+                if (images.length === 0) {
+                    images = ['https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80']; // Default fallback
+                }
 
-            const modalHTML = `
-                <div id="listing-detail-modal" class="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4" onclick="if(event.target === this) this.remove()">
-                    <div class="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
-                        <div class="w-full md:w-1/2 h-96 md:h-auto bg-slate-200 relative flex flex-col">${galleryHtml}</div>
-                        <div class="w-full md:w-1/2 p-8 overflow-y-auto">
-                            <h2 class="text-3xl font-bold text-slate-900">${l.address}</h2>
-                            <p class="text-xl font-bold text-indigo-600 mt-2">$${parseInt(l.price).toLocaleString()}/mo</p>
-                            <div class="flex gap-4 border-y border-slate-100 py-4 my-6 text-center">
-                                <div class="flex-1 border-r"><b>${l.beds}</b> Beds</div>
-                                <div class="flex-1 border-r"><b>${l.baths}</b> Baths</div>
-                                <div class="flex-1"><b>${l.sqft}</b> SqFt</div>
+                // 2. Build Gallery HTML
+                let galleryHtml = '';
+                if (images.length === 1) {
+                    // Single Image Mode
+                    galleryHtml = `<img src="${images[0]}" class="w-full h-full object-cover">`;
+                } else {
+                    // Gallery Mode (Main Image + Vertical Scrolling Grid)
+                    galleryHtml = `
+                        <div class="h-2/3 w-full bg-slate-200">
+                            <img src="${images[0]}" class="w-full h-full object-cover" id="detail-main-img">
+                        </div>
+                        <div class="h-1/3 w-full grid grid-cols-3 gap-2 p-2 overflow-y-auto bg-slate-100 border-t border-slate-200 content-start">
+                            ${images.map(img => `
+                                <img src="${img}" 
+                                     class="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-80 transition border-2 border-transparent hover:border-indigo-500" 
+                                     onclick="document.getElementById('detail-main-img').src = '${img}'">
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                // --- NEW IMAGE LOGIC END ---
+
+                const amenitiesHtml = (l.amenities || '').split(',').map(a => `<span class="bg-slate-100 text-slate-600 text-xs px-3 py-1 rounded-full font-medium">${a.trim()}</span>`).join('');
+                const contactHtml = l.contact_info ? `<div class="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100"><h3 class="font-bold text-blue-900 text-sm mb-1">Contact Owner</h3><p class="text-blue-700 text-sm select-all">${l.contact_info}</p></div>` : '';
+
+                const modalHTML = `
+                    <div id="listing-detail-modal" class="fixed inset-0 z-[100] bg-slate-900/90 backdrop-blur-sm flex items-center justify-center p-4 fade-in" onclick="if(event.target === this) this.remove()">
+                        <div class="bg-white w-full max-w-5xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
+                            <button onclick="document.getElementById('listing-detail-modal').remove()" class="absolute top-4 right-4 z-20 bg-white/20 hover:bg-white/40 backdrop-blur text-white md:text-slate-500 md:bg-slate-100 md:hover:bg-slate-200 w-10 h-10 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+                            
+                            <div class="w-full md:w-1/2 h-96 md:h-auto bg-slate-200 relative flex flex-col">
+                                ${galleryHtml}
                             </div>
-                            <h3 class="font-bold text-sm uppercase mb-2">Description</h3>
-                            <p class="text-slate-600 text-sm mb-6">${l.description || 'No description provided.'}</p>
-                            <div class="flex flex-wrap gap-2 mb-8">${amenitiesHtml}</div>
-                            <button onclick="handleApplyClick('${l.id}')" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-indigo-600 transition text-lg">Apply Now</button>
+
+                            <div class="w-full md:w-1/2 p-8 overflow-y-auto bg-white flex flex-col">
+                                <div class="mb-1">
+                                    <h2 class="text-3xl font-bold text-slate-900 leading-tight">${l.address}</h2>
+                                    <p class="text-xl font-bold text-indigo-600 mt-2">$${parseInt(l.price).toLocaleString()}<span class="text-sm text-slate-400 font-medium">/mo</span></p>
+                                </div>
+
+                                <div class="flex gap-4 border-y border-slate-100 py-4 my-6">
+                                    <div class="text-center px-4 border-r border-slate-100"><i class="fas fa-bed text-slate-400 mb-1"></i><p class="font-bold text-sm">${l.beds} Beds</p></div>
+                                    <div class="text-center px-4 border-r border-slate-100"><i class="fas fa-bath text-slate-400 mb-1"></i><p class="font-bold text-sm">${l.baths} Baths</p></div>
+                                    <div class="text-center px-4"><i class="fas fa-ruler-combined text-slate-400 mb-1"></i><p class="font-bold text-sm">${l.sqft} SqFt</p></div>
+                                </div>
+
+                                <div class="mb-6 flex-1">
+                                    <h3 class="font-bold text-slate-800 mb-2 text-sm uppercase tracking-wide">Description</h3>
+                                    <p class="text-slate-600 text-sm leading-relaxed">${l.description || 'No description provided.'}</p>
+                                </div>
+
+                                <div class="mb-6">
+                                    <h3 class="font-bold text-slate-800 mb-2 text-sm uppercase tracking-wide">Amenities</h3>
+                                    <div class="flex flex-wrap gap-2">${amenitiesHtml}</div>
+                                </div>
+                                
+                                ${contactHtml}
+
+                                <div class="mt-auto pt-4 border-t border-slate-100">
+                                    <button onclick="handleApplyClick(${l.id})" class="block w-full bg-slate-900 text-white text-center py-4 rounded-xl font-bold hover:bg-indigo-600 transition shadow-lg text-lg">
+    Apply Now
+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
+            };
+
+            // --- RENDER CARDS ---
+            data.forEach(l => {
+                const img = l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
+                
+                container.innerHTML += `
+                <div id="listing-${l.id}" class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group flex flex-col cursor-pointer" onclick="openListingDetail(${l.id})">
+                    <div class="h-48 bg-slate-200 relative overflow-hidden">
+                        <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow">For Rent</div>
+                        <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition flex items-center justify-center">
+                            <span class="bg-white text-slate-900 px-4 py-2 rounded-full font-bold text-sm opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition duration-300 shadow-xl">View Details</span>
+                        </div>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="font-bold text-lg text-slate-900 mb-1 truncate">${l.address}</h3>
+                        <p class="text-slate-500 text-sm mb-4 truncate line-clamp-2">${l.description || 'Contact for details'}</p>
+                        <div class="flex items-center gap-4 text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider mt-auto">
+                            <span><i class="fas fa-bed mr-1"></i> ${l.beds} Beds</span>
+                            <span><i class="fas fa-bath mr-1"></i> ${l.baths} Baths</span>
+                            <span><i class="fas fa-ruler mr-1"></i> ${l.sqft} SqFt</span>
+                        </div>
+                        <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                            <div><span class="text-2xl font-extrabold text-indigo-600 brand-font">$${parseInt(l.price).toLocaleString()}</span><span class="text-xs text-slate-400 font-bold">/mo</span></div>
+                            <span class="text-indigo-600 font-bold text-sm hover:underline">View & Apply &rarr;</span>
                         </div>
                     </div>
                 </div>`;
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-        };
-
-        // --- RENDER CARDS ---
-        data.forEach(l => {
-            const img = l.image_url || 'https://via.placeholder.com/800';
-            container.innerHTML += `
-            <div id="listing-${l.id}" class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 group cursor-pointer" onclick="openListingDetail('${l.id}')">
-                <div class="h-48 bg-slate-200 overflow-hidden relative">
-                    <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                </div>
-                <div class="p-6">
-                    <h3 class="font-bold text-lg text-slate-900 mb-1 truncate">${l.address}</h3>
-                    <div class="flex items-center justify-between mt-4">
-                        <span class="text-2xl font-extrabold text-indigo-600">$${parseInt(l.price).toLocaleString()}</span>
-                        <span class="text-indigo-600 font-bold text-sm">View Details &rarr;</span>
-                    </div>
-                </div>
-            </div>`;
-        });
-
-    } catch (err) {
-        console.error("Fetch Error:", err);
-        container.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Error loading rentals.</div>`;
-    }
-}
+            });
 
             // --- AUTO-SCROLL & AUTO-OPEN LOGIC ---
             const urlParams = new URLSearchParams(window.location.search);
@@ -611,17 +667,16 @@ function handleApplyClick(listingId) {
     localStorage.setItem('pending_application_lid', listingId);
 
     if (userId && userRole) {
-        // Redirect directly to application form with string UUID
+        // User is logged in, go straight to the application form
         window.location.href = `applicant.html?listing_id=${listingId}`;
     } else {
-        // Redirect guest to signup while keeping the listing ID in the URL
+        // Guest needs to create an account first
         window.location.href = `signup.html?listing_id=${listingId}`;
     }
 }
 </script>
 </body>
 </html>
-
 
 
 
