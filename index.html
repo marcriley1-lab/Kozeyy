@@ -503,7 +503,7 @@
 
             // --- DEFINE DETAIL MODAL OPENER ---
            window.openListingDetail = function(listingId) {
-                const l = data.find(x => x.id == listingId);
+                const l = data.find(x => x.id === listingId);
                 if(!l) return;
                 
                 // Remove existing modal if open
@@ -660,20 +660,23 @@
         // In index.html script (scroll to bottom)
 function handleApplyClick(listingId) {
     const userId = localStorage.getItem('kozeyy_user_id');
-    // We check for 'kozeyy_role' to confirm they are a real user
     const userRole = localStorage.getItem('kozeyy_role'); 
     
+    // Store the UUID in localStorage so it persists through the login/signup redirect
+    localStorage.setItem('pending_application_lid', listingId);
+
     if (userId && userRole) {
-        // Real Account -> Go to Application
+        // User is logged in, go straight to the application form
         window.location.href = `applicant.html?listing_id=${listingId}`;
     } else {
-        // Guest/No Account -> Go to Signup
+        // Guest needs to create an account first
         window.location.href = `signup.html?listing_id=${listingId}`;
     }
 }
 </script>
 </body>
 </html>
+
 
 
 
