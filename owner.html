@@ -2312,7 +2312,6 @@ async function confirmPay() {
         const ownerId = localStorage.getItem('kozeyy_user_id'); 
 
         if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
-        tid = parseInt(tid); 
         let amt = parseFloat(document.getElementById('pay-amount').value); 
         
         if(tid && amt > 0 && ownerId) { 
@@ -2901,7 +2900,7 @@ function logic_resetInvoice() {
 
         // 3. Save Draft State
         draftInvoice = { 
-            tenantId: parseInt(tidSelect), 
+            tenantId: tidSelect, 
             tenantName: tenant.name, 
             items: JSON.parse(JSON.stringify(invItems)), 
             total: baseTotal, // IMPORTANT: We still only save the BASE total to DB
@@ -3157,6 +3156,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
