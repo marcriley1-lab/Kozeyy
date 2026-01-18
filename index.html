@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -31,20 +32,27 @@
         /* Modal Styles */
         .hidden-modal { display: none !important; }
 
-        /* --- CAROUSEL SCROLLING FIX --- */
-        #detail-image-container {
-            display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            -webkit-overflow-scrolling: touch;
-        }
-        #detail-image-container > div {
-            scroll-snap-align: start;
-            flex-shrink: 0;
-            width: 100%;
-        }
+        /* Carousel Styles */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* This is what allows the "one photo" to actually scroll */
+#detail-image-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+#detail-image-container > div {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+/* Hide scrollbar for a clean look */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-white text-slate-900 scroll-smooth">
@@ -52,37 +60,138 @@
     <nav class="fixed w-full z-50 bg-white/95 backdrop-blur-xl border-b border-slate-100 transition-all duration-300">
         <div class="w-full px-6 lg:px-12">
             <div class="flex justify-between items-center h-20">
+                
                 <div class="flex items-center gap-3 cursor-pointer group" onclick="window.showPage('home')">
                     <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" class="transform group-hover:rotate-3 transition duration-500">
-                        <defs><linearGradient id="brand-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#4F46E5" /> <stop offset="100%" stop-color="#0EA5E9" /> </linearGradient></defs>
+                        <defs>
+                            <linearGradient id="brand-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#4F46E5" /> <stop offset="100%" stop-color="#0EA5E9" /> </linearGradient>
+                        </defs>
                         <rect x="6" y="6" width="10" height="28" rx="2" fill="url(#brand-grad)" />
                         <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="url(#brand-grad)" fill-opacity="0.8" />
                         <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="url(#brand-grad)" fill-opacity="0.9" />
                     </svg>
-                    <span class="text-3xl font-extrabold text-slate-900 tracking-tight brand-font">Kozeyy</span>
+                    <span class="text-3xl font-extrabold text-slate-900 tracking-tight brand-font">
+                        Kozeyy
+                    </span>
                 </div>
                 
                 <div class="hidden md:flex items-center space-x-8">
                     <button onclick="window.showPage('rentals')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition bg-transparent border-none cursor-pointer">Rentals</button>
                     <button onclick="window.showPage('home', 'features')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition bg-transparent border-none cursor-pointer">Features</button>
                     <button onclick="window.showPage('home', 'pricing')" class="text-sm font-semibold text-slate-600 hover:text-blue-600 transition bg-transparent border-none cursor-pointer">Pricing</button>
-                    <a href="login.html" class="bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">Log In</a>
+                    
+                    <a href="login.html" class="bg-blue-600 text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30 transform hover:-translate-y-0.5">
+                        Log In
+                    </a>
+                </div>
+
+                <div class="md:hidden flex items-center">
+                    <a href="login.html" class="text-blue-600 font-bold mr-4 text-sm">Log In</a>
+                    <button class="text-slate-600 hover:text-blue-600"><i class="fas fa-bars text-xl"></i></button>
                 </div>
             </div>
         </div>
     </nav>
 
     <div id="page-home" class="fade-in">
+        
         <section class="hero-bg min-h-screen flex items-center relative pt-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+                
                 <span class="inline-block py-1.5 px-4 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold tracking-wide mb-8 backdrop-blur-sm uppercase">
                     <i class="fas fa-star mr-1 text-yellow-400"></i> Founder's Club: Spots Limited
                 </span>
-                <h1 class="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tight leading-tight brand-font drop-shadow-md">Premium Management.<br><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-100 via-white to-blue-200">Locked in at $0/mo.</span></h1>
-                <p class="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">Kozeyy builds the future of property management. Join our <strong>Founder's Club</strong> today and get our Pro Software free for life.</p>
+
+                <h1 class="text-5xl md:text-7xl font-bold text-white mb-8 tracking-tight leading-tight brand-font drop-shadow-md">
+                    Premium Management.<br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-100 via-white to-blue-200">
+                        Locked in at $0/mo.
+                    </span>
+                </h1>
+
+                <p class="text-xl text-slate-300 mb-12 max-w-2xl mx-auto leading-relaxed font-light">
+                    Kozeyy builds the future of property management. Join our <strong>Founder's Club</strong> today and get our Pro Software free for life.
+                </p>
+                
                 <div class="flex justify-center gap-4">
-                    <a href="signup.html" class="bg-blue-600 text-white px-12 py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-1">Claim Free Account</a>
-                    <button onclick="window.showPage('rentals')" class="bg-white/10 backdrop-blur border border-white/30 text-white px-12 py-4 rounded-xl text-lg font-bold hover:bg-white/20 transition cursor-pointer">View Rentals</button>
+                    <a href="signup.html" class="bg-blue-600 text-white px-12 py-4 rounded-xl text-lg font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/30 transform hover:-translate-y-1">
+                        Claim Free Account
+                    </a>
+                    <button onclick="window.showPage('rentals')" class="bg-white/10 backdrop-blur border border-white/30 text-white px-12 py-4 rounded-xl text-lg font-bold hover:bg-white/20 transition cursor-pointer">
+                        View Rentals
+                    </button>
+                </div>
+                
+                <div class="mt-16 text-slate-400 text-sm font-medium">
+                    <p class="mb-6 uppercase tracking-widest text-xs opacity-70">Secured & Powered By</p>
+                    <div class="flex justify-center gap-10 items-center opacity-70 grayscale transition hover:grayscale-0">
+                        <i class="fab fa-stripe text-5xl"></i>
+                        <i class="fab fa-aws text-4xl"></i>
+                        <i class="fab fa-google text-3xl"></i>
+                        <i class="fas fa-shield-alt text-3xl"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="py-24 bg-slate-50 relative overflow-hidden">
+            <div class="blob bg-blue-200 w-96 h-96 rounded-full top-0 left-0"></div>
+            
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 mb-4 brand-font">Enterprise tools for everyone</h2>
+                    <p class="text-lg text-slate-600 max-w-2xl mx-auto">Automate your rentals with the same tools the big firms use.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Automated Rent</h3>
+                        <p class="text-slate-600 leading-relaxed">Direct deposit ACH payments. Auto-late fees. Financial reporting.</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Tenant Screening</h3>
+                        <p class="text-slate-600 leading-relaxed">Full credit, criminal, and eviction reports paid for by the applicant.</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Maintenance</h3>
+                        <p class="text-slate-600 leading-relaxed">Digital ticketing system. Keep specific records of every repair and expense.</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Messaging</h3>
+                        <p class="text-slate-600 leading-relaxed">Centralized chat. Keep your personal phone number private.</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-mobile-screen"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Resident Portal</h3>
+                        <p class="text-slate-600 leading-relaxed">Give tenants a professional app to pay rent, request repairs, and view history.</p>
+                    </div>
+
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl transition duration-300 group">
+                        <div class="w-14 h-14 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Expense Tracking</h3>
+                        <p class="text-slate-600 leading-relaxed">Log receipts, track repairs, and generate financial reports for tax season.</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -91,20 +200,68 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
                     <h2 class="text-3xl md:text-5xl font-extrabold text-slate-900 mb-4 brand-font">Founder's Club Pricing</h2>
-                    <p class="text-lg text-slate-600">Join our Beta. Get it free forever.</p>
+                    <p class="text-lg text-slate-600">Join our Beta. Help us build the best platform. Get it free forever.</p>
                 </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-                    <div class="bg-slate-900 rounded-3xl p-10 text-white relative shadow-2xl border-2 border-amber-500/50">
-                        <div class="absolute top-0 right-0 bg-amber-500 text-black text-xs font-bold px-4 py-2 rounded-bl-xl uppercase">Early Access</div>
+                    
+                    <div class="bg-slate-900 rounded-3xl p-10 text-white relative shadow-2xl overflow-hidden transform hover:-translate-y-2 transition duration-300 border-2 border-amber-500/50">
+                        <div class="absolute top-0 right-0 bg-amber-500 text-black text-xs font-bold px-4 py-2 rounded-bl-xl uppercase tracking-wider">Early Access</div>
                         <h3 class="text-2xl font-bold mb-2">Founder's Plan</h3>
-                        <div class="flex items-end mb-6 gap-3"><span class="text-2xl text-slate-500 line-through decoration-red-500 decoration-2">$29</span><span class="text-5xl font-extrabold">$0</span><span class="text-slate-400">/ month</span></div>
+                        
+                        <div class="flex items-end mb-6 gap-3">
+                            <span class="text-2xl text-slate-500 line-through decoration-red-500 decoration-2">$29</span>
+                            <span class="text-5xl font-extrabold">$0</span>
+                            <span class="text-slate-400">/ month</span>
+                        </div>
+                        
+                        <p class="text-slate-300 mb-8 border-b border-slate-700 pb-8">Lock in this rate for life. Future users will pay monthly fees.</p>
+                        
                         <ul class="space-y-4 mb-10">
                             <li class="flex items-center"><i class="fas fa-check-circle text-amber-400 mr-3"></i> <strong>Grandfathered Status</strong></li>
                             <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Unlimited Properties</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Automated Rent Collection</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Maintenance Management</li>
+                            <li class="flex items-center"><i class="fas fa-check-circle text-blue-400 mr-3"></i> Priority Support</li>
                         </ul>
                         <a href="signup.html" class="block w-full bg-amber-500 text-slate-900 text-center py-4 rounded-xl font-bold hover:bg-amber-400 transition">Lock In Free Rate</a>
                     </div>
+
+                    <div class="bg-white rounded-3xl p-10 border border-slate-200 text-slate-900 hover:border-blue-200 transition duration-300 shadow-sm">
+                        <h3 class="text-2xl font-bold mb-2">Transaction Fees</h3>
+                        <div class="flex items-baseline mb-6">
+                            <span class="text-xl font-medium text-slate-500">Paid by Tenant or Applicant</span>
+                        </div>
+                        <p class="text-slate-500 mb-8 border-b border-slate-100 pb-8">We monetize financial transactions, not your subscription.</p>
+                        
+                        <ul class="space-y-6">
+                            <li class="flex justify-between items-center">
+                                <span class="font-bold flex items-center"><i class="fas fa-search text-slate-400 mr-3"></i> Screening Report</span>
+                                <span class="text-blue-600 font-bold">$49.99</span>
+                            </li>
+                            <li class="flex justify-between items-center">
+                                <span class="font-bold flex items-center"><i class="fas fa-university text-slate-400 mr-3"></i> ACH Bank Transfer</span>
+                                <span class="text-blue-600 font-bold">$2.50</span>
+                            </li>
+                            <li class="flex justify-between items-center">
+                                <span class="font-bold flex items-center"><i class="fas fa-credit-card text-slate-400 mr-3"></i> Credit Card</span>
+                                <span class="text-blue-600 font-bold">3%</span>
+                            </li>
+                            <li class="flex justify-between items-center">
+                                <span class="font-bold flex items-center"><i class="fas fa-shield-alt text-slate-400 mr-3"></i> Renter's Insurance</span>
+                                <span class="text-blue-600 font-bold">Varies</span>
+                            </li>
+                        </ul>
+                    </div>
+
                 </div>
+            </div>
+        </section>
+
+        <section class="py-20 bg-blue-600">
+            <div class="max-w-4xl mx-auto px-4 text-center text-white">
+                <h2 class="text-3xl md:text-5xl font-extrabold mb-6 brand-font">Don't miss the Founder's Window</h2>
+                <p class="text-xl text-blue-100 mb-10">We will switch to paid subscriptions once we hit our user cap. Secure your free account now.</p>
             </div>
         </section>
     </div>
@@ -112,105 +269,399 @@
     <div id="page-rentals" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
         <div class="max-w-6xl mx-auto px-6 py-8">
             <h1 class="text-4xl font-extrabold text-slate-900 mb-4 brand-font">Available Rentals</h1>
-            <div id="listings-container" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+            <p class="text-slate-500 mb-8 max-w-2xl">Browse our current listings. Apply online in minutes.</p>
+            
+            <div id="listings-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="col-span-full text-center py-12">
+                    <i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i>
+                    <p class="text-slate-500">Loading properties...</p>
+                </div>
+            </div>
+            
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer"><i class="fas fa-arrow-left"></i> Back to Home</button>
         </div>
     </div>
 
-    <div id="modal-listing-detail" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center backdrop-blur-sm p-2 md:p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl relative overflow-hidden flex flex-col max-h-[95vh]">
-            <button onclick="window.closeListingDetail()" class="absolute top-4 right-4 z-[80] w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-slate-600 shadow-sm hover:bg-white transition cursor-pointer"><i class="fas fa-times"></i></button>
-            <div class="flex flex-col h-full overflow-y-auto">
-                <div class="w-full bg-slate-100 relative h-[400px] md:h-[500px] flex-shrink-0 overflow-hidden border-b border-slate-100">
-                    <div id="detail-image-container" class="h-full flex no-scrollbar"></div>
-                    <div id="gallery-nav" class="absolute bottom-6 left-0 right-0 flex justify-center gap-2 pointer-events-none"></div>
+    <div id="page-help" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-8 brand-font">Help Center</h1>
+            <div class="space-y-6">
+                <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-xl mb-3 text-slate-800">How do I add a property?</h3>
+                    <p class="text-slate-600 leading-relaxed mb-4">Go to your Owner Portal, click on the "Listings" tab, and select "Post Listing". Fill out the address and details to get started.</p>
+                    <a href="owner.html" class="text-blue-600 font-bold text-sm hover:underline">Go to Dashboard &rarr;</a>
                 </div>
-                <div class="w-full p-6 md:p-10">
+            </div>
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer"><i class="fas fa-arrow-left"></i> Back to Home</button>
+        </div>
+    </div>
+
+    <div id="page-laws" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-4 brand-font">Rental Laws & Compliance</h1>
+            <p class="text-slate-500 mb-8 max-w-2xl">Disclaimer: Kozeyy provides this for informational purposes only. Landlord-tenant laws vary significantly by state and municipality. Please consult a local attorney for legal advice.</p>
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer"><i class="fas fa-arrow-left"></i> Back to Home</button>
+        </div>
+    </div>
+
+    <div id="page-contact" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-8 brand-font">Contact Us</h1>
+            
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-2xl">
+                <div class="mb-8">
+                    <h3 class="font-bold text-xl mb-2 text-slate-800">Support</h3>
+                    <p class="text-slate-600 mb-2">For account assistance, billing inquiries, or technical support.</p>
+                    <a href="mailto:support@kozeyy.com" class="text-blue-600 font-bold hover:underline flex items-center gap-2 text-lg">
+                        <i class="fas fa-envelope"></i> support@kozeyy.com
+                    </a>
+                </div>
+
+                <div class="border-t border-slate-100 pt-8">
+                    <h3 class="font-bold text-xl mb-2 text-slate-800">Mailing Address</h3>
+                    <p class="text-slate-600 mb-3 text-sm">Official correspondence may be sent to our office:</p>
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-slate-700 font-medium">
+                        <p class="font-bold text-slate-900">Kozeyy Technologies LLC</p>
+                        <p>8735 Dunwoody Place Suite R</p>
+                        <p>Atlanta, GA 30350</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </button>
+        </div>
+    </div>
+
+    <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+            <div class="col-span-1 md:col-span-1">
+                <div class="flex items-center gap-2 text-white mb-4">
+                    <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <defs><linearGradient id="footer-grad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#4F46E5" /><stop offset="100%" stop-color="#0EA5E9" /></linearGradient></defs>
+                        <rect x="6" y="6" width="10" height="28" rx="2" fill="url(#footer-grad)" />
+                        <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="url(#footer-grad)" fill-opacity="0.8" />
+                        <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="url(#footer-grad)" fill-opacity="0.9" />
+                    </svg>
+                    <span class="text-xl font-bold brand-font">Kozeyy</span>
+                </div>
+                <p class="mt-4 text-sm text-slate-400">Simplifying property management for the modern landlord.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 brand-font">Product</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><button onclick="window.showPage('home', 'features')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Features</button></li>
+                    <li><button onclick="window.showPage('home', 'pricing')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Pricing</button></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-4 brand-font">Resources</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><button onclick="window.showPage('help')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Help Center</button></li>
+                    <li><button onclick="window.showPage('laws')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Rental Laws</button></li>
+                    <li><button onclick="window.showPage('contact')" class="hover:text-blue-400 transition bg-transparent border-none cursor-pointer p-0">Contact Us</button></li>
+                </ul>
+            </div>
+           <div>
+            <h4 class="text-white font-bold mb-4 brand-font">Legal</h4>
+            <ul class="space-y-2 text-sm">
+                <li><a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=b2a9fb2d-f565-41df-b672-d594e28d7f75" target="_blank" class="hover:text-blue-400 transition">Privacy Policy</a></li>
+                <li><a href="https://app.termly.io/policy-viewer/policy.html?policyUUID=43dc6ca4-366c-45de-b151-1091d7e77ec7" target="_blank" class="hover:text-blue-400 transition">Terms of Service</a></li>
+            </ul>
+        </div>
+        </div>
+        <div class="text-center text-xs text-slate-600 pt-8 border-t border-slate-800">
+            &copy; 2026 Kozeyy Technologies LLC. All rights reserved.
+        </div>
+    </footer>
+
+    <div id="modal-listing-detail" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center backdrop-blur-sm p-2 md:p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl relative overflow-hidden flex flex-col max-h-[95vh]">
+        <button onclick="window.closeListingDetail()" class="absolute top-4 right-4 z-[80] w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-slate-600 shadow-sm hover:bg-white transition cursor-pointer">
+            <i class="fas fa-times"></i>
+        </button>
+
+        <div class="flex flex-col h-full overflow-y-auto">
+            <div class="w-full bg-slate-100 relative h-[400px] md:h-[500px] flex-shrink-0 overflow-hidden border-b border-slate-100">
+                <div id="detail-image-container" class="h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth">
+                    </div>
+                <div id="gallery-nav" class="absolute bottom-6 left-0 right-0 flex justify-center gap-2 pointer-events-none"></div>
+            </div>
+
+            <div class="w-full p-6 md:p-10 flex flex-col">
+                <div class="mb-8">
                     <h2 id="detail-address" class="text-3xl font-extrabold text-slate-900 brand-font mb-3"></h2>
-                    <div class="flex gap-4 text-sm font-bold text-indigo-600 uppercase mb-8">
+                    <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-indigo-600 uppercase tracking-widest">
                         <span id="detail-price" class="text-xl text-emerald-600"></span>
+                        <span class="text-slate-300 hidden md:inline">|</span>
                         <span id="detail-specs"></span>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div class="md:col-span-2"><h3 class="text-xs font-bold text-slate-400 uppercase mb-4">Description</h3><p id="detail-desc" class="text-slate-600 leading-relaxed"></p></div>
-                        <div class="space-y-6">
-                            <div><h3 class="text-xs font-bold text-slate-400 uppercase mb-4">Owner Contact</h3>
-                                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100"><p id="detail-contact" class="text-slate-900 font-bold text-sm flex items-center gap-2"></p></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2 space-y-8">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Property Description</h3>
+                            <p id="detail-desc" class="text-slate-600 leading-relaxed"></p>
+                        </div>
+                        
+                        <div id="detail-amenities-section" class="hidden">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Building Amenities</h3>
+                            <div id="detail-amenities" class="flex flex-wrap gap-2"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Owner Contact</h3>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                <p id="detail-contact" class="text-slate-900 font-bold text-sm flex items-center gap-2">
+                                    <i class="fas fa-id-card text-indigo-500"></i>
+                                </p>
                             </div>
-                            <button id="btn-apply-now" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold hover:bg-blue-700 transition text-lg brand-font">Apply Now</button>
+                        </div>
+
+                        <div class="pt-4">
+                            <button id="btn-apply-now" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/20 transform hover:-translate-y-1 cursor-pointer text-lg brand-font">
+                                Apply Now
+                            </button>
+                            <p class="text-center text-[10px] text-slate-400 mt-4 font-medium px-4">Applications include credit and background screening.</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
+
+    <div id="platform-modal" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-all scale-100">
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl"><i class="fas fa-info-circle"></i></div>
+            <h3 class="text-lg font-bold mb-2 text-slate-900" id="modal-title">Notification</h3>
+            <p class="text-sm text-slate-500 mb-6" id="modal-msg">Message goes here.</p>
+            <button onclick="window.closeModal()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition cursor-pointer">Okay</button>
+        </div>
+    </div>
 
     <script>
+        // --- 1. INITIALIZE GLOBAL STATE ---
         let state = { listings: [] }; 
+
+        // --- 2. SUPABASE CONFIG ---
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        let supabaseClient = null;
+        try { 
+            if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); 
+        } catch(e) { console.error("Supabase Init Error:", e); }
 
-        window.showPage = function(pageId) {
+        // --- 3. NAVIGATION LOGIC ---
+        window.showPage = function(pageId, scrollToId = null) {
             document.querySelectorAll('[id^="page-"]').forEach(el => el.classList.add('hidden-page'));
-            document.getElementById('page-' + pageId).classList.remove('hidden-page');
+            const target = document.getElementById('page-' + pageId);
+            if (target) target.classList.remove('hidden-page');
+            
             if (pageId === 'rentals') fetchListings();
+            
+            if (scrollToId) {
+                setTimeout(() => {
+                    const el = document.getElementById(scrollToId);
+                    if(el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            } else if (!window.location.search.includes('highlight')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         };
 
+        // --- 4. MODAL UTILS ---
+        window.closeModal = function() {
+            document.getElementById('platform-modal').classList.add('hidden-modal');
+        };
+        window.showModal = function(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('platform-modal').classList.remove('hidden-modal');
+        };
+
+        window.closeListingDetail = function() {
+            document.getElementById('modal-listing-detail').classList.add('hidden-modal');
+        };
+
+        // --- 5. RENTALS & LISTINGS LOGIC ---
         async function fetchListings() {
             const container = document.getElementById('listings-container');
-            const { data, error } = await supabaseClient.from('listings').select('*').order('created_at', { ascending: false });
-            if (error) return console.error(error);
-            state.listings = data || [];
-            container.innerHTML = '';
-            state.listings.forEach(l => {
-                const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80';
-                container.innerHTML += `
-                    <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 p-4 cursor-pointer" onclick="openListingDetail('${l.id}')">
-                        <img src="${img}" class="w-full h-48 object-cover rounded-2xl mb-4">
-                        <h3 class="font-bold text-lg text-slate-900">${l.address}</h3>
-                        <p class="text-indigo-600 font-bold">$${parseFloat(l.price).toLocaleString()}/mo</p>
+            if (!container) return;
+            
+            if (!supabaseClient) {
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-red-500">Database connection error.</div>`;
+                return;
+            }
+
+            container.innerHTML = `<div class="col-span-full text-center py-12"><i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-4"></i><p class="text-slate-500">Loading properties...</p></div>`;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('listings')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+                
+                state.listings = data || [];
+
+                if (state.listings.length === 0) {
+                    container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-400">No rentals currently available.</div>`;
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                state.listings.forEach(l => {
+                    const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80';
+                    
+                    container.innerHTML += `
+                    <div id="listing-${l.id}" class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group flex flex-col cursor-pointer" onclick="openListingDetail('${l.id}')">
+                        <div class="h-48 bg-slate-200 relative overflow-hidden">
+                            <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow">For Rent</div>
+                        </div>
+                        <div class="p-6 flex-1 flex flex-col">
+                            <h3 class="font-bold text-lg text-slate-900 mb-1 truncate">${l.address}</h3>
+                            <p class="text-slate-500 text-sm mb-4 line-clamp-2">${l.description || 'Contact for details'}</p>
+                            <div class="flex items-center gap-4 text-xs font-bold text-slate-400 mb-6 uppercase tracking-wider mt-auto">
+                                <span><i class="fas fa-bed mr-1"></i> ${l.beds} Beds</span>
+                                <span><i class="fas fa-bath mr-1"></i> ${l.baths} Baths</span>
+                            </div>
+                            <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                                <div><span class="text-2xl font-extrabold text-indigo-600 brand-font">$${parseFloat(l.price).toLocaleString()}</span><span class="text-xs text-slate-400 font-bold">/mo</span></div>
+                                <span class="text-indigo-600 font-bold text-sm">View & Apply &rarr;</span>
+                            </div>
+                        </div>
                     </div>`;
-            });
+                });
+
+                const urlParams = new URLSearchParams(window.location.search);
+                const highlightId = urlParams.get('highlight');
+                if (highlightId) {
+                    setTimeout(() => {
+                        const el = document.getElementById(`listing-${highlightId}`);
+                        if (el) {
+                            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            openListingDetail(highlightId);
+                        }
+                    }, 500);
+                }
+
+            } catch (err) {
+                console.error("Fetch error:", err);
+                container.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Error loading rentals.</div>`;
+            }
         }
 
-        window.openListingDetail = function(id) {
-            const listing = state.listings.find(l => String(l.id) === String(id));
-            if (!listing) return;
+      window.openListingDetail = function(id) {
+    const listing = state.listings.find(l => String(l.id) === String(id));
+    if (!listing) return;
 
-            document.getElementById('detail-address').innerText = listing.address;
-            document.getElementById('detail-price').innerText = `$${parseFloat(listing.price).toLocaleString()}/mo`;
-            document.getElementById('detail-specs').innerText = `${listing.beds} Bed • ${listing.baths} Bath • ${listing.sqft || 0} Sq Ft`;
-            document.getElementById('detail-desc').innerText = listing.description || 'Contact for property details.';
-            document.getElementById('detail-contact').innerHTML = `<i class="fas fa-id-card text-indigo-500"></i> ${listing.contact_info || 'Available after login'}`;
+    // 1. Populate Text Data
+    document.getElementById('detail-address').innerText = listing.address;
+    document.getElementById('detail-price').innerText = `$${parseFloat(listing.price).toLocaleString()}/mo`;
+    document.getElementById('detail-specs').innerText = `${listing.beds} Bed • ${listing.baths} Bath • ${listing.sqft || 0} Sq Ft`;
+    document.getElementById('detail-desc').innerText = listing.description || 'Contact for property details.';
+    
+    // 2. Populate Owner Contact Info
+    const contactEl = document.getElementById('detail-contact');
+    contactEl.innerHTML = `<i class="fas fa-id-card text-indigo-500"></i> ${listing.contact_info || 'Available after login'}`;
 
-            // --- MULTI-PHOTO MERGE LOGIC ---
-            const imgContainer = document.getElementById('detail-image-container');
-            const navContainer = document.getElementById('gallery-nav');
-            imgContainer.innerHTML = ''; navContainer.innerHTML = '';
+    // 3. Setup Multi-Photo Carousel (COMBINED CAPTURE)
+    const imgContainer = document.getElementById('detail-image-container');
+    const navContainer = document.getElementById('gallery-nav');
+    imgContainer.innerHTML = '';
+    navContainer.innerHTML = '';
 
-            let allPhotos = [];
-            if (listing.images && Array.isArray(listing.images)) allPhotos = [...listing.images];
-            if (listing.image_url && !allPhotos.includes(listing.image_url)) allPhotos.push(listing.image_url);
-            if (allPhotos.length === 0) allPhotos.push('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80');
+    // Create a master list from both backend columns
+    let allPhotos = [];
 
-            allPhotos.forEach((url) => {
-                imgContainer.innerHTML += `<div class="w-full h-full flex-shrink-0 snap-start"><img src="${url}" class="w-full h-full object-cover"></div>`;
-                if (allPhotos.length > 1) navContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/40 border border-white/20"></div>`;
-            });
+    // Capture from 'images' array column (text[])
+    if (listing.images && Array.isArray(listing.images)) {
+        allPhotos = [...listing.images];
+    }
 
-            document.getElementById('btn-apply-now').onclick = () => {
-                localStorage.setItem('pending_application_lid', id);
-                window.location.href = `signup.html?listing_id=${id}`;
-            };
-            document.getElementById('modal-listing-detail').classList.remove('hidden-modal');
-        };
+    // Capture from legacy 'image_url' column (text) if not already included
+    if (listing.image_url && !allPhotos.includes(listing.image_url)) {
+        allPhotos.push(listing.image_url);
+    }
 
-        window.closeListingDetail = () => document.getElementById('modal-listing-detail').classList.add('hidden-modal');
+    // Fallback if everything is empty
+    if (allPhotos.length === 0) {
+        allPhotos.push('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80');
+    }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('page') === 'rentals') showPage('rentals');
-        });
+    allPhotos.forEach((url, index) => {
+        imgContainer.innerHTML += `
+            <div class="w-full h-full flex-shrink-0 snap-start">
+                <img src="${url}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80'">
+            </div>`;
+        
+        if (allPhotos.length > 1) {
+            navContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/40 border border-white/20 shadow-sm"></div>`;
+        }
+    });
+    // 4. Amenities Section logic
+    const amenSection = document.getElementById('detail-amenities-section');
+    const amenContainer = document.getElementById('detail-amenities');
+    if (listing.amenities && listing.amenities.trim() !== "") {
+        amenSection.classList.remove('hidden');
+        amenContainer.innerHTML = listing.amenities.split(',').map(a => 
+            `<span class="px-4 py-1.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-700 border border-slate-200">${a.trim()}</span>`
+        ).join('');
+    } else {
+        amenSection.classList.add('hidden');
+    }
+
+    // 5. Connect Apply Button to Application flow
+    document.getElementById('btn-apply-now').onclick = () => handleApplyClick(id);
+
+    // 6. Show Modal
+    document.getElementById('modal-listing-detail').classList.remove('hidden-modal');
+};
+
+window.closeListingDetail = function() {
+    document.getElementById('modal-listing-detail').classList.add('hidden-modal'); //
+};
+        // --- 6. INITIALIZATION ---
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    const highlightId = urlParams.get('highlight'); // Get the UUID from the URL
+    
+    if (page === 'rentals') {
+        showPage('rentals');
+        
+        // Auto-open logic for shared links
+        if (highlightId) {
+            // Wait for data to load then open the modal using the raw UUID string
+            setTimeout(() => {
+                window.openListingDetail(highlightId); 
+            }, 800);
+        }
+    }
+});
+
+        function handleApplyClick(listingId) {
+            localStorage.setItem('pending_application_lid', listingId);
+            const userId = localStorage.getItem('kozeyy_user_id');
+            const userRole = localStorage.getItem('kozeyy_role'); 
+            if (userId && userRole) {
+                window.location.href = `applicant.html?listing_id=${listingId}`;
+            } else {
+                window.location.href = `signup.html?listing_id=${listingId}`;
+            }
+        }
     </script>
 </body>
 </html>
+
+
+
