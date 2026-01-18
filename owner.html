@@ -1102,23 +1102,19 @@ function renderAll() {
     }
 
     // --- 7. RENDER LISTINGS GRID ---
-    const lGrid = document.getElementById('grid-listings');
+   const lGrid = document.getElementById('grid-listings');
     if (lGrid) {
         lGrid.innerHTML = '';
         state.listings.forEach(l => {
+            // Fix: Fallback for broken via.placeholder service
             const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80';
+            
             lGrid.innerHTML += `
             <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition">
-                <div class="h-40 bg-slate-200 relative overflow-hidden">
-                    <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                </div>
-                <div class="p-4">
-                    <h4 class="font-bold text-slate-800 mb-1 truncate">${l.address}</h4>
-                    <div class="flex gap-2">
-                        <button onclick="showShareModal('${l.id}')" class="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100">Share</button>
-                        <button onclick="act_editListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-slate-600"><i class="fas fa-edit"></i></button>
-                        <button onclick="act_delListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-rose-600"><i class="fas fa-trash"></i></button>
-                    </div>
+                <div class="flex gap-2 p-4">
+                    <button onclick="showShareModal('${l.id}')" class="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl text-xs font-bold">Share</button>
+                    <button onclick="act_editListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl"><i class="fas fa-edit"></i></button>
+                    <button onclick="act_delListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl"><i class="fas fa-trash"></i></button>
                 </div>
             </div>`;
         });
@@ -3032,6 +3028,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
