@@ -30,6 +30,10 @@
         
         /* Modal Styles */
         .hidden-modal { display: none !important; }
+
+        /* Carousel Styles */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-white text-slate-900 scroll-smooth">
@@ -281,6 +285,36 @@
         </div>
     </div>
 
+    <div id="page-contact" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
+        <div class="max-w-4xl mx-auto px-6 py-8">
+            <h1 class="text-4xl font-extrabold text-slate-900 mb-8 brand-font">Contact Us</h1>
+            
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-2xl">
+                <div class="mb-8">
+                    <h3 class="font-bold text-xl mb-2 text-slate-800">Support</h3>
+                    <p class="text-slate-600 mb-2">For account assistance, billing inquiries, or technical support.</p>
+                    <a href="mailto:support@kozeyy.com" class="text-blue-600 font-bold hover:underline flex items-center gap-2 text-lg">
+                        <i class="fas fa-envelope"></i> support@kozeyy.com
+                    </a>
+                </div>
+
+                <div class="border-t border-slate-100 pt-8">
+                    <h3 class="font-bold text-xl mb-2 text-slate-800">Mailing Address</h3>
+                    <p class="text-slate-600 mb-3 text-sm">Official correspondence may be sent to our office:</p>
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-slate-700 font-medium">
+                        <p class="font-bold text-slate-900">Kozeyy Technologies LLC</p>
+                        <p>8735 Dunwoody Place Suite R</p>
+                        <p>Atlanta, GA 30350</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </button>
+        </div>
+    </div>
+
     <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div class="col-span-1 md:col-span-1">
@@ -322,6 +356,50 @@
             &copy; 2026 Kozeyy Technologies LLC. All rights reserved.
         </div>
     </footer>
+
+    <div id="modal-listing-detail" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl relative overflow-hidden flex flex-col max-h-[90vh]">
+            <button onclick="window.closeListingDetail()" class="absolute top-4 right-4 z-[80] w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-slate-600 shadow-sm hover:bg-white transition cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
+
+            <div class="flex flex-col md:flex-row h-full overflow-y-auto">
+                <div class="w-full md:w-1/2 bg-slate-100 relative h-64 md:h-auto overflow-hidden">
+                    <div id="detail-image-container" class="h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth">
+                        </div>
+                    <div id="gallery-nav" class="absolute bottom-4 left-0 right-0 flex justify-center gap-2 pointer-events-none"></div>
+                </div>
+
+                <div class="w-full md:w-1/2 p-8 flex flex-col">
+                    <div class="mb-6">
+                        <h2 id="detail-address" class="text-2xl font-bold text-slate-900 brand-font mb-2"></h2>
+                        <div class="flex items-center gap-4 text-sm font-bold text-indigo-600 uppercase tracking-wider">
+                            <span id="detail-price"></span>
+                            <span class="text-slate-300">|</span>
+                            <span id="detail-specs"></span>
+                        </div>
+                    </div>
+
+                    <div class="flex-1">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Description</h3>
+                        <p id="detail-desc" class="text-slate-600 leading-relaxed mb-8 text-sm"></p>
+                        
+                        <div id="detail-amenities-section" class="hidden">
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Amenities</h3>
+                            <div id="detail-amenities" class="flex flex-wrap gap-2 mb-8"></div>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-100">
+                        <button id="btn-apply-now" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/20 transform hover:-translate-y-0.5 cursor-pointer">
+                            Apply for this Property
+                        </button>
+                        <p class="text-center text-[10px] text-slate-400 mt-3 font-medium">Secure application powered by Kozeyy Technologies</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <div id="platform-modal" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-all scale-100">
@@ -373,6 +451,10 @@
             document.getElementById('platform-modal').classList.remove('hidden-modal');
         };
 
+        window.closeListingDetail = function() {
+            document.getElementById('modal-listing-detail').classList.add('hidden-modal');
+        };
+
         // --- 5. RENTALS & LISTINGS LOGIC ---
         async function fetchListings() {
             const container = document.getElementById('listings-container');
@@ -393,7 +475,6 @@
 
                 if (error) throw error;
                 
-                // --- CRITICAL FIX: Save to global state ---
                 state.listings = data || [];
 
                 if (state.listings.length === 0) {
@@ -404,10 +485,8 @@
                 container.innerHTML = '';
 
                 state.listings.forEach(l => {
-                    // Fallback for broken image service
                     const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80';
                     
-                    // --- UUID FIX: Wrap ${l.id} in single quotes ---
                     container.innerHTML += `
                     <div id="listing-${l.id}" class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group flex flex-col cursor-pointer" onclick="openListingDetail('${l.id}')">
                         <div class="h-48 bg-slate-200 relative overflow-hidden">
@@ -429,7 +508,6 @@
                     </div>`;
                 });
 
-                // Auto-open logic
                 const urlParams = new URLSearchParams(window.location.search);
                 const highlightId = urlParams.get('highlight');
                 if (highlightId) {
@@ -449,14 +527,51 @@
         }
 
         window.openListingDetail = function(id) {
-            // Find listing using safe string comparison
             const listing = state.listings.find(l => String(l.id) === String(id));
-            if (listing) {
-                window.showModal(
-                    listing.address, 
-                    `Price: $${parseFloat(listing.price).toLocaleString()}/mo\n\n${listing.description || 'No description provided.'}`
-                );
+            if (!listing) return;
+
+            // 1. Populate Text Data
+            document.getElementById('detail-address').innerText = listing.address;
+            document.getElementById('detail-price').innerText = `$${parseFloat(listing.price).toLocaleString()}/mo`;
+            document.getElementById('detail-specs').innerText = `${listing.beds} Bed • ${listing.baths} Bath • ${listing.sqft || 0} Sq Ft`;
+            document.getElementById('detail-desc').innerText = listing.description || 'No description provided.';
+
+            // 2. Setup Image Carousel
+            const imgContainer = document.getElementById('detail-image-container');
+            const navContainer = document.getElementById('gallery-nav');
+            imgContainer.innerHTML = '';
+            navContainer.innerHTML = '';
+
+            const images = (listing.images && listing.images.length > 0) ? listing.images : [(listing.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80')];
+
+            images.forEach((url, index) => {
+                imgContainer.innerHTML += `
+                    <div class="w-full h-full flex-shrink-0 snap-start">
+                        <img src="${url}" class="w-full h-full object-cover">
+                    </div>`;
+                
+                if (images.length > 1) {
+                    navContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/50 border border-black/10"></div>`;
+                }
+            });
+
+            // 3. Setup Amenities
+            const amenSection = document.getElementById('detail-amenities-section');
+            const amenContainer = document.getElementById('detail-amenities');
+            if (listing.amenities && listing.amenities.trim() !== "") {
+                amenSection.classList.remove('hidden');
+                amenContainer.innerHTML = listing.amenities.split(',').map(a => 
+                    `<span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600">${a.trim()}</span>`
+                ).join('');
+            } else {
+                amenSection.classList.add('hidden');
             }
+
+            // 4. Hook up Apply Button
+            document.getElementById('btn-apply-now').onclick = () => handleApplyClick(id);
+
+            // 5. Open Modal
+            document.getElementById('modal-listing-detail').classList.remove('hidden-modal');
         };
 
         // --- 6. INITIALIZATION ---
