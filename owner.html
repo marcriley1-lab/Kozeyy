@@ -1053,73 +1053,164 @@
         state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
     }
 function renderAll() {
-    // 1. Get all unique property addresses from both lists to prevent double-counting
-    const uniqueAddresses = new Set([
-        ...state.tenants.map(t => String(t.address)),
-        ...state.listings.map(l => String(l.address))
-    ]);
+        // --- 1. Dashboard Stats (Updated Occupancy Logic) ---
+        // Get unique property addresses from both lists to prevent double-counting
+        const uniqueAddresses = new Set([
+            ...state.tenants.map(t => String(t.address)),
+            ...state.listings.map(l => String(l.address))
+        ]);
 
-    // 2. Total units is based on unique physical locations
-    const totalUnits = uniqueAddresses.size;
+        const totalUnits = uniqueAddresses.size;
+        const activeTenants = state.tenants.filter(t => t.status === 'Active').length;
+        
+        const stats = calculateGlobalStats();
+        const occ = totalUnits > 0 ? Math.round((activeTenants / totalUnits) * 100) : 0;
+        
+        setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
+        setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
+        setText('dash-occupancy', `${occ}%`);
+        setText('dash-maintenance', state.maint.filter(m => m.status === 'Active').length);
+        
+        initChart(stats);
 
-    // 3. Count only those with a current "Active" tenant status
-    const activeTenants = state.tenants.filter(t => t.status === 'Active').length;
+        // --- 2. Tenant Directory (Ensuring String IDs) ---
+        const tBody = document.getElementById('table-tenants');
+        if(tBody) {
+            tBody.innerHTML = '';
+            const filter = document.getElementById('filter-tenant-status') ? document.getElementById('filter-tenant-status').value : 'Active';
+            state.tenants.forEach(t => {
+                if(filter !== 'all' && t.status !== filter) return;
+                
+                const statusColor = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500';
+                tBody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <td class="p-5 font-bold text-slate-700"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold">${t.name.charAt(0)}</div>${t.name}</div></td>
+                    <td class="p-5 hidden md:table-cell text-slate-500 text-sm">${t.address}</td>
+                    <td class="p-5 hidden md:table-cell text-slate-500 text-sm">${t.unit}</td>
+                    <td class="p-5 hidden md:table-cell font-bold text-slate-700">$${t.rent_amount}</td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${t.status}</span></td>
+                    <td class="p-5 text-right">
+                        <button onclick="act_viewTenant('${t.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-eye"></i></button>
+                        <button onclick="act_editTenant('${t.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-edit"></i></button>
+                        <button onclick="act_delTenant('${t.id}')" class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+        }
 
-    // 4. Final stats calculation
-    const stats = calculateGlobalStats();
-    const occ = totalUnits > 0 ? Math.round((activeTenants / totalUnits) * 100) : 0;
+        // --- 3. Listings Grid (Updated Fallback Images & String IDs) ---
+        const lGrid = document.getElementById('grid-listings');
+        if (lGrid) {
+            lGrid.innerHTML = '';
+            state.listings.forEach(l => {
+                // Reliable fallback image from Unsplash to fix ERR_NAME_NOT_RESOLVED
+                const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80';
+                
+                lGrid.innerHTML += `
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition">
+                    <div class="h-40 bg-slate-200 relative overflow-hidden">
+                        <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold shadow-sm">$${l.price}/mo</div>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-bold text-slate-800 mb-1 truncate">${l.address}</h4>
+                        <div class="flex gap-3 text-xs text-slate-500 mb-4">
+                            <span><i class="fas fa-bed mr-1"></i>${l.beds || 0}</span>
+                            <span><i class="fas fa-bath mr-1"></i>${l.baths || 0}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="showShareModal('${l.id}')" class="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100">Share</button>
+                            <button onclick="act_editListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-slate-600"><i class="fas fa-edit"></i></button>
+                            <button onclick="act_delListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-rose-600"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
 
-    // 5. Update UI Cards
-    setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
-    setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
-    setText('dash-occupancy', `${occ}%`);
-    setText('dash-maintenance', state.maint.filter(m => m.status === 'Active').length);
-    
-    initChart(stats);
+        // --- 4. Screening Table ---
+        const sBody = document.getElementById('table-screening');
+        if(sBody) {
+            sBody.innerHTML = '';
+            state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
+                let displayStatus = app.status;
+                let statusColor = "bg-slate-100 text-slate-500";
+                let actionButton = '';
 
-    // --- 6. RENDER TENANT DIRECTORY ---
-    const tBody = document.getElementById('table-tenants');
-    if(tBody) {
-        tBody.innerHTML = '';
-        const filter = document.getElementById('filter-tenant-status')?.value || 'Active';
-        state.tenants.forEach(t => {
-            if(filter !== 'all' && t.status !== filter) return;
-            const statusColor = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500';
-            // IDs are passed as raw strings (UUIDs)
-            tBody.innerHTML += `
-            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                <td class="p-5 font-bold text-slate-700">${t.name}</td>
-                <td class="p-5 hidden md:table-cell text-slate-500 text-sm">${t.address}</td>
-                <td class="p-5 hidden md:table-cell text-slate-500 text-sm">${t.unit}</td>
-                <td class="p-5 hidden md:table-cell font-bold text-slate-700">$${t.rent_amount}</td>
-                <td class="p-5 text-right">
-                    <button onclick="act_viewTenant('${t.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-eye"></i></button>
-                    <button onclick="act_editTenant('${t.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-edit"></i></button>
-                    <button onclick="act_delTenant('${t.id}')" class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>`;
-        });
+                if(app.status === 'Pending') {
+                    displayStatus = 'Pending';
+                    actionButton = `<button onclick="act_viewApp('${app.id}')" class="text-slate-400 font-bold text-xs"><i class="fas fa-eye"></i> View</button>`;
+                }
+                else if (app.status === 'Ready for Review') {
+                    statusColor = "bg-indigo-100 text-indigo-700";
+                    actionButton = `<button onclick="act_viewApp('${app.id}')" class="text-indigo-600 font-bold text-sm bg-indigo-50 px-3 py-1 rounded hover:bg-indigo-100">Review</button>`;
+                }
+                else if (app.status === 'Approved') {
+                    statusColor = "bg-emerald-100 text-emerald-700";
+                    actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Upload Lease</a>`;
+                }
+                else if (app.status === 'Lease Uploaded') {
+                    statusColor = "bg-teal-100 text-teal-700";
+                    actionButton = `<button onclick="act_initiateSendLease('${app.id}')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">Send Lease</button>`;
+                }
+                else if (app.status === 'Lease Sent') {
+                    statusColor = "bg-purple-100 text-purple-700";
+                    actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
+                }
+                else if (app.status === 'Lease Signed') {
+                    statusColor = "bg-blue-100 text-blue-800";
+                    actionButton = `<button onclick="act_openCountersign('${app.id}')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700 animate-pulse">Countersign</button>`;
+                }
+                else if (app.status === 'Active' || app.status === 'Completed') {
+                    statusColor = "bg-slate-100 text-slate-600";
+                    displayStatus = "Active";
+                    actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Active</span>`;
+                }
+
+                const eval = evalApplicant(app);
+
+                sBody.innerHTML += `
+                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
+                        <td class="p-5 font-bold cursor-pointer" onclick="act_viewApp('${app.id}')">
+                            ${app.name}
+                            <div class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</div>
+                        </td>
+                        <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
+                        <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${displayStatus}</span></td>
+                        <td class="p-5 text-right">${actionButton}</td>
+                    </tr>`;
+            });
+        }
+
+        // --- 5. Maintenance Lists ---
+        const ma = document.getElementById('list-maint-active');
+        const mh = document.getElementById('list-maint-history');
+        if(ma && mh) {
+            ma.innerHTML = ''; mh.innerHTML = '';
+            state.maint.forEach(m => {
+                const isActive = m.status === 'Active';
+                const container = isActive ? ma : mh;
+                const date = m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Unknown';
+                const action = isActive ? `<button onclick="act_completeMaint('${m.id}')" class="text-emerald-600 font-bold text-xs">Resolve</button>` : `<button onclick="viewMaintNote('${m.id}')" class="text-slate-400 text-xs">View Note</button>`;
+                
+                container.innerHTML += `
+                <div class="p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition flex justify-between items-center">
+                    <div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-500">${m.category} • ${date}</p></div>
+                    ${action}
+                </div>`;
+            });
+            if(ma.innerHTML === '') ma.innerHTML = '<div class="p-6 text-center text-slate-400 text-sm italic">No active requests</div>';
+        }
+
+        // --- 6. Notifications ---
+        updateBadge('screening', state.notifications.screening);
+        updateBadge('maintenance', state.notifications.maintenance);
+        updateBadge('messages', state.notifications.messages);
+        
+        renderFinancials();
+        renderExpenses();
+        renderReports();
     }
-
-    // --- 7. RENDER LISTINGS GRID ---
-   const lGrid = document.getElementById('grid-listings');
-    if (lGrid) {
-        lGrid.innerHTML = '';
-        state.listings.forEach(l => {
-            // Fix: Fallback for broken via.placeholder service
-            const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80';
-            
-            lGrid.innerHTML += `
-            <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition">
-                <div class="flex gap-2 p-4">
-                    <button onclick="showShareModal('${l.id}')" class="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl text-xs font-bold">Share</button>
-                    <button onclick="act_editListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl"><i class="fas fa-edit"></i></button>
-                    <button onclick="act_delListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>`;
-        });
-    }
-}
 
     function renderReports() {
         const totalRev = state.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -2849,64 +2940,102 @@ function logic_resetInvoice() {
     let editingRecurringId = null; 
 
     async function logic_confirmInvoice() { 
-    if(!draftInvoice) return; 
-    
-    const btn = document.getElementById('btn-confirm-inv');
-    btn.disabled = true; 
-    btn.innerText = "Processing...";
-
-    try {
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        const settings = state.settings || {};
-        const isRecurring = document.getElementById('inv-recurring').checked;
-
-        const file = document.getElementById('inv-doc').files[0]; 
-        let docUrl = null; 
-        if (file) docUrl = await uploadFile(file, 'invoices'); 
-
-        if (isRecurring) {
-            const recurData = {
-                owner_id: ownerId,
-                tenant_id: String(draftInvoice.tenantId), // Ensure UUID String
-                amount: draftInvoice.total,
-                day: parseInt(document.getElementById('inv-recur-day').value) || 1,
-                end_date: document.getElementById('inv-recur-end').value || null,
-                doc_url: docUrl,
-                active: true
-            };
-            const { error } = await supabaseClient.from('recurring_invoices').upsert([recurData]);
-            if(error) throw error;
-        } else {
-            const { error } = await supabaseClient.from('invoices').insert([{ 
-                owner_id: ownerId, 
-                tenant_id: String(draftInvoice.tenantId), // Ensure UUID String
-                tenant_name: draftInvoice.tenantName, 
-                items: draftInvoice.items, 
-                total: draftInvoice.total, 
-                date: draftInvoice.date, 
-                status: 'Unpaid', 
-                landlord_stripe_id: settings.stripe_connect_id || null, 
-                doc_url: docUrl,                         
-                fee_type: settings.late_fee_method || 'Fixed',
-                fee_value: parseFloat(settings.late_fee_amount) || 0,
-                grace_period: parseInt(settings.grace_period) || 0,
-                fee_enabled: settings.late_fee_enabled !== false
-            }]); 
-            if(error) throw error;
-        }
-
-        showToast("Invoice processed successfully");
-        closeModal('modal-invoice'); 
-        await fetchData(); 
-        renderAll();
+        if(!draftInvoice) return; 
         
-    } catch(err) {
-        showToast("Error: " + err.message, 'error');
-    } finally {
-        btn.disabled = false;
-        btn.innerText = "Send Invoice";
+        const btn = document.getElementById('btn-confirm-inv');
+        const originalText = btn.innerText; 
+        btn.disabled = true; 
+        btn.innerText = "Processing...";
+
+        try {
+            const ownerId = localStorage.getItem('kozeyy_user_id');
+            const settings = state.settings || {};
+            const isRecurring = document.getElementById('inv-recurring').checked;
+
+            // Ensure the ID is a string and handle the NaN case
+            const tenantUuid = String(draftInvoice.tenantId);
+            if (tenantUuid === "NaN") {
+                throw new Error("Invalid Tenant ID (NaN). Please re-select the tenant.");
+            }
+
+            const file = document.getElementById('inv-doc').files[0]; 
+            let docUrl = null; 
+            if (file) docUrl = await uploadFile(file, 'invoices'); 
+
+            if (isRecurring) {
+                const recurDay = parseInt(document.getElementById('inv-recur-day').value) || 1;
+                const recurEnd = document.getElementById('inv-recur-end').value || null;
+
+                const recurData = {
+                    owner_id: ownerId,
+                    tenant_id: tenantUuid,
+                    amount: draftInvoice.total,
+                    day: recurDay,
+                    end_date: recurEnd,
+                    doc_url: docUrl,
+                    active: true
+                };
+
+                let error;
+                if(editingRecurringId) {
+                    const res = await supabaseClient.from('recurring_invoices').update(recurData).eq('id', editingRecurringId);
+                    error = res.error;
+                } else {
+                    const res = await supabaseClient.from('recurring_invoices').insert([recurData]);
+                    error = res.error;
+                }
+                if(error) throw error;
+                showToast("Recurring Invoice Scheduled");
+
+            } else {
+                const { error } = await supabaseClient.from('invoices').insert([{ 
+                    owner_id: ownerId, 
+                    tenant_id: tenantUuid, 
+                    tenant_name: draftInvoice.tenantName, 
+                    items: draftInvoice.items, 
+                    total: draftInvoice.total, 
+                    date: draftInvoice.date, 
+                    status: 'Unpaid', 
+                    landlord_stripe_id: settings.stripe_connect_id || null, 
+                    doc_url: docUrl,                         
+                    fee_type: settings.late_fee_method || 'Fixed',
+                    fee_value: parseFloat(settings.late_fee_amount) || 0,
+                    grace_period: parseInt(settings.grace_period) || 0,
+                    fee_enabled: settings.late_fee_enabled !== false
+                }]); 
+
+                if(error) throw error;
+
+                // Send Notification Email
+                const tenant = state.tenants.find(t => String(t.id) === tenantUuid);
+                if(tenant && tenant.email) {
+                    await sendEmail(
+                        tenant.email,
+                        "New Invoice Available",
+                        "alert",
+                        {
+                            title: "New Invoice Received",
+                            message: `A new invoice for $${draftInvoice.total.toLocaleString()} is available in your portal. Due date: ${new Date(draftInvoice.date).toLocaleDateString()}`,
+                            actionLink: "https://kozeyy.com/tenant.html"
+                        }
+                    );
+                }
+
+                showToast("Invoice Sent Successfully"); 
+            }
+
+            closeModal('modal-invoice'); 
+            await fetchData(); 
+            renderAll();
+            
+        } catch(err) {
+            console.error(err);
+            showToast("Error: " + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
     }
-}
     
     function updateFileName(inputId, labelId) { const input = document.getElementById(inputId); const label = document.getElementById(labelId); if(input.files && input.files[0]) { label.innerText = input.files[0].name; label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } else { label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File'; label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } }
     
@@ -3028,6 +3157,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
