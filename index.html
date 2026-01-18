@@ -357,49 +357,64 @@
         </div>
     </footer>
 
-    <div id="modal-listing-detail" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center backdrop-blur-sm p-4">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl relative overflow-hidden flex flex-col max-h-[90vh]">
-            <button onclick="window.closeListingDetail()" class="absolute top-4 right-4 z-[80] w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-slate-600 shadow-sm hover:bg-white transition cursor-pointer">
-                <i class="fas fa-times"></i>
-            </button>
+    <div id="modal-listing-detail" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[70] flex items-center justify-center backdrop-blur-sm p-2 md:p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl relative overflow-hidden flex flex-col max-h-[95vh]">
+        <button onclick="window.closeListingDetail()" class="absolute top-4 right-4 z-[80] w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-slate-600 shadow-sm hover:bg-white transition cursor-pointer">
+            <i class="fas fa-times"></i>
+        </button>
 
-            <div class="flex flex-col md:flex-row h-full overflow-y-auto">
-                <div class="w-full md:w-1/2 bg-slate-100 relative h-64 md:h-auto overflow-hidden">
-                    <div id="detail-image-container" class="h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth">
-                        </div>
-                    <div id="gallery-nav" class="absolute bottom-4 left-0 right-0 flex justify-center gap-2 pointer-events-none"></div>
+        <div class="flex flex-col h-full overflow-y-auto">
+            <div class="w-full bg-slate-100 relative h-[400px] md:h-[500px] flex-shrink-0 overflow-hidden border-b border-slate-100">
+                <div id="detail-image-container" class="h-full flex overflow-x-auto snap-x snap-mandatory no-scrollbar scroll-smooth">
+                    </div>
+                <div id="gallery-nav" class="absolute bottom-6 left-0 right-0 flex justify-center gap-2 pointer-events-none"></div>
+            </div>
+
+            <div class="w-full p-6 md:p-10 flex flex-col">
+                <div class="mb-8">
+                    <h2 id="detail-address" class="text-3xl font-extrabold text-slate-900 brand-font mb-3"></h2>
+                    <div class="flex flex-wrap items-center gap-4 text-sm font-bold text-indigo-600 uppercase tracking-widest">
+                        <span id="detail-price" class="text-xl text-emerald-600"></span>
+                        <span class="text-slate-300 hidden md:inline">|</span>
+                        <span id="detail-specs"></span>
+                    </div>
                 </div>
 
-                <div class="w-full md:w-1/2 p-8 flex flex-col">
-                    <div class="mb-6">
-                        <h2 id="detail-address" class="text-2xl font-bold text-slate-900 brand-font mb-2"></h2>
-                        <div class="flex items-center gap-4 text-sm font-bold text-indigo-600 uppercase tracking-wider">
-                            <span id="detail-price"></span>
-                            <span class="text-slate-300">|</span>
-                            <span id="detail-specs"></span>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2 space-y-8">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Property Description</h3>
+                            <p id="detail-desc" class="text-slate-600 leading-relaxed"></p>
                         </div>
-                    </div>
-
-                    <div class="flex-1">
-                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Description</h3>
-                        <p id="detail-desc" class="text-slate-600 leading-relaxed mb-8 text-sm"></p>
                         
                         <div id="detail-amenities-section" class="hidden">
-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Amenities</h3>
-                            <div id="detail-amenities" class="flex flex-wrap gap-2 mb-8"></div>
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Building Amenities</h3>
+                            <div id="detail-amenities" class="flex flex-wrap gap-2"></div>
                         </div>
                     </div>
 
-                    <div class="pt-6 border-t border-slate-100">
-                        <button id="btn-apply-now" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/20 transform hover:-translate-y-0.5 cursor-pointer">
-                            Apply for this Property
-                        </button>
-                        <p class="text-center text-[10px] text-slate-400 mt-3 font-medium">Secure application powered by Kozeyy Technologies</p>
+                    <div class="space-y-6">
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Owner Contact</h3>
+                            <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                <p id="detail-contact" class="text-slate-900 font-bold text-sm flex items-center gap-2">
+                                    <i class="fas fa-id-card text-indigo-500"></i>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <button id="btn-apply-now" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-bold hover:bg-blue-700 transition shadow-xl shadow-blue-600/20 transform hover:-translate-y-1 cursor-pointer text-lg brand-font">
+                                Apply Now
+                            </button>
+                            <p class="text-center text-[10px] text-slate-400 mt-4 font-medium px-4">Applications include credit and background screening.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <div id="platform-modal" class="hidden-modal fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-all scale-100">
@@ -526,60 +541,83 @@
             }
         }
 
-        window.openListingDetail = function(id) {
-            const listing = state.listings.find(l => String(l.id) === String(id));
-            if (!listing) return;
+       window.openListingDetail = function(id) {
+    const listing = state.listings.find(l => String(l.id) === String(id)); //
+    if (!listing) return; //
 
-            // 1. Populate Text Data
-            document.getElementById('detail-address').innerText = listing.address;
-            document.getElementById('detail-price').innerText = `$${parseFloat(listing.price).toLocaleString()}/mo`;
-            document.getElementById('detail-specs').innerText = `${listing.beds} Bed • ${listing.baths} Bath • ${listing.sqft || 0} Sq Ft`;
-            document.getElementById('detail-desc').innerText = listing.description || 'No description provided.';
+    // 1. Populate Text Data
+    document.getElementById('detail-address').innerText = listing.address; //
+    document.getElementById('detail-price').innerText = `$${parseFloat(listing.price).toLocaleString()}/mo`; //
+    document.getElementById('detail-specs').innerText = `${listing.beds} Bed • ${listing.baths} Bath • ${listing.sqft || 0} Sq Ft`; //
+    document.getElementById('detail-desc').innerText = listing.description || 'Contact for property details.'; //
+    
+    // 2. Populate Owner Contact Info
+    const contactEl = document.getElementById('detail-contact');
+    contactEl.innerHTML = `<i class="fas fa-id-card text-indigo-500"></i> ${listing.contact_info || 'Available after login'}`; //
 
-            // 2. Setup Image Carousel
-            const imgContainer = document.getElementById('detail-image-container');
-            const navContainer = document.getElementById('gallery-nav');
-            imgContainer.innerHTML = '';
-            navContainer.innerHTML = '';
+    // 3. Setup Multi-Photo Carousel
+    const imgContainer = document.getElementById('detail-image-container');
+    const navContainer = document.getElementById('gallery-nav');
+    imgContainer.innerHTML = '';
+    navContainer.innerHTML = '';
 
-            const images = (listing.images && listing.images.length > 0) ? listing.images : [(listing.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80')];
+    // Handle both new array format and legacy single URL
+    const images = (listing.images && Array.isArray(listing.images) && listing.images.length > 0) 
+        ? listing.images 
+        : [(listing.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80')];
 
-            images.forEach((url, index) => {
-                imgContainer.innerHTML += `
-                    <div class="w-full h-full flex-shrink-0 snap-start">
-                        <img src="${url}" class="w-full h-full object-cover">
-                    </div>`;
-                
-                if (images.length > 1) {
-                    navContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/50 border border-black/10"></div>`;
-                }
-            });
+    images.forEach((url, index) => {
+        imgContainer.innerHTML += `
+            <div class="w-full h-full flex-shrink-0 snap-start">
+                <img src="${url}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80'">
+            </div>`;
+        
+        // Dots only if more than 1 photo
+        if (images.length > 1) {
+            navContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/40 border border-white/20 shadow-sm"></div>`;
+        }
+    });
 
-            // 3. Setup Amenities
-            const amenSection = document.getElementById('detail-amenities-section');
-            const amenContainer = document.getElementById('detail-amenities');
-            if (listing.amenities && listing.amenities.trim() !== "") {
-                amenSection.classList.remove('hidden');
-                amenContainer.innerHTML = listing.amenities.split(',').map(a => 
-                    `<span class="px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600">${a.trim()}</span>`
-                ).join('');
-            } else {
-                amenSection.classList.add('hidden');
-            }
+    // 4. Amenities Section logic
+    const amenSection = document.getElementById('detail-amenities-section');
+    const amenContainer = document.getElementById('detail-amenities');
+    if (listing.amenities && listing.amenities.trim() !== "") {
+        amenSection.classList.remove('hidden');
+        amenContainer.innerHTML = listing.amenities.split(',').map(a => 
+            `<span class="px-4 py-1.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-700 border border-slate-200">${a.trim()}</span>`
+        ).join('');
+    } else {
+        amenSection.classList.add('hidden');
+    }
 
-            // 4. Hook up Apply Button
-            document.getElementById('btn-apply-now').onclick = () => handleApplyClick(id);
+    // 5. Connect Apply Button to Application flow
+    document.getElementById('btn-apply-now').onclick = () => handleApplyClick(id); //
 
-            // 5. Open Modal
-            document.getElementById('modal-listing-detail').classList.remove('hidden-modal');
-        };
+    // 6. Show Modal
+    document.getElementById('modal-listing-detail').classList.remove('hidden-modal'); //
+};
 
+window.closeListingDetail = function() {
+    document.getElementById('modal-listing-detail').classList.add('hidden-modal'); //
+};
         // --- 6. INITIALIZATION ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const page = urlParams.get('page');
-            if (page === 'rentals') showPage('rentals');
-        });
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    const highlightId = urlParams.get('highlight'); // Get the UUID from the URL
+    
+    if (page === 'rentals') {
+        showPage('rentals');
+        
+        // Auto-open logic for shared links
+        if (highlightId) {
+            // Wait for data to load then open the modal using the raw UUID string
+            setTimeout(() => {
+                window.openListingDetail(highlightId); 
+            }, 800);
+        }
+    }
+});
 
         function handleApplyClick(listingId) {
             localStorage.setItem('pending_application_lid', listingId);
@@ -594,3 +632,4 @@
     </script>
 </body>
 </html>
+
