@@ -183,103 +183,54 @@
         }
 
         // --- AUTH LOGIC ---
-        // --- AUTH LOGIC ---
-        async function handleLogin(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-login');
-            const email = document.getElementById('email').value.trim().toLowerCase();
-            const password = document.getElementById('password').value.trim(); // Note: In a real app, verify password hash here
+       async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login');
+    const email = document.getElementById('email').value.trim().toLowerCase();
+    const password = document.getElementById('password').value.trim();
 
-            hideError(); 
+    hideError(); 
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Authenticating...`;
+    btn.disabled = true;
 
-            const originalText = btn.innerHTML;
-            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Checking...`;
-            btn.disabled = true;
-            btn.classList.add('opacity-75');
+    try {
+        // 1. AUTHENTICATE WITH SUPABASE AUTH
+        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
-            try {
-                if(!supabaseClient) throw new Error("Database connection failed.");
+        if (authError) throw authError;
 
-                console.log("Checking DB for:", email); 
-                
-                // ---------------------------------------------------------
-                // 1. CHECK OWNERS TABLE FIRST
-                // ---------------------------------------------------------
-                const { data: owners, error: ownerError } = await supabaseClient
-                    .from('owners')
-                    .select('*')
-                    .ilike('email', email)
-                    .limit(1);
+        const userId = authData.user.id; // This is the UUID
+        localStorage.setItem('kozeyy_user_id', userId);
 
-                if (ownerError) console.error("Owner lookup error:", ownerError);
+        // 2. CHECK ROLE BY LOOKING IN OWNERS TABLE
+        const { data: owner } = await supabaseClient
+            .from('owners')
+            .select('id, name')
+            .eq('id', userId)
+            .maybeSingle();
 
-                if (owners && owners.length > 0) {
-                    // OWNER FOUND
-                    const owner = owners[0];
-                    localStorage.setItem('kozeyy_role', 'owner');
-                    localStorage.setItem('kozeyy_user_id', owner.id); // Save the Real UUID
-                    
-                    // Optional: Save profile data for the dashboard header
-                    const profile = { name: owner.name, email: owner.email, initials: owner.name.substring(0,2).toUpperCase() };
-                    localStorage.setItem('kozeyy_profile', JSON.stringify(profile));
-
-                    window.location.href = 'owner.html';
-                    return; // Stop here, we are done
-                }
-
-                // ---------------------------------------------------------
-                // 2. IF NOT OWNER, CHECK TENANTS TABLE
-                // ---------------------------------------------------------
-                const { data: tenants, error: tenantError } = await supabaseClient
-                    .from('tenants')
-                    .select('*')
-                    .ilike('email', email)
-                    .limit(1);
-
-                if (tenantError) {
-                    console.error("Tenant lookup error:", tenantError);
-                    throw new Error("System Error"); 
-                }
-
-                if (tenants && tenants.length > 0) {
-                    // TENANT FOUND
-                    const tenant = tenants[0];
-                    localStorage.setItem('kozeyy_role', 'tenant');
-                    localStorage.setItem('kozeyy_user_id', tenant.id);
-                    
-                    const pendingListing = localStorage.getItem('pending_application_lid');
-                    if(pendingListing) {
-                        window.location.href = `applicant.html?listing_id=${pendingListing}`;
-                    } else {
-                        window.location.href = 'tenant.html';
-                    }
-                    return;
-                }
-
-                // ---------------------------------------------------------
-                // 3. NO MATCH FOUND
-                // ---------------------------------------------------------
-                throw new Error("Incorrect email or password.");
-
-            } catch (err) {
-                failedAttempts++;
-                console.error("Login Logic Error:", err); 
-                
-                const msg = err.message.includes("System Error") ? "System Error" : "Incorrect email or password.";
-                
-                if (failedAttempts >= 3) {
-                    showError("Having trouble?", "Did you forget your password?", true);
-                } else {
-                    showError("Login Failed", msg, false);
-                }
-
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                btn.classList.remove('opacity-75');
-            }
+        if (owner) {
+            localStorage.setItem('kozeyy_role', 'owner');
+            window.location.href = 'owner.html';
+            return;
         }
 
+        // 3. IF NOT OWNER, THEY MUST BE A TENANT
+        localStorage.setItem('kozeyy_role', 'tenant');
+        const pendingListing = localStorage.getItem('pending_application_lid');
+        window.location.href = pendingListing ? `applicant.html?listing_id=${pendingListing}` : 'tenant.html';
+
+    } catch (err) {
+        showError("Login Failed", "Invalid email or password.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
         async function handleForgot(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-forgot');
@@ -298,4 +249,5 @@
     </script>
 </body>
 </html>
+
 
