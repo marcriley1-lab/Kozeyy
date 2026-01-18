@@ -281,36 +281,6 @@
         </div>
     </div>
 
-    <div id="page-contact" class="hidden-page pt-24 bg-slate-50 min-h-screen fade-in">
-        <div class="max-w-4xl mx-auto px-6 py-8">
-            <h1 class="text-4xl font-extrabold text-slate-900 mb-8 brand-font">Contact Us</h1>
-            
-            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-2xl">
-                <div class="mb-8">
-                    <h3 class="font-bold text-xl mb-2 text-slate-800">Support</h3>
-                    <p class="text-slate-600 mb-2">For account assistance, billing inquiries, or technical support.</p>
-                    <a href="mailto:support@kozeyy.com" class="text-blue-600 font-bold hover:underline flex items-center gap-2 text-lg">
-                        <i class="fas fa-envelope"></i> support@kozeyy.com
-                    </a>
-                </div>
-
-                <div class="border-t border-slate-100 pt-8">
-                    <h3 class="font-bold text-xl mb-2 text-slate-800">Mailing Address</h3>
-                    <p class="text-slate-600 mb-3 text-sm">Official correspondence may be sent to our office:</p>
-                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-100 text-slate-700 font-medium">
-                        <p class="font-bold text-slate-900">Kozeyy Technologies LLC</p>
-                        <p>8735 Dunwoody Place Suite R</p>
-                        <p>Atlanta, GA 30350</p>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="window.showPage('home')" class="mt-8 text-blue-600 font-bold hover:underline flex items-center gap-2 cursor-pointer">
-                <i class="fas fa-arrow-left"></i> Back to Home
-            </button>
-        </div>
-    </div>
-
     <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
         <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div class="col-span-1 md:col-span-1">
@@ -364,7 +334,7 @@
 
     <script>
         // --- 1. INITIALIZE GLOBAL STATE ---
-        let state = { listings: [] }; //
+        let state = { listings: [] }; 
 
         // --- 2. SUPABASE CONFIG ---
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
@@ -423,7 +393,7 @@
 
                 if (error) throw error;
                 
-                // Update global state
+                // --- CRITICAL FIX: Save to global state ---
                 state.listings = data || [];
 
                 if (state.listings.length === 0) {
@@ -434,9 +404,10 @@
                 container.innerHTML = '';
 
                 state.listings.forEach(l => {
-                    // Reliable fallback image
+                    // Fallback for broken image service
                     const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80';
                     
+                    // --- UUID FIX: Wrap ${l.id} in single quotes ---
                     container.innerHTML += `
                     <div id="listing-${l.id}" class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group flex flex-col cursor-pointer" onclick="openListingDetail('${l.id}')">
                         <div class="h-48 bg-slate-200 relative overflow-hidden">
@@ -458,7 +429,7 @@
                     </div>`;
                 });
 
-                // Auto-open logic for highighted IDs
+                // Auto-open logic
                 const urlParams = new URLSearchParams(window.location.search);
                 const highlightId = urlParams.get('highlight');
                 if (highlightId) {
@@ -478,7 +449,7 @@
         }
 
         window.openListingDetail = function(id) {
-            // String comparison to prevent UUID corruption
+            // Find listing using safe string comparison
             const listing = state.listings.find(l => String(l.id) === String(id));
             if (listing) {
                 window.showModal(
