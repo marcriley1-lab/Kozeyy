@@ -509,7 +509,7 @@
             const img = (l.images && l.images[0]) || l.image_url || 'https://via.placeholder.com/800x500?text=No+Image';
             
             container.innerHTML += `
-            <div id="listing-${l.id}" class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group flex flex-col cursor-pointer" onclick="openListingDetail(${l.id})">
+            <div id="listing-${l.id}" class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition duration-300 group flex flex-col cursor-pointer" onclick="openListingDetail('${l.id}')">
                 <div class="h-48 bg-slate-200 relative overflow-hidden">
                     <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
                     <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-slate-800 shadow">For Rent</div>
@@ -577,6 +577,7 @@ function handleApplyClick(listingId) {
 </script>
 </body>
 </html>
+
 
 
 
