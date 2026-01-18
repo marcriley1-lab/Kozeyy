@@ -10,50 +10,48 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        h1, h2, h3, h4, .brand-font { font-family: 'Outfit', sans-serif; }
-        
-        .hero-bg {
-            background-image: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-        .blob {
-            position: absolute;
-            filter: blur(60px);
-            z-index: -1;
-            opacity: 0.5;
-        }
-        .hidden-page { display: none !important; }
-        .fade-in { animation: fadeIn 0.4s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Modal Styles */
-        .hidden-modal { display: none !important; }
+    body { font-family: 'Inter', sans-serif; }
+    h1, h2, h3, h4, .brand-font { font-family: 'Outfit', sans-serif; }
+    
+    .hero-bg {
+        background-image: linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.8)), url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }
+    .blob {
+        position: absolute;
+        filter: blur(60px);
+        z-index: -1;
+        opacity: 0.5;
+    }
+    .hidden-page { display: none !important; }
+    .fade-in { animation: fadeIn 0.4s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Modal Styles */
+    .hidden-modal { display: none !important; }
 
-        /* Carousel Styles */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    /* Carousel Styles */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* This is what allows the "one photo" to actually scroll */
-#detail-image-container {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-}
+    /* Image Container Logic */
+    #detail-image-container {
+        display: flex;
+        overflow-x: auto; /* Allows horizontal scrolling */
+        scroll-snap-type: x mandatory; /* Forces images to snap into place */
+        scroll-behavior: smooth; /* Makes the arrow clicks smooth */
+        -webkit-overflow-scrolling: touch;
+    }
 
-#detail-image-container > div {
-    scroll-snap-align: start;
-    flex-shrink: 0;
-    width: 100%;
-}
-
-/* Hide scrollbar for a clean look */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
+    #detail-image-container > div {
+        scroll-snap-align: start; /* Snap point */
+        flex-shrink: 0; /* Prevents image divs from squishing */
+        width: 100%; /* One image per view */
+        height: 100%;
+    }
+</style>
 </head>
 <body class="bg-white text-slate-900 scroll-smooth">
 
@@ -560,72 +558,115 @@
             }
         }
 
-      window.openListingDetail = function(id) {
-    const listing = state.listings.find(l => String(l.id) === String(id));
-    if (!listing) return;
+    window.openListingDetail = function(id) {
+            const listing = state.listings.find(l => String(l.id) === String(id));
+            if (!listing) return;
 
-    // 1. Populate Text Data
-    document.getElementById('detail-address').innerText = listing.address;
-    document.getElementById('detail-price').innerText = `$${parseFloat(listing.price).toLocaleString()}/mo`;
-    document.getElementById('detail-specs').innerText = `${listing.beds} Bed • ${listing.baths} Bath • ${listing.sqft || 0} Sq Ft`;
-    document.getElementById('detail-desc').innerText = listing.description || 'Contact for property details.';
-    
-    // 2. Populate Owner Contact Info
-    const contactEl = document.getElementById('detail-contact');
-    contactEl.innerHTML = `<i class="fas fa-id-card text-indigo-500"></i> ${listing.contact_info || 'Available after login'}`;
+            // 1. Populate Text Data
+            document.getElementById('detail-address').innerText = listing.address;
+            document.getElementById('detail-price').innerText = `$${parseFloat(listing.price).toLocaleString()}/mo`;
+            document.getElementById('detail-specs').innerText = `${listing.beds} Bed • ${listing.baths} Bath • ${listing.sqft || 0} Sq Ft`;
+            document.getElementById('detail-desc').innerText = listing.description || 'Contact for property details.';
+            
+            // 2. Populate Owner Contact Info
+            const contactEl = document.getElementById('detail-contact');
+            contactEl.innerHTML = `<i class="fas fa-id-card text-indigo-500"></i> ${listing.contact_info || 'Available after login'}`;
 
-    // 3. Setup Multi-Photo Carousel (COMBINED CAPTURE)
-    const imgContainer = document.getElementById('detail-image-container');
-    const navContainer = document.getElementById('gallery-nav');
-    imgContainer.innerHTML = '';
-    navContainer.innerHTML = '';
+            // 3. Setup Multi-Photo Carousel (Merged & Robust)
+            const imgContainer = document.getElementById('detail-image-container');
+            const navContainer = document.getElementById('gallery-nav');
+            const wrapper = imgContainer.parentElement; // The relative parent container
 
-    // Create a master list from both backend columns
-    let allPhotos = [];
+            // Reset
+            imgContainer.innerHTML = '';
+            navContainer.innerHTML = '';
+            
+            // Remove old arrows if they exist from a previous open
+            wrapper.querySelectorAll('.carousel-arrow').forEach(el => el.remove());
 
-    // Capture from 'images' array column (text[])
-    if (listing.images && Array.isArray(listing.images)) {
-        allPhotos = [...listing.images];
-    }
+            // Merge 'images' array and 'image_url' string into a unique Set
+            let uniquePhotos = new Set();
 
-    // Capture from legacy 'image_url' column (text) if not already included
-    if (listing.image_url && !allPhotos.includes(listing.image_url)) {
-        allPhotos.push(listing.image_url);
-    }
+            // A. Check legacy single column
+            if (listing.image_url) uniquePhotos.add(listing.image_url);
 
-    // Fallback if everything is empty
-    if (allPhotos.length === 0) {
-        allPhotos.push('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80');
-    }
+            // B. Check array column
+            if (listing.images) {
+                if (Array.isArray(listing.images)) {
+                    listing.images.forEach(url => uniquePhotos.add(url));
+                } else if (typeof listing.images === 'string') {
+                    // Handle edge case where array is stored as JSON string
+                    try {
+                        const parsed = JSON.parse(listing.images);
+                        if (Array.isArray(parsed)) parsed.forEach(url => uniquePhotos.add(url));
+                    } catch(e) {}
+                }
+            }
 
-    allPhotos.forEach((url, index) => {
-        imgContainer.innerHTML += `
-            <div class="w-full h-full flex-shrink-0 snap-start">
-                <img src="${url}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80'">
-            </div>`;
-        
-        if (allPhotos.length > 1) {
-            navContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/40 border border-white/20 shadow-sm"></div>`;
-        }
-    });
-    // 4. Amenities Section logic
-    const amenSection = document.getElementById('detail-amenities-section');
-    const amenContainer = document.getElementById('detail-amenities');
-    if (listing.amenities && listing.amenities.trim() !== "") {
-        amenSection.classList.remove('hidden');
-        amenContainer.innerHTML = listing.amenities.split(',').map(a => 
-            `<span class="px-4 py-1.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-700 border border-slate-200">${a.trim()}</span>`
-        ).join('');
-    } else {
-        amenSection.classList.add('hidden');
-    }
+            // Convert back to Array
+            let allPhotos = Array.from(uniquePhotos);
 
-    // 5. Connect Apply Button to Application flow
-    document.getElementById('btn-apply-now').onclick = () => handleApplyClick(id);
+            // Fallback
+            if (allPhotos.length === 0) {
+                allPhotos.push('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80');
+            }
 
-    // 6. Show Modal
-    document.getElementById('modal-listing-detail').classList.remove('hidden-modal');
-};
+            // Generate Slides
+            allPhotos.forEach((url, index) => {
+                imgContainer.innerHTML += `
+                    <div class="w-full h-full flex-shrink-0 snap-center">
+                        <img src="${url}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80'">
+                    </div>`;
+                
+                // Add dot indicators
+                if (allPhotos.length > 1) {
+                    navContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/40 border border-white/20 shadow-sm ${index === 0 ? 'bg-white' : ''}"></div>`;
+                }
+            });
+
+            // 4. Inject Navigation Arrows (Left/Right)
+            if (allPhotos.length > 1) {
+                const btnClass = "carousel-arrow absolute top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-slate-800 cursor-pointer transition shadow-lg z-20 border border-white/30";
+                
+                // Left Arrow
+                const leftBtn = document.createElement('button');
+                leftBtn.className = `${btnClass} left-4`;
+                leftBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+                leftBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    imgContainer.scrollBy({ left: -imgContainer.offsetWidth, behavior: 'smooth' });
+                };
+                wrapper.appendChild(leftBtn);
+
+                // Right Arrow
+                const rightBtn = document.createElement('button');
+                rightBtn.className = `${btnClass} right-4`;
+                rightBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                rightBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    imgContainer.scrollBy({ left: imgContainer.offsetWidth, behavior: 'smooth' });
+                };
+                wrapper.appendChild(rightBtn);
+            }
+
+            // 5. Amenities Section logic
+            const amenSection = document.getElementById('detail-amenities-section');
+            const amenContainer = document.getElementById('detail-amenities');
+            if (listing.amenities && listing.amenities.trim() !== "") {
+                amenSection.classList.remove('hidden');
+                amenContainer.innerHTML = listing.amenities.split(',').map(a => 
+                    `<span class="px-4 py-1.5 bg-slate-100 rounded-xl text-xs font-bold text-slate-700 border border-slate-200">${a.trim()}</span>`
+                ).join('');
+            } else {
+                amenSection.classList.add('hidden');
+            }
+
+            // 6. Connect Apply Button to Application flow
+            document.getElementById('btn-apply-now').onclick = () => handleApplyClick(id);
+
+            // 7. Show Modal
+            document.getElementById('modal-listing-detail').classList.remove('hidden-modal');
+        };
 
 window.closeListingDetail = function() {
     document.getElementById('modal-listing-detail').classList.add('hidden-modal'); //
@@ -662,6 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
+
 
 
 
