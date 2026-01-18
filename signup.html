@@ -133,134 +133,63 @@
             document.getElementById('role-tenant').className = !isOwner ? 'role-selected border-2 rounded-xl p-3 text-center transition' : 'role-default border-2 rounded-xl p-3 text-center transition';
         }
 
-       async function handleSignup(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-signup');
-            const originalText = btn.innerHTML;
-            
-            // Get form values
-            const role = document.querySelector('input[name="role"]:checked').value;
-            const username = document.getElementById('username').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const confirm = document.getElementById('confirm-password').value;
-            const fname = document.getElementById('fname').value.trim();
-            const lname = document.getElementById('lname').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            
-            // --- NEW: VALIDATE TERMS ---
-            const agreed = document.getElementById('agree-terms').checked;
-            
-            if(!username || !email || !password || !fname || !lname) return showModal("Error", "Please fill in all required fields.");
-            if(password !== confirm) return showModal("Error", "Passwords do not match.");
-            if(!agreed) return showModal("Terms Required", "You must agree to the Terms of Service and Privacy Policy to create an account.");
+      async function handleSignup(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-signup');
+    const originalText = btn.innerHTML;
+    
+    // Get form values
+    const role = document.querySelector('input[name="role"]:checked').value;
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const fname = document.getElementById('fname').value.trim();
+    const lname = document.getElementById('lname').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const agreed = document.getElementById('agree-terms').checked;
+    
+    if(!email || !password || !fname || !lname) return showModal("Error", "Please fill in all fields.");
+    if(!agreed) return showModal("Terms Required", "You must agree to the terms.");
 
-            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Creating...`;
-            btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Creating...`;
+    btn.disabled = true;
 
-            try {
-                if(!supabaseClient) throw new Error("Database error");
+    try {
+        // 1. CREATE USER IN SUPABASE AUTH (Generates the UUID)
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+            options: { data: { role: role, full_name: `${fname} ${lname}` } }
+        });
 
-                const now = new Date().toISOString();
+        if (authError) throw authError;
+        const userId = authData.user.id; // This is the new UUID
 
-                // 1. CREATE SECURE USER IN SUPABASE AUTH
-                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: {
-                        data: {
-                            role: role,
-                            name: `${fname} ${lname}`,
-                            phone: phone
-                        }
-                    }
-                });
+        // 2. CREATE PUBLIC RECORD USING THAT SAME UUID
+        // This ensures auth.uid() matches the 'id' in your tables
+        const table = role === 'owner' ? 'owners' : 'tenants';
+        const payload = {
+            id: userId, // Primary Key is now the UUID
+            name: `${fname} ${lname}`,
+            email: email,
+            phone: phone,
+            status: role === 'owner' ? 'Active' : 'Applicant'
+        };
 
-                if (authError) throw authError;
+        const { error: dbError } = await supabaseClient.from(table).insert([payload]);
+        if (dbError) throw dbError;
 
-                const userId = authData.user.id;
-                const userProfile = { 
-                    username, 
-                    name: `${fname} ${lname}`, 
-                    email, 
-                    phone, 
-                    role, 
-                    initials: (fname[0]+lname[0]).toUpperCase() 
-                };
+        // 3. SET SESSION & REDIRECT
+        localStorage.setItem('kozeyy_user_id', userId);
+        localStorage.setItem('kozeyy_role', role);
+        
+        window.location.href = (role === 'owner') ? 'owner.html' : 'tenant.html';
 
-                // 2. CREATE PUBLIC RECORD
-                if(role === 'tenant') {
-                    const { data: existing } = await supabaseClient.from('tenants').select('*').eq('email', email).maybeSingle();
-                    
-                    if(existing && (existing.owner_id || existing.status === 'Active')) {
-                        await supabaseClient.from('tenants').update({
-                                id: userId,
-                                name: userProfile.name,
-                                phone: phone,
-                                status: 'Active',
-                                tos_agreed_at: now // Record timestamp
-                            }).eq('email', email);
-                    } else {
-                        await supabaseClient.from('tenants').insert([{
-                                id: userId,
-                                name: userProfile.name,
-                                email: email,
-                                phone: phone,
-                                status: 'Applicant',
-                                rent_amount: 0,
-                                tos_agreed_at: now // Record timestamp
-                            }]);
-                    }
-                } else {
-                    // Owner Record
-                    await supabaseClient.from('owners').insert([{
-                            id: userId,
-                            name: `${fname} ${lname}`,
-                            email: email,
-                            phone: phone,
-                            tos_agreed_at: now // Record timestamp
-                        }]);
-                }
-
-                // 3. SEND REGISTRATION EMAIL
-                try {
-                    await supabaseClient.functions.invoke('send-email', {
-                        body: { 
-                            to: email, 
-                            subject: "Account Created - Kozeyy", 
-                            type: "action", 
-                            data: { 
-                                title: "Registration Successful",
-                                message: `Hi ${fname}, your account has been created. You can now log in to complete your rental application.`,
-                                actionLink: "https://kozeyy.com/login.html",
-                                actionText: "Log In Now"
-                            } 
-                        }
-                    });
-                } catch (emailErr) {
-                    console.warn("Welcome email failed:", emailErr);
-                }
-
-                // 4. SAVE SESSION & REDIRECT
-                localStorage.setItem('kozeyy_user_id', userId);
-                localStorage.setItem('kozeyy_role', role);
-                localStorage.setItem('kozeyy_profile', JSON.stringify(userProfile));
-
-                if(pendingListingId && role === 'tenant') {
-                    window.location.href = `applicant.html?listing_id=${pendingListingId}`;
-                } else if(role === 'owner') {
-                    window.location.href = 'owner.html';
-                } else {
-                    window.location.href = 'tenant.html';
-                }
-
-            } catch(err) {
-                console.error(err);
-                showModal("Error", err.message || "Signup failed");
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        }
+    } catch(err) {
+        showModal("Signup Failed", err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
 
         function showModal(title, msg) {
             document.getElementById('modal-title').innerText = title;
@@ -273,4 +202,5 @@
     </script>
 </body>
 </html>
+
 
