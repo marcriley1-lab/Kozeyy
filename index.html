@@ -34,6 +34,24 @@
         /* Carousel Styles */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* This is what allows the "one photo" to actually scroll */
+#detail-image-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+
+#detail-image-container > div {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+/* Hide scrollbar for a clean look */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="bg-white text-slate-900 scroll-smooth">
@@ -555,42 +573,40 @@
     const contactEl = document.getElementById('detail-contact');
     contactEl.innerHTML = `<i class="fas fa-id-card text-indigo-500"></i> ${listing.contact_info || 'Available after login'}`;
 
-    // 3. Setup Multi-Photo Carousel (REWRITTEN TO PULL FROM BOTH COLUMNS)
+    // 3. Setup Multi-Photo Carousel (COMBINED CAPTURE)
     const imgContainer = document.getElementById('detail-image-container');
     const navContainer = document.getElementById('gallery-nav');
     imgContainer.innerHTML = '';
     navContainer.innerHTML = '';
 
-    // Create a combined list of images from both backend columns
-    let allImages = [];
+    // Create a master list from both backend columns
+    let allPhotos = [];
 
-    // Add images from the array column (images text[])
+    // Capture from 'images' array column (text[])
     if (listing.images && Array.isArray(listing.images)) {
-        allImages = [...listing.images];
+        allPhotos = [...listing.images];
     }
 
-    // Add image from the single column (image_url text) if it's not already in the list
-    if (listing.image_url && !allImages.includes(listing.image_url)) {
-        allImages.push(listing.image_url);
+    // Capture from legacy 'image_url' column (text) if not already included
+    if (listing.image_url && !allPhotos.includes(listing.image_url)) {
+        allPhotos.push(listing.image_url);
     }
 
-    // Fallback if both columns are empty
-    if (allImages.length === 0) {
-        allImages.push('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80');
+    // Fallback if everything is empty
+    if (allPhotos.length === 0) {
+        allPhotos.push('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80');
     }
 
-    // Now loop through the combined list
-    allImages.forEach((url, index) => {
+    allPhotos.forEach((url, index) => {
         imgContainer.innerHTML += `
             <div class="w-full h-full flex-shrink-0 snap-start">
                 <img src="${url}" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80'">
             </div>`;
         
-        if (allImages.length > 1) {
+        if (allPhotos.length > 1) {
             navContainer.innerHTML += `<div class="w-2 h-2 rounded-full bg-white/40 border border-white/20 shadow-sm"></div>`;
         }
     });
-
     // 4. Amenities Section logic
     const amenSection = document.getElementById('detail-amenities-section');
     const amenContainer = document.getElementById('detail-amenities');
@@ -645,5 +661,6 @@ document.addEventListener('DOMContentLoaded', () => {
     </script>
 </body>
 </html>
+
 
 
