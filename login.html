@@ -183,7 +183,7 @@
         }
 
         // --- AUTH LOGIC ---
-       async function handleLogin(e) {
+      async function handleLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-login');
     const email = document.getElementById('email').value.trim().toLowerCase();
@@ -195,18 +195,22 @@
     btn.disabled = true;
 
     try {
-        // 1. AUTHENTICATE WITH SUPABASE AUTH
+        // 1. AUTHENTICATE
         const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password
         });
 
         if (authError) throw authError;
-
-        const userId = authData.user.id; // This is the UUID
+        const userId = authData.user.id;
         localStorage.setItem('kozeyy_user_id', userId);
 
-        // 2. CHECK ROLE BY LOOKING IN OWNERS TABLE
+        // 2. SAFETY CHECK: CLAIM INVITES
+        // If this user was invited by an owner but forced to Login instead of Signup,
+        // this RPC call ensures their "Placeholder" row is merged to their "Real" ID.
+        await supabaseClient.rpc('claim_invite');
+
+        // 3. CHECK ROLE (Owner?)
         const { data: owner } = await supabaseClient
             .from('owners')
             .select('id, name')
@@ -219,12 +223,20 @@
             return;
         }
 
-        // 3. IF NOT OWNER, THEY MUST BE A TENANT
+        // 4. CHECK ROLE (Tenant?)
+        // Now that we ran 'claim_invite', we should find the record if it exists
         localStorage.setItem('kozeyy_role', 'tenant');
+        
+        // Handle pending applications redirection
         const pendingListing = localStorage.getItem('pending_application_lid');
-        window.location.href = pendingListing ? `applicant.html?listing_id=${pendingListing}` : 'tenant.html';
+        if (pendingListing) {
+             window.location.href = `applicant.html?listing_id=${pendingListing}`;
+        } else {
+             window.location.href = 'tenant.html';
+        }
 
     } catch (err) {
+        console.error(err);
         showError("Login Failed", "Invalid email or password.");
     } finally {
         btn.innerHTML = originalText;
@@ -249,5 +261,6 @@
     </script>
 </body>
 </html>
+
 
 
