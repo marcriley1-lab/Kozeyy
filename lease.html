@@ -23,6 +23,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             
+            <!-- LawDepot Card -->
             <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 hover:border-indigo-500 transition group relative overflow-hidden">
                 <div class="absolute top-0 right-0 bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-bl-xl">Recommended</div>
                 <div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 text-2xl mb-6">
@@ -34,10 +35,11 @@
                     Go to LawDepot <i class="fas fa-external-link-alt ml-2 text-xs"></i>
                 </a>
                 <p class="text-[10px] text-slate-400 mt-3 text-center">
-    * We may earn a commission if you create a lease using this link.
-</p>
+                    * We may earn a commission if you create a lease using this link.
+                </p>
             </div>
 
+            <!-- Upload Card -->
             <div class="bg-white p-8 rounded-3xl shadow-lg border border-slate-200 hover:border-emerald-500 transition group">
                 <div class="w-16 h-16 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600 text-2xl mb-6">
                     <i class="fas fa-cloud-upload-alt"></i>
@@ -45,15 +47,14 @@
                 <h3 class="text-2xl font-bold text-slate-900 mb-2">Upload Lease</h3>
                 <p class="text-slate-500 mb-6 leading-relaxed">Already have a lease? Upload your signed lease to save it to the system.</p>
                 
-                <form onsubmit="saveLease(event)" class="space-y-4">
+                <form onsubmit="saveLease(event)" class="space-y-6">
                     <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:bg-slate-50 transition cursor-pointer relative" id="file-container">
                         <input type="file" id="lease-file" accept=".pdf" required class="absolute inset-0 opacity-0 cursor-pointer" onchange="handleFileUpload(this)">
                         <span class="text-slate-400 font-bold text-sm pointer-events-none" id="file-label">Click to select PDF</span>
                     </div>
                     
-                    <input type="date" class="w-full border p-3 rounded-xl bg-slate-50" title="Start Date">
                     <button class="block w-full bg-emerald-600 text-white text-center py-4 rounded-xl font-bold hover:bg-emerald-700 transition">
-                        Save
+                        Save & Upload
                     </button>
                 </form>
             </div>
@@ -72,10 +73,9 @@
         const appId = urlParams.get('id');
         const appName = urlParams.get('name');
         const appEmail = urlParams.get('email');
-        const appRent = urlParams.get('rent');
+        const appRent = urlParams.get('rent'); // Kept only for passing context, not validation
 
         if(appName) document.getElementById('applicant-name').innerText = appName;
-        if(appRent) document.getElementById('lease-rent').value = appRent;
 
         function handleFileUpload(input) {
             if(input.files && input.files[0]) {
@@ -90,6 +90,7 @@
             const originalText = btn.innerText;
             
             const fileInput = document.getElementById('lease-file');
+
             if(!fileInput.files || !fileInput.files[0]) { 
                 alert("Please upload the lease document PDF."); 
                 return; 
@@ -99,7 +100,6 @@
             btn.disabled = true;
 
             try {
-                const rentVal = parseFloat(document.getElementById('lease-rent').value);
                 const file = fileInput.files[0];
 
                 if(supabaseClient && appId) {
@@ -110,7 +110,7 @@
                     
                     const { error: uploadError } = await supabaseClient
                         .storage
-                        .from('leases') // Ensure this bucket exists in Supabase
+                        .from('leases')
                         .upload(fileName, file);
 
                     if (uploadError) throw new Error("Storage Upload Failed: " + uploadError.message);
@@ -123,28 +123,34 @@
                         
                     const publicUrl = urlData.publicUrl;
 
-                    // 3. Save URL to 'apps' Table & Update Status
+                    // 3. Update 'apps' Table (Lease URL only)
                     const { error: appError } = await supabaseClient
                         .from('apps')
                         .update({ 
                             status: 'Lease Uploaded', 
-                            rent: rentVal,
-                            lease_url: publicUrl // This is the key piece missing before!
+                            lease_url: publicUrl
                         })
                         .eq('id', appId);
                     
                     if (appError) throw new Error("Database Update Failed: " + appError.message);
 
-                    // 4. Create/Update Tenant record (Syncing data)
-                    const ownerId = localStorage.getItem('kozeyy_user_id') || '00000000-0000-0000-0000-000000000001';
-                    const { data: existing } = await supabaseClient.from('tenants').select('id').eq('email', appEmail).maybeSingle();
+                    // 4. Create/Update Tenant record
+                    // We only save status and URL here. Rent/Dates can be edited in dashboard later.
+                    const ownerId = localStorage.getItem('kozeyy_user_id');
+                    
+                    const { data: existing } = await supabaseClient
+                        .from('tenants')
+                        .select('id')
+                        .eq('email', appEmail)
+                        .maybeSingle();
                     
                     const tenantData = {
                         owner_id: ownerId,
                         name: appName || "New Tenant",
                         email: appEmail || "tenant@example.com",
-                        rent_amount: rentVal,
-                        status: 'Lease Uploaded'
+                        status: 'Lease Uploaded',
+                        lease_url: publicUrl,
+                        rent_amount: appRent ? parseFloat(appRent) : 0 // Fallback to URL rent or 0
                     };
 
                     if(existing) {
