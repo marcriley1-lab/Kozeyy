@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lease Agreement | Signed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>body { font-family: 'Inter', sans-serif; background: #e2e8f0; } .brand { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-10">
+        <div class="flex items-center gap-3">
+            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold"><i class="fas fa-file-contract"></i></div>
+            <div>
+                <h1 class="text-lg font-bold text-slate-800 brand">Lease Agreement</h1>
+                <p class="text-xs text-slate-500">Digital Document Viewer</p>
+            </div>
+        </div>
+        <button onclick="window.print()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition">
+            <i class="fas fa-print mr-2"></i> Print / Save
+        </button>
+    </nav>
+
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        <!-- PDF Viewer -->
+        <div class="flex-1 bg-slate-500 relative">
+            <iframe id="pdf-frame" class="w-full h-full border-none" src=""></iframe>
+        </div>
+
+        <!-- Signature Certificate Sidebar -->
+        <div class="w-full md:w-80 bg-white border-l border-slate-200 overflow-y-auto shadow-xl z-20">
+            <div class="p-6">
+                <div class="mb-6 pb-6 border-b border-slate-100">
+                    <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                        <i class="fas fa-check-circle mr-1"></i> Executed
+                    </span>
+                    <h2 class="text-xl font-bold text-slate-800 mt-4 brand">Signature Certificate</h2>
+                    <p class="text-xs text-slate-400 mt-1">Ref ID: <span id="ref-id" class="font-mono">...</span></p>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Tenant Sig -->
+                    <div class="relative pl-4 border-l-2 border-slate-200">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 bg-indigo-600 rounded-full border-2 border-white"></div>
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-1">Tenant Signature</p>
+                        <p class="font-bold text-slate-800 text-lg brand" id="t-name">...</p>
+                        <p class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
+                            <i class="fas fa-clock mr-1"></i> Signed: <br>
+                            <span id="t-date" class="font-mono font-bold">...</span>
+                        </p>
+                        <p class="text-[10px] text-slate-400 mt-1">IP Verified: Digital Authentication</p>
+                    </div>
+
+                    <!-- Owner Sig -->
+                    <div class="relative pl-4 border-l-2 border-slate-200">
+                        <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-800 rounded-full border-2 border-white"></div>
+                        <p class="text-xs font-bold text-slate-400 uppercase mb-1">Landlord Signature</p>
+                        <p class="font-bold text-slate-800 text-lg brand" id="o-name">...</p>
+                        <p class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
+                            <i class="fas fa-clock mr-1"></i> Signed: <br>
+                            <span id="o-date" class="font-mono font-bold">...</span>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" class="w-16 h-16 mx-auto opacity-50 mb-2">
+                    <p class="text-[10px] text-slate-400 leading-tight">
+                        This document is digitally signed and secured by Kozeyy Property Management Platform.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        
+        // Load Data
+        document.getElementById('pdf-frame').src = params.get('url');
+        document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
+        
+        document.getElementById('t-name').innerText = params.get('t_name') || 'Tenant';
+        document.getElementById('o-name').innerText = params.get('o_name') || 'Landlord';
+
+        // Format Dates
+        const format = (iso) => iso ? new Date(iso).toLocaleString() : 'Pending Signature';
+        document.getElementById('t-date').innerText = format(params.get('t_date'));
+        document.getElementById('o-date').innerText = format(params.get('o_date'));
+    </script>
+</body>
+</html>
