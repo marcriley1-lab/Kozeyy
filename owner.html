@@ -1549,7 +1549,7 @@ function toggleFeeVisibility() {
         openModal('modal-maint-detail'); 
     }
 
-    function renderChatList() { 
+   function renderChatList() { 
         const l = document.getElementById('list-chats'); 
         if(!l) return;
         l.innerHTML = ''; 
@@ -1563,7 +1563,8 @@ function toggleFeeVisibility() {
         sortedChats.forEach(item => { 
             const t = item.tenant;
             const badge = item.unread > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">${item.unread}</span>` : '';
-            l.innerHTML += `<div onclick="openChat(${t.id})" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><div><span>${t.name}</span></div><div class="flex items-center gap-2">${badge}<i class="fas fa-chevron-right text-slate-300 text-xs"></i></div></div>`; 
+            // FIX: Added single quotes around ${t.id} in onclick event
+            l.innerHTML += `<div onclick="openChat('${t.id}')" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><div><span>${t.name}</span></div><div class="flex items-center gap-2">${badge}<i class="fas fa-chevron-right text-slate-300 text-xs"></i></div></div>`; 
         }); 
     }
 
@@ -2423,8 +2424,9 @@ async function confirmPay() {
                 const displayAmount = record.total; 
                 const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
                 
+                // FIX: Added single quotes around ${record.id}
                 rowHtml = `
-                <tr onclick="act_viewInvoice(${record.id})" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
+                <tr onclick="act_viewInvoice('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td>
@@ -2434,9 +2436,10 @@ async function confirmPay() {
                     <td class="p-5 text-right ${hiddenClass}"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
                 </tr>`;
             } else {
-                // Payment Row (Unchanged)
+                // Payment Row
+                // FIX: Added single quotes around ${record.id}
                 rowHtml = `
-                <tr onclick="act_viewPayment(${record.id})" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
+                <tr onclick="act_viewPayment('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
@@ -3075,7 +3078,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     return value; // Fixed
 }
 
-    function renderExpenses() {
+   function renderExpenses() {
         const filterVal = document.getElementById('filter-expenses').value;
         const tbody = document.getElementById('table-expenses');
         const totalDisplay = document.getElementById('exp-total-display');
@@ -3096,6 +3099,7 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
                 ? `<a href="${e.receipt_url}" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs"><i class="fas fa-file-invoice mr-1"></i> View</a>` 
                 : `<span class="text-slate-400 text-xs">-</span>`;
 
+            // FIX: Added single quotes around ${e.id} in both onclick events below
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${date}</td>
@@ -3105,8 +3109,8 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
                     <td class="p-5 text-right font-bold text-rose-600">-$${(e.amount||0).toLocaleString()}</td>
                     <td class="p-5 text-center hidden md:table-cell">${receiptHtml}</td>
                     <td class="p-5 text-right">
-                        <button onclick="act_editExpense(${e.id})" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-edit"></i></button>
-                        <button onclick="act_delExpense(${e.id})" class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
+                        <button onclick="act_editExpense('${e.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-edit"></i></button>
+                        <button onclick="act_delExpense('${e.id}')" class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
                     </td>
                 </tr>
             `;
@@ -3156,6 +3160,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
