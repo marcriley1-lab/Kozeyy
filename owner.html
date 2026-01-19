@@ -1882,11 +1882,9 @@ function toggleFeeVisibility() {
     async function act_delExpense(id) { openPlatformConfirm("Delete Expense?", "Confirm deletion.", async () => { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); }); }
 
   function act_viewTenant(id) { 
-        // 1. Find the tenant data
         const t = state.tenants.find(x => x.id === id); 
         if(!t) return; 
         
-        // 2. Populate basic text fields
         setText('vt-name', t.name); 
         setText('vt-email', t.email); 
         setText('vt-phone', t.phone||'-'); 
@@ -1897,32 +1895,31 @@ function toggleFeeVisibility() {
         setText('vt-start', t.lease_start||'-'); 
         setText('vt-end', t.lease_end||'-'); 
         
-        // 3. DEBUG: Check if the system sees the URL
         const leaseArea = document.getElementById('vt-lease-area');
-        
-        console.log("Checking lease for:", t.name);
-        console.log("URL found:", t.lease_url);
-
-        if (!leaseArea) {
-            console.error("Error: HTML element 'vt-lease-area' not found!");
-            alert("Error: The code cannot find the place to put the button. Please check your HTML IDs.");
-        } 
-        else if (t.lease_url && t.lease_url.length > 5) {
-            // 4. Inject the button if URL exists
+        if (t.lease_url) {
+            // PASS BOTH DATES: lease_signed_at (Tenant) AND owner_signed_at (Owner)
             leaseArea.innerHTML = `
-                <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}')" 
+                <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}', '${t.owner_signed_at}')" 
                 class="w-full bg-indigo-50 text-indigo-700 py-3 rounded-xl font-bold border border-indigo-100 hover:bg-indigo-100 transition mb-2">
                     <i class="fas fa-file-contract mr-2"></i> View Signed Lease
                 </button>`;
-        } 
-        else {
-            // 5. Clear area if no URL
+        } else {
             leaseArea.innerHTML = '';
-            // Optional: Uncomment this line to see if the data is missing
-            // console.log("No lease URL in database for this tenant.");
         }
 
         openModal('modal-view-tenant'); 
+    }
+
+    // Update the helper to accept the 5th argument (Owner Date)
+    function openLeaseViewer(url, id, tName, tDate, oDate) {
+        const oName = document.getElementById('owner-name-display').innerText || "Landlord";
+        
+        // Handle nulls gracefully
+        const tenantSign = tDate && tDate !== 'null' ? tDate : '';
+        const ownerSign = oDate && oDate !== 'null' ? oDate : '';
+
+        const viewerUrl = `view_lease.html?url=${encodeURIComponent(url)}&id=${id}&t_name=${encodeURIComponent(tName)}&t_date=${tenantSign}&o_name=${encodeURIComponent(oName)}&o_date=${ownerSign}`;
+        window.open(viewerUrl, '_blank');
     }
     // Helper to create the container if it doesn't exist in your HTML yet
     function createBtnContainer() {
@@ -1932,16 +1929,6 @@ function toggleFeeVisibility() {
         // Insert before the Close button
         modalBody.insertBefore(div, modalBody.lastElementChild);
         return div;
-    }
-
-    // Helper to open the new page
-    function openLeaseViewer(url, id, tName, tDate) {
-        const oName = document.getElementById('owner-name-display').innerText || "Landlord";
-        // If date is null, use current time as fallback
-        const signDate = tDate || new Date().toISOString();
-        
-        const viewerUrl = `view_lease.html?url=${encodeURIComponent(url)}&id=${id}&t_name=${encodeURIComponent(tName)}&t_date=${signDate}&o_name=${encodeURIComponent(oName)}&o_date=${signDate}`;
-        window.open(viewerUrl, '_blank');
     }
     
     // --- 1. Toggle Secret Admin Panel ---
@@ -3297,6 +3284,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
