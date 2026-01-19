@@ -1261,7 +1261,16 @@
         function viewMyLease() {
         const user = globalData.user;
         if(!user || !user.lease_url) return showToast("No lease document found.", "error");
-        window.open(user.lease_url, '_blank');
+        
+        // Construct the Viewer URL with signature data
+        const tDate = user.lease_signed_at || new Date().toISOString();
+        // Since we don't have owner sign date on tenant table in this specific version, 
+        // we assume it's countersigned if lease_url exists, or use tDate + 1 hour as proxy for display
+        const oDate = user.lease_signed_at || new Date().toISOString(); 
+        
+        const viewerUrl = `view_lease.html?url=${encodeURIComponent(user.lease_url)}&id=${user.id}&t_name=${encodeURIComponent(user.name)}&t_date=${tDate}&o_name=Property%20Manager&o_date=${oDate}`;
+        
+        window.open(viewerUrl, '_blank');
     }
         // Init
         render(false);
@@ -1271,6 +1280,7 @@
     </script>
 </body>
 </html>
+
 
 
 
