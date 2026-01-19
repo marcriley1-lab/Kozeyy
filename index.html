@@ -698,19 +698,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-        function handleApplyClick(listingId) {
+       async function handleApplyClick(listingId) {
+            // 1. Save the listing ID so we know where to go after login
             localStorage.setItem('pending_application_lid', listingId);
-            const userId = localStorage.getItem('kozeyy_user_id');
-            const userRole = localStorage.getItem('kozeyy_role'); 
-            if (userId && userRole) {
+            
+            // 2. CHECK ACTUAL SESSION (The Source of Truth)
+            // We ask Supabase directly if there is an active, valid session.
+            // We do NOT trust localStorage here.
+            const { data } = await supabaseClient.auth.getSession();
+            
+            if (data && data.session) {
+                // Yes, valid session exists -> Go to Application
                 window.location.href = `applicant.html?listing_id=${listingId}`;
             } else {
+                // No, session expired or missing -> Go to Signup/Login
+                // This forces the user to authenticate, which fixes the "Missing ID" error later.
                 window.location.href = `signup.html?listing_id=${listingId}`;
             }
         }
     </script>
 </body>
 </html>
+
 
 
 
