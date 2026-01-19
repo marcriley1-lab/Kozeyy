@@ -2441,10 +2441,12 @@ async function confirmPay() {
     
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
-  function renderFinancials() {
+ function renderFinancials() {
         const filterVal = document.getElementById('filter-financials').value;
         const tbody = document.getElementById('table-financials');
         const balanceDisplay = document.getElementById('fin-open-bal');
+        // FIX: Defined the missing variable here
+        const sumContainer = document.getElementById('fin-summary-container'); 
 
         tbody.innerHTML = '';
         let transactions = [];
@@ -2489,7 +2491,6 @@ async function confirmPay() {
                 const displayAmount = record.total; 
                 const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
                 
-                // FIX: Now using invoice_num
                 rowHtml = `
                 <tr onclick="act_viewInvoice('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
@@ -2516,7 +2517,10 @@ async function confirmPay() {
         });
 
         if(balanceDisplay) balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-        sumContainer.classList.remove('hidden-section');
+        
+        // FIX: Now this variable exists
+        if(sumContainer) sumContainer.classList.remove('hidden-section');
+        
         if (transactions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>'; }
     }
     // New Helper Function for Mobile Payment Details
@@ -3279,6 +3283,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
