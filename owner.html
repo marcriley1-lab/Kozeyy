@@ -1874,7 +1874,55 @@ function toggleFeeVisibility() {
     function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.category; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.property_address; openModal('modal-expense'); }
     async function act_delExpense(id) { openPlatformConfirm("Delete Expense?", "Confirm deletion.", async () => { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); }); }
 
-    function act_viewTenant(id) { const t = state.tenants.find(x => x.id === id); if(!t) return; setText('vt-name', t.name); setText('vt-email', t.email); setText('vt-phone', t.phone||'-'); setText('vt-addr', `${t.address||''}, ${t.city||''} ${t.state||''} ${t.zip||''}`); setText('vt-unit', t.unit||'-'); setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); setText('vt-status', t.status); setText('vt-start', t.lease_start||'-'); setText('vt-end', t.lease_end||'-'); openModal('modal-view-tenant'); }
+    function act_viewTenant(id) { 
+        const t = state.tenants.find(x => x.id === id); 
+        if(!t) return; 
+        
+        setText('vt-name', t.name); 
+        setText('vt-email', t.email); 
+        setText('vt-phone', t.phone||'-'); 
+        setText('vt-addr', `${t.address||''}, ${t.unit ? '#'+t.unit : ''}`); 
+        setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); 
+        setText('vt-status', t.status); 
+        setText('vt-start', t.lease_start||'-'); 
+        setText('vt-end', t.lease_end||'-'); 
+        
+        // NEW: Add View Lease Button if URL exists
+        const btnContainer = document.getElementById('vt-actions-container') || createBtnContainer();
+        
+        if (t.lease_url) {
+            btnContainer.innerHTML = `
+                <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}')" 
+                class="w-full bg-indigo-50 text-indigo-700 py-3 rounded-xl font-bold mb-2 border border-indigo-100 hover:bg-indigo-100 transition">
+                    <i class="fas fa-file-contract mr-2"></i> View Signed Lease
+                </button>
+            `;
+        } else {
+            btnContainer.innerHTML = '';
+        }
+
+        openModal('modal-view-tenant'); 
+    }
+
+    // Helper to create the container if it doesn't exist in your HTML yet
+    function createBtnContainer() {
+        const modalBody = document.querySelector('#modal-view-tenant .space-y-4');
+        const div = document.createElement('div');
+        div.id = 'vt-actions-container';
+        // Insert before the Close button
+        modalBody.insertBefore(div, modalBody.lastElementChild);
+        return div;
+    }
+
+    // Helper to open the new page
+    function openLeaseViewer(url, id, tName, tDate) {
+        const oName = document.getElementById('owner-name-display').innerText || "Landlord";
+        // If date is null, use current time as fallback
+        const signDate = tDate || new Date().toISOString();
+        
+        const viewerUrl = `view_lease.html?url=${encodeURIComponent(url)}&id=${id}&t_name=${encodeURIComponent(tName)}&t_date=${signDate}&o_name=${encodeURIComponent(oName)}&o_date=${signDate}`;
+        window.open(viewerUrl, '_blank');
+    }
     
     // --- 1. Toggle Secret Admin Panel ---
     function toggleAdminPanel() { 
@@ -3227,6 +3275,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
