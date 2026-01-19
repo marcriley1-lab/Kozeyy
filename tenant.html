@@ -36,12 +36,11 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* TOAST NOTIFICATIONS */
-    #toast-container { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
-    .toast { background: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border-left: 4px solid #6366f1; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; align-items: center; gap: 12px; min-width: 300px; }
-    .toast.show { transform: translateX(0); }
-    .toast.error { border-left-color: #f43f5e; }
-    .toast.success { border-left-color: #10b981; }
-        
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 10px; }
+        .toast { background: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border-left: 4px solid #6366f1; transform: translateX(100%); transition: transform 0.3s ease-out; display: flex; align-items: center; gap: 12px; min-width: 300px; }
+        .toast.show { transform: translateX(0); }
+        .toast.error { border-left-color: #f43f5e; }
+        .toast.success { border-left-color: #10b981; }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden text-slate-800 bg-slate-50">
@@ -73,6 +72,9 @@
             <a href="#" onclick="switchTab('insurance')" id="nav-insurance" class="nav-item flex items-center px-6 py-3.5 transition">
                 <i class="fas fa-shield-alt w-6"></i> <span class="font-medium ml-3">Insurance</span>
             </a>
+            <a href="#" onclick="switchTab('lease')" id="nav-lease" class="nav-item flex items-center px-6 py-3.5 transition">
+                <i class="fas fa-file-contract w-6"></i> <span class="font-medium ml-3">Lease</span>
+            </a>
             <a href="#" onclick="switchTab('settings')" id="nav-settings" class="nav-item flex items-center px-6 py-3.5 transition">
                 <i class="fas fa-cog w-6"></i> <span class="font-medium ml-3">Settings</span>
             </a>
@@ -86,11 +88,9 @@
                     <p class="text-xs text-indigo-300">Resident</p>
                 </div>
             </div>
-
             <a href="mailto:support@kozeyy.com?subject=Kozeyy%20Resident%20Feedback" class="flex items-center text-xs text-indigo-300 hover:text-white transition mt-1">
                 <i class="fas fa-comment-dots mr-2"></i> Contact Support
             </a>
-
             <a href="login.html" class="text-xs text-indigo-400 hover:text-white flex items-center transition">
                 <i class="fas fa-sign-out-alt mr-2"></i> Sign Out
             </a>
@@ -131,21 +131,6 @@
                     </div>
                 </div>
 
-                <div id="lease-badge" class="hidden-section mb-6 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl flex items-center justify-between shadow-sm">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-white text-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
-                <i class="fas fa-file-contract"></i>
-            </div>
-            <div>
-                <p class="text-sm font-bold text-indigo-900">Active Lease</p>
-                <p class="text-xs text-indigo-600" id="lease-signed-date">Signed: ...</p>
-            </div>
-        </div>
-        <button onclick="viewMyLease()" class="text-xs font-bold bg-white text-indigo-700 px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-50 transition border border-indigo-100">
-            View PDF
-        </button>
-    </div>
-   
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 relative overflow-hidden">
                     <div class="flex justify-between items-start mb-4">
                         <div>
@@ -157,7 +142,7 @@
                     <p class="text-slate-500 text-sm mb-6" id="payment-due-date">No upcoming payments</p>
                     <button onclick="switchTab('payments')" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-95 transform duration-100 flex items-center justify-center gap-2">
                         <span>Make a Payment</span>
-                                        </button>
+                    </button>
                 </div>
 
                 <div id="credit-banner" class="hidden-section bg-gradient-to-r from-slate-800 to-indigo-900 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg mb-6 gap-4">
@@ -168,7 +153,6 @@
                     </div>
                     <button onclick="switchTab('settings')" class="w-full md:w-auto bg-white text-indigo-900 px-4 py-2 rounded-lg font-bold text-sm hover:bg-indigo-50 transition">Enable in Settings</button>
                 </div>
-
             </div>
 
             <div id="view-payments" class="view-section hidden-section fade-in pb-24">
@@ -244,7 +228,6 @@
                                 Compare on Insurify
                             </a>
                         </div>
-
                         <p class="text-[10px] text-indigo-300 mt-4 text-center opacity-70 leading-tight">
                             * Disclosure: Kozeyy may receive a commission if you purchase a policy through these links. This helps support our platform.
                         </p>
@@ -255,6 +238,68 @@
                     <div class="flex justify-between items-start mb-4"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600"><i class="fas fa-check"></i></div><div><h3 class="font-bold text-slate-800">Verified</h3><p class="text-xs text-slate-500" id="ins-date">Oct 12, 2023</p></div></div><span class="bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-[10px] font-bold uppercase">Active</span></div>
                     <div class="p-3 bg-slate-50 rounded-lg border border-slate-200 flex items-center gap-3"><i class="fas fa-file-pdf text-red-500 text-xl"></i><p class="text-sm font-medium text-slate-800">policy_doc.pdf</p></div>
                     <button onclick="resetInsurance()" class="mt-4 text-xs text-red-400 hover:text-red-500 underline w-full text-center">Remove Policy</button>
+                </div>
+            </div>
+
+            <!-- NEW LEASE VIEW -->
+            <div id="view-lease" class="view-section hidden-section fade-in pb-24">
+                <h1 class="text-2xl font-bold mb-6 brand-font">Lease Agreement</h1>
+                
+                <!-- State: No Lease -->
+                <div id="lease-empty-state" class="text-center p-10 bg-white rounded-3xl shadow-sm border border-slate-200">
+                    <div class="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300 text-3xl">
+                        <i class="fas fa-file-signature"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-700">No Active Lease</h3>
+                    <p class="text-sm text-slate-400 mt-2 mb-6">There is no digital lease on file for this account.</p>
+                </div>
+
+                <!-- State: Active Lease -->
+                <div id="lease-active-card" class="hidden-section bg-white p-6 md:p-8 rounded-3xl shadow-lg border border-slate-200 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-600"></div>
+                    
+                    <div class="flex justify-between items-start mb-8">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl">
+                                <i class="fas fa-file-contract"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-800">Current Lease</h2>
+                                <p class="text-sm text-slate-500 mt-0.5" id="lease-detail-address">Loading Property...</p>
+                            </div>
+                        </div>
+                        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1">
+                            <i class="fas fa-check-circle"></i> Active
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8 border-t border-b border-slate-100 py-6">
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Start Date</p>
+                            <p class="font-bold text-slate-800" id="lease-detail-start">-</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">End Date</p>
+                            <p class="font-bold text-slate-800" id="lease-detail-end">-</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Monthly Rent</p>
+                            <p class="font-bold text-slate-800" id="lease-detail-rent">-</p>
+                        </div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Signed On</p>
+                            <p class="font-bold text-slate-800" id="lease-detail-signed">-</p>
+                        </div>
+                    </div>
+
+                    <button onclick="viewMyLease()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold shadow-xl hover:bg-slate-800 transition transform hover:-translate-y-1 flex items-center justify-center gap-3">
+                        <i class="fas fa-file-pdf text-lg"></i>
+                        <span>View Signed PDF</span>
+                    </button>
+                    
+                    <p class="text-center text-xs text-slate-400 mt-4">
+                        <i class="fas fa-lock text-emerald-500 mr-1"></i> Document is cryptographically signed and secured.
+                    </p>
                 </div>
             </div>
 
@@ -325,6 +370,9 @@
         <button onclick="switchTab('insurance')" id="mob-insurance" class="flex flex-col items-center gap-1 text-slate-400">
             <i class="fas fa-shield-alt text-xl"></i><span class="text-[10px] font-medium">Insure</span>
         </button>
+        <button onclick="switchTab('lease')" id="mob-lease" class="flex flex-col items-center gap-1 text-slate-400">
+            <i class="fas fa-file-contract text-xl"></i><span class="text-[10px] font-medium">Lease</span>
+        </button>
     </nav>
 
     <div id="requestModal" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
@@ -386,7 +434,7 @@
                  </div>
                  <div class="text-slate-500">
                     <div class="flex justify-between"><span>• Bank Transfer (ACH)</span> <span>+$2.50</span></div>
-                    <div class="flex justify-between"><span>• Credit/Debit Card</span> <span>+2.9%</span></div>
+                    <div class="flex justify-between"><span>• Credit/Debit Card</span> <span>+3%</span></div>
                  </div>
             </div>
 
@@ -525,11 +573,6 @@
                 globalData.user = u.data || { name: "Guest User", email: "", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
                 globalData.invoices = i.data || [];
 
-    if(globalData.user.lease_url) {
-        document.getElementById('lease-badge').classList.remove('hidden-section');
-        const date = globalData.user.lease_signed_at ? new Date(globalData.user.lease_signed_at).toLocaleDateString() : 'Active';
-        document.getElementById('lease-signed-date').innerText = `Signed: ${date}`;
-    }
                 
                 // --- OWNER NAME CACHING LOGIC ---
                 if (globalData.user && globalData.user.owner_id) {
@@ -651,7 +694,7 @@
                // [Modified Block] inside render() function
                // [Inside render() function, inside the 'if (currentInvStr !== ...)' block]
                 
-              if(unpaid.length > 0) { 
+                if(unpaid.length > 0) { 
                     unpaid.forEach(i => { 
                         const currentBaseBalance = i.total - (i.amount_paid || 0);
                         
@@ -668,7 +711,7 @@
                         <div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4">
                             <div class="w-full md:w-auto">
                                 <div class="flex items-center gap-2">
-                                    <p class="font-bold text-lg text-slate-800">Invoice #${i.id}</p>
+                                    <p class="font-bold text-lg text-slate-800">Invoice #${i.invoice_num || '---'}</p>
                                     <button onclick="viewInvoice('${i.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button>
                                 </div>
                                 <p class="text-xs ${calc.isOverdue ? 'text-rose-500 font-bold' : 'text-slate-400'} mt-2">
@@ -712,11 +755,11 @@
                     historyItems.forEach(i => { 
                         const totalAmt = i.total; 
                         // FIX: Added quotes here too
-                        hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.id}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice('${i.id}')" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
-                        hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice('${i.id}')"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.id}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
+                        hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.invoice_num || '---'}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice('${i.id}')" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
+                        hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice('${i.id}')"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.invoice_num || '---'}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
                     });
                 }
-                                lastRenderedState.invoices = currentInvStr;
+                lastRenderedState.invoices = currentInvStr;
             }
 
             const currentMaintStr = JSON.stringify(maint);
@@ -751,6 +794,31 @@
                 lastRenderedState.maint = currentMaintStr;
             }
             if (activeTab === 'messages') renderMessages();
+
+            // LEASE TAB LOGIC
+            const leaseCard = document.getElementById('lease-active-card');
+            const leaseEmpty = document.getElementById('lease-empty-state');
+            
+            if(globalData.user.lease_url && globalData.user.lease_url.length > 5) {
+                if(leaseCard) {
+                    leaseCard.classList.remove('hidden-section');
+                    leaseEmpty.classList.add('hidden-section');
+                    
+                    // Populate Details
+                    document.getElementById('lease-detail-address').innerText = globalData.user.address || 'Primary Residence';
+                    document.getElementById('lease-detail-rent').innerText = `$${parseInt(globalData.user.rent_amount || 0).toLocaleString()}`;
+                    document.getElementById('lease-detail-start').innerText = globalData.user.lease_start ? new Date(globalData.user.lease_start).toLocaleDateString() : 'N/A';
+                    document.getElementById('lease-detail-end').innerText = globalData.user.lease_end ? new Date(globalData.user.lease_end).toLocaleDateString() : 'N/A';
+                    
+                    const signedDate = globalData.user.lease_signed_at ? new Date(globalData.user.lease_signed_at).toLocaleDateString() : 'Active';
+                    document.getElementById('lease-detail-signed').innerText = signedDate;
+                }
+            } else {
+                if(leaseCard) {
+                    leaseCard.classList.add('hidden-section');
+                    leaseEmpty.classList.remove('hidden-section');
+                }
+            }
         }
 
         function updateBadge(type, show) {
@@ -776,13 +844,30 @@
             activeTab = t; 
             document.querySelectorAll('.view-section').forEach(e => e.classList.add('hidden-section')); 
             document.getElementById(`view-${t}`).classList.remove('hidden-section'); 
+            
+            // Sidebar Active State
             document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('sidebar-active')); 
-            const deskLink = document.getElementById(`nav-${t}`); if(deskLink) deskLink.classList.add('sidebar-active');
+            const deskLink = document.getElementById(`nav-${t}`); 
+            if(deskLink) deskLink.classList.add('sidebar-active');
+            
+            // Mobile Active State
             document.querySelectorAll('.md\\:hidden button').forEach(e => e.classList.remove('mobile-active', 'text-indigo-600'));
             document.querySelectorAll('.md\\:hidden button').forEach(e => e.classList.add('text-slate-400'));
-            const mobBtn = document.getElementById(`mob-${t}`); if(mobBtn) { mobBtn.classList.add('mobile-active'); mobBtn.classList.remove('text-slate-400'); }
-            const titles = { home:'Resident Portal', payments:'Payments', messages:'Messages', maintenance:'Maintenance', insurance:'Insurance', settings:'Account Settings' };
-            const titleEl = document.getElementById('page-title'); if(titleEl) titleEl.innerText = titles[t] || 'Kozeyy';
+            const mobBtn = document.getElementById(`mob-${t}`); 
+            if(mobBtn) { mobBtn.classList.add('mobile-active'); mobBtn.classList.remove('text-slate-400'); }
+            
+            // Page Titles
+            const titles = { 
+                home:'Resident Portal', 
+                payments:'Payments', 
+                messages:'Messages', 
+                maintenance:'Maintenance', 
+                insurance:'Insurance', 
+                settings:'Account Settings',
+                lease: 'Lease Documents' // <--- Added this
+            };
+            const titleEl = document.getElementById('page-title'); 
+            if(titleEl) titleEl.innerText = titles[t] || 'Kozeyy';
             
             if(t === 'messages') { notifications.messages = false; updateBadge('messages', false); render(false); renderMessages(); }
             if(t === 'maintenance') { notifications.maintenance = false; updateBadge('maintenance', false); }
@@ -985,7 +1070,7 @@
         const finalTotalDue = currentBaseBalance + calc.fee;
 
         // UI rendering
-        document.getElementById('inv-id').innerText = inv.id;
+        document.getElementById('inv-id').innerText = inv.invoice_num || inv.id.slice(0,8);
         document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
         document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
         document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid||0).toLocaleString()}`;
@@ -1041,7 +1126,6 @@
                     <div class="flex justify-between"><span>• Credit/Debit Card</span> <span>+3%</span></div>
                  </div>`;
                 
-                // FIX: Added single quotes around ${inv.id} in two places below
                 payBtnContainer.innerHTML = `
                     <div class="space-y-3 mt-4">
                         <button onclick="initStripePayment('${inv.id}', ${finalTotalDue}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
@@ -1209,21 +1293,22 @@
                 render(false); 
             }
         }
-
-    function calculateLateFee(total, invoice, daysOverdue = 1) {
-        if (invoice.fee_enabled === false) return 0;
-
-        const type = invoice.fee_type || 'Fixed'; 
-        const value = parseFloat(invoice.fee_value || 0);
-
-        if (type === 'Percentage') {
-            return total * (value / 100);
+        
+        function viewMyLease() {
+            const user = globalData.user;
+            if(!user || !user.lease_url) return showToast("No lease document found.", "error");
+            
+            // Get dates safely
+            const tDate = user.lease_signed_at || '';
+            const oDate = user.owner_signed_at || ''; // Now reading the new column
+            
+            // Hardcode "Property Manager" or use cached name if available
+            const oName = cachedOwnerName || "Property Manager";
+            
+            const viewerUrl = `view_lease.html?url=${encodeURIComponent(user.lease_url)}&id=${user.id}&t_name=${encodeURIComponent(user.name)}&t_date=${tDate}&o_name=${encodeURIComponent(oName)}&o_date=${oDate}`;
+            
+            window.open(viewerUrl, '_blank');
         }
-        if (type === 'Daily') {
-            return value * daysOverdue;
-        }
-        return value; 
-    }
 
         // --- UI HELPERS ---
     let platformConfirmCallback = null;
@@ -1258,21 +1343,6 @@
         platformConfirmCallback = null;
     }
 
-        function viewMyLease() {
-        const user = globalData.user;
-        if(!user || !user.lease_url) return showToast("No lease document found.", "error");
-        
-        // Get dates safely
-        const tDate = user.lease_signed_at || '';
-        const oDate = user.owner_signed_at || ''; // Now reading the new column
-        
-        // Hardcode "Property Manager" or use cached name if available
-        const oName = cachedOwnerName || "Property Manager";
-        
-        const viewerUrl = `view_lease.html?url=${encodeURIComponent(user.lease_url)}&id=${user.id}&t_name=${encodeURIComponent(user.name)}&t_date=${tDate}&o_name=${encodeURIComponent(oName)}&o_date=${oDate}`;
-        
-        window.open(viewerUrl, '_blank');
-    }
         // Init
         render(false);
         checkReturnParams();
@@ -1281,15 +1351,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
