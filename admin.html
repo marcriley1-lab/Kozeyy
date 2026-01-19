@@ -25,7 +25,7 @@
                 <p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Super Admin</p>
                 <p class="text-sm font-bold text-white">Founder Mode</p>
             </div>
-            <button onclick="handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition border border-slate-700">
+            <button onclick="window.handleLogout()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition border border-slate-700">
                 Sign Out
             </button>
         </div>
@@ -35,7 +35,7 @@
         
         <div class="flex items-center justify-between mb-8">
             <h2 class="text-3xl font-bold">Screening Queue</h2>
-            <button onclick="fetchQueue()" class="text-amber-500 hover:text-amber-400 text-sm font-bold flex items-center gap-2">
+            <button onclick="window.fetchQueue()" class="text-amber-500 hover:text-amber-400 text-sm font-bold flex items-center gap-2">
                 <i class="fas fa-sync-alt"></i> Refresh List
             </button>
         </div>
@@ -68,11 +68,10 @@
                     <h3 class="text-xl font-bold text-white">Verify Applicant</h3>
                     <p id="modal-name" class="text-amber-500 text-sm font-bold mt-1">...</p>
                 </div>
-                <button onclick="closeModal()" class="text-slate-500 hover:text-white transition text-xl"><i class="fas fa-times"></i></button>
+                <button onclick="window.closeModal()" class="text-slate-500 hover:text-white transition text-xl"><i class="fas fa-times"></i></button>
             </div>
 
             <div class="p-6 overflow-y-auto space-y-6">
-                
                 <!-- 1. CREDIT SCORE -->
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
                     <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Credit Score (Found)</label>
@@ -81,3 +80,223 @@
                         <input id="inp-score" type="number" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 pl-10 text-white font-mono font-bold focus:border-amber-500 focus:outline-none" placeholder="e.g. 720">
                     </div>
                 </div>
+
+                <!-- 2. INCOME VERIFICATION -->
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <div class="flex justify-between mb-2">
+                        <label class="text-xs font-bold uppercase text-slate-400">Monthly Income</label>
+                        <span class="text-[10px] text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded">Verify & Edit</span>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3.5 text-slate-500 font-bold">$</span>
+                        <input id="inp-income" type="number" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 pl-8 text-white font-mono font-bold focus:border-amber-500 focus:outline-none">
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-2">Update this if paystubs show a different amount than reported.</p>
+                </div>
+
+                <!-- 3. BACKGROUND CHECK -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Eviction History</label>
+                        <select id="inp-evict" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white font-bold focus:border-amber-500 focus:outline-none appearance-none">
+                            <option value="false">✅ Clean Record</option>
+                            <option value="true">⚠️ Match Found</option>
+                        </select>
+                    </div>
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Criminal History</label>
+                        <select id="inp-crim" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white font-bold focus:border-amber-500 focus:outline-none appearance-none">
+                            <option value="false">✅ Clean Record</option>
+                            <option value="true">⚠️ Match Found</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-slate-700 bg-slate-950/50 rounded-b-2xl">
+                <button onclick="window.saveResults()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle"></i> Verify & Push to Owner
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log("Admin Script Starting...");
+
+        // --- 1. CONFIGURATION ---
+        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+        
+        let supabaseClient = null;
+        try { 
+            if(window.supabase) {
+                // Initialize with specific storage options to handle "Tracking Prevention" errors
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: {
+                        persistSession: true, // Try to persist
+                        autoRefreshToken: true,
+                        detectSessionInUrl: true
+                    }
+                });
+                console.log("Supabase Client Initialized");
+            } else {
+                console.error("Window.supabase is undefined. CDN failed?");
+            }
+        } catch(e) { 
+            console.error("Supabase Init Failed:", e); 
+        }
+
+        let currentAppId = null;
+        let appsData = [];
+
+        // --- 2. INITIALIZATION ---
+        window.init = async function() {
+            if (!supabaseClient) {
+                alert("Database connection failed. Please check your internet or disable ad-blockers for this site.");
+                return;
+            }
+
+            // Check Auth
+            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+            
+            if (authError || !user) {
+                console.warn("No user found, redirecting to login. Error:", authError);
+                window.location.href = 'login.html';
+                return;
+            }
+
+            console.log("Logged in as:", user.email);
+
+            // Security Check: Verify Admin Status
+            const { data: owner, error } = await supabaseClient
+                .from('owners')
+                .select('is_admin')
+                .eq('id', user.id)
+                .single();
+
+            if (error) {
+                console.error("Error fetching owner profile:", error);
+                alert("Error verifying admin status.");
+                return;
+            }
+
+            if(!owner || !owner.is_admin) {
+                alert("Access Denied: Admins Only. Redirecting to Owner Portal.");
+                window.location.href = 'owner.html';
+                return;
+            }
+            
+            // If we are here, we are admin.
+            console.log("Admin Verified. Fetching queue...");
+            window.fetchQueue();
+        };
+
+        // --- 3. CORE FUNCTIONS (Attached to Window) ---
+        window.fetchQueue = async function() {
+            const tbody = document.getElementById('queue-body');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-500"><i class="fas fa-circle-notch fa-spin text-2xl"></i><p class="mt-2">Fetching applications...</p></td></tr>';
+
+            // IMPORTANT: Fetch listings to display property name if possible
+            const { data: apps, error } = await supabaseClient
+                .from('apps')
+                .select('*, listings(address)')
+                .eq('status', 'Pending')
+                .order('created_at', {ascending: false});
+
+            if(error) {
+                console.error("Fetch Error:", error);
+                tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-red-400">Error loading queue: ${error.message}</td></tr>`;
+                return;
+            }
+
+            appsData = apps || [];
+            tbody.innerHTML = '';
+
+            if(appsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-12 text-center text-slate-500 italic flex flex-col items-center gap-2"><i class="fas fa-clipboard-check text-4xl text-slate-700"></i><span>All caught up! No pending applications.</span></td></tr>';
+                return;
+            }
+
+            appsData.forEach(app => {
+                const date = new Date(app.created_at).toLocaleDateString();
+                let propAddr = "Unknown Property";
+                // Handle joined data safely
+                if(app.listings && app.listings.address) propAddr = app.listings.address;
+                
+                // Safe ID slice
+                const shortId = app.id ? app.id.slice(0,8) : '???';
+
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-700 hover:bg-slate-800/50 transition group">
+                        <td class="p-5">
+                            <div class="font-bold text-white text-lg">${app.name}</div>
+                            <div class="text-xs text-slate-500 font-mono mt-1">${app.email}</div>
+                        </td>
+                        <td class="p-5 text-slate-300 font-medium">${propAddr}</td>
+                        <td class="p-5 text-amber-400 font-mono font-bold">$${parseInt(app.income || 0).toLocaleString()}</td>
+                        <td class="p-5 text-slate-500 text-xs">${date}</td>
+                        <td class="p-5 text-right">
+                            <button onclick="window.openModal('${app.id}')" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition shadow-lg shadow-indigo-900/20 transform hover:-translate-y-0.5">
+                                Verify & Process
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        };
+
+        window.openModal = function(id) {
+            const app = appsData.find(a => a.id === id);
+            if(!app) return;
+
+            currentAppId = id;
+            document.getElementById('modal-name').innerText = app.name;
+            document.getElementById('admin-modal').classList.remove('hidden');
+
+            // Pre-fill inputs
+            document.getElementById('inp-score').value = ''; 
+            document.getElementById('inp-income').value = app.income || 0; 
+            document.getElementById('inp-evict').value = app.evictions ? 'true' : 'false';
+            document.getElementById('inp-crim').value = app.criminal ? 'true' : 'false';
+        };
+
+        window.closeModal = function() {
+            document.getElementById('admin-modal').classList.add('hidden');
+        };
+
+        window.saveResults = async function() {
+            const score = document.getElementById('inp-score').value;
+            const income = document.getElementById('inp-income').value;
+            const evict = document.getElementById('inp-evict').value === 'true';
+            const crim = document.getElementById('inp-crim').value === 'true';
+
+            if(!score) return alert("Please enter a Credit Score.");
+
+            // Update DB
+            const { error } = await supabaseClient.from('apps').update({
+                score: parseInt(score),
+                income: parseFloat(income),
+                evictions: evict,
+                criminal: crim,
+                status: 'Ready for Review'
+            }).eq('id', currentAppId);
+
+            if(error) {
+                alert("Error saving: " + error.message);
+            } else {
+                window.closeModal();
+                window.fetchQueue(); 
+            }
+        };
+
+        window.handleLogout = async function() {
+            if(supabaseClient) await supabaseClient.auth.signOut();
+            window.location.href = 'login.html';
+        };
+
+        // Start
+        window.init();
+    </script>
+</body>
+</html>
