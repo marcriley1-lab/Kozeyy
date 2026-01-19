@@ -1888,7 +1888,7 @@ function act_viewApp(id) {
         const app = state.apps.find(a => a.id === id);
         if(!app) return;
 
-        // 1. Populate Basic Info
+        // 1. Populate Text Data
         setText('sd-name', app.name);
         const isVerified = (app.score && app.score > 0) || ['Lease Signed', 'Active', 'Completed'].includes(app.status);
         const incomeLabel = isVerified ? "(Verified)" : "(Self-Reported)";
@@ -1900,103 +1900,66 @@ function act_viewApp(id) {
 
         setText('sd-evict', app.evictions ? 'Yes' : 'No');
         setText('sd-crim', app.criminal ? 'Yes' : 'No');
+        setText('sd-score', app.score || 'Pending'); 
 
-        // 2. Reset UI Elements
-        const banner = document.getElementById('sd-banner');
-        const pendingMsg = document.getElementById('sd-pending-msg');
-        const apiStart = document.getElementById('sd-api-start');
-        const dataDisplay = document.getElementById('sd-data-display');
-        const actions = document.getElementById('sd-actions');
-        const emailOpt = document.getElementById('sd-email-option');
-        const adminPanel = document.getElementById('sd-admin-panel');
-        
-        // Hide everything first
-        [banner, pendingMsg, apiStart, dataDisplay, actions, emailOpt, adminPanel].forEach(el => 
-            document.getElementById(el).classList.add('hidden-section')
-        );
+        // 2. Hide Everything First (Reset State) - FIXED CRASH HERE
+        const idsToHide = ['sd-banner', 'sd-pending-msg', 'sd-api-start', 'sd-data-display', 'sd-actions', 'sd-email-option', 'sd-admin-panel'];
+        idsToHide.forEach(eid => {
+            const el = document.getElementById(eid);
+            if (el) el.classList.add('hidden-section'); // Only hide if it actually exists
+        });
 
         // 3. Status Logic
-        if (app.status === 'Approved') {
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
-            banner.innerText = "Application Approved";
+        const isReadyForReview = app.status === 'Ready for Review' || (app.status === 'Pending' && app.score > 0);
+
+        // A. Approved / Leases (Final Stages)
+        if (['Approved', 'Lease Uploaded', 'Lease Sent', 'Lease Signed', 'Active', 'Completed'].includes(app.status)) {
+            const banner = document.getElementById('sd-banner');
+            const emailOpt = document.getElementById('sd-email-option');
             
-            emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Next Step: Upload Lease Agreement.";
+            if(banner) banner.classList.remove('hidden-section');
+            if(emailOpt) emailOpt.classList.remove('hidden-section');
             
-            // Re-render buttons container
-            let btnContainer = document.getElementById('sd-action-buttons');
-            if(!btnContainer) {
-                btnContainer = document.createElement('div');
-                btnContainer.id = 'sd-action-buttons';
-                btnContainer.className = 'flex flex-col gap-2 mt-3';
-                emailOpt.appendChild(btnContainer);
+            // Customize Banner Text based on specific status
+            if(app.status === 'Approved') {
+                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
+                banner.innerText = "Application Approved";
+                emailOpt.querySelector('p').innerText = "Next Step: Upload Lease Agreement.";
+                renderActionButtons(app, 'upload');
             }
-            btnContainer.innerHTML = `<a href="lease.html?id=${currentAppId}&name=${encodeURIComponent(app.name)}" class="block w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-center hover:bg-emerald-700">Upload Lease</a>`;
+            else if(app.status === 'Lease Uploaded') {
+                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-teal-100 text-teal-700 border-teal-200";
+                banner.innerText = "Lease Document Ready";
+                renderActionButtons(app, 'send');
+            }
+            else if(app.status === 'Lease Sent') {
+                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-purple-50 text-purple-700 border-purple-200";
+                banner.innerText = "Waiting for Tenant Signature";
+                if(emailOpt) emailOpt.classList.add('hidden-section'); 
+            }
+            else if(app.status === 'Lease Signed') {
+                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
+                banner.innerText = "Signed by Tenant";
+                renderActionButtons(app, 'countersign');
+            }
+        }
+        // B. Ready for Decision (Has Score)
+        else if (isReadyForReview) {
+            const dataDisplay = document.getElementById('sd-data-display');
+            const actions = document.getElementById('sd-actions');
+            if(dataDisplay) dataDisplay.classList.remove('hidden-section');
+            if(actions) actions.classList.remove('hidden-section');
         } 
-        else if (app.status === 'Lease Uploaded') {
-            // --- OFFLINE / ONLINE LOGIC ---
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-teal-100 text-teal-700 border-teal-200";
-            banner.innerText = "Lease Document Ready";
-            
-            emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Choose how to proceed:";
-            
-            let btnContainer = document.getElementById('sd-action-buttons');
-            if(!btnContainer) {
-                btnContainer = document.createElement('div');
-                btnContainer.id = 'sd-action-buttons';
-                btnContainer.className = 'flex flex-col gap-2 mt-3';
-                emailOpt.appendChild(btnContainer);
-            }
-            btnContainer.innerHTML = ''; 
-
-            // Button 1: Send for Digital Signature
-            const btnSend = document.createElement('button');
-            btnSend.className = "w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow hover:bg-indigo-700";
-            btnSend.innerHTML = `<i class="fas fa-paper-plane mr-2"></i> Send for Digital Signature`;
-            btnSend.onclick = () => act_initiateSendLease(currentAppId);
-            btnContainer.appendChild(btnSend);
-
-            // Button 2: Mark as Already Signed
-            const btnOffline = document.createElement('button');
-            btnOffline.className = "w-full bg-slate-100 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-200 border border-slate-200";
-            btnOffline.innerHTML = `<i class="fas fa-check-double mr-2"></i> Already Signed (Skip Sig)`;
-            btnOffline.onclick = () => act_markAsSigned(currentAppId);
-            btnContainer.appendChild(btnOffline);
-        }
-        else if (app.status === 'Lease Signed') {
-            banner.classList.remove('hidden-section');
-            banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
-            banner.innerHTML = `<i class="fas fa-pen-fancy mr-2"></i> Signed by Tenant`;
-            
-            emailOpt.classList.remove('hidden-section');
-            emailOpt.querySelector('p').innerText = "Review and finalize.";
-            
-            let btnContainer = document.getElementById('sd-action-buttons');
-            if(!btnContainer) {
-                btnContainer = document.createElement('div');
-                btnContainer.id = 'sd-action-buttons';
-                btnContainer.className = 'flex flex-col gap-2 mt-3';
-                emailOpt.appendChild(btnContainer);
-            }
-            btnContainer.innerHTML = `<button onclick="act_openCountersign(${currentAppId})" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">Countersign Lease</button>`;
-        }
+        // C. Pending / New
         else {
-            // Pending / Default Status Logic
-            if (!app.score && app.status === 'Pending') {
-                 const hasApiKey = state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
-                if (hasApiKey) document.getElementById('sd-api-start').classList.remove('hidden-section');
-                else document.getElementById('sd-pending-msg').classList.remove('hidden-section');
-            } else if (app.status === 'Ready for Review') {
-                document.getElementById('sd-data-display').classList.remove('hidden-section');
-                document.getElementById('sd-actions').classList.remove('hidden-section');
+            const hasApiKey = state.settings && state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
+            
+            if (hasApiKey) {
+                const apiStart = document.getElementById('sd-api-start');
+                if(apiStart) apiStart.classList.remove('hidden-section');
             } else {
-                // Denied, Withdrawn, etc.
-                banner.classList.remove('hidden-section');
-                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-slate-100 text-slate-600 border-slate-200";
-                banner.innerText = `Status: ${app.status}`;
+                const pendingMsg = document.getElementById('sd-pending-msg');
+                if(pendingMsg) pendingMsg.classList.remove('hidden-section');
             }
         }
 
@@ -3160,6 +3123,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
