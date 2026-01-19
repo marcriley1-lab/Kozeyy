@@ -2444,7 +2444,6 @@ async function confirmPay() {
   function renderFinancials() {
         const filterVal = document.getElementById('filter-financials').value;
         const tbody = document.getElementById('table-financials');
-        const sumContainer = document.getElementById('fin-summary-container');
         const balanceDisplay = document.getElementById('fin-open-bal');
 
         tbody.innerHTML = '';
@@ -2474,7 +2473,6 @@ async function confirmPay() {
             const hiddenClass = "hidden md:table-cell";
 
             if (isInv) {
-                // USE MASTER CALCULATION
                 const calc = calculateOverdueDetails(record, state.settings);
                 
                 const baseBal = (record.total || 0) - (record.amount_paid || 0);
@@ -2486,26 +2484,23 @@ async function confirmPay() {
                 
                 if (record.status !== 'Paid') totalOutstandingDebt += currentDebtOnThis;
 
-                // UI Variables
                 const statusLabel = record.status === 'Paid' ? 'Paid' : (calc.isOverdue ? `Overdue (+${calc.daysLate}d)` : 'Unpaid');
                 const statusColor = record.status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : (calc.isOverdue ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50');
                 const displayAmount = record.total; 
                 const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
                 
-                // FIX: Added single quotes around ${record.id}
+                // FIX: Now using invoice_num
                 rowHtml = `
                 <tr onclick="act_viewInvoice('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
-                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">INVOICE</span></td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">#${record.invoice_num || '---'}</span></td>
                     <td class="p-5 text-sm text-slate-500 ${hiddenClass}">${desc}</td>
                     <td class="p-5 text-right font-bold text-slate-800 ${hiddenClass}">$${(displayAmount||0).toLocaleString()}</td>
                     <td class="p-5 text-right ${hiddenClass}"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
                     <td class="p-5 text-right ${hiddenClass}"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
                 </tr>`;
             } else {
-                // Payment Row
-                // FIX: Added single quotes around ${record.id}
                 rowHtml = `
                 <tr onclick="act_viewPayment('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
@@ -2520,7 +2515,7 @@ async function confirmPay() {
             tbody.innerHTML += rowHtml;
         });
 
-        balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+        if(balanceDisplay) balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
         sumContainer.classList.remove('hidden-section');
         if (transactions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>'; }
     }
@@ -2564,11 +2559,10 @@ async function confirmPay() {
         openModal('modal-invoice');
         logic_invMode('fixed');
     }
- function act_viewInvoice(id) {
+function act_viewInvoice(id) {
         const inv = state.invoices.find(i => i.id === id);
         if(!inv) return;
 
-        // USE MASTER CALCULATION
         const calc = calculateOverdueDetails(inv, state.settings);
 
         setText('prev-name', inv.tenant_name || 'Unknown');
@@ -2576,7 +2570,9 @@ async function confirmPay() {
         
         const currentBal = inv.total + calc.fee;
         setText('prev-total-due', `$${currentBal.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
-        setText('inv-modal-title', `Invoice #${inv.id}`);
+        
+        // FIX: Now using invoice_num
+        setText('inv-modal-title', `Invoice #${inv.invoice_num || inv.id.slice(0,8)}`);
 
         const tbody = document.getElementById('prev-items-body');
         tbody.innerHTML = '';
@@ -2602,9 +2598,11 @@ async function confirmPay() {
         
         const viewActions = document.getElementById('inv-actions-view');
         viewActions.classList.remove('hidden-section');
+        
+        // FIX: Download function uses Friendly ID filename
         viewActions.innerHTML = `
             <div class="flex gap-2">
-                <button onclick="downloadOwnerInvoicePDF('Invoice_${id}')" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-sm hover:bg-indigo-700">
+                <button onclick="downloadOwnerInvoicePDF('Invoice_${inv.invoice_num || id}')" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-sm hover:bg-indigo-700">
                     <i class="fas fa-download mr-2"></i> Download PDF
                 </button>
                 <button onclick="closeModal('modal-invoice')" class="flex-1 py-3 bg-slate-800 text-white rounded-xl font-bold shadow hover:bg-slate-900">
@@ -3281,6 +3279,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
