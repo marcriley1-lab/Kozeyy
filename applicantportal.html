@@ -315,7 +315,7 @@
             document.getElementById('view-loading').classList.add('hidden-section');
             document.getElementById('view-dashboard').classList.remove('hidden-section');
             document.getElementById('dash-name').innerText = currentUserApp.name;
-            document.getElementById('dash-id').innerText = currentUserApp.id;
+            document.getElementById('dash-id').innerText = currentUserApp.app_num || currentUserApp.id.slice(0,8);
             
             // Lease Modal Values (Fallback text updates)
             const leaseName = document.getElementById('lease-name');
@@ -600,5 +600,6 @@
     </script>
 </body>
 </html>
+
 
 
