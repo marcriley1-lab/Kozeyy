@@ -1881,10 +1881,12 @@ function toggleFeeVisibility() {
     function act_editExpense(id) { editExpenseId = id; const e = state.expenses.find(x => x.id === id); setText('modal-expense-title',"Edit Expense"); document.getElementById('ex-id').value = id; document.getElementById('ex-date').value = e.date; document.getElementById('ex-vendor').value = e.vendor; document.getElementById('ex-cat').value = e.category; document.getElementById('ex-amount').value = e.amount; populateExpenseModal(); const s = document.getElementById('ex-prop'); s.value = e.property_address; openModal('modal-expense'); }
     async function act_delExpense(id) { openPlatformConfirm("Delete Expense?", "Confirm deletion.", async () => { await supabaseClient.from('expenses').delete().eq('id', id); await fetchData(); renderAll(); }); }
 
-   function act_viewTenant(id) { 
+  function act_viewTenant(id) { 
+        // 1. Find the tenant data
         const t = state.tenants.find(x => x.id === id); 
         if(!t) return; 
         
+        // 2. Populate basic text fields
         setText('vt-name', t.name); 
         setText('vt-email', t.email); 
         setText('vt-phone', t.phone||'-'); 
@@ -1895,16 +1897,29 @@ function toggleFeeVisibility() {
         setText('vt-start', t.lease_start||'-'); 
         setText('vt-end', t.lease_end||'-'); 
         
-        // Populate Lease Button
+        // 3. DEBUG: Check if the system sees the URL
         const leaseArea = document.getElementById('vt-lease-area');
-        if (leaseArea && t.lease_url) {
+        
+        console.log("Checking lease for:", t.name);
+        console.log("URL found:", t.lease_url);
+
+        if (!leaseArea) {
+            console.error("Error: HTML element 'vt-lease-area' not found!");
+            alert("Error: The code cannot find the place to put the button. Please check your HTML IDs.");
+        } 
+        else if (t.lease_url && t.lease_url.length > 5) {
+            // 4. Inject the button if URL exists
             leaseArea.innerHTML = `
                 <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}')" 
                 class="w-full bg-indigo-50 text-indigo-700 py-3 rounded-xl font-bold border border-indigo-100 hover:bg-indigo-100 transition mb-2">
                     <i class="fas fa-file-contract mr-2"></i> View Signed Lease
                 </button>`;
-        } else if (leaseArea) {
+        } 
+        else {
+            // 5. Clear area if no URL
             leaseArea.innerHTML = '';
+            // Optional: Uncomment this line to see if the data is missing
+            // console.log("No lease URL in database for this tenant.");
         }
 
         openModal('modal-view-tenant'); 
@@ -3282,6 +3297,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
