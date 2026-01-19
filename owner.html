@@ -597,6 +597,12 @@
                     </div>
                 </div>
 
+                <!-- NEW: Specific Area for Lease Button -->
+                <div id="vt-lease-area"></div>
+
+                <button onclick="closeModal('modal-view-tenant')" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-slate-900 transition">Close</button>
+            </div>
+
                 <button onclick="closeModal('modal-view-tenant')" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold brand-font shadow-lg hover:bg-slate-900 transition">Close</button>
             </div>
         </div>
@@ -1881,29 +1887,29 @@ function toggleFeeVisibility() {
         setText('vt-name', t.name); 
         setText('vt-email', t.email); 
         setText('vt-phone', t.phone||'-'); 
-        setText('vt-addr', `${t.address||''}, ${t.unit ? '#'+t.unit : ''}`); 
+        setText('vt-addr', `${t.address||''}`); 
+        setText('vt-unit', t.unit||'-');
         setText('vt-rent', `$${parseInt(t.rent_amount || 0).toLocaleString()}`); 
         setText('vt-status', t.status); 
         setText('vt-start', t.lease_start||'-'); 
         setText('vt-end', t.lease_end||'-'); 
         
-        // NEW: Add View Lease Button if URL exists
-        const btnContainer = document.getElementById('vt-actions-container') || createBtnContainer();
-        
+        // Debug Log: Check if the code sees the URL
+        console.log("Tenant Lease URL:", t.lease_url);
+
+        const leaseArea = document.getElementById('vt-lease-area');
         if (t.lease_url) {
-            btnContainer.innerHTML = `
+            leaseArea.innerHTML = `
                 <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}')" 
-                class="w-full bg-indigo-50 text-indigo-700 py-3 rounded-xl font-bold mb-2 border border-indigo-100 hover:bg-indigo-100 transition">
+                class="w-full bg-indigo-50 text-indigo-700 py-3 rounded-xl font-bold border border-indigo-100 hover:bg-indigo-100 transition mb-2">
                     <i class="fas fa-file-contract mr-2"></i> View Signed Lease
-                </button>
-            `;
+                </button>`;
         } else {
-            btnContainer.innerHTML = '';
+            leaseArea.innerHTML = '';
         }
 
         openModal('modal-view-tenant'); 
     }
-
     // Helper to create the container if it doesn't exist in your HTML yet
     function createBtnContainer() {
         const modalBody = document.querySelector('#modal-view-tenant .space-y-4');
@@ -3275,6 +3281,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
