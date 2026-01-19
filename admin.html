@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concierge Admin | Kozeyy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Outfit', sans-serif; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen">
+
+    <nav class="border-b border-slate-700 bg-slate-900/50 p-6 flex justify-between items-center sticky top-0 z-10 glass">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center text-slate-900 font-bold text-xl">K</div>
+            <h1 class="text-2xl font-bold tracking-tight">Concierge Dashboard</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="text-right hidden md:block">
+                <p class="text-xs text-slate-400 uppercase font-bold tracking-wider">Super Admin</p>
+                <p class="text-sm font-bold text-white">Founder Mode</p>
+            </div>
+            <button onclick="logout()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition border border-slate-700">
+                Sign Out
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-6 md:p-10">
+        
+        <div class="flex items-center justify-between mb-8">
+            <h2 class="text-3xl font-bold">Screening Queue</h2>
+            <button onclick="fetchQueue()" class="text-amber-500 hover:text-amber-400 text-sm font-bold flex items-center gap-2">
+                <i class="fas fa-sync-alt"></i> Refresh List
+            </button>
+        </div>
+
+        <div class="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
+            <table class="w-full text-left">
+                <thead class="bg-slate-950 text-slate-400 text-xs uppercase font-bold tracking-wider">
+                    <tr>
+                        <th class="p-5">Applicant</th>
+                        <th class="p-5">Property</th>
+                        <th class="p-5">Self-Reported Income</th>
+                        <th class="p-5">Submitted</th>
+                        <th class="p-5 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="queue-body" class="divide-y divide-slate-700 text-sm text-slate-300">
+                    <tr><td colspan="5" class="p-8 text-center text-slate-500 italic">Loading queue...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+    </main>
+
+    <!-- VERIFICATION MODAL -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/90 hidden flex items-center justify-center p-4 z-50 backdrop-blur-sm">
+        <div class="bg-slate-900 w-full max-w-lg rounded-2xl shadow-2xl border border-slate-700 relative flex flex-col max-h-[90vh]">
+            
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-950/50 rounded-t-2xl">
+                <div>
+                    <h3 class="text-xl font-bold text-white">Verify Applicant</h3>
+                    <p id="modal-name" class="text-amber-500 text-sm font-bold mt-1">...</p>
+                </div>
+                <button onclick="closeModal()" class="text-slate-500 hover:text-white transition text-xl"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-6">
+                
+                <!-- 1. CREDIT SCORE -->
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Credit Score (Found)</label>
+                    <div class="relative">
+                        <i class="fas fa-tachometer-alt absolute left-4 top-3.5 text-slate-500"></i>
+                        <input id="inp-score" type="number" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 pl-10 text-white font-mono font-bold focus:border-amber-500 focus:outline-none" placeholder="e.g. 720">
+                    </div>
+                </div>
+
+                <!-- 2. INCOME VERIFICATION -->
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                    <div class="flex justify-between mb-2">
+                        <label class="text-xs font-bold uppercase text-slate-400">Monthly Income</label>
+                        <span class="text-[10px] text-amber-500 font-bold bg-amber-500/10 px-2 py-0.5 rounded">Verify & Edit</span>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute left-4 top-3.5 text-slate-500 font-bold">$</span>
+                        <input id="inp-income" type="number" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 pl-8 text-white font-mono font-bold focus:border-amber-500 focus:outline-none">
+                    </div>
+                    <p class="text-[10px] text-slate-500 mt-2">Update this if paystubs show a different amount than reported.</p>
+                </div>
+
+                <!-- 3. BACKGROUND CHECK -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Eviction History</label>
+                        <select id="inp-evict" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white font-bold focus:border-amber-500 focus:outline-none appearance-none">
+                            <option value="false">✅ Clean Record</option>
+                            <option value="true">⚠️ Match Found</option>
+                        </select>
+                    </div>
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Criminal History</label>
+                        <select id="inp-crim" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-white font-bold focus:border-amber-500 focus:outline-none appearance-none">
+                            <option value="false">✅ Clean Record</option>
+                            <option value="true">⚠️ Match Found</option>
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="p-6 border-t border-slate-700 bg-slate-950/50 rounded-b-2xl">
+                <button onclick="saveResults()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-900 py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-amber-500/20 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-check-circle"></i> Verify & Push to Owner
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentAppId = null;
+        let appsData = [];
+
+        async function init() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if(!user) return window.location.href = 'login.html';
+
+            // Security Check
+            const { data: owner } = await supabase.from('owners').select('is_admin').eq('id', user.id).single();
+            if(!owner || !owner.is_admin) {
+                alert("Access Denied.");
+                window.location.href = 'owner.html';
+                return;
+            }
+            fetchQueue();
+        }
+
+        async function fetchQueue() {
+            const tbody = document.getElementById('queue-body');
+            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-500"><i class="fas fa-circle-notch fa-spin text-2xl"></i></td></tr>';
+
+            // Fetch Pending Apps
+            // Also fetching 'rent' to display property info if needed, though usually listing_id is better
+            const { data: apps, error } = await supabase
+                .from('apps')
+                .select('*')
+                .eq('status', 'Pending')
+                .order('created_at', {ascending: false});
+
+            if(error) return console.error(error);
+            appsData = apps || [];
+
+            tbody.innerHTML = '';
+            if(appsData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-slate-500 italic">Queue is empty.</td></tr>';
+                return;
+            }
+
+            appsData.forEach(app => {
+                const date = new Date(app.created_at).toLocaleDateString();
+                tbody.innerHTML += `
+                    <tr class="border-b border-slate-700 hover:bg-slate-800/50 transition">
+                        <td class="p-5 font-bold text-white">${app.name}<div class="text-xs text-slate-500 font-normal mt-1">${app.email}</div></td>
+                        <td class="p-5 text-slate-400 text-xs font-mono">App ID: ${app.id.slice(0,8)}...</td>
+                        <td class="p-5 text-slate-300 font-medium">$${parseInt(app.income).toLocaleString()}</td>
+                        <td class="p-5 text-slate-500 text-xs">${date}</td>
+                        <td class="p-5 text-right">
+                            <button onclick="openModal('${app.id}')" class="bg-slate-700 hover:bg-amber-500 hover:text-slate-900 text-white px-4 py-2 rounded-lg font-bold text-xs transition border border-slate-600 hover:border-amber-500">
+                                Process
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        window.openModal = function(id) {
+            const app = appsData.find(a => a.id === id);
+            if(!app) return;
+
+            currentAppId = id;
+            document.getElementById('modal-name').innerText = app.name;
+            document.getElementById('admin-modal').classList.remove('hidden');
+
+            // --- THIS IS THE KEY PART ---
+            // We PRE-FILL the inputs with the applicant's self-reported data.
+            // You can now change them if your background check shows different numbers.
+            
+            document.getElementById('inp-score').value = ''; // Score starts empty
+            document.getElementById('inp-income').value = app.income || 0; 
+            
+            // Set Dropdowns based on boolean values
+            document.getElementById('inp-evict').value = app.evictions ? 'true' : 'false';
+            document.getElementById('inp-crim').value = app.criminal ? 'true' : 'false';
+        };
+
+        window.closeModal = function() {
+            document.getElementById('admin-modal').classList.add('hidden');
+        };
+
+        window.saveResults = async function() {
+            // Get the (possibly edited) values
+            const score = document.getElementById('inp-score').value;
+            const income = document.getElementById('inp-income').value;
+            const evict = document.getElementById('inp-evict').value === 'true';
+            const crim = document.getElementById('inp-crim').value === 'true';
+
+            if(!score) return alert("Please enter a Credit Score to complete verification.");
+
+            const { error } = await supabase.from('apps').update({
+                score: parseInt(score),       // New Score
+                income: parseFloat(income),   // Verified/Edited Income
+                evictions: evict,             // Verified/Edited Eviction Status
+                criminal: crim,               // Verified/Edited Criminal Status
+                status: 'Ready for Review'    // Push to Owner
+            }).eq('id', currentAppId);
+
+            if(error) alert(error.message);
+            else {
+                closeModal();
+                fetchQueue(); // Remove from list
+            }
+        };
+
+        window.logout = async function() {
+            await supabase.auth.signOut();
+            window.location.href = 'login.html';
+        };
+
+        init();
+    </script>
+</body>
+</html>
