@@ -1776,7 +1776,7 @@ function toggleFeeVisibility() {
     function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id === id); setText('modal-tenant-title',"Edit Tenant"); setText('btn-save-tenant',"Update Tenant"); document.getElementById('t-id').value = t.id; document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone||''; document.getElementById('t-unit').value = t.unit||''; document.getElementById('t-rent').value = t.rent_amount; document.getElementById('t-start').value = t.lease_start||''; document.getElementById('t-end').value = t.lease_end||''; document.getElementById('t-addr').value = t.address||''; document.getElementById('t-status').value = t.status; document.getElementById('t-city').value = t.city||''; document.getElementById('t-state').value = t.state||''; document.getElementById('t-zip').value = t.zip||''; openModal('modal-tenant'); }
     async function act_delTenant(id) { openPlatformConfirm("Delete Tenant?", "This cannot be undone.", async () => { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); }); }
     
- async function act_saveListing(e) { 
+async function act_saveListing(e) { 
     e.preventDefault(); 
     const btn = document.getElementById('btn-save-listing');
     btn.disabled = true;
@@ -1784,7 +1784,7 @@ function toggleFeeVisibility() {
     try {
         const ownerId = localStorage.getItem('kozeyy_user_id');
         
-        // 1. Capture ALL form fields
+        // 1. Capture ALL form fields explicitly
         const listingData = { 
             owner_id: ownerId, 
             address: document.getElementById('l-addr').value, 
@@ -1798,16 +1798,23 @@ function toggleFeeVisibility() {
             date_available: document.getElementById('l-date').value
         }; 
 
-        // 2. Handle Image Upload if files are present
+        // 2. Handle Multiple Image Uploads
         const fileInput = document.getElementById('l-img-file');
         if (fileInput.files && fileInput.files.length > 0) {
-            // Upload the first photo as the primary image_url
-            const photoUrl = await uploadFile(fileInput.files[0], 'listings');
-            if (photoUrl) listingData.image_url = photoUrl;
+            // Upload all selected files simultaneously
+            const uploadPromises = Array.from(fileInput.files).map(file => uploadFile(file, 'listings'));
+            const photoUrls = await Promise.all(uploadPromises);
+            
+            // Filter out any failed uploads
+            const validUrls = photoUrls.filter(url => url !== null);
+            if (validUrls.length > 0) {
+                listingData.image_url = validUrls[0]; // Set first as main thumbnail
+                listingData.images = validUrls;       // Store all in the array column
+            }
         }
 
         if (editListingId) {
-            // UPDATE existing
+            // UPDATE existing listing
             const { error } = await supabaseClient
                 .from('listings')
                 .update(listingData)
@@ -1815,7 +1822,7 @@ function toggleFeeVisibility() {
             if (error) throw error;
             showToast("Listing updated!");
         } else {
-            // INSERT new
+            // INSERT new listing
             const { error } = await supabaseClient.from('listings').insert([listingData]); 
             if (error) throw error;
             showToast("Listing posted!");
@@ -1832,7 +1839,36 @@ function toggleFeeVisibility() {
     }
 }
     
-    function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.address; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.description; document.getElementById('l-amen').value = l.amenities||''; document.getElementById('l-date').value = l.date_available; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
+   function act_editListing(id) { 
+    editListingId = id; 
+    const l = state.listings.find(x => x.id == id); 
+    if(!l) return;
+
+    // 1. Load all data back into form fields
+    document.getElementById('l-addr').value = l.address || ''; 
+    document.getElementById('l-price').value = l.price || ''; 
+    document.getElementById('l-sqft').value = l.sqft || ''; 
+    document.getElementById('l-beds').value = l.beds || ''; 
+    document.getElementById('l-baths').value = l.baths || ''; 
+    document.getElementById('l-desc').value = l.description || ''; 
+    document.getElementById('l-amen').value = l.amenities || ''; 
+    document.getElementById('l-contact').value = l.contact_info || '';
+    document.getElementById('l-date').value = l.date_available || ''; 
+    
+    // 2. Update visual photo count
+    const imgLabel = document.getElementById('l-img-label');
+    const fileCount = document.getElementById('l-file-count');
+    if (l.images && l.images.length > 0) {
+        imgLabel.innerText = "Change Photos";
+        fileCount.innerText = `${l.images.length} existing photo(s) saved`;
+    } else {
+        imgLabel.innerText = "Upload Photos";
+        fileCount.innerText = "";
+    }
+
+    setText('btn-save-listing', "Update Listing"); 
+    openModal('modal-listing'); 
+}
     async function act_delListing(id) {
     // 'id' here is the Primary Key from the 'listings' table
     openPlatformConfirm("Delete Listing?", "This will permanently remove the property.", async () => {
@@ -3235,6 +3271,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
