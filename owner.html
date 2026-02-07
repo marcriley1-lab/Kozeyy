@@ -454,9 +454,9 @@
     </div>
 </div>
 
-    <div id="modal-share-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-[60] flex items-center justify-center backdrop-blur-sm p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative overflow-hidden flex flex-col max-h-[90vh] z-[70]">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 relative z-[80]">
+    <div id="modal-share-listing" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl relative overflow-hidden flex flex-col max-h-[90vh]">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <div>
                 <h3 class="text-xl font-bold brand-font text-slate-800">Post Your Listing</h3>
                 <p class="text-sm text-slate-500">Create once, publish everywhere.</p>
@@ -465,11 +465,6 @@
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
-
-        <div class="p-6 overflow-y-auto custom-scroll relative z-[75]">
-            </div>
-    </div>
-</div>
 
         <div class="p-6 overflow-y-auto">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -1133,24 +1128,24 @@ function renderAll() {
                 const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80';
                 
                 lGrid.innerHTML += `
-<div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition relative z-0">
-    <div class="h-40 bg-slate-200 relative overflow-hidden z-10">
-        <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500 pointer-events-none">
-        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold shadow-sm z-20">$${l.price}/mo</div>
-    </div>
-    <div class="p-4 relative z-10">
-        <h4 class="font-bold text-slate-800 mb-1 truncate">${l.address}</h4>
-        <div class="flex gap-3 text-xs text-slate-500 mb-4">
-            <span><i class="fas fa-bed mr-1"></i>${l.beds || 0}</span>
-            <span><i class="fas fa-bath mr-1"></i>${l.baths || 0}</span>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="showShareModal('${l.id}')" class="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100">Share</button>
-            <button onclick="act_editListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-slate-600"><i class="fas fa-edit"></i></button>
-            <button onclick="act_delListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-rose-600"><i class="fas fa-trash"></i></button>
-        </div>
-    </div>
-</div>`;
+                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition">
+                    <div class="h-40 bg-slate-200 relative overflow-hidden">
+                        <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold shadow-sm">$${l.price}/mo</div>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-bold text-slate-800 mb-1 truncate">${l.address}</h4>
+                        <div class="flex gap-3 text-xs text-slate-500 mb-4">
+                            <span><i class="fas fa-bed mr-1"></i>${l.beds || 0}</span>
+                            <span><i class="fas fa-bath mr-1"></i>${l.baths || 0}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="showShareModal('${l.id}')" class="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100">Share</button>
+                            <button onclick="act_editListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-slate-600"><i class="fas fa-edit"></i></button>
+                            <button onclick="act_delListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-rose-600"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>`;
             });
         }
 
@@ -1789,7 +1784,7 @@ function toggleFeeVisibility() {
     try {
         const ownerId = localStorage.getItem('kozeyy_user_id');
         
-        // Explicitly capture every field from the form
+        // 1. Capture ALL form fields
         const listingData = { 
             owner_id: ownerId, 
             address: document.getElementById('l-addr').value, 
@@ -1803,14 +1798,16 @@ function toggleFeeVisibility() {
             date_available: document.getElementById('l-date').value
         }; 
 
-        // Handle Image Uploads
+        // 2. Handle Image Upload if files are present
         const fileInput = document.getElementById('l-img-file');
         if (fileInput.files && fileInput.files.length > 0) {
+            // Upload the first photo as the primary image_url
             const photoUrl = await uploadFile(fileInput.files[0], 'listings');
             if (photoUrl) listingData.image_url = photoUrl;
         }
 
         if (editListingId) {
+            // UPDATE existing
             const { error } = await supabaseClient
                 .from('listings')
                 .update(listingData)
@@ -1818,6 +1815,7 @@ function toggleFeeVisibility() {
             if (error) throw error;
             showToast("Listing updated!");
         } else {
+            // INSERT new
             const { error } = await supabaseClient.from('listings').insert([listingData]); 
             if (error) throw error;
             showToast("Listing posted!");
@@ -1834,24 +1832,7 @@ function toggleFeeVisibility() {
     }
 }
     
-    function act_editListing(id) { 
-    editListingId = id; 
-    const l = state.listings.find(x => x.id == id); 
-    if(!l) return;
-
-    document.getElementById('l-addr').value = l.address || ''; 
-    document.getElementById('l-price').value = l.price || ''; 
-    document.getElementById('l-sqft').value = l.sqft || ''; 
-    document.getElementById('l-beds').value = l.beds || ''; 
-    document.getElementById('l-baths').value = l.baths || ''; 
-    document.getElementById('l-desc').value = l.description || ''; 
-    document.getElementById('l-amen').value = l.amenities || ''; 
-    document.getElementById('l-contact').value = l.contact_info || '';
-    document.getElementById('l-date').value = l.date_available || ''; 
-    
-    setText('btn-save-listing', "Update Listing"); 
-    openModal('modal-listing'); 
-}
+    function act_editListing(id) { editListingId = id; const l = state.listings.find(x => x.id == id); document.getElementById('l-addr').value = l.address; document.getElementById('l-price').value = l.price; document.getElementById('l-sqft').value = l.sqft; document.getElementById('l-beds').value = l.beds; document.getElementById('l-baths').value = l.baths; document.getElementById('l-desc').value = l.description; document.getElementById('l-amen').value = l.amenities||''; document.getElementById('l-date').value = l.date_available; setText('btn-save-listing',"Update Listing"); openModal('modal-listing'); }
     async function act_delListing(id) {
     // 'id' here is the Primary Key from the 'listings' table
     openPlatformConfirm("Delete Listing?", "This will permanently remove the property.", async () => {
@@ -3254,8 +3235,6 @@ function signOut() {
 </script>
 </body>
 </html>
-
-
 
 
 
