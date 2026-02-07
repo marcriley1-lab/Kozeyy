@@ -123,39 +123,40 @@
 
         <div class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth no-scrollbar">
             
-            <div id="view-home" class="view-section fade-in pb-24">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-bold text-slate-900 brand-font">Hi, <span class="display-name">...</span> 👋</h1>
-                        <p id="unit-info-container" class="text-slate-500 text-sm mt-1 hidden-section">Unit <span id="display-unit">...</span></p>
-                    </div>
-                </div>
-
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 relative overflow-hidden">
-                    <div class="flex justify-between items-start mb-4">
-                        <div>
-                            <h3 class="font-bold text-slate-500 text-xs uppercase tracking-wider">Current Balance</h3>
-                            <div class="text-4xl font-extrabold text-slate-900 mt-2 brand-font" id="total-balance">$0.00</div>
-                        </div>
-                        <span id="payment-status-badge" class="bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase">All Paid</span>
-                    </div>
-                    <p class="text-slate-500 text-sm mb-6" id="payment-due-date">No upcoming payments</p>
-                    <button onclick="switchTab('payments')" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 active:scale-95 transform duration-100 flex items-center justify-center gap-2">
-                        <span>Make a Payment</span>
-                    </button>
-                </div>
-
-                <div id="credit-banner" class="bg-gradient-to-r from-slate-800 to-indigo-900 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg mb-6 gap-4">
-    <div>
-        <div class="flex items-center gap-2 mb-2">
-            <i class="fas fa-chart-line text-indigo-300"></i>
-            <span class="text-xs font-bold uppercase tracking-wide opacity-80">Credit Builder</span>
+           <div id="view-home" class="view-section fade-in pb-24">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-900 brand-font">Hi, <span class="display-name">...</span> 👋</h1>
+            <p id="unit-info-container" class="text-slate-500 text-sm mt-1 hidden-section">Unit <span id="display-unit">...</span></p>
         </div>
-        <h3 class="font-bold text-lg brand-font">Boost Your Score</h3>
-        <p class="text-indigo-200 text-xs md:text-sm mt-1">Soon you'll be able to report on-time rent payments to bureaus.</p>
     </div>
-    <div class="bg-indigo-500/30 border border-indigo-400/50 px-4 py-2 rounded-lg font-bold text-sm text-indigo-100 whitespace-nowrap">
-        <i class="fas fa-clock mr-2"></i> Coming Soon
+
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 relative overflow-hidden">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <h3 class="font-bold text-slate-500 text-xs uppercase tracking-wider">Current Balance</h3>
+                <div class="text-4xl font-extrabold text-slate-900 mt-2 brand-font" id="total-balance">$0.00</div>
+            </div>
+            <span id="payment-status-badge" class="bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase">All Paid</span>
+        </div>
+        <p class="text-slate-500 text-sm mb-6" id="payment-due-date">No upcoming payments</p>
+        <button onclick="switchTab('payments')" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg shadow-indigo-500/20 flex items-center justify-center gap-2">
+            <span>Make a Payment</span>
+        </button>
+    </div>
+
+    <div id="credit-banner" class="bg-gradient-to-r from-slate-800 to-indigo-900 rounded-2xl p-6 text-white flex flex-col md:flex-row justify-between items-start md:items-center shadow-lg mb-6 gap-4">
+        <div>
+            <div class="flex items-center gap-2 mb-2">
+                <i class="fas fa-chart-line text-indigo-300"></i>
+                <span class="text-xs font-bold uppercase tracking-wide opacity-80">Credit Builder</span>
+            </div>
+            <h3 class="font-bold text-lg brand-font">Boost Your Score</h3>
+            <p class="text-indigo-200 text-xs md:text-sm mt-1">Soon you'll be able to report on-time rent payments to bureaus.</p>
+        </div>
+        <div class="bg-indigo-500/30 border border-indigo-400/50 px-4 py-2 rounded-lg font-bold text-sm text-indigo-100 whitespace-nowrap">
+            <i class="fas fa-clock mr-2"></i> Coming Soon
+        </div>
     </div>
 </div>
 
@@ -307,7 +308,7 @@
                 </div>
             </div>
 
-            <<div id="view-settings" class="view-section hidden-section fade-in pb-24">
+            <div id="view-settings" class="view-section hidden-section fade-in pb-24">
     <h1 class="text-2xl font-bold mb-6 brand-font">Account Settings</h1>
     
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-6">
@@ -333,14 +334,10 @@
             <i class="fab fa-stripe text-indigo-600 text-2xl"></i>
         </div>
         <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4 text-center">
-             <p class="text-sm text-slate-600 mb-2">Manage cards and bank accounts securely.</p>
              <button class="w-full bg-indigo-600 text-white text-sm font-bold rounded-xl py-3 hover:bg-indigo-700 transition" onclick="openStripePortal()">
                 Open Billing Portal
              </button>
         </div>
-        <p class="text-xs text-slate-400 mt-2 text-center">
-            <i class="fas fa-lock"></i> Payments are processed securely by Stripe.
-        </p>
     </div>
     
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hidden-section">
@@ -357,7 +354,6 @@
 
     <div class="mt-8 text-center">
         <a href="login.html" class="text-red-500 text-sm font-medium hover:underline">Sign Out</a>
-        <p class="text-xs text-slate-300 mt-4">Version 3.8.0 (Live Chat)</p>
     </div>
 </div>
     </main>
@@ -1360,5 +1356,6 @@
     </script>
 </body>
 </html>
+
 
 
