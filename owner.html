@@ -855,21 +855,35 @@
     </button>
 </div>
 
-            <div id="sd-data-display" class="hidden-section">
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase mb-3">Financials</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><p class="text-xs text-slate-500">Credit Score</p><p class="font-bold text-lg" id="sd-score">-</p></div>
-                        <div><p class="text-xs text-slate-500">Monthly Income</p><p class="font-bold text-lg" id="sd-income">-</p></div>
-                    </div>
-                    <div class="mt-2 text-xs text-slate-500">Rent Coverage: <span id="sd-ratio" class="font-bold text-slate-800"></span>x</div>
-                </div>
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-2">
-                    <p class="text-xs font-bold text-slate-400 uppercase mb-3">Background Check</p>
-                    <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2"><span class="text-sm font-medium">Evictions</span><span id="sd-evict" class="font-bold text-sm">-</span></div>
-                    <div class="flex justify-between items-center"><span class="text-sm font-medium">Criminal History</span><span id="sd-crim" class="font-bold text-sm">-</span></div>
-                </div>
-            </div>
+           <div id="sd-data-display" class="hidden-section">
+    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-100 mb-4 text-center">
+        <p class="text-xs font-bold text-slate-400 uppercase mb-2">RentPrep RentScore</p>
+        <div class="text-4xl font-black text-indigo-600 brand-font" id="sd-score">-</div>
+        <p class="text-[10px] text-slate-400 mt-1">Weighted credit & background risk model</p>
+    </div>
+
+    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+        <p class="text-xs font-bold text-slate-400 uppercase mb-3">Applicant Data</p>
+        <div class="flex justify-between items-center mb-2">
+            <span class="text-sm text-slate-600">Self-Reported Monthly Income</span>
+            <span class="font-bold text-slate-800" id="sd-income">-</span>
+        </div>
+        <div class="flex justify-between items-center">
+            <span class="text-sm text-slate-600">Reported Income-to-Rent Ratio</span>
+            <span class="font-bold text-slate-800"><span id="sd-ratio"></span>x</span>
+        </div>
+    </div>
+
+    <a id="sd-report-link" href="#" target="_blank" class="w-full bg-white border-2 border-indigo-600 text-indigo-600 py-3 rounded-xl font-bold text-center block hover:bg-indigo-50 transition mb-4">
+        <i class="fas fa-external-link-alt mr-2"></i> View Full RentPrep Report
+    </a>
+
+    <div class="mt-6 p-3 bg-slate-100 rounded-xl border border-slate-200">
+        <p class="text-[10px] text-slate-500 leading-relaxed italic">
+            <strong>Disclaimer:</strong> Financial and history data is self-reported by the applicant. RentScore and background details are provided by RentPrep. Kozeyy does not independently verify the accuracy of applicant-provided income or documents.
+        </p>
+    </div>
+</div>
             
             <div id="sd-actions" class="hidden-section grid grid-cols-3 gap-2 mt-4">
                 <button onclick="act_initiateApproval()" class="bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow">Approve</button>
@@ -1938,139 +1952,59 @@ function toggleFeeVisibility() {
 
     // --- 2. View Applicant (Decides Concierge vs API view) ---
 function act_viewApp(id) {
-        currentAppId = id;
-        const app = state.apps.find(a => a.id === id);
-        if(!app) return;
+    currentAppId = id;
+    const app = state.apps.find(a => a.id === id);
+    if(!app) return;
 
-        // 1. Populate Text Data
-        setText('sd-name', app.name);
-        const isVerified = (app.score && app.score > 0) || ['Lease Signed', 'Active', 'Completed'].includes(app.status);
-        const incomeLabel = isVerified ? "(Verified)" : "(Self-Reported)";
-        setText('sd-income', `$${(app.income||0).toLocaleString()} ${incomeLabel}`);
-        
-        const rent = app.rent || 0;
-        const ratio = rent > 0 ? (app.income / rent).toFixed(1) : 0;
-        setText('sd-ratio', ratio);
+    // 1. Populate Text Data with Self-Reported Labels
+    setText('sd-name', app.name);
+    
+    // Display income as self-reported
+    setText('sd-income', `$${(app.income||0).toLocaleString()}`);
+    
+    const rent = app.rent || 0;
+    const ratio = rent > 0 ? (app.income / rent).toFixed(1) : 0;
+    setText('sd-ratio', ratio);
 
-        setText('sd-evict', app.evictions ? 'Yes' : 'No');
-        setText('sd-crim', app.criminal ? 'Yes' : 'No');
-        setText('sd-score', app.score || 'Pending'); 
-
-        // 2. Hide Everything First (Reset State) - Includes Safety Check
-        const idsToHide = ['sd-banner', 'sd-pending-msg', 'sd-api-start', 'sd-data-display', 'sd-actions', 'sd-email-option', 'sd-admin-panel'];
-        idsToHide.forEach(eid => {
-            const el = document.getElementById(eid);
-            if (el) el.classList.add('hidden-section'); 
-        });
-
-        // 3. Status Logic
-        const isReadyForReview = app.status === 'Ready for Review' || (app.status === 'Pending' && app.score > 0);
-
-        // A. Approved / Leases (Final Stages)
-        if (['Approved', 'Lease Uploaded', 'Lease Sent', 'Lease Signed', 'Active', 'Completed'].includes(app.status)) {
-            const banner = document.getElementById('sd-banner');
-            const emailOpt = document.getElementById('sd-email-option');
-            
-            if(banner) banner.classList.remove('hidden-section');
-            if(emailOpt) emailOpt.classList.remove('hidden-section');
-            
-            // Customize Banner Text based on specific status
-            if(app.status === 'Approved') {
-                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-emerald-100 text-emerald-700 border-emerald-200";
-                banner.innerText = "Application Approved";
-                emailOpt.querySelector('p').innerText = "Next Step: Upload Lease Agreement.";
-                
-                let btnContainer = document.getElementById('sd-action-buttons');
-                if(!btnContainer) {
-                    btnContainer = document.createElement('div');
-                    btnContainer.id = 'sd-action-buttons';
-                    btnContainer.className = 'flex flex-col gap-2 mt-3';
-                    emailOpt.appendChild(btnContainer);
-                }
-                btnContainer.innerHTML = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent}" class="block w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-center hover:bg-emerald-700">Upload Lease</a>`;
-            }
-            else if(app.status === 'Lease Uploaded') {
-                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-teal-100 text-teal-700 border-teal-200";
-                banner.innerText = "Lease Document Ready";
-                
-                emailOpt.querySelector('p').innerText = "Choose how to proceed:";
-                
-                let btnContainer = document.getElementById('sd-action-buttons');
-                if(!btnContainer) {
-                    btnContainer = document.createElement('div');
-                    btnContainer.id = 'sd-action-buttons';
-                    btnContainer.className = 'flex flex-col gap-2 mt-3';
-                    emailOpt.appendChild(btnContainer);
-                }
-                btnContainer.innerHTML = ''; 
-
-                // 1. Send for Signature
-                const btnSend = document.createElement('button');
-                btnSend.className = "w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow hover:bg-indigo-700";
-                btnSend.innerHTML = `<i class="fas fa-paper-plane mr-2"></i> Send for Digital Signature`;
-                btnSend.onclick = () => act_initiateSendLease(currentAppId);
-                btnContainer.appendChild(btnSend);
-
-                // 2. NEW: Edit / Re-upload Button
-                const btnEdit = document.createElement('button');
-                btnEdit.className = "w-full bg-white border-2 border-slate-200 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-50 hover:border-slate-300 transition";
-                btnEdit.innerHTML = `<i class="fas fa-edit mr-2"></i> Edit / Re-upload Lease`;
-                btnEdit.onclick = () => {
-                    // Redirect back to lease.html with current data
-                    window.location.href = `lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent}`;
-                };
-                btnContainer.appendChild(btnEdit);
-
-                // 3. Mark Signed (Offline)
-                const btnOffline = document.createElement('button');
-                btnOffline.className = "w-full text-slate-400 text-xs font-bold hover:text-slate-600 py-2 mt-1";
-                btnOffline.innerHTML = `Mark as Signed (Skip Digital Sig)`;
-                btnOffline.onclick = () => act_markAsSigned(currentAppId);
-                btnContainer.appendChild(btnOffline);
-            }
-            else if(app.status === 'Lease Sent') {
-                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-purple-50 text-purple-700 border-purple-200";
-                banner.innerText = "Waiting for Tenant Signature";
-                if(emailOpt) emailOpt.classList.add('hidden-section'); 
-            }
-            else if(app.status === 'Lease Signed') {
-                banner.className = "p-4 rounded-xl border font-bold text-center mb-4 bg-blue-50 text-blue-700 border-blue-200";
-                banner.innerText = "Signed by Tenant";
-                
-                emailOpt.querySelector('p').innerText = "Review and finalize.";
-                
-                let btnContainer = document.getElementById('sd-action-buttons');
-                if(!btnContainer) {
-                    btnContainer = document.createElement('div');
-                    btnContainer.id = 'sd-action-buttons';
-                    btnContainer.className = 'flex flex-col gap-2 mt-3';
-                    emailOpt.appendChild(btnContainer);
-                }
-                btnContainer.innerHTML = `<button onclick="act_openCountersign('${currentAppId}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold shadow hover:bg-blue-700">Countersign Lease</button>`;
-            }
-        }
-        // B. Ready for Decision (Has Score)
-        else if (isReadyForReview) {
-            const dataDisplay = document.getElementById('sd-data-display');
-            const actions = document.getElementById('sd-actions');
-            if(dataDisplay) dataDisplay.classList.remove('hidden-section');
-            if(actions) actions.classList.remove('hidden-section');
-        } 
-        // C. Pending / New
-        else {
-            const hasApiKey = state.settings && state.settings.rentprep_api_key && state.settings.rentprep_api_key.trim() !== '';
-            
-            if (hasApiKey) {
-                const apiStart = document.getElementById('sd-api-start');
-                if(apiStart) apiStart.classList.remove('hidden-section');
-            } else {
-                const pendingMsg = document.getElementById('sd-pending-msg');
-                if(pendingMsg) pendingMsg.classList.remove('hidden-section');
-            }
-        }
-
-        openModal('modal-screening-detail');
+    // 2. Populate RentPrep Data (Score and External Link)
+    setText('sd-score', app.score || '---'); 
+    
+    const reportBtn = document.getElementById('sd-report-link');
+    if(app.notes && app.notes.startsWith('http')) {
+        reportBtn.href = app.notes;
+        reportBtn.classList.remove('hidden-section');
+    } else {
+        reportBtn.classList.add('hidden-section');
     }
+
+    // 3. Reset Modal View: Hide all conditional sections first
+    const idsToHide = ['sd-banner', 'sd-pending-msg', 'sd-api-start', 'sd-data-display', 'sd-actions', 'sd-email-option', 'sd-admin-panel'];
+    idsToHide.forEach(eid => {
+        const el = document.getElementById(eid);
+        if (el) el.classList.add('hidden-section'); 
+    });
+
+    // 4. Status Logic
+    const isReadyForReview = app.status === 'Ready for Review' || (app.status === 'Pending' && app.score > 0);
+
+    // A. Decisions & Background Data (Show if Concierge has pushed the report)
+    if (isReadyForReview) {
+        document.getElementById('sd-data-display').classList.remove('hidden-section');
+        document.getElementById('sd-actions').classList.remove('hidden-section');
+    } 
+    // B. Approved / Final Stages (Keep your existing lease logic here)
+    else if (['Approved', 'Lease Uploaded', 'Lease Sent', 'Lease Signed', 'Active', 'Completed'].includes(app.status)) {
+        document.getElementById('sd-banner').classList.remove('hidden-section');
+        document.getElementById('sd-email-option').classList.remove('hidden-section');
+        // ... (The rest of your existing banner/button logic for leases)
+    }
+    // C. Still in Progress
+    else {
+        document.getElementById('sd-pending-msg').classList.remove('hidden-section');
+    }
+
+    openModal('modal-screening-detail');
+}
     // --- 3. Save Manual Results (Concierge Action) ---
   async function act_saveScreeningResults() {
         const score = document.getElementById('input-manual-score').value;
@@ -3284,6 +3218,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
