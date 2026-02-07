@@ -275,23 +275,27 @@
             document.getElementById('admin-modal').classList.add('hidden');
         };
 
-       window.saveResults = async function() {
+      window.saveResults = async function() {
     const score = document.getElementById('inp-score').value;
     const reportUrl = document.getElementById('inp-report-url').value;
     const income = document.getElementById('inp-income').value;
 
-    if(!score || !reportUrl) return alert("Please enter both the RentScore and the Report Link.");
+    if(!score || !reportUrl) {
+        return alert("Please enter both the RentScore and the RentPrep Link.");
+    }
 
+    // We use the 'notes' column to store the external URL for the owner
     const { error } = await supabaseClient.from('apps').update({
         score: parseInt(score),
         income: parseFloat(income),
-        notes: reportUrl, // We store the link in the 'notes' column
-        status: 'Ready for Review'
+        notes: reportUrl, 
+        status: 'Ready for Review' 
     }).eq('id', currentAppId);
 
     if(error) {
         alert("Error saving: " + error.message);
     } else {
+        showToast("Report pushed to Owner Dashboard");
         window.closeModal();
         window.fetchQueue(); 
     }
