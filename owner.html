@@ -1780,7 +1780,7 @@ function toggleFeeVisibility() {
     function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id === id); setText('modal-tenant-title',"Edit Tenant"); setText('btn-save-tenant',"Update Tenant"); document.getElementById('t-id').value = t.id; document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone||''; document.getElementById('t-unit').value = t.unit||''; document.getElementById('t-rent').value = t.rent_amount; document.getElementById('t-start').value = t.lease_start||''; document.getElementById('t-end').value = t.lease_end||''; document.getElementById('t-addr').value = t.address||''; document.getElementById('t-status').value = t.status; document.getElementById('t-city').value = t.city||''; document.getElementById('t-state').value = t.state||''; document.getElementById('t-zip').value = t.zip||''; openModal('modal-tenant'); }
     async function act_delTenant(id) { openPlatformConfirm("Delete Tenant?", "This cannot be undone.", async () => { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); }); }
     
- async function act_saveListing(e) { 
+async function act_saveListing(e) { 
     e.preventDefault(); 
     const btn = document.getElementById('btn-save-listing');
     btn.disabled = true;
@@ -1788,7 +1788,7 @@ function toggleFeeVisibility() {
     try {
         const ownerId = localStorage.getItem('kozeyy_user_id');
         
-        // Explicitly capture every field from the form
+        // 1. Capture all text and numeric fields
         const listingData = { 
             owner_id: ownerId, 
             address: document.getElementById('l-addr').value, 
@@ -1802,13 +1802,22 @@ function toggleFeeVisibility() {
             date_available: document.getElementById('l-date').value
         }; 
 
-        // Handle Image Uploads
+        // 2. Handle Multiple Image Uploads (The Image Handling Section)
         const fileInput = document.getElementById('l-img-file');
         if (fileInput.files && fileInput.files.length > 0) {
-            const photoUrl = await uploadFile(fileInput.files[0], 'listings');
-            if (photoUrl) listingData.image_url = photoUrl;
+            // Upload all selected files to the 'listings' bucket simultaneously
+            const uploadPromises = Array.from(fileInput.files).map(file => uploadFile(file, 'listings'));
+            const photoUrls = await Promise.all(uploadPromises);
+            
+            // Filter out any failed uploads and store in the database
+            const validUrls = photoUrls.filter(url => url !== null);
+            if (validUrls.length > 0) {
+                listingData.image_url = validUrls[0]; // Primary thumbnail
+                listingData.images = validUrls;       // Full array for carousel
+            }
         }
 
+        // 3. Save to Supabase
         if (editListingId) {
             const { error } = await supabaseClient
                 .from('listings')
@@ -3253,6 +3262,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
