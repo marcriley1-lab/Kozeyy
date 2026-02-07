@@ -1842,11 +1842,12 @@ async function act_saveListing(e) {
     }
 }
     
-    function act_editListing(id) { 
+   function act_editListing(id) { 
     editListingId = id; 
     const l = state.listings.find(x => x.id == id); 
     if(!l) return;
 
+    // 1. Populate all text and numeric fields
     document.getElementById('l-addr').value = l.address || ''; 
     document.getElementById('l-price').value = l.price || ''; 
     document.getElementById('l-sqft').value = l.sqft || ''; 
@@ -1857,6 +1858,18 @@ async function act_saveListing(e) {
     document.getElementById('l-contact').value = l.contact_info || '';
     document.getElementById('l-date').value = l.date_available || ''; 
     
+    // 2. Update the UI labels
+    const imgLabel = document.getElementById('l-img-label');
+    const fileCount = document.getElementById('l-file-count');
+    
+    if (l.images && l.images.length > 0) {
+        imgLabel.innerText = "Change Photos";
+        fileCount.innerText = `${l.images.length} existing photo(s) saved`;
+    } else {
+        imgLabel.innerText = "Upload Photos";
+        fileCount.innerText = "";
+    }
+
     setText('btn-save-listing', "Update Listing"); 
     openModal('modal-listing'); 
 }
@@ -3262,6 +3275,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
