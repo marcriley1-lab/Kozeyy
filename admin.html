@@ -284,20 +284,53 @@
         return alert("Please enter both the RentScore and the RentPrep Link.");
     }
 
-    // We use the 'notes' column to store the external URL for the owner
-    const { error } = await supabaseClient.from('apps').update({
-        score: parseInt(score),
-        income: parseFloat(income),
-        notes: reportUrl, 
-        status: 'Ready for Review' 
-    }).eq('id', currentAppId);
+    try {
+        // 1. Update Application Status in Database
+        const { data: app, error: updateError } = await supabaseClient
+            .from('apps')
+            .update({
+                score: parseInt(score),
+                income: parseFloat(income),
+                notes: reportUrl, 
+                status: 'Ready for Review' 
+            })
+            .eq('id', currentAppId)
+            .select('*, listings(address)')
+            .single();
 
-    if(error) {
-        alert("Error saving: " + error.message);
-    } else {
-        showToast("Report pushed to Owner Dashboard");
+        if (updateError) throw updateError;
+
+        // 2. Fetch Owner's Email for Notification
+        const { data: owner, error: ownerError } = await supabaseClient
+            .from('owners')
+            .select('email')
+            .eq('id', app.owner_id)
+            .single();
+
+        if (owner && owner.email) {
+            // 3. Trigger the Edge Function to notify owner
+            // Note: This assumes your 'send-email' function is configured to handle 'alert' types
+            await supabaseClient.functions.invoke('send-email', {
+                body: { 
+                    to: owner.email, 
+                    subject: "Screening Ready: " + app.name, 
+                    type: 'alert',
+                    data: {
+                        title: "Screening Results Ready",
+                        message: `The background check for ${app.name} at ${app.listings.address} is complete and ready for your review.`,
+                        actionLink: "https://kozeyy.com/owner.html"
+                    }
+                }
+            });
+        }
+
+        alert("Report pushed and owner notified!");
         window.closeModal();
         window.fetchQueue(); 
+
+    } catch (err) {
+        console.error("Save failed:", err);
+        alert("Error: " + err.message);
     }
 };
 
