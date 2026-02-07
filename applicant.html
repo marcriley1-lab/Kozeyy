@@ -74,11 +74,11 @@
                         <div class="text-center border-l border-slate-100"><p class="text-xs text-slate-400 uppercase font-bold">Sq Ft</p><p class="font-bold text-slate-700" id="prop-sqft">-</p></div>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <h4 class="font-bold text-sm text-slate-800 mb-2">Application Fees</h4>
-                        <div class="flex justify-between text-sm mb-1"><span class="text-slate-500">Screening Fee</span><span class="font-medium">$35.00</span></div>
-                        <div class="flex justify-between text-sm"><span class="text-slate-500">Processing</span><span class="font-medium">$4.99</span></div>
-                        <div class="border-t border-slate-200 mt-2 pt-2 flex justify-between text-sm font-bold"><span class="text-slate-800">Total Due</span><span class="text-indigo-600">$59.99</span></div>
-                    </div>
+    <h4 class="font-bold text-sm text-slate-800 mb-2">Application Fees</h4>
+    <div class="flex justify-between text-sm mb-1"><span class="text-slate-500">RentPrep Screening</span><span class="font-medium">$49.00</span></div>
+    <div class="flex justify-between text-sm"><span class="text-slate-500">Kozeyy Processing</span><span class="font-medium">$6.00</span></div>
+    <div class="border-t border-slate-200 mt-2 pt-2 flex justify-between text-sm font-bold"><span class="text-slate-800">Total Due</span><span class="text-indigo-600">$55.00</span></div>
+</div>
                 </div>
             </div>
         </div>
@@ -160,10 +160,21 @@
                     <div class="flex justify-between"><button type="button" onclick="navigateToStep(2)" class="text-slate-500 font-bold hover:text-slate-800 px-4">Back</button><button type="button" onclick="navigateToStep(4)" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Review & Pay</button></div>
                 </div>
 
-                <div id="step-4" class="step-section hidden-step fade-in">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Finalize Application</h2>
-                    <p class="text-slate-500 mb-6">Review your details and pay the screening fee.</p>
-                    <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm">
+               <div id="step-4" class="step-section hidden-step fade-in">
+    <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Finalize Application</h2>
+    <p class="text-slate-500 mb-6">Review your details and pay the screening fee.</p>
+    
+    <div class="mb-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+        <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Background Check Includes:</h4>
+        <ul class="text-sm text-indigo-800 space-y-1">
+            <li><i class="fas fa-check-circle mr-2"></i>Full Credit Report & Resident Score</li>
+            <li><i class="fas fa-check-circle mr-2"></i>National Eviction Search</li>
+            <li><i class="fas fa-check-circle mr-2"></i>Multi-State Criminal & Sex Offender Search</li>
+            <li><i class="fas fa-check-circle mr-2"></i>Bankruptcies, Judgments & Liens</li>
+        </ul>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm">
                         <div class="flex justify-between items-center mb-2"><span class="text-slate-600 font-medium">Applicant</span><span class="font-bold text-slate-800" id="rev-name">...</span></div>
                         <div class="flex justify-between items-center mb-2"><span class="text-slate-600 font-medium">Income</span><span class="font-bold text-slate-800" id="rev-income">...</span></div>
                         <div class="flex justify-between items-center"><span class="text-slate-600 font-medium">Property</span><span class="font-bold text-indigo-600 truncate max-w-[150px]" id="rev-prop">...</span></div>
@@ -171,7 +182,7 @@
                     <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 mb-6 relative overflow-hidden text-center">
                         <div class="flex justify-center gap-4 mb-4 opacity-50 grayscale"><i class="fab fa-cc-visa text-3xl"></i><i class="fab fa-cc-mastercard text-3xl"></i><i class="fab fa-cc-amex text-3xl"></i><i class="fab fa-cc-discover text-3xl"></i></div>
                         <h4 class="font-bold text-slate-800 text-lg mb-2">Secure Payment Required</h4>
-                        <p class="text-sm text-slate-500 mb-6">You will be redirected to a secure Stripe Checkout page to pay the <strong>$49.99</strong> screening fee.</p>
+                       <p class="text-sm text-slate-500 mb-6">You will be redirected to a secure Stripe Checkout page to pay the <strong>$55.00</strong> screening fee.</p>
                         <button type="button" onclick="submitApplication()" id="btn-submit" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-emerald-700 transition flex items-center justify-center gap-3"><i class="fas fa-lock"></i><span>Continue to Secure Payment</span></button>
                         <p class="text-xs text-slate-400 mt-4"><i class="fas fa-shield-alt"></i> No credit card data is stored on our servers.</p>
                     </div>
