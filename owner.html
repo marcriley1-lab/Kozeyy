@@ -1775,31 +1775,47 @@ function toggleFeeVisibility() {
     function act_editTenant(id) { editTenantId = id; const t = state.tenants.find(x => x.id === id); setText('modal-tenant-title',"Edit Tenant"); setText('btn-save-tenant',"Update Tenant"); document.getElementById('t-id').value = t.id; document.getElementById('t-name').value = t.name; document.getElementById('t-email').value = t.email; document.getElementById('t-phone').value = t.phone||''; document.getElementById('t-unit').value = t.unit||''; document.getElementById('t-rent').value = t.rent_amount; document.getElementById('t-start').value = t.lease_start||''; document.getElementById('t-end').value = t.lease_end||''; document.getElementById('t-addr').value = t.address||''; document.getElementById('t-status').value = t.status; document.getElementById('t-city').value = t.city||''; document.getElementById('t-state').value = t.state||''; document.getElementById('t-zip').value = t.zip||''; openModal('modal-tenant'); }
     async function act_delTenant(id) { openPlatformConfirm("Delete Tenant?", "This cannot be undone.", async () => { await supabaseClient.from('tenants').delete().eq('id', id); await fetchData(); renderAll(); }); }
     
-   async function act_saveListing(e) { 
+ async function act_saveListing(e) { 
     e.preventDefault(); 
     const btn = document.getElementById('btn-save-listing');
     btn.disabled = true;
 
     try {
         const ownerId = localStorage.getItem('kozeyy_user_id');
+        
+        // 1. Capture ALL form fields
         const listingData = { 
             owner_id: ownerId, 
             address: document.getElementById('l-addr').value, 
-            price: parseFloat(document.getElementById('l-price').value),
-            // ... other fields ...
+            price: parseFloat(document.getElementById('l-price').value) || 0,
+            sqft: parseInt(document.getElementById('l-sqft').value) || 0,
+            beds: parseInt(document.getElementById('l-beds').value) || 0,
+            baths: parseFloat(document.getElementById('l-baths').value) || 0,
+            description: document.getElementById('l-desc').value,
+            amenities: document.getElementById('l-amen').value,
+            contact_info: document.getElementById('l-contact').value,
+            date_available: document.getElementById('l-date').value
         }; 
 
+        // 2. Handle Image Upload if files are present
+        const fileInput = document.getElementById('l-img-file');
+        if (fileInput.files && fileInput.files.length > 0) {
+            // Upload the first photo as the primary image_url
+            const photoUrl = await uploadFile(fileInput.files[0], 'listings');
+            if (photoUrl) listingData.image_url = photoUrl;
+        }
+
         if (editListingId) {
-            // Update the specific record where PRIMARY KEY 'id' matches our UUID string
+            // UPDATE existing
             const { error } = await supabaseClient
                 .from('listings')
                 .update(listingData)
-                .eq('id', String(editListingId)); // Force string to ensure UUID compliance
+                .eq('id', String(editListingId));
             if (error) throw error;
             showToast("Listing updated!");
         } else {
-            // Insert new record; Supabase will automatically generate a new UUID 'id'
-            const { data, error } = await supabaseClient.from('listings').insert([listingData]).select(); 
+            // INSERT new
+            const { error } = await supabaseClient.from('listings').insert([listingData]); 
             if (error) throw error;
             showToast("Listing posted!");
         }
@@ -3218,6 +3234,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
