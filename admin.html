@@ -73,12 +73,22 @@
 
             <div class="p-6 overflow-y-auto space-y-6">
                 <!-- 1. CREDIT SCORE -->
-                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                    <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Credit Score (Found)</label>
-                    <div class="relative">
-                        <i class="fas fa-tachometer-alt absolute left-4 top-3.5 text-slate-500"></i>
-                        <input id="inp-score" type="number" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 pl-10 text-white font-mono font-bold focus:border-amber-500 focus:outline-none" placeholder="e.g. 720">
-                    </div>
+               <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+    <label class="block text-xs font-bold uppercase text-slate-400 mb-2">RentPrep RentScore</label>
+    <div class="relative">
+        <i class="fas fa-star absolute left-4 top-3.5 text-amber-500"></i>
+        <input id="inp-score" type="number" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 pl-10 text-white font-mono font-bold focus:border-amber-500 focus:outline-none" placeholder="0-999">
+    </div>
+</div>
+
+<div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+    <label class="block text-xs font-bold uppercase text-slate-400 mb-2">Full Background Report Link</label>
+    <div class="relative">
+        <i class="fas fa-link absolute left-4 top-3.5 text-slate-500"></i>
+        <input id="inp-report-url" type="url" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 pl-10 text-white text-sm focus:border-amber-500 focus:outline-none" placeholder="https://rentprep.com/reports/...">
+    </div>
+    <p class="text-[10px] text-slate-500 mt-2">Paste the secure share link provided by RentPrep.</p>
+</div>
                 </div>
 
                 <!-- 2. INCOME VERIFICATION -->
@@ -265,30 +275,27 @@
             document.getElementById('admin-modal').classList.add('hidden');
         };
 
-        window.saveResults = async function() {
-            const score = document.getElementById('inp-score').value;
-            const income = document.getElementById('inp-income').value;
-            const evict = document.getElementById('inp-evict').value === 'true';
-            const crim = document.getElementById('inp-crim').value === 'true';
+       window.saveResults = async function() {
+    const score = document.getElementById('inp-score').value;
+    const reportUrl = document.getElementById('inp-report-url').value;
+    const income = document.getElementById('inp-income').value;
 
-            if(!score) return alert("Please enter a Credit Score.");
+    if(!score || !reportUrl) return alert("Please enter both the RentScore and the Report Link.");
 
-            // Update DB
-            const { error } = await supabaseClient.from('apps').update({
-                score: parseInt(score),
-                income: parseFloat(income),
-                evictions: evict,
-                criminal: crim,
-                status: 'Ready for Review'
-            }).eq('id', currentAppId);
+    const { error } = await supabaseClient.from('apps').update({
+        score: parseInt(score),
+        income: parseFloat(income),
+        notes: reportUrl, // We store the link in the 'notes' column
+        status: 'Ready for Review'
+    }).eq('id', currentAppId);
 
-            if(error) {
-                alert("Error saving: " + error.message);
-            } else {
-                window.closeModal();
-                window.fetchQueue(); 
-            }
-        };
+    if(error) {
+        alert("Error saving: " + error.message);
+    } else {
+        window.closeModal();
+        window.fetchQueue(); 
+    }
+};
 
         window.handleLogout = async function() {
             if(supabaseClient) await supabaseClient.auth.signOut();
