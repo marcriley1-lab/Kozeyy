@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Include Supabase JS -->
+    <!-- Load library safely -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: #e2e8f0; } 
@@ -41,7 +41,7 @@
             <div class="p-6">
                 <div class="mb-6 pb-6 border-b border-slate-100">
                     <span id="executed-badge" class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                        <i class="fas fa-clock mr-1"></i> Checking Status
+                        <i class="fas fa-clock mr-1"></i> Finalizing...
                     </span>
                     <h2 class="text-xl font-bold text-slate-800 mt-4 brand">Signature Certificate</h2>
                     <p class="text-xs text-slate-400 mt-1">Ref ID: <span id="ref-id" class="font-mono">...</span></p>
@@ -55,7 +55,7 @@
                         <p class="font-bold text-slate-800 text-lg sig-font" id="t-name">...</p>
                         <div class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
                             <i class="fas fa-clock mr-1"></i> Signed: <br>
-                            <span id="t-date" class="font-mono font-bold text-[11px]">Loading...</span>
+                            <span id="t-date" class="font-mono font-bold text-[11px]">...</span>
                         </div>
                     </div>
 
@@ -66,7 +66,7 @@
                         <p class="font-bold text-slate-800 text-lg sig-font" id="o-name">...</p>
                         <div class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
                             <i class="fas fa-clock mr-1"></i> Signed: <br>
-                            <span id="o-date" class="font-mono font-bold text-[11px]">Loading...</span>
+                            <span id="o-date" class="font-mono font-bold text-[11px]">...</span>
                         </div>
                     </div>
                 </div>
@@ -83,61 +83,64 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // CONFIG
+        const S_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
+        const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
 
         const params = new URLSearchParams(window.location.search);
-        const tenantId = params.get('id');
-        const leaseUrl = params.get('url');
-
-        // Robust Date Formatting
+        
+        // Helper: Format Dates safely
         const formatDate = (iso) => {
-            if (!iso || iso === 'null') return 'Pending Signature';
+            if (!iso || iso === 'null' || iso === 'undefined') return 'Pending Signature';
             const d = new Date(iso);
             return isNaN(d.getTime()) ? 'Pending Signature' : d.toLocaleString();
         };
 
-        async function loadLeaseData() {
-            // 1. Set PDF Source immediately from URL
-            if (leaseUrl) document.getElementById('pdf-frame').src = leaseUrl;
-            
-            // 2. Initial UI setup from URL params (as backup)
-            document.getElementById('ref-id').innerText = tenantId ? tenantId.slice(0,8).toUpperCase() : 'UNKNOWN';
+        // 1. IMMEDIATE RENDER (From URL params)
+        function initialRender() {
+            document.getElementById('pdf-frame').src = params.get('url') || '';
+            document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
             document.getElementById('t-name').innerText = params.get('t_name') || 'Tenant';
             document.getElementById('o-name').innerText = params.get('o_name') || 'Landlord';
+            document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
+            document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
+            
+            // Set QR code based on URL
+            document.getElementById('verification-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
+        }
 
-            // 3. Fetch Fresh Data from Database
-            if (tenantId) {
+        // 2. BACKGROUND FETCH (Fresh data from tenants table)
+        async function fetchFreshData() {
+            const tenantId = params.get('id');
+            if (!tenantId || !window.supabase) return;
+
+            try {
+                const supabase = window.supabase.createClient(S_URL, S_KEY);
                 const { data, error } = await supabase
                     .from('tenants')
-                    .select('lease_signed_at, owner_signed_at, name')
+                    .select('lease_signed_at, owner_signed_at')
                     .eq('id', tenantId)
-                    .single();
+                    .maybeSingle();
 
-                if (data) {
+                if (data && !error) {
                     document.getElementById('t-date').innerText = formatDate(data.lease_signed_at);
                     document.getElementById('o-date').innerText = formatDate(data.owner_signed_at);
                     
-                    // Update Badge if both have signed
+                    // Update badge to green if fully executed
                     if (data.lease_signed_at && data.owner_signed_at) {
                         const badge = document.getElementById('executed-badge');
                         badge.className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
                         badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Executed';
                     }
-                } else {
-                    // Fallback to URL params if DB fetch fails
-                    document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
-                    document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
                 }
+            } catch (err) {
+                console.warn("DB Background fetch failed, using URL data instead.");
             }
-
-            // 4. Generate QR Code
-            const qrEl = document.getElementById('verification-qr');
-            qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
         }
 
-        window.onload = loadLeaseData;
+        // Run Logic
+        initialRender();
+        fetchFreshData();
     </script>
 </body>
 </html>
