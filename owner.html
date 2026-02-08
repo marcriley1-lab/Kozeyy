@@ -2105,30 +2105,42 @@ function act_viewApp(id) {
 }
     // --- 3. Save Manual Results (Concierge Action) ---
   async function act_saveScreeningResults() {
-        const score = document.getElementById('input-manual-score').value;
-        const income = document.getElementById('input-manual-income').value;
-        // UPDATE: Read specific values
-        const evictVal = document.getElementById('input-manual-evict').value === 'true';
-        const crimVal = document.getElementById('input-manual-crim').value === 'true';
-        
-        if(!score) return showToast("Please enter score", 'error');
+    const score = document.getElementById('input-manual-score').value;
+    const income = document.getElementById('input-manual-income').value;
+    const evictVal = document.getElementById('input-manual-evict').value === 'true';
+    const crimVal = document.getElementById('input-manual-crim').value === 'true';
+    
+    if(!score) return showToast("Please enter score", 'error');
 
-        const { error } = await supabaseClient.from('apps').update({
-            score: parseInt(score),
-            income: parseFloat(income),
-            evictions: evictVal, // Save actual value
-            criminal: crimVal,   // Save actual value
-            status: 'Ready for Review' 
-        }).eq('id', currentAppId);
-        
-        if(error) {
-            showToast("Error saving: " + error.message, 'error');
-        } else {
-            showToast("Report Verified manually");
-            await fetchData();
-            act_viewApp(currentAppId); // Refresh modal to show data and enable buttons
+    const { error } = await supabaseClient.from('apps').update({
+        score: parseInt(score),
+        income: parseFloat(income),
+        evictions: evictVal,
+        criminal: crimVal,
+        status: 'Ready for Review' 
+    }).eq('id', currentAppId);
+    
+    if(error) {
+        showToast("Error saving: " + error.message, 'error');
+    } else {
+        // --- ADDED: NOTIFY OWNER ---
+        const app = state.apps.find(a => a.id === currentAppId);
+        if(app && app.owner_id) {
+            const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', app.owner_id).single();
+            if(owner && owner.email) {
+                await sendEmail(owner.email, "Background Report Ready", 'alert', {
+                    title: "Screening Completed",
+                    message: `The background report for ${app.name} has been verified and is ready for your review.`,
+                    actionLink: "https://kozeyy.com/owner.html"
+                });
+            }
         }
+
+        showToast("Report Verified & Owner Notified");
+        await fetchData();
+        act_viewApp(currentAppId); 
     }
+}
 
 function act_markAsSigned(appId) {
         const app = state.apps.find(a => a.id === appId);
@@ -2243,24 +2255,42 @@ function act_markAsSigned(appId) {
 
     // Helper to actually save to Supabase
     async function saveDecisionToDB(status, note) {
-        // Update the app status AND store the condition note
-        // (Ensure you have a 'notes' column in your 'apps' table, or just use a generic field)
-        const updateData = { status: status };
-        if(note) updateData.notes = note; // We'll save the condition in 'notes'
+    const updateData = { status: status };
+    if(note) updateData.notes = note; 
 
-        const { error } = await supabaseClient.from('apps').update(updateData).eq('id', currentAppId);
+    const { error } = await supabaseClient.from('apps').update(updateData).eq('id', currentAppId);
 
-        if (error) {
-            showToast("Error saving: " + error.message, 'error');
-        } else {
-            closeModal('modal-screening-detail');
-            await fetchData();
-            renderAll();
-            
-            if (status === 'Conditional') showToast("Conditional Offer Saved");
-            else showToast(`Application ${status}`);
+    if (error) {
+        showToast("Error saving: " + error.message, 'error');
+    } else {
+        // --- ADDED: NOTIFY APPLICANT ---
+        const app = state.apps.find(a => a.id === currentAppId);
+        if(app && app.email) {
+            let emailSubject = "Update on your Rental Application";
+            let emailMessage = "";
+
+            if (status === 'Conditional') {
+                emailMessage = `The owner has offered a conditional approval for your application. <strong>Condition:</strong> ${note}. Please log in to your portal to accept or decline.`;
+            } else if (status === 'Deny') {
+                emailSubject = "Application Status: Important Notice";
+                emailMessage = `We regret to inform you that your application has not been selected at this time. You can view the formal Statement of Denial (Adverse Action Notice) in your applicant portal.`;
+            } else {
+                emailMessage = `Your application status has been updated to: ${status}. Please log in to view next steps.`;
+            }
+
+            await sendEmail(app.email, emailSubject, 'alert', {
+                title: `Application Status: ${status}`,
+                message: emailMessage,
+                actionLink: "https://kozeyy.com/applicantportal.html"
+            });
         }
+
+        closeModal('modal-screening-detail');
+        await fetchData();
+        renderAll();
+        showToast(`Decision saved and applicant notified.`);
     }
+}
 
   function act_initiateSendLease(appId) {
         openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
@@ -2867,18 +2897,18 @@ async function processLeaseFinalization() {
     
     try {
         const ownerId = localStorage.getItem('kozeyy_user_id');
-        const now = new Date().toISOString();
+        const now = new Date().toISOString(); // The single source of truth for the timestamp
 
-        // 1. CLEANUP: Delete the placeholder ghost account so it doesn't clutter the DB
+        // 1. GHOST CLEANUP
         await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
 
-        // 2. Update App Status & Owner Signed Timestamp
+        // 2. Update Application (Status + Timestamp)
         await supabaseClient.from('apps').update({ 
             status: 'Completed',
             owner_signed_at: now 
         }).eq('id', currentAppId);
 
-        // 3. Create/Update Active Tenant Record
+        // 3. Create/Update Tenant Record (Ensuring owner_signed_at is included)
         const existing = state.tenants.find(t => t.email === app.email);
         const tenantData = {
             id: app.user_id, 
@@ -2889,6 +2919,7 @@ async function processLeaseFinalization() {
             owner_id: ownerId,
             lease_url: app.lease_url,
             lease_signed_at: app.tenant_signed_at || now,
+            owner_signed_at: now, // <--- ADDED: Saves the date to the tenants table for the viewer
             address: (app.listings && app.listings.address) ? app.listings.address : (existing ? existing.address : null)
         };
 
@@ -2901,7 +2932,7 @@ async function processLeaseFinalization() {
         // 4. Send Welcome Email
         await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
         
-        // 5. MODAL RESET: Close and restore the original HTML structure
+        // 5. MODAL RESET
         const confirmModal = document.getElementById('modal-platform-confirm');
         confirmModal.classList.add('hidden-section');
         confirmModal.classList.remove('flex');
@@ -2922,7 +2953,7 @@ async function processLeaseFinalization() {
         renderAll();
         showToast("Lease Countersigned & Tenant Activated!");
 
-        // 6. Optional: Delete Listing Prompt
+        // 6. Delete Listing Logic
         if(app.listing_id) {
             setTimeout(() => {
                 openPlatformConfirm(
@@ -2934,8 +2965,6 @@ async function processLeaseFinalization() {
                             showToast("Listing removed successfully.");
                             await fetchData();
                             renderAll();
-                        } else {
-                            showToast("Could not remove listing: " + error.message, 'error');
                         }
                     }
                 );
@@ -3363,6 +3392,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
