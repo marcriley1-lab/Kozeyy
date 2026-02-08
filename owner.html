@@ -2785,7 +2785,7 @@ function act_viewInvoice(id) {
         btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'shadow-lg');
     }
 
-  async function processLeaseFinalization() {
+ async function processLeaseFinalization() {
     const app = state.apps.find(a => a.id === currentAppId);
     if(!app) return;
     
@@ -2797,13 +2797,16 @@ function act_viewInvoice(id) {
         const ownerId = localStorage.getItem('kozeyy_user_id');
         const now = new Date().toISOString();
 
-        // 1. Update App Status & Owner Signed Timestamp
+        // 1. CLEANUP: Delete the placeholder ghost account so it doesn't clutter the DB
+        await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
+
+        // 2. Update App Status & Owner Signed Timestamp
         await supabaseClient.from('apps').update({ 
             status: 'Completed',
             owner_signed_at: now 
         }).eq('id', currentAppId);
 
-        // 2. Create/Update Active Tenant Record
+        // 3. Create/Update Active Tenant Record
         const existing = state.tenants.find(t => t.email === app.email);
         const tenantData = {
             id: app.user_id, 
@@ -2823,15 +2826,14 @@ function act_viewInvoice(id) {
 
         if (tenantErr) throw tenantErr;
         
-        // 3. Send Welcome Email
+        // 4. Send Welcome Email
         await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
         
-        // 4. Close and RESET the shared modal HTML
+        // 5. MODAL RESET: Close and restore the original HTML structure
         const confirmModal = document.getElementById('modal-platform-confirm');
         confirmModal.classList.add('hidden-section');
         confirmModal.classList.remove('flex');
         
-        // This restores the original modal structure so other buttons (like Delete) still work
         confirmModal.querySelector('div').innerHTML = `
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
                 <i class="fas fa-question"></i>
@@ -2848,7 +2850,7 @@ function act_viewInvoice(id) {
         renderAll();
         showToast("Lease Countersigned & Tenant Activated!");
 
-        // 5. Prompt to Delete Listing
+        // 6. Optional: Delete Listing Prompt
         if(app.listing_id) {
             setTimeout(() => {
                 openPlatformConfirm(
@@ -3289,6 +3291,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
