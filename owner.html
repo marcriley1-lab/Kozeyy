@@ -2009,23 +2009,21 @@ function act_viewApp(id) {
     const app = state.apps.find(a => a.id === id);
     if(!app) return;
 
-    // 1. Populate Text Data with Self-Reported Labels
+    // 1. Populate Text Data
     setText('sd-name', app.name);
-    
-    // Display income as self-reported
     setText('sd-income', `$${(app.income||0).toLocaleString()}`);
     
     const rent = app.rent || 0;
     const ratio = rent > 0 ? (app.income / rent).toFixed(1) : 0;
     setText('sd-ratio', ratio);
-
-    // 2. Populate RentPrep Data (Score and External Link)
     setText('sd-score', app.score || '---'); 
-    
+
+    // 2. Setup Report Link visibility
     const reportBtn = document.getElementById('sd-report-link');
-    if(app.notes && app.notes.startsWith('http')) {
+    if(app.notes && (app.notes.startsWith('http') || app.notes.includes('rentprep'))) {
         reportBtn.href = app.notes;
         reportBtn.classList.remove('hidden-section');
+        reportBtn.innerHTML = `<i class="fas fa-external-link-alt mr-2"></i> View Background Report`;
     } else {
         reportBtn.classList.add('hidden-section');
     }
@@ -2040,18 +2038,24 @@ function act_viewApp(id) {
     // 4. Status Logic
     const isReadyForReview = app.status === 'Ready for Review' || (app.status === 'Pending' && app.score > 0);
 
-    // A. Decisions & Background Data (Show if Concierge has pushed the report)
+    // Decisions & Background Data
     if (isReadyForReview) {
         document.getElementById('sd-data-display').classList.remove('hidden-section');
         document.getElementById('sd-actions').classList.remove('hidden-section');
     } 
-    // B. Approved / Final Stages (Keep your existing lease logic here)
+    // Approved / Final Stages
     else if (['Approved', 'Lease Uploaded', 'Lease Sent', 'Lease Signed', 'Active', 'Completed'].includes(app.status)) {
         document.getElementById('sd-banner').classList.remove('hidden-section');
+        document.getElementById('sd-banner').innerText = `Current Status: ${app.status}`;
+        document.getElementById('sd-banner').className = "p-4 rounded-xl border font-bold text-center bg-indigo-50 text-indigo-700 border-indigo-100";
         document.getElementById('sd-email-option').classList.remove('hidden-section');
-        // ... (The rest of your existing banner/button logic for leases)
     }
-    // C. Still in Progress
+    // Still in Progress
+    else if (app.status === 'Deny') {
+        document.getElementById('sd-banner').classList.remove('hidden-section');
+        document.getElementById('sd-banner').innerText = "Application Denied";
+        document.getElementById('sd-banner').className = "p-4 rounded-xl border font-bold text-center bg-rose-50 text-rose-700 border-rose-100";
+    }
     else {
         document.getElementById('sd-pending-msg').classList.remove('hidden-section');
     }
@@ -2781,90 +2785,96 @@ function act_viewInvoice(id) {
         btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'shadow-lg');
     }
 
-   async function processLeaseFinalization() {
-        const app = state.apps.find(a => a.id === currentAppId);
-        if(!app) return;
+  async function processLeaseFinalization() {
+    const app = state.apps.find(a => a.id === currentAppId);
+    if(!app) return;
+    
+    const btn = document.getElementById('btn-finalize-lease');
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+    
+    try {
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const now = new Date().toISOString();
+
+        // 1. Update App Status & Owner Signed Timestamp
+        await supabaseClient.from('apps').update({ 
+            status: 'Completed',
+            owner_signed_at: now 
+        }).eq('id', currentAppId);
+
+        // 2. Create/Update Active Tenant Record
+        const existing = state.tenants.find(t => t.email === app.email);
+        const tenantData = {
+            id: app.user_id, 
+            name: app.name,
+            email: app.email,
+            rent_amount: app.rent,
+            status: 'Active',
+            owner_id: ownerId,
+            lease_url: app.lease_url,
+            lease_signed_at: app.tenant_signed_at || now,
+            address: (app.listings && app.listings.address) ? app.listings.address : (existing ? existing.address : null)
+        };
+
+        const { error: tenantErr } = await supabaseClient
+            .from('tenants')
+            .upsert(tenantData);
+
+        if (tenantErr) throw tenantErr;
         
-        const btn = document.getElementById('btn-finalize-lease');
-        btn.innerText = "Processing...";
-        btn.disabled = true;
+        // 3. Send Welcome Email
+        await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
         
-        try {
-            const ownerId = localStorage.getItem('kozeyy_user_id');
-            const now = new Date().toISOString();
+        // 4. Close and RESET the shared modal HTML
+        const confirmModal = document.getElementById('modal-platform-confirm');
+        confirmModal.classList.add('hidden-section');
+        confirmModal.classList.remove('flex');
+        
+        // This restores the original modal structure so other buttons (like Delete) still work
+        confirmModal.querySelector('div').innerHTML = `
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
+                <i class="fas fa-question"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2 text-slate-900" id="plat-conf-title">Confirm Action</h3>
+            <p class="text-sm text-slate-500 mb-6" id="plat-conf-msg">Are you sure you want to proceed?</p>
+            <div class="flex gap-3">
+                <button onclick="closePlatformConfirm(false)" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition">Cancel</button>
+                <button onclick="closePlatformConfirm(true)" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition">Confirm</button>
+            </div>
+        `;
+        
+        await fetchData();
+        renderAll();
+        showToast("Lease Countersigned & Tenant Activated!");
 
-            // 1. Update App Status & Owner Signed Timestamp
-            await supabaseClient.from('apps').update({ 
-                status: 'Completed',
-                owner_signed_at: now // <--- GOAL 2: Record Timestamp
-            }).eq('id', currentAppId);
-
-            // 2. Create/Update Active Tenant Record
-            const existing = state.tenants.find(t => t.email === app.email);
-           // 2. Create/Update Active Tenant Record
-// We explicitly set the 'id' to app.user_id to ensure it matches the person's login
-const tenantData = {
-    id: app.user_id, // <--- CRITICAL: This links the Auth account to the Tenant row
-    name: app.name,
-    email: app.email,
-    rent_amount: app.rent,
-    status: 'Active',
-    owner_id: ownerId,
-    lease_url: app.lease_url,
-    lease_signed_at: app.tenant_signed_at || now,
-    address: (app.listings && app.listings.address) ? app.listings.address : (existing ? existing.address : null)
-};
-
-// Use upsert so Supabase knows: "If this ID exists, update it. If not, create it."
-const { error: tenantErr } = await supabaseClient
-    .from('tenants')
-    .upsert(tenantData);
-
-if (tenantErr) {
-    console.error("Error linking tenant:", tenantErr);
-    showToast("Error finalizing tenant record", "error");
-    return;
-}
-            
-            // 3. Send Welcome Email
-            await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
-            
-            // Close the Signature Modal
-            document.getElementById('modal-platform-confirm').classList.add('hidden-section');
-            document.getElementById('modal-platform-confirm').classList.remove('flex');
-            
-            await fetchData();
-            renderAll();
-            showToast("Lease Countersigned & Tenant Activated!");
-
-            // 4. GOAL 3: Prompt to Delete Listing
-            // We verify if this app was linked to a specific listing
-            if(app.listing_id) {
-                setTimeout(() => {
-                    openPlatformConfirm(
-                        "Remove Listing?", 
-                        "Tenant has been placed successfully. Do you want to delete the public listing for this property?", 
-                        async () => {
-                            const { error } = await supabaseClient.from('listings').delete().eq('id', app.listing_id);
-                            if(!error) {
-                                showToast("Listing removed successfully.");
-                                await fetchData();
-                                renderAll();
-                            } else {
-                                showToast("Could not remove listing: " + error.message, 'error');
-                            }
+        // 5. Prompt to Delete Listing
+        if(app.listing_id) {
+            setTimeout(() => {
+                openPlatformConfirm(
+                    "Remove Listing?", 
+                    "Tenant has been placed successfully. Do you want to delete the public listing for this property?", 
+                    async () => {
+                        const { error } = await supabaseClient.from('listings').delete().eq('id', app.listing_id);
+                        if(!error) {
+                            showToast("Listing removed successfully.");
+                            await fetchData();
+                            renderAll();
+                        } else {
+                            showToast("Could not remove listing: " + error.message, 'error');
                         }
-                    );
-                }, 1000); // Small delay so the first modal closes cleanly
-            }
-
-        } catch(err) {
-            console.error("Finalize Error:", err);
-            showToast("Error: " + err.message, 'error');
-            btn.innerText = "Finalize Lease";
-            btn.disabled = false;
+                    }
+                );
+            }, 1000);
         }
+
+    } catch(err) {
+        console.error("Finalize Error:", err);
+        showToast("Error: " + err.message, 'error');
+        btn.innerText = "Finalize Lease";
+        btn.disabled = false;
     }
+}
     
    function logic_invMode(m) { 
         invMode = m; 
@@ -3279,6 +3289,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
