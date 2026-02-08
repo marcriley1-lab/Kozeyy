@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lease Agreement | Signed</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>body { font-family: 'Inter', sans-serif; background: #e2e8f0; } .brand { font-family: 'Outfit', sans-serif; }</style>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #e2e8f0; } 
+        .brand { font-family: 'Outfit', sans-serif; }
+        .sig-font { font-family: 'Dancing Script', cursive; }
+    </style>
 </head>
 <body class="flex flex-col h-screen">
 
@@ -46,10 +50,10 @@
                     <div class="relative pl-4 border-l-2 border-slate-200">
                         <div class="absolute -left-[9px] top-0 w-4 h-4 bg-indigo-600 rounded-full border-2 border-white"></div>
                         <p class="text-xs font-bold text-slate-400 uppercase mb-1">Tenant Signature</p>
-                        <p class="font-bold text-slate-800 text-lg brand" id="t-name">...</p>
+                        <p class="font-bold text-slate-800 text-lg sig-font" id="t-name">...</p>
                         <p class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
                             <i class="fas fa-clock mr-1"></i> Signed: <br>
-                            <span id="t-date" class="font-mono font-bold">...</span>
+                            <span id="t-date" class="font-mono font-bold text-[11px]">...</span>
                         </p>
                         <p class="text-[10px] text-slate-400 mt-1">IP Verified: Digital Authentication</p>
                     </div>
@@ -58,18 +62,20 @@
                     <div class="relative pl-4 border-l-2 border-slate-200">
                         <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-800 rounded-full border-2 border-white"></div>
                         <p class="text-xs font-bold text-slate-400 uppercase mb-1">Landlord Signature</p>
-                        <p class="font-bold text-slate-800 text-lg brand" id="o-name">...</p>
+                        <p class="font-bold text-slate-800 text-lg sig-font" id="o-name">...</p>
                         <p class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
                             <i class="fas fa-clock mr-1"></i> Signed: <br>
-                            <span id="o-date" class="font-mono font-bold">...</span>
+                            <span id="o-date" class="font-mono font-bold text-[11px]">...</span>
                         </p>
                     </div>
                 </div>
 
                 <div class="mt-8 pt-6 border-t border-slate-100 text-center">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg" class="w-16 h-16 mx-auto opacity-50 mb-2">
+                    <!-- Dynamic QR Code -->
+                    <img id="verification-qr" src="" class="w-24 h-24 mx-auto mb-3 shadow-sm border border-slate-100 p-1 bg-white" alt="Verification QR">
                     <p class="text-[10px] text-slate-400 leading-tight">
-                        This document is digitally signed and secured by Kozeyy Property Management Platform.
+                        Scan to verify document authenticity.<br>
+                        This document is digitally secured by Kozeyy.
                     </p>
                 </div>
             </div>
@@ -79,17 +85,23 @@
     <script>
         const params = new URLSearchParams(window.location.search);
         
-        // Load Data
+        // 1. Load Data into UI
         document.getElementById('pdf-frame').src = params.get('url');
         document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
         
         document.getElementById('t-name').innerText = params.get('t_name') || 'Tenant';
         document.getElementById('o-name').innerText = params.get('o_name') || 'Landlord';
 
-        // Format Dates
-        const format = (iso) => iso ? new Date(iso).toLocaleString() : 'Pending Signature';
+        // 2. Format Dates
+        const format = (iso) => (iso && iso !== 'null') ? new Date(iso).toLocaleString() : 'Pending Signature';
         document.getElementById('t-date').innerText = format(params.get('t_date'));
         document.getElementById('o-date').innerText = format(params.get('o_date'));
+
+        // 3. Generate Dynamic Verification QR Code
+        // Points to the exact URL of this certificate
+        const currentUrl = window.location.href;
+        const qrEl = document.getElementById('verification-qr');
+        qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(currentUrl)}`;
     </script>
 </body>
 </html>
