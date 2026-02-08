@@ -206,19 +206,20 @@
                 }
 
                 // 3. CREATE PUBLIC RECORD
-                const table = role === 'owner' ? 'owners' : 'tenants';
-                
-                const payload = {
-                    id: userId, // CRITICAL: Use the Auth UUID
-                    name: `${fname} ${lname}`,
-                    email: email,
-                    phone: phone,
-                    status: role === 'owner' ? 'Active' : (inviteData.owner_id ? 'Active' : 'Applicant'),
-                    ...inviteData // Merge in any invite details we found
-                };
+               const table = role === 'owner' ? 'owners' : 'tenants';
 
-                // Perform the Insert
-                const { error: dbError } = await supabaseClient.from(table).upsert([payload]);
+const payload = {
+    id: userId, // CRITICAL: Use the Auth UUID
+    name: `${fname} ${lname}`,
+    email: email,
+    phone: phone,
+    status: role === 'owner' ? 'Active' : (inviteData.owner_id ? 'Active' : 'Applicant'),
+    tos_agreed_at: new Date().toISOString(), // <--- ADD THIS LINE
+    ...inviteData // Merge in any invite details we found
+};
+
+// Perform the Insert
+const { error: dbError } = await supabaseClient.from(table).upsert([payload]);
                 
                 if (dbError) {
                     // Handle specific "Duplicate Key" error if email constraint exists
@@ -268,6 +269,7 @@
     </script>
 </body>
 </html>
+
 
 
 
