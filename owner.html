@@ -70,6 +70,9 @@
             <a href="#" onclick="event.preventDefault(); navTo('listings')" id="link-listings" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-sign w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Listings</span></div>
             </a>
+            <a href="#" onclick="event.preventDefault(); navTo('leases')" id="link-leases" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
+    <div class="flex items-center"><i class="fas fa-file-signature w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Leases</span></div>
+</a>
             <a href="#" onclick="event.preventDefault(); navTo('screening')" id="link-screening" class="nav-item flex items-center justify-between px-6 py-3.5 transition">
                 <div class="flex items-center"><i class="fas fa-user-check w-5"></i> <span class="font-medium ml-3 text-sm brand-font">Screening</span></div>
                 <span id="badge-screening" class="hidden-section bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">0</span>
@@ -334,6 +337,28 @@
                     </div>
                 </div>
             </div>
+
+            <!-- LEASE VIEW SECTION -->
+<div id="view-leases" class="view-section hidden-section fade-in-up">
+    <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-slate-800 brand-font">Executed Lease Agreements</h3>
+    </div>
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-x-auto w-full">
+        <table class="w-full text-left whitespace-nowrap">
+            <thead class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200 brand-font">
+                <tr>
+                    <th class="p-5">Tenant</th>
+                    <th class="p-5">Property Address</th>
+                    <th class="p-5">Signed On</th>
+                    <th class="p-5 text-right">Action</th>
+                </tr>
+            </thead>
+            <tbody id="table-leases" class="divide-y divide-slate-100">
+                <!-- Data injected via JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
 
             <div id="view-settings" class="view-section hidden-section fade-in-up">
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
@@ -1499,18 +1524,34 @@ function renderAll() {
         });
         return { revenue, overdue, outstanding };
     }
-    function navTo(view) {
-        activeTab = view;
-        document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
-        document.getElementById('view-' + view).classList.remove('hidden-section');
-        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
-        const link = document.getElementById('link-' + view);
-        if(link) link.classList.add('sidebar-active');
-        
-        const titles = { dashboard: 'Portfolio Overview', tenants: 'Tenant Directory', listings: 'Property Listings', financials: 'Payment Records', expenses: 'Expense Tracker', reports: 'Financial Reports', settings: 'System Configuration', screening: 'Applicant Queue', messages: 'Communication Center', maintenance: 'Maintenance Requests' };
-        setText('desktop-page-title', titles[view] || 'Dashboard');
-        
-        if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
+   function navTo(view) {
+    activeTab = view;
+    document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
+    document.getElementById('view-' + view).classList.remove('hidden-section');
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('sidebar-active'));
+    const link = document.getElementById('link-' + view);
+    if(link) link.classList.add('sidebar-active');
+    
+    // Update the titles list here
+    const titles = { 
+        dashboard: 'Portfolio Overview', 
+        tenants: 'Tenant Directory', 
+        listings: 'Property Listings', 
+        financials: 'Payment Records', 
+        expenses: 'Expense Tracker', 
+        reports: 'Financial Reports', 
+        settings: 'System Configuration', 
+        screening: 'Applicant Queue', 
+        messages: 'Communication Center', 
+        maintenance: 'Maintenance Requests',
+        leases: 'Document Archive' // Add this
+    };
+    setText('desktop-page-title', titles[view] || 'Dashboard');
+    
+    if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
+    
+    // Add this trigger
+    if(view === 'leases') renderLeases();
         
         if(view === 'maintenance') {
             state.maint.filter(m => m.status === 'Active').forEach(m => viewedMaintIds.add(String(m.id)));
@@ -2621,6 +2662,37 @@ function act_viewInvoice(id) {
         html2pdf().set(opt).from(element).save();
     }
 
+function renderLeases() {
+    const tbody = document.getElementById('table-leases');
+    if(!tbody) return;
+    tbody.innerHTML = '';
+
+    // Filter tenants who have a signed lease URL
+    const activeLeases = state.tenants.filter(t => t.lease_url && t.name !== '(Vacant)');
+
+    if(activeLeases.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-12 text-center text-slate-400 italic">No executed leases found.</td></tr>';
+        return;
+    }
+
+    activeLeases.forEach(t => {
+        const signDate = t.owner_signed_at ? new Date(t.owner_signed_at).toLocaleDateString() : (t.lease_signed_at ? new Date(t.lease_signed_at).toLocaleDateString() : 'Active');
+        
+        tbody.innerHTML += `
+        <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="p-5 font-bold text-slate-700">${t.name}</td>
+            <td class="p-5 text-slate-500 text-sm">${t.address || 'N/A'}</td>
+            <td class="p-5 text-slate-500 text-sm">${signDate}</td>
+            <td class="p-5 text-right">
+                <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}', '${t.owner_signed_at}')" 
+                class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
+                    <i class="fas fa-file-pdf mr-1"></i> View Signed Lease
+                </button>
+            </td>
+        </tr>`;
+    });
+}
+    
     function toggleRecurringOptions() {
         const checkbox = document.getElementById('inv-recurring');
         const isRecurring = checkbox.checked;
@@ -3291,6 +3363,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
