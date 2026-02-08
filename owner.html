@@ -2801,22 +2801,30 @@ function act_viewInvoice(id) {
 
             // 2. Create/Update Active Tenant Record
             const existing = state.tenants.find(t => t.email === app.email);
-            const tenantData = {
-                name: app.name,
-                email: app.email,
-                rent_amount: app.rent,
-                status: 'Active',
-                owner_id: ownerId,
-                lease_url: app.lease_url,
-                lease_signed_at: app.tenant_signed_at || now, // Ensure we have a date
-                address: (app.listings && app.listings.address) ? app.listings.address : (existing ? existing.address : null)
-            };
+           // 2. Create/Update Active Tenant Record
+// We explicitly set the 'id' to app.user_id to ensure it matches the person's login
+const tenantData = {
+    id: app.user_id, // <--- CRITICAL: This links the Auth account to the Tenant row
+    name: app.name,
+    email: app.email,
+    rent_amount: app.rent,
+    status: 'Active',
+    owner_id: ownerId,
+    lease_url: app.lease_url,
+    lease_signed_at: app.tenant_signed_at || now,
+    address: (app.listings && app.listings.address) ? app.listings.address : (existing ? existing.address : null)
+};
 
-            if(existing) {
-                await supabaseClient.from('tenants').update(tenantData).eq('id', existing.id);
-            } else {
-                await supabaseClient.from('tenants').insert([tenantData]);
-            }
+// Use upsert so Supabase knows: "If this ID exists, update it. If not, create it."
+const { error: tenantErr } = await supabaseClient
+    .from('tenants')
+    .upsert(tenantData);
+
+if (tenantErr) {
+    console.error("Error linking tenant:", tenantErr);
+    showToast("Error finalizing tenant record", "error");
+    return;
+}
             
             // 3. Send Welcome Email
             await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
@@ -3271,6 +3279,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
