@@ -11,7 +11,6 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <script type="text/javascript">
    (function(){
-      // Replace with your actual Public Key
       emailjs.init("YOUR_PUBLIC_KEY_HERE"); 
    })();
 </script>
@@ -74,10 +73,10 @@
                         <div class="text-center border-l border-slate-100"><p class="text-xs text-slate-400 uppercase font-bold">Sq Ft</p><p class="font-bold text-slate-700" id="prop-sqft">-</p></div>
                     </div>
                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
-    <h4 class="font-bold text-sm text-slate-800 mb-2">Application Fee</h4>
-    <div class="flex justify-between text-sm mb-1"><span class="text-slate-500">RentPrep Full Screening</span><span class="font-medium">$49.99</span></div>
-    <div class="border-t border-slate-200 mt-2 pt-2 flex justify-between text-sm font-bold"><span class="text-slate-800">Total Due</span><span class="text-indigo-600">$49.99</span></div>
-</div>
+                        <h4 class="font-bold text-sm text-slate-800 mb-2">Application Fee</h4>
+                        <div class="flex justify-between text-sm mb-1"><span class="text-slate-500">RentPrep Full Screening</span><span class="font-medium">$49.99</span></div>
+                        <div class="border-t border-slate-200 mt-2 pt-2 flex justify-between text-sm font-bold"><span class="text-slate-800">Total Due</span><span class="text-indigo-600">$49.99</span></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -93,7 +92,7 @@
                 
                 <button onclick="navigateToStep(2)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
                     <div id="step-ind-2" class="w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm bg-white border-slate-200 text-slate-400 transition-all">2</div>
-                    <span class="text-xs font-bold text-slate-400">Financial</span>
+                    <span class="text-xs font-bold text-slate-400">Income</span>
                 </button>
                 
                 <button id="btn-step-3" onclick="navigateToStep(3)" class="flex flex-col items-center gap-2 group decoration-0 bg-transparent border-none cursor-pointer">
@@ -127,14 +126,18 @@
                 </div>
 
                 <div id="step-2" class="step-section hidden-step fade-in">
-                    <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Employment & Income</h2>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Income Details</h2>
                     <p class="text-slate-500 mb-6">This information helps verify your ability to pay rent.</p>
-                    <div class="mb-4"><label class="block text-sm font-bold text-slate-700 mb-2">Current Employer <span class="text-red-500">*</span></label><input type="text" id="inp-employer" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="Company Name" required></div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                        <div><label class="block text-sm font-bold text-slate-700 mb-2">Job Title <span class="text-red-500">*</span></label><input type="text" id="inp-job" class="w-full border border-slate-300 p-3 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="e.g. Manager" required></div>
-                        <div><label class="block text-sm font-bold text-slate-700 mb-2">Monthly Income <span class="text-red-500">*</span></label><div class="relative"><span class="absolute left-3 top-3 text-slate-400 font-bold">$</span><input type="number" id="inp-income" class="w-full border border-slate-300 p-3 pl-8 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="4000" min="0" required></div></div>
+                    
+                    <div class="mb-8">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">Monthly Income <span class="text-red-500">*</span></label>
+                        <div class="relative max-w-xs">
+                            <span class="absolute left-3 top-3 text-slate-400 font-bold">$</span>
+                            <input type="number" id="inp-income" class="w-full border border-slate-300 p-3 pl-8 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="4000" min="0" required>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-2">Enter your total gross monthly income (before taxes).</p>
                     </div>
-                    <div class="p-4 bg-indigo-50 rounded-xl border border-indigo-100 mb-6"><label class="flex items-start gap-3 cursor-pointer"><input type="checkbox" id="inp-verify" class="mt-1 w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" checked><div class="text-sm"><span class="font-bold text-indigo-900">Employment Verification</span><p class="text-indigo-700">I authorize Kozeyy to contact my employer.</p></div></label></div>
+
                     <div class="flex justify-between"><button type="button" onclick="navigateToStep(1)" class="text-slate-500 font-bold hover:text-slate-800 px-4">Back</button><button type="button" onclick="navigateToStep(3)" class="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition">Next Step <i class="fas fa-arrow-right ml-2"></i></button></div>
                 </div>
 
@@ -160,19 +163,19 @@
                 </div>
 
                <div id="step-4" class="step-section hidden-step fade-in">
-    <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Finalize Application</h2>
-    <p class="text-slate-500 mb-6">Review your details and pay the screening fee.</p>
-    
-    <div class="mb-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
-        <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Your $49.99 Screening Includes:</h4>
-        <ul class="text-sm text-indigo-800 space-y-1">
-            <li><i class="fas fa-check-circle mr-2"></i>Full Credit Report & Resident Score</li>
-            <li><i class="fas fa-check-circle mr-2"></i>National Eviction & Criminal Search</li>
-            <li><i class="fas fa-check-circle mr-2"></i>Bankruptcies, Judgments & Liens</li>
-        </ul>
-    </div>
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2 brand-font">Finalize Application</h2>
+                    <p class="text-slate-500 mb-6">Review your details and pay the screening fee.</p>
+                    
+                    <div class="mb-6 p-4 bg-indigo-50 border border-indigo-100 rounded-xl">
+                        <h4 class="text-xs font-bold text-indigo-900 uppercase tracking-wider mb-2">Your $49.99 Screening Includes:</h4>
+                        <ul class="text-sm text-indigo-800 space-y-1">
+                            <li><i class="fas fa-check-circle mr-2"></i>Full Credit Report & Resident Score</li>
+                            <li><i class="fas fa-check-circle mr-2"></i>National Eviction & Criminal Search</li>
+                            <li><i class="fas fa-check-circle mr-2"></i>Bankruptcies, Judgments & Liens</li>
+                        </ul>
+                    </div>
 
-    <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm">
+                    <div class="bg-white border border-slate-200 rounded-xl p-4 mb-6 shadow-sm">
                         <div class="flex justify-between items-center mb-2"><span class="text-slate-600 font-medium">Applicant</span><span class="font-bold text-slate-800" id="rev-name">...</span></div>
                         <div class="flex justify-between items-center mb-2"><span class="text-slate-600 font-medium">Income</span><span class="font-bold text-slate-800" id="rev-income">...</span></div>
                         <div class="flex justify-between items-center"><span class="text-slate-600 font-medium">Property</span><span class="font-bold text-indigo-600 truncate max-w-[150px]" id="rev-prop">...</span></div>
@@ -212,7 +215,7 @@
         let currentListingId = null;
         let selectedProp = null;
         let appData = { evictions: false, criminal: false };
-        let skipHistoryStep = false; // New flag for conditional logic
+        let skipHistoryStep = false; 
 
         function getStepFromUrl() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -312,10 +315,9 @@
                                     crimDisabled = true;
                                 }
 
-                                // 2. If BOTH are disabled, set flag to skip Step 3 entirely
                                 if (evictDisabled && crimDisabled) {
                                     skipHistoryStep = true;
-                                    document.getElementById('btn-step-3').classList.add('hidden'); // Hide from Nav Bar
+                                    document.getElementById('btn-step-3').classList.add('hidden');
                                 }
                             }
                         }
@@ -378,8 +380,9 @@
                 if (document.getElementById('inp-phone').value.length < 10) return showError("Valid phone required.", 'inp-phone');
             }
             if (step === 2) {
-                if (!document.getElementById('inp-employer').value.trim()) return showError("Employer required.", 'inp-employer');
-                if (parseFloat(document.getElementById('inp-income').value) <= 0) return showError("Valid income required.", 'inp-income');
+                // Modified to remove employer/job validation
+                const incomeVal = parseFloat(document.getElementById('inp-income').value);
+                if (isNaN(incomeVal) || incomeVal <= 0) return showError("Valid monthly income required.", 'inp-income');
             }
             return true;
         }
@@ -456,12 +459,9 @@
         function navigateToStep(step) {
             const currentStep = getStepFromUrl();
 
-            // --- Conditional Logic for Skipping Step 3 ---
-            // If going forward (Next) from 2, jump to 4
             if (currentStep === 2 && step === 3 && skipHistoryStep) {
                 step = 4;
             }
-            // If going backward (Back) from 4, jump to 2
             else if (currentStep === 4 && step === 3 && skipHistoryStep) {
                 step = 2;
             }
@@ -483,93 +483,86 @@
             saveSessionData();
         }
 
-       async function submitApplication() {
-        clearErrors();
-        const btn = document.getElementById('btn-submit');
-        const originalText = btn.innerHTML;
-        
-        let userId = localStorage.getItem('kozeyy_user_id');
-        if (!userId) { 
-            const urlParams = new URLSearchParams(window.location.search);
-            if(urlParams.get('user_id')) userId = urlParams.get('user_id');
-            else { alert("Please sign up or log in first."); return; }
-        }
-
-        const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
-        const inputEmail = document.getElementById('inp-email').value;
-        const inputPhone = document.getElementById('inp-phone').value;
-        const inputIncome = parseFloat(document.getElementById('inp-income').value);
-        const inputJob = document.getElementById('inp-job').value;
-        
-        // 1. FIXED: Removed Mock Score. Score is now NULL.
-        // The Admin (Concierge) will fill this in manually after running RentPrep.
-        const score = null;
-
-        const newApp = {
-            user_id: userId,
-            name: inputName,
-            email: inputEmail,
-            phone: inputPhone,
-            score: score, // Value is null
-            income: inputIncome,
-            listing_id: currentListingId,
-            rent: selectedProp ? parseInt(selectedProp.price) : 0,
-            job: inputJob || 'Not Listed',
-            status: 'Pending', 
-            payment_status: 'Unpaid',
-            evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
-            criminal: document.querySelector('input[name="crim"]:checked').value === 'yes',
-            owner_id: selectedProp ? selectedProp.owner_id : null
-        };
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-        try {
-            if(!supabaseClient) throw new Error("Database connection not ready.");
+        async function submitApplication() {
+            clearErrors();
+            const btn = document.getElementById('btn-submit');
+            const originalText = btn.innerHTML;
             
-            // Save to Database
-            const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
-            if (error) throw error;
-            const savedAppId = data[0].id;
+            let userId = localStorage.getItem('kozeyy_user_id');
+            if (!userId) { 
+                const urlParams = new URLSearchParams(window.location.search);
+                if(urlParams.get('user_id')) userId = urlParams.get('user_id');
+                else { alert("Please sign up or log in first."); return; }
+            }
 
-            // Handle Payment Redirect
-            const response = await fetch(FUNCTION_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-                body: JSON.stringify({ 
-                    action: 'pay-application-fee', 
-                    appId: savedAppId,
-                    applicantEmail: inputEmail,
-                    applicantName: inputName
-                })
-            });
-
-            const session = await response.json();
-            if(session.error) throw new Error(session.error);
-
-            if(session.url) window.location.href = session.url;
-            else throw new Error("Payment redirect failed.");
+            const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
+            const inputEmail = document.getElementById('inp-email').value;
+            const inputPhone = document.getElementById('inp-phone').value;
+            const inputIncome = parseFloat(document.getElementById('inp-income').value);
             
-        } catch (err) {
-            console.error(err);
-            showError("Error: " + err.message);
-            btn.disabled = false;
-            btn.innerHTML = originalText;
+            const score = null;
+
+            const newApp = {
+                user_id: userId,
+                name: inputName,
+                email: inputEmail,
+                phone: inputPhone,
+                score: score, 
+                income: inputIncome,
+                listing_id: currentListingId,
+                rent: selectedProp ? parseInt(selectedProp.price) : 0,
+                status: 'Pending', 
+                payment_status: 'Unpaid',
+                evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
+                criminal: document.querySelector('input[name="crim"]:checked').value === 'yes',
+                owner_id: selectedProp ? selectedProp.owner_id : null
+            };
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+            try {
+                if(!supabaseClient) throw new Error("Database connection not ready.");
+                
+                const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
+                if (error) throw error;
+                const savedAppId = data[0].id;
+
+                const response = await fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+                    body: JSON.stringify({ 
+                        action: 'pay-application-fee', 
+                        appId: savedAppId,
+                        applicantEmail: inputEmail,
+                        applicantName: inputName
+                    })
+                });
+
+                const session = await response.json();
+                if(session.error) throw new Error(session.error);
+                if(session.url) window.location.href = session.url;
+                else throw new Error("Payment redirect failed.");
+                
+            } catch (err) {
+                console.error(err);
+                showError("Error: " + err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
         }
-    }
-        // --- EMAIL HELPER ---
-    async function sendEmail(to, subject, htmlContent) {
-        if(!to || !to.includes('@')) return;
-        const templateParams = {
-            to_email: to,
-            subject: subject,
-            message: htmlContent
-        };
-        try {
-            await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
-        } catch (error) { console.error("Email failed:", error); }
-    }
+        
+        async function sendEmail(to, subject, htmlContent) {
+            if(!to || !to.includes('@')) return;
+            const templateParams = {
+                to_email: to,
+                subject: subject,
+                message: htmlContent
+            };
+            try {
+                await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
+            } catch (error) { console.error("Email failed:", error); }
+        }
     </script>
 </body>
 </html>
