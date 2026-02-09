@@ -2025,33 +2025,57 @@ async function act_saveListing(e) {
    async function act_manualLeaseUpload(input, tenantId) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
-    
-    // Visual feedback
-    const originalLabel = input.parentElement.innerHTML;
-    input.parentElement.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Uploading...`;
-    
-    const publicUrl = await uploadFile(file, 'leases');
-    if (publicUrl) {
-        const now = new Date().toISOString();
-        // We set both signature dates to "now" to make the certificate valid
-        const { error } = await supabaseClient
-            .from('tenants')
-            .update({ 
-                lease_url: publicUrl,
-                lease_signed_at: now,
-                owner_signed_at: now
-            })
-            .eq('id', tenantId);
 
-        if (!error) {
-            showToast("Lease attached successfully!");
-            await fetchData();
-            renderAll();
-        } else {
-            showToast("Update failed: " + error.message, "error");
-            renderAll(); // Reset UI
+    // Temporarily change the prompt input to a date picker for better accuracy
+    const promptInput = document.getElementById('prompt-input');
+    const originalType = promptInput.type;
+    promptInput.type = 'date';
+    
+    openPrompt("Select the date the lease was signed:", async (dateVal) => {
+        // Revert prompt type back to text for future use
+        promptInput.type = originalType;
+        
+        if (!dateVal) {
+            showToast("Upload cancelled: Signature date is required.", "error");
+            input.value = ""; // Reset file input
+            return;
         }
-    }
+
+        // Trigger visual "Working" state
+        showToast("Uploading document...");
+        
+        try {
+            const publicUrl = await uploadFile(file, 'leases');
+            
+            if (publicUrl) {
+                // Convert selected local date to ISO
+                const selectedDate = new Date(dateVal + 'T12:00:00').toISOString();
+                
+                const { error } = await supabaseClient
+                    .from('tenants')
+                    .update({ 
+                        lease_url: publicUrl,
+                        lease_signed_at: selectedDate,
+                        owner_signed_at: selectedDate // For manual bypass, we set both to the same date
+                    })
+                    .eq('id', tenantId);
+
+                if (!error) {
+                    showToast("Lease attached successfully!");
+                    await fetchData(); // Refresh global state
+                    renderAll(); // Re-render tables (This stops the "spinning" feeling)
+                } else {
+                    throw error;
+                }
+            } else {
+                throw new Error("Could not generate file URL.");
+            }
+        } catch (err) {
+            console.error("Manual Upload Error:", err);
+            showToast("Upload failed: " + err.message, "error");
+            renderAll(); // Force re-render to clear any UI artifacts
+        }
+    });
 }
     // Update the helper to accept the 5th argument (Owner Date)
     function openLeaseViewer(url, id, tName, tDate, oDate) {
@@ -2731,7 +2755,7 @@ function renderLeases() {
     if(!tbody) return;
     tbody.innerHTML = '';
 
-    // Separate tenants into those with and without leases
+    // Filter all active tenants who aren't vacant placeholders
     const activeTenants = state.tenants.filter(t => t.name !== '(Vacant)' && t.status === 'Active');
     
     if(activeTenants.length === 0) {
@@ -2743,9 +2767,13 @@ function renderLeases() {
         let actionHtml = '';
         let dateHtml = '';
 
+        // Unified Signed Date Logic: Show Owner Signature Date, then Tenant Signature Date, else 'Active'
+        const rawDate = t.owner_signed_at || t.lease_signed_at;
+
         if (t.lease_url) {
-            // Document exists: Show View button
-            dateHtml = t.owner_signed_at ? new Date(t.owner_signed_at).toLocaleDateString() : (t.lease_signed_at ? new Date(t.lease_signed_at).toLocaleDateString() : 'Active');
+            // Document exists: Show formatted date and View button
+            const dateStr = rawDate ? new Date(rawDate).toLocaleDateString() : '<span class="text-slate-400 italic">Active</span>';
+            dateHtml = `<span class="font-medium text-slate-700">${dateStr}</span>`;
             actionHtml = `
                 <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}', '${t.owner_signed_at}')" 
                 class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
@@ -2753,10 +2781,10 @@ function renderLeases() {
                 </button>`;
         } else {
             // Document missing: Show Upload button
-            dateHtml = `<span class="text-rose-400 font-bold text-xs uppercase tracking-tighter">Missing File</span>`;
+            dateHtml = `<span class="text-rose-400 font-bold text-[10px] uppercase tracking-wider">No Document</span>`;
             actionHtml = `
-                <label class="cursor-pointer bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 hover:bg-slate-50 w-fit ml-auto">
-                    <i class="fas fa-file-upload"></i> Upload PDF
+                <label class="cursor-pointer bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-2 hover:bg-slate-50 w-fit ml-auto shadow-sm">
+                    <i class="fas fa-file-upload"></i> Upload Signed PDF
                     <input type="file" class="hidden" accept=".pdf" onchange="act_manualLeaseUpload(this, '${t.id}')">
                 </label>`;
         }
@@ -2765,7 +2793,7 @@ function renderLeases() {
         <tr class="hover:bg-slate-50 transition border-b border-slate-100">
             <td class="p-5 font-bold text-slate-700">${t.name}</td>
             <td class="p-5 text-slate-500 text-sm">${t.address || 'N/A'}</td>
-            <td class="p-5 text-slate-500 text-sm">${dateHtml}</td>
+            <td class="p-5 text-sm">${dateHtml}</td>
             <td class="p-5 text-right">${actionHtml}</td>
         </tr>`;
     });
@@ -3431,6 +3459,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
