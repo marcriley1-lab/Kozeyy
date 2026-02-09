@@ -2022,14 +2022,18 @@ async function act_saveListing(e) {
     openModal('modal-view-tenant'); 
 }
 
-    async function act_manualLeaseUpload(input, tenantId) {
+   async function act_manualLeaseUpload(input, tenantId) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
-    showToast("Uploading document...");
+    
+    // Visual feedback
+    const originalLabel = input.parentElement.innerHTML;
+    input.parentElement.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Uploading...`;
     
     const publicUrl = await uploadFile(file, 'leases');
     if (publicUrl) {
         const now = new Date().toISOString();
+        // We set both signature dates to "now" to make the certificate valid
         const { error } = await supabaseClient
             .from('tenants')
             .update({ 
@@ -2041,11 +2045,11 @@ async function act_saveListing(e) {
 
         if (!error) {
             showToast("Lease attached successfully!");
-            closeModal('modal-view-tenant');
             await fetchData();
             renderAll();
         } else {
             showToast("Update failed: " + error.message, "error");
+            renderAll(); // Reset UI
         }
     }
 }
@@ -2727,28 +2731,42 @@ function renderLeases() {
     if(!tbody) return;
     tbody.innerHTML = '';
 
-    // Filter tenants who have a signed lease URL
-    const activeLeases = state.tenants.filter(t => t.lease_url && t.name !== '(Vacant)');
-
-    if(activeLeases.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="p-12 text-center text-slate-400 italic">No executed leases found.</td></tr>';
+    // Separate tenants into those with and without leases
+    const activeTenants = state.tenants.filter(t => t.name !== '(Vacant)' && t.status === 'Active');
+    
+    if(activeTenants.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-12 text-center text-slate-400 italic">No active tenants found. Add a tenant first to attach a lease.</td></tr>';
         return;
     }
 
-    activeLeases.forEach(t => {
-        const signDate = t.owner_signed_at ? new Date(t.owner_signed_at).toLocaleDateString() : (t.lease_signed_at ? new Date(t.lease_signed_at).toLocaleDateString() : 'Active');
+    activeTenants.forEach(t => {
+        let actionHtml = '';
+        let dateHtml = '';
+
+        if (t.lease_url) {
+            // Document exists: Show View button
+            dateHtml = t.owner_signed_at ? new Date(t.owner_signed_at).toLocaleDateString() : (t.lease_signed_at ? new Date(t.lease_signed_at).toLocaleDateString() : 'Active');
+            actionHtml = `
+                <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}', '${t.owner_signed_at}')" 
+                class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
+                    <i class="fas fa-file-pdf mr-1"></i> View Signed Lease
+                </button>`;
+        } else {
+            // Document missing: Show Upload button
+            dateHtml = `<span class="text-rose-400 font-bold text-xs uppercase tracking-tighter">Missing File</span>`;
+            actionHtml = `
+                <label class="cursor-pointer bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 hover:bg-slate-50 w-fit ml-auto">
+                    <i class="fas fa-file-upload"></i> Upload PDF
+                    <input type="file" class="hidden" accept=".pdf" onchange="act_manualLeaseUpload(this, '${t.id}')">
+                </label>`;
+        }
         
         tbody.innerHTML += `
         <tr class="hover:bg-slate-50 transition border-b border-slate-100">
             <td class="p-5 font-bold text-slate-700">${t.name}</td>
             <td class="p-5 text-slate-500 text-sm">${t.address || 'N/A'}</td>
-            <td class="p-5 text-slate-500 text-sm">${signDate}</td>
-            <td class="p-5 text-right">
-                <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}', '${t.owner_signed_at}')" 
-                class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
-                    <i class="fas fa-file-pdf mr-1"></i> View Signed Lease
-                </button>
-            </td>
+            <td class="p-5 text-slate-500 text-sm">${dateHtml}</td>
+            <td class="p-5 text-right">${actionHtml}</td>
         </tr>`;
     });
 }
@@ -3413,6 +3431,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
