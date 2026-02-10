@@ -245,13 +245,52 @@
     </div>
 </div>
 
-            <div id="view-maintenance" class="view-section hidden-section fade-in-up">
-                <h3 class="text-xl font-bold text-slate-800 mb-4 brand-font">Maintenance</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b bg-rose-50 border-rose-100"><h3 class="font-bold text-rose-800 brand-font">Active</h3></div><div id="list-maint-active" class="divide-y divide-slate-100"></div></div>
-                    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden"><div class="p-6 border-b bg-slate-50 border-slate-100"><h3 class="font-bold text-slate-700 brand-font">History</h3></div><div id="list-maint-history" class="divide-y divide-slate-100"></div></div>
-                </div>
+            <!-- REPLACEMENT SECTION: Maintenance View -->
+<div id="view-maintenance" class="view-section hidden-section fade-in-up">
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+        <div>
+            <h3 class="text-2xl font-bold text-slate-800 brand-font">Maintenance Center</h3>
+            <p class="text-sm text-slate-500">Manage and track property repair requests</p>
+        </div>
+        <div class="flex gap-3">
+            <div class="bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm text-center">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Active</p>
+                <p class="text-lg font-bold text-indigo-600" id="maint-count-active">0</p>
             </div>
+            <div class="bg-white px-4 py-2 rounded-2xl border border-slate-200 shadow-sm text-center">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Resolved</p>
+                <p class="text-lg font-bold text-emerald-500" id="maint-count-closed">0</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Active Requests Column -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 mb-2 ml-1">
+                <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-rose-500"></span>
+                </span>
+                <h4 class="font-bold text-slate-700 uppercase text-xs tracking-wider">Attention Required</h4>
+            </div>
+            <div id="list-maint-active" class="space-y-4">
+                <!-- Active Cards injected here -->
+            </div>
+        </div>
+
+        <!-- History Column -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 mb-2 ml-1">
+                <i class="fas fa-history text-slate-400 text-xs"></i>
+                <h4 class="font-bold text-slate-500 uppercase text-xs tracking-wider">Recently Resolved</h4>
+            </div>
+            <div id="list-maint-history" class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+                <!-- History Rows injected here -->
+            </div>
+        </div>
+    </div>
+</div>
 
             <div id="view-financials" class="view-section hidden-section fade-in-up">
                 <div class="flex justify-between items-center mb-6">
@@ -1228,32 +1267,13 @@ function renderAll() {
             });
         }
 
-        // --- 5. Maintenance Lists ---
-        const ma = document.getElementById('list-maint-active');
-        const mh = document.getElementById('list-maint-history');
-        if(ma && mh) {
-            ma.innerHTML = ''; mh.innerHTML = '';
-            state.maint.forEach(m => {
-                const isActive = m.status === 'Active';
-                const container = isActive ? ma : mh;
-                const date = m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Unknown';
-                const action = isActive ? `<button onclick="act_completeMaint('${m.id}')" class="text-emerald-600 font-bold text-xs">Resolve</button>` : `<button onclick="viewMaintNote('${m.id}')" class="text-slate-400 text-xs">View Note</button>`;
-                
-                container.innerHTML += `
-                <div class="p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition flex justify-between items-center">
-                    <div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-500">${m.category} • ${date}</p></div>
-                    ${action}
-                </div>`;
-            });
-            if(ma.innerHTML === '') ma.innerHTML = '<div class="p-6 text-center text-slate-400 text-sm italic">No active requests</div>';
-        }
-
         // --- 6. Notifications ---
         updateBadge('screening', state.notifications.screening);
         updateBadge('maintenance', state.notifications.maintenance);
         updateBadge('messages', state.notifications.messages);
         
         renderFinancials();
+        renderMaintenance()
         renderExpenses();
         renderReports();
     }
@@ -1267,6 +1287,101 @@ function renderAll() {
         setText('report-noi', `$${noi.toLocaleString()}`);
     }
 
+    function renderMaintenance() {
+    const ma = document.getElementById('list-maint-active');
+    const mh = document.getElementById('list-maint-history');
+    if(!ma || !mh) return;
+
+    ma.innerHTML = ''; 
+    mh.innerHTML = '';
+
+    const activeList = state.maint.filter(m => m.status === 'Active');
+    const historyList = state.maint.filter(m => m.status !== 'Active').sort((a,b) => new Date(b.completed_date) - new Date(a.completed_date));
+
+    // Update Stats
+    setText('maint-count-active', activeList.length);
+    setText('maint-count-closed', historyList.length);
+
+    // Helper for Category Styling
+    const getCatStyles = (cat) => {
+        const c = String(cat).toLowerCase();
+        if (c.includes('plumbing')) return { icon: 'fa-droplet', color: 'text-blue-600 bg-blue-50 border-blue-100' };
+        if (c.includes('elect')) return { icon: 'fa-bolt', color: 'text-amber-600 bg-amber-50 border-amber-100' };
+        if (c.includes('appliance')) return { icon: 'fa-plug', color: 'text-orange-600 bg-orange-50 border-orange-100' };
+        return { icon: 'fa-wrench', color: 'text-slate-600 bg-slate-50 border-slate-200' };
+    };
+
+    // Render Active Cards
+    if(activeList.length === 0) {
+        ma.innerHTML = `
+            <div class="bg-white rounded-3xl p-12 border-2 border-dashed border-slate-200 text-center">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                    <i class="fas fa-check-double text-2xl"></i>
+                </div>
+                <p class="text-slate-500 font-medium">All caught up!</p>
+                <p class="text-xs text-slate-400">No active maintenance requests.</p>
+            </div>`;
+    } else {
+        activeList.forEach(m => {
+            const tenant = state.tenants.find(t => t.id === m.tenant_id) || { name: 'Resident' };
+            const style = getCatStyles(m.category);
+            const date = new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const isNew = !viewedMaintIds.has(String(m.id));
+
+            ma.innerHTML += `
+            <div class="bg-white p-5 rounded-3xl border ${isNew ? 'border-indigo-200 ring-2 ring-indigo-50' : 'border-slate-200'} shadow-sm hover:shadow-md transition relative overflow-hidden group">
+                ${isNew ? '<div class="absolute top-0 right-0 bg-indigo-600 text-white text-[9px] px-3 py-1 font-black uppercase rounded-bl-xl tracking-tighter">New</div>' : ''}
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm ${style.color} border">
+                            <i class="fas ${style.icon}"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest ${style.color.split(' ')[0]}">${m.category}</span>
+                            <h4 class="font-bold text-slate-800 leading-tight">${m.issue}</h4>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-slate-400">${date}</span>
+                </div>
+                
+                <div class="bg-slate-50 rounded-2xl p-3 mb-4 border border-slate-100">
+                    <p class="text-[11px] text-slate-400 font-bold uppercase mb-1">Requested By</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold text-slate-700">${tenant.name}</span>
+                        <button onclick="openChat('${tenant.id}')" class="text-indigo-600 text-xs font-bold hover:underline">Message</button>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button onclick="viewMaintNote('${m.id}')" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-200 transition">View Details</button>
+                    <button onclick="act_completeMaint('${m.id}')" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Mark Resolved</button>
+                </div>
+            </div>`;
+        });
+    }
+
+    // Render History Rows
+    if(historyList.length === 0) {
+        mh.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm italic">No resolution history found.</div>';
+    } else {
+        historyList.forEach(m => {
+            const date = m.completed_date ? new Date(m.completed_date).toLocaleDateString() : '---';
+            mh.innerHTML += `
+            <div class="p-4 hover:bg-slate-50 transition flex justify-between items-center group">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-xs">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-slate-700 group-hover:text-indigo-950 transition">${m.issue}</p>
+                        <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tight">${m.category} • Resolved ${date}</p>
+                    </div>
+                </div>
+                <button onclick="viewMaintNote('${m.id}')" class="text-slate-400 hover:text-indigo-600 p-2"><i class="fas fa-eye"></i></button>
+            </div>`;
+        });
+    }
+}
     // --- UTILS ---
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
@@ -3459,6 +3574,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
