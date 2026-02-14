@@ -3470,45 +3470,75 @@ function logic_resetInvoice() {
     function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
     function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
     
-   async function loadUserProfile() { 
+  async function loadUserProfile() { 
     const ownerId = localStorage.getItem('kozeyy_user_id');
     if(!ownerId) return;
 
     try {
-        // Updated query to include is_founder
-        const { data, error } = await supabaseClient
+        // 1. Fetch Owner Identity & Subscription Data
+        const { data: ownerData, error: ownerError } = await supabaseClient
             .from('owners')
-            .select('name, email, is_founder')
+            .select('name, email, is_founder, subscription_tier')
             .eq('id', ownerId)
             .maybeSingle();
 
-        if (data && data.name) {
-            setText('owner-name-display', data.name);
+        if (ownerData) {
+            // Store for global use
+            state.owner_data = ownerData; 
             
-            // 1. Set initials
-            const initials = data.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            // Set Name and Initials
+            setText('owner-name-display', ownerData.name);
+            const initials = ownerData.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
             const initialBox = document.getElementById('owner-initials-display'); 
             if(initialBox) initialBox.innerText = initials;
 
-            // 2. Handle Founder Badge Visibility
-            if (data.is_founder) {
-                const badge = document.getElementById('founder-badge');
-                const sidebarTag = document.getElementById('founder-tag-sidebar');
+            // Handle Founder UI
+            if (ownerData.is_founder) {
+                if (document.getElementById('founder-badge')) document.getElementById('founder-badge').classList.remove('hidden');
+                if (document.getElementById('founder-tag-sidebar')) document.getElementById('founder-tag-sidebar').classList.remove('hidden');
+                if (document.getElementById('founder-perk-note')) document.getElementById('founder-perk-note').classList.remove('hidden');
                 
-                if (badge) badge.classList.remove('hidden');
-                if (sidebarTag) sidebarTag.classList.remove('hidden');
-                
-                // Optional: Change the profile ring to gold if they are a founder
-                if (initialBox) {
-                    initialBox.classList.remove('from-indigo-500', 'to-purple-600');
-                    initialBox.classList.add('from-amber-400', 'to-amber-600', 'ring-amber-100');
-                }
+                // Turn profile ring Gold
+                if(initialBox) initialBox.classList.add('ring-amber-400', 'border-2', 'border-amber-200');
             }
+
+            // 2. Calculate and Display Subscription Usage
+            renderSubscriptionUI(ownerData);
         }
     } catch(e) {
         console.error("Profile load error:", e);
     }
 }
+
+    function renderSubscriptionUI(owner) {
+    // Logic for Tiers
+    const propertyCount = state.tenants.length + state.listings.length;
+    let limit = 2; // Default
+    
+    if (owner.subscription_tier === 'pro') limit = 10;
+    if (owner.subscription_tier === 'unlimited') limit = 99999;
+    
+    // Update Text
+    const tierName = owner.is_founder ? "Founder (Lifetime)" : (owner.subscription_tier || 'Free').toUpperCase();
+    setText('sub-tier-display', tierName);
+    
+    const usageText = owner.is_founder ? `${propertyCount} / ∞` : `${propertyCount} / ${limit}`;
+    setText('sub-usage-text', usageText);
+
+    // Update Progress Bar
+    const bar = document.getElementById('sub-usage-bar');
+    if (bar) {
+        const percent = owner.is_founder ? 0 : Math.min((propertyCount / limit) * 100, 100);
+        bar.style.width = percent + '%';
+        
+        // Turn bar red if they are at or over limit
+        if (!owner.is_founder && propertyCount >= limit) {
+            bar.classList.remove('bg-indigo-500');
+            bar.classList.add('bg-rose-500');
+        }
+    }
+}
+    
 function calculateLateFee(total, invoice, daysOverdue = 1) {
     // 1. Check if fees are enabled on this invoice
     // (We check strict false because old data might be null/undefined, defaulting to true)
@@ -3608,6 +3638,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
