@@ -3595,20 +3595,28 @@ function logic_resetInvoice() {
 }
 
 function renderSubscriptionUsage(owner) {
-    const usage = state.tenants.length + state.listings.length;
+    // This counts your current tenants and listings
+    const usage = state.tenants.length + state.listings.length; 
     const tier = owner.subscription_tier || 'free';
     const plan = KOZEYY_PLANS[tier];
 
-    setText('sub-tier-display', plan.name + " Tier");
+    setText('sub-tier-display', plan.name);
     setText('sub-usage-text', `${usage} / ${plan.limit} Slots Used`);
     
     const bar = document.getElementById('sub-usage-bar');
-    const percent = Math.min((usage / plan.limit) * 100, 100);
-    bar.style.width = percent + '%';
-    
-    // Turn bar red if maxed out
-    if (usage >= plan.limit) bar.classList.add('bg-rose-500');
-    else bar.classList.remove('bg-rose-500');
+    if(bar) {
+        const percent = Math.min((usage / plan.limit) * 100, 100);
+        bar.style.width = percent + '%';
+        
+        // If at limit, turn bar red. If under, keep indigo.
+        if (usage >= plan.limit) {
+            bar.classList.remove('bg-indigo-600');
+            bar.classList.add('bg-rose-500');
+        } else {
+            bar.classList.add('bg-indigo-600');
+            bar.classList.remove('bg-rose-500');
+        }
+    }
 }
     
 function calculateLateFee(total, invoice, daysOverdue = 1) {
@@ -3710,6 +3718,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
