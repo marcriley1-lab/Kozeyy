@@ -410,6 +410,62 @@
 </div>
 
             <div id="view-settings" class="view-section hidden-section fade-in-up">
+                <!-- NEW SUBSCRIPTION BLOCK -->
+<div class="max-w-3xl mx-auto mb-6">
+    <!-- 1. Shown ONLY to Founders (User 1-100) -->
+    <div id="founder-view" class="hidden bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-3xl shadow-lg text-white mb-6 relative overflow-hidden">
+        <div class="absolute -right-4 -top-4 opacity-20"><i class="fas fa-crown text-8xl"></i></div>
+        <div class="relative z-10 flex items-center gap-4">
+            <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-2xl border border-white/30">
+                <i class="fas fa-gem"></i>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold brand-font">Founder Edition Account</h3>
+                <p class="text-sm opacity-90">Unlimited property slots and zero monthly fees for life. Thank you for being one of our first 100 owners.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Shown ONLY to Regular Owners (User 101+) -->
+    <div id="standard-view" class="hidden bg-white rounded-3xl shadow-sm border border-slate-200 p-6 mb-6">
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Your Current Plan</p>
+                <h4 id="sub-tier-display" class="text-2xl font-bold text-slate-800 brand-font">Basic</h4>
+            </div>
+            <div class="flex-1 w-full md:max-w-xs">
+                <div class="flex justify-between text-[10px] font-black uppercase mb-1">
+                    <span class="text-slate-500">Property Usage</span>
+                    <span id="sub-usage-text" class="text-slate-700">0 / 2 Slots Used</span>
+                </div>
+                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <div id="sub-usage-bar" class="bg-indigo-600 h-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Tiers Preview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-8">
+            <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Basic</p>
+                <p class="text-lg font-bold text-slate-800">$0<span class="text-xs font-normal">/mo</span></p>
+                <p class="text-[9px] text-slate-500">Limit: 2 Properties</p>
+            </div>
+            <div class="p-4 rounded-2xl border-2 border-indigo-100 bg-indigo-50/30 relative">
+                <div class="absolute -top-2 right-2 bg-indigo-600 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">PRO</div>
+                <p class="text-[10px] font-bold text-indigo-400 uppercase">Growth</p>
+                <p class="text-lg font-bold text-indigo-900">$9.99<span class="text-xs font-normal">/mo</span></p>
+                <p class="text-[9px] text-indigo-600">Limit: 10 Properties</p>
+            </div>
+            <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                <p class="text-[10px] font-bold text-slate-400 uppercase">Unlimited</p>
+                <p class="text-lg font-bold text-slate-800">$39.99<span class="text-xs font-normal">/mo</span></p>
+                <p class="text-[9px] text-slate-500">Unlimited Properties</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- END OF NEW SUBSCRIPTION BLOCK -->
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
                     <form onsubmit="act_saveSettings(event)" class="space-y-6">
@@ -996,6 +1052,13 @@
     // --- SUPABASE CONFIG ---
     const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
+
+// --- SUBSCRIPTION ENGINE ---
+const KOZEYY_PLANS = {
+    free: { name: 'Basic', price: 0, limit: 2 },
+    pro: { name: 'Pro', price: 9.99, limit: 10 },
+    unlimited: { name: 'Unlimited', price: 39.99, limit: 99999 }
+};
     
     let supabaseClient = null;
     try {
@@ -1879,6 +1942,7 @@ function toggleFeeVisibility() {
     
   async function act_saveTenant(e) { 
     e.preventDefault(); 
+      if (!editTenantId && !canAddProperty()) return; 
     const ownerId = localStorage.getItem('kozeyy_user_id');
     if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
 
@@ -1951,6 +2015,7 @@ function toggleFeeVisibility() {
     
 async function act_saveListing(e) { 
     e.preventDefault(); 
+   if (!editListingId && !canAddProperty()) return; 
     const btn = document.getElementById('btn-save-listing');
     btn.disabled = true;
 
@@ -3098,6 +3163,29 @@ function renderLeases() {
         btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'shadow-lg');
     }
 
+    function canAddProperty() {
+    const owner = state.owner_data;
+    if (!owner) return false;
+
+    // 1. Founders have no limits
+    if (owner.is_founder) return true;
+
+    // 2. Calculate current usage (Active Tenants + Active Listings)
+    const usage = state.tenants.length + state.listings.length;
+    
+    // 3. Get limit based on their tier
+    const tier = owner.subscription_tier || 'free';
+    const limit = KOZEYY_PLANS[tier].limit;
+
+    if (usage >= limit) {
+        showToast(`Limit reached (${limit} properties). Please upgrade your plan.`, "error");
+        navTo('settings');
+        return false;
+    }
+
+    return true;
+}
+
 async function processLeaseFinalization() {
     const app = state.apps.find(a => a.id === currentAppId);
     if(!app) return;
@@ -3470,73 +3558,57 @@ function logic_resetInvoice() {
     function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
     function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
     
-  async function loadUserProfile() { 
+ async function loadUserProfile() { 
     const ownerId = localStorage.getItem('kozeyy_user_id');
     if(!ownerId) return;
 
     try {
-        // 1. Fetch Owner Identity & Subscription Data
-        const { data: ownerData, error: ownerError } = await supabaseClient
+        const { data, error } = await supabaseClient
             .from('owners')
-            .select('name, email, is_founder, subscription_tier')
+            .select('name, is_founder, subscription_tier')
             .eq('id', ownerId)
             .maybeSingle();
 
-        if (ownerData) {
-            // Store for global use
-            state.owner_data = ownerData; 
+        if (data) {
+            state.owner_data = data;
+            setText('owner-name-display', data.name);
             
-            // Set Name and Initials
-            setText('owner-name-display', ownerData.name);
-            const initials = ownerData.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-            const initialBox = document.getElementById('owner-initials-display'); 
-            if(initialBox) initialBox.innerText = initials;
-
-            // Handle Founder UI
-            if (ownerData.is_founder) {
-                if (document.getElementById('founder-badge')) document.getElementById('founder-badge').classList.remove('hidden');
-                if (document.getElementById('founder-tag-sidebar')) document.getElementById('founder-tag-sidebar').classList.remove('hidden');
-                if (document.getElementById('founder-perk-note')) document.getElementById('founder-perk-note').classList.remove('hidden');
+            // Toggle UI based on Founder status
+            if (data.is_founder) {
+                // Show Founder elements
+                document.getElementById('founder-view').classList.remove('hidden');
+                document.getElementById('founder-badge').classList.remove('hidden');
+                document.getElementById('founder-tag-sidebar').classList.remove('hidden');
                 
-                // Turn profile ring Gold
-                if(initialBox) initialBox.classList.add('ring-amber-400', 'border-2', 'border-amber-200');
+                // Hide Billing for Founders
+                document.getElementById('standard-view').classList.add('hidden');
+            } else {
+                // Show Subscription UI for Non-Founders
+                document.getElementById('standard-view').classList.remove('hidden');
+                document.getElementById('founder-view').classList.add('hidden');
+                
+                // Update Usage Data
+                renderSubscriptionUsage(data);
             }
-
-            // 2. Calculate and Display Subscription Usage
-            renderSubscriptionUI(ownerData);
         }
-    } catch(e) {
-        console.error("Profile load error:", e);
-    }
+    } catch(e) { console.error(e); }
 }
 
-    function renderSubscriptionUI(owner) {
-    // Logic for Tiers
-    const propertyCount = state.tenants.length + state.listings.length;
-    let limit = 2; // Default
-    
-    if (owner.subscription_tier === 'pro') limit = 10;
-    if (owner.subscription_tier === 'unlimited') limit = 99999;
-    
-    // Update Text
-    const tierName = owner.is_founder ? "Founder (Lifetime)" : (owner.subscription_tier || 'Free').toUpperCase();
-    setText('sub-tier-display', tierName);
-    
-    const usageText = owner.is_founder ? `${propertyCount} / ∞` : `${propertyCount} / ${limit}`;
-    setText('sub-usage-text', usageText);
+function renderSubscriptionUsage(owner) {
+    const usage = state.tenants.length + state.listings.length;
+    const tier = owner.subscription_tier || 'free';
+    const plan = KOZEYY_PLANS[tier];
 
-    // Update Progress Bar
+    setText('sub-tier-display', plan.name + " Tier");
+    setText('sub-usage-text', `${usage} / ${plan.limit} Slots Used`);
+    
     const bar = document.getElementById('sub-usage-bar');
-    if (bar) {
-        const percent = owner.is_founder ? 0 : Math.min((propertyCount / limit) * 100, 100);
-        bar.style.width = percent + '%';
-        
-        // Turn bar red if they are at or over limit
-        if (!owner.is_founder && propertyCount >= limit) {
-            bar.classList.remove('bg-indigo-500');
-            bar.classList.add('bg-rose-500');
-        }
-    }
+    const percent = Math.min((usage / plan.limit) * 100, 100);
+    bar.style.width = percent + '%';
+    
+    // Turn bar red if maxed out
+    if (usage >= plan.limit) bar.classList.add('bg-rose-500');
+    else bar.classList.remove('bg-rose-500');
 }
     
 function calculateLateFee(total, invoice, daysOverdue = 1) {
@@ -3638,6 +3710,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
