@@ -209,13 +209,13 @@
                const table = role === 'owner' ? 'owners' : 'tenants';
 
 const payload = {
-    id: userId, // CRITICAL: Use the Auth UUID
+    id: userId, 
     name: `${fname} ${lname}`,
     email: email,
     phone: phone,
     status: role === 'owner' ? 'Active' : (inviteData.owner_id ? 'Active' : 'Applicant'),
-    tos_agreed_at: new Date().toISOString(), // <--- ADD THIS LINE
-    ...inviteData // Merge in any invite details we found
+    tos_agreed_at: new Date().toISOString(),
+    ...inviteData 
 };
 
 // Perform the Insert
@@ -269,6 +269,7 @@ const { error: dbError } = await supabaseClient.from(table).upsert([payload]);
     </script>
 </body>
 </html>
+
 
 
 
