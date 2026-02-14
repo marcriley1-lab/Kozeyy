@@ -1138,12 +1138,12 @@ const KOZEYY_PLANS = {
     }
 
     // --- 1. INIT & POLLING ---
-    async function initSystem() {
-        try {
-            if(!supabaseClient) throw new Error("Supabase library not loaded.");
-            await loadUserProfile(); // <--- Moved to top to load name fast
-            await fetchData();
-            renderAll();
+   async function initSystem() {
+    try {
+        if(!supabaseClient) throw new Error("Supabase library not loaded.");
+        await fetchData();       // 1. Get Tenants/Listings first
+        await loadUserProfile(); // 2. Then load profile (Usage will calculate correctly)
+        renderAll();
             
             // Check for upload redirect param (from lease.html)
             const urlParams = new URLSearchParams(window.location.search);
@@ -1344,11 +1344,15 @@ function renderAll() {
         updateBadge('screening', state.notifications.screening);
         updateBadge('maintenance', state.notifications.maintenance);
         updateBadge('messages', state.notifications.messages);
-        
+    
         renderFinancials();
         renderMaintenance()
         renderExpenses();
         renderReports();
+
+     if (state.owner_data && !state.owner_data.is_founder) {
+        renderSubscriptionUsage(state.owner_data);
+    }
     }
 
     function renderReports() {
@@ -3718,6 +3722,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
