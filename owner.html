@@ -55,7 +55,10 @@
                     <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="#6366f1" fill-opacity="0.8" />
                     <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="#6366f1" fill-opacity="0.9" />
                 </svg>
-                <span class="text-xl font-bold text-white tracking-tight brand-font">Kozeyy</span>
+                <div class="flex flex-col">
+    <span class="text-xl font-bold text-white tracking-tight brand-font">Kozeyy</span>
+    <span id="founder-tag-sidebar" class="hidden text-[9px] text-amber-400 font-bold uppercase tracking-tighter -mt-1">Founder Edition</span>
+</div>
             </div>
             <button onclick="toggleSidebar()" class="md:hidden text-slate-400 hover:text-white"><i class="fas fa-times text-xl"></i></button>
         </div>
@@ -124,9 +127,15 @@
             
             <div class="flex items-center gap-3 md:pl-6 md:border-l border-slate-200">
     <div class="text-right hidden md:block">
+    <div class="flex items-center justify-end gap-2">
+        <!-- The Badge -->
+        <span id="founder-badge" class="hidden bg-gradient-to-r from-amber-400 to-amber-600 text-white text-[9px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest shadow-sm border border-amber-300">
+            Founder
+        </span>
         <p class="text-sm font-bold text-slate-700 brand-font" id="owner-name-display">Landlord</p>
-        <p class="text-xs text-slate-500">Property Owner</p>
     </div>
+    <p class="text-xs text-slate-500">Property Owner</p>
+</div>
     
     <div onclick="signOut()" class="w-9 h-9 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm brand-font cursor-pointer hover:ring-4 ring-indigo-100 transition" id="owner-initials-display" title="Click to Sign Out">
         LL
@@ -3461,31 +3470,45 @@ function logic_resetInvoice() {
     function populateExpenseModal() { const s = document.getElementById('ex-prop'); s.innerHTML = '<option disabled selected>Select Property</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option>${p}</option>`); }
     function populateExpFilter() { const s = document.getElementById('filter-expenses'); s.innerHTML = '<option value="all">All Properties</option>'; const props = new Set(); state.tenants.forEach(t => { if(t.address) props.add(t.address); }); state.listings.forEach(l => { if(l.address) props.add(l.address); }); props.forEach(p => s.innerHTML += `<option value="${p}">${p}</option>`); }
     
-    async function loadUserProfile() { 
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        if(!ownerId) return;
+   async function loadUserProfile() { 
+    const ownerId = localStorage.getItem('kozeyy_user_id');
+    if(!ownerId) return;
 
-        try {
-            // Fetch name from database to ensure it's fresh
-            const { data, error } = await supabaseClient
-                .from('owners')
-                .select('name, email')
-                .eq('id', ownerId)
-                .maybeSingle();
+    try {
+        // Updated query to include is_founder
+        const { data, error } = await supabaseClient
+            .from('owners')
+            .select('name, email, is_founder')
+            .eq('id', ownerId)
+            .maybeSingle();
 
-            if (data && data.name) {
-                setText('owner-name-display', data.name);
+        if (data && data.name) {
+            setText('owner-name-display', data.name);
+            
+            // 1. Set initials
+            const initials = data.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            const initialBox = document.getElementById('owner-initials-display'); 
+            if(initialBox) initialBox.innerText = initials;
+
+            // 2. Handle Founder Badge Visibility
+            if (data.is_founder) {
+                const badge = document.getElementById('founder-badge');
+                const sidebarTag = document.getElementById('founder-tag-sidebar');
                 
-                // Set initials
-                const initials = data.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                const initialBox = document.getElementById('owner-initials-display'); 
-                if(initialBox) initialBox.innerText = initials;
+                if (badge) badge.classList.remove('hidden');
+                if (sidebarTag) sidebarTag.classList.remove('hidden');
+                
+                // Optional: Change the profile ring to gold if they are a founder
+                if (initialBox) {
+                    initialBox.classList.remove('from-indigo-500', 'to-purple-600');
+                    initialBox.classList.add('from-amber-400', 'to-amber-600', 'ring-amber-100');
+                }
             }
-        } catch(e) {
-            console.error("Profile load error:", e);
         }
+    } catch(e) {
+        console.error("Profile load error:", e);
     }
-
+}
 function calculateLateFee(total, invoice, daysOverdue = 1) {
     // 1. Check if fees are enabled on this invoice
     // (We check strict false because old data might be null/undefined, defaulting to true)
@@ -3585,6 +3608,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
