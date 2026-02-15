@@ -1067,40 +1067,38 @@
         }
     }
         
-   function viewInvoice(id) {
+  function viewInvoice(id) {
     const inv = globalData.invoices.find(i => i.id === id);
     if(!inv) return;
     
+    // 1. Calculate base balance and late fees safely
     const calc = calculateOverdueDetails(inv);
-    const currentBaseBalance = inv.total - (inv.amount_paid || 0);
-    const rentPlusLateFees = currentBaseBalance + calc.fee;
+    const totalRaw = Number(inv.total) || 0;
+    const paidRaw = Number(inv.amount_paid) || 0;
+    const currentBaseBalance = totalRaw - paidRaw;
+    const rentPlusLateFees = currentBaseBalance + (Number(calc.fee) || 0);
 
-    // Basic UI Population
+    // 2. Standard UI Population
     document.getElementById('inv-id').innerText = inv.invoice_num || inv.id.slice(0,8);
     document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
-    document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
-    document.getElementById('inv-prev-pay').innerText = `$${(inv.amount_paid||0).toLocaleString()}`;
+    document.getElementById('inv-prev-bal').innerText = `$${totalRaw.toLocaleString()}`; 
+    document.getElementById('inv-prev-pay').innerText = `$${paidRaw.toLocaleString()}`;
     document.getElementById('inv-fwd-bal').innerText = `$${currentBaseBalance.toLocaleString()}`;
     
     const tbody = document.getElementById('inv-items-body'); 
     tbody.innerHTML = '';
     (inv.items || []).forEach(item => { 
-        tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${item.amount.toLocaleString()}</td></tr>`; 
+        tbody.innerHTML += `<tr><td class="p-3 text-slate-700">${item.desc}</td><td class="p-3 text-right font-medium">$${(Number(item.amount)||0).toLocaleString()}</td></tr>`; 
     });
     
     if(calc.fee > 0) {
-         const type = inv.fee_type || 'Fixed';
-         let label = "Late Fee";
-         if(type === 'Daily') label += ` (${calc.daysLate} days overdue)`;
-         if(type === 'Percentage') label += ` (${inv.fee_value}%)`;
-         tbody.innerHTML += `<tr class="bg-rose-50"><td class="p-3 text-rose-600 font-bold">${label}</td><td class="p-3 text-right font-bold text-rose-600">+$${calc.fee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+         tbody.innerHTML += `<tr class="bg-rose-50"><td class="p-3 text-rose-600 font-bold">Late Fee</td><td class="p-3 text-right font-bold text-rose-600">+$${calc.fee.toFixed(2)}</td></tr>`;
     }
 
     const attEl = document.getElementById('inv-attachment'); 
-    const docLink = inv.doc_url || inv.doc;
-    if(docLink) { 
+    if(inv.doc_url) { 
         attEl.classList.remove('hidden-section'); 
-        document.getElementById('inv-doc-name').innerHTML = `<a href="${docLink}" target="_blank" class="hover:underline">View Document</a>`;
+        document.getElementById('inv-doc-name').innerHTML = `<a href="${inv.doc_url}" target="_blank" class="hover:underline">View Document</a>`;
     } else { attEl.classList.add('hidden-section'); }
     
     const feeSection = document.getElementById('inv-fees-section'); 
@@ -1110,15 +1108,14 @@
     if(currentBaseBalance <= 0 || inv.status === 'Paid') { 
         feeSection.classList.add('hidden-section'); 
         totalEl.innerText = `$0.00`; 
-        payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date ? new Date(inv.paid_date).toLocaleDateString() : 'Unknown'}</div>`; 
+        payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid</div>`; 
     } else { 
-        // --- MATH FOR TENANT FEES ---
-        // 1. ACH: Tenant pays a flat $2.50 to offset the owner's Stripe fee
+        // --- MATH: COMPATIBLE WITH STRIPE DIRECT CHARGES ---
         const achFee = 2.50;
         const achTotal = rentPlusLateFees + achFee;
 
-        // 2. Card: Gross-up so Owner gets exactly the Rent amount after Stripe takes 2.9% + 30c
-        const cardTotal = (rentPlusLateFees + 0.30) / (1 - 0.029);
+        // Card Math: (Rent + 0.30) / (1 - 0.029)
+        const cardTotal = (rentPlusLateFees + 0.30) / 0.971;
         const cardFee = cardTotal - rentPlusLateFees;
 
         totalEl.innerText = `$${rentPlusLateFees.toLocaleString(undefined, {minimumFractionDigits: 2})}`; 
@@ -1136,40 +1133,46 @@
             
             payBtnContainer.innerHTML = `
                 <div class="space-y-3 mt-4">
-                    <button onclick="initStripePayment('${inv.id}', ${rentPlusLateFees}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-4 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
-                        <div class="flex items-center gap-2"><i class="fas fa-university"></i> Pay via Bank (ACH)</div>
-                        <span class="text-lg group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <button onclick="initStripePayment('${inv.id}', ${rentPlusLateFees}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3.5 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4">
+                        <div class="flex items-center gap-2"><i class="fas fa-university"></i> Bank Transfer (ACH)</div>
+                        <span>$${achTotal.toFixed(2)}</span>
                     </button>
-                    <button onclick="initStripePayment('${inv.id}', ${rentPlusLateFees}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
-                        <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Pay via Card</div>
-                        <span class="text-lg group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <button onclick="initStripePayment('${inv.id}', ${rentPlusLateFees}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4">
+                        <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card Payment</div>
+                        <span>$${cardTotal.toFixed(2)}</span>
                     </button>
-                    <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600 mt-2">Cancel</button>
                 </div>`;
         } else {
-            feeSection.classList.add('hidden-section');
-            payBtnContainer.innerHTML = `<div class="mt-6 p-4 bg-slate-100 rounded-xl text-center text-xs font-bold text-slate-500">Landlord has not enabled online payments.</div>`;
+            payBtnContainer.innerHTML = `<div class="mt-4 p-4 bg-slate-100 rounded-xl text-center text-xs font-bold text-slate-500">Payments Disabled</div>`;
         }
     }
     toggleModal('invoiceModal');
 }
-        async function initStripePayment(invoiceId, baseAmount, method, fee) {
-            toggleModal('invoiceModal'); 
-            toggleModal('processingModal');
-            try {
-                const totalAmount = baseAmount + fee;
-                const response = await fetch(FUNCTION_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, 
-                    body: JSON.stringify({ action: 'create-checkout-session', invoiceId: invoiceId, amount: totalAmount, tenantId: USER_ID, paymentMethod: method }) 
-                });
-                const session = await response.json(); if(session.error) throw new Error(session.error);
-                const result = await stripe.redirectToCheckout({ sessionId: session.id }); if (result.error) throw new Error(result.error.message);
-            } catch (err) { 
+       async function initStripePayment(invoiceId, baseAmount, method, fee) {
+    toggleModal('invoiceModal'); 
+    toggleModal('processingModal');
+    try {
+        const response = await fetch(FUNCTION_URL, { 
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, 
+            body: JSON.stringify({ 
+                action: 'create-checkout-session', 
+                invoiceId: invoiceId, 
+                amount: baseAmount, // The rent amount
+                fee: fee,           // The specific fee
+                tenantId: USER_ID, 
+                paymentMethod: method 
+            }) 
+        });
+        const session = await response.json(); 
+        if(session.error) throw new Error(session.error);
+        const result = await stripe.redirectToCheckout({ sessionId: session.id }); 
+        if (result.error) throw new Error(result.error.message);
+    } catch (err) { 
         toggleModal('processingModal'); 
         showToast("Payment Error: " + err.message, 'error'); 
     }
-        }
+}
 
         function downloadInvoicePDF() {
             const element = document.getElementById('invoice-paper');
@@ -1345,6 +1348,7 @@
     </script>
 </body>
 </html>
+
 
 
 
