@@ -1067,7 +1067,7 @@
         }
     }
         
-     function viewInvoice(id) {
+   function viewInvoice(id) {
     const inv = globalData.invoices.find(i => i.id === id);
     if(!inv) return;
     
@@ -1075,7 +1075,7 @@
     const currentBaseBalance = inv.total - (inv.amount_paid || 0);
     const rentPlusLateFees = currentBaseBalance + calc.fee;
 
-    // UI rendering basic fields
+    // Basic UI Population
     document.getElementById('inv-id').innerText = inv.invoice_num || inv.id.slice(0,8);
     document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
     document.getElementById('inv-prev-bal').innerText = `$${inv.total.toLocaleString()}`; 
@@ -1112,12 +1112,12 @@
         totalEl.innerText = `$0.00`; 
         payBtnContainer.innerHTML = `<div class="w-full bg-emerald-100 text-emerald-700 text-center py-3 rounded-xl font-bold uppercase mt-4">Paid on ${inv.paid_date ? new Date(inv.paid_date).toLocaleDateString() : 'Unknown'}</div>`; 
     } else { 
-        // --- CALCULATION LOGIC ---
-        // 1. ACH: Rent + 2.50
+        // --- MATH FOR TENANT FEES ---
+        // 1. ACH: Tenant pays a flat $2.50 to offset the owner's Stripe fee
         const achFee = 2.50;
         const achTotal = rentPlusLateFees + achFee;
 
-        // 2. Card: (Rent + 0.30) / (1 - 0.029)
+        // 2. Card: Gross-up so Owner gets exactly the Rent amount after Stripe takes 2.9% + 30c
         const cardTotal = (rentPlusLateFees + 0.30) / (1 - 0.029);
         const cardFee = cardTotal - rentPlusLateFees;
 
@@ -1129,20 +1129,20 @@
              <div class="flex justify-between text-slate-500 font-bold border-b border-slate-200 pb-1">
                  <span>Processing Fees</span>
              </div>
-             <div class="text-slate-500 mt-2">
+             <div class="text-slate-500 mt-2 space-y-1">
                 <div class="flex justify-between"><span>Bank Transfer (ACH)</span> <span>+$2.50</span></div>
                 <div class="flex justify-between"><span>Credit/Debit Card</span> <span>+$${cardFee.toFixed(2)}</span></div>
              </div>`;
             
             payBtnContainer.innerHTML = `
                 <div class="space-y-3 mt-4">
-                    <button onclick="initStripePayment('${inv.id}', ${rentPlusLateFees}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
-                        <div class="flex items-center gap-2"><i class="fas fa-university"></i> Bank Transfer (ACH)</div>
-                        <span class="text-sm group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <button onclick="initStripePayment('${inv.id}', ${rentPlusLateFees}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-4 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4 group">
+                        <div class="flex items-center gap-2"><i class="fas fa-university"></i> Pay via Bank (ACH)</div>
+                        <span class="text-lg group-hover:scale-105 transition">$${achTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                     </button>
-                    <button onclick="initStripePayment('${inv.id}', ${rentPlusLateFees}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
-                        <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card Payment</div>
-                        <span class="text-sm group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    <button onclick="initStripePayment('${inv.id}', ${rentPlusLateFees}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4 group">
+                        <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Pay via Card</div>
+                        <span class="text-lg group-hover:scale-105 transition">$${cardTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
                     </button>
                     <button onclick="toggleModal('invoiceModal')" class="w-full text-slate-400 text-xs font-bold hover:text-slate-600 mt-2">Cancel</button>
                 </div>`;
@@ -1345,6 +1345,7 @@
     </script>
 </body>
 </html>
+
 
 
 
