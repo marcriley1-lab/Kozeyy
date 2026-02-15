@@ -1151,23 +1151,37 @@
        async function initStripePayment(invoiceId, baseAmount, method, fee) {
     toggleModal('invoiceModal'); 
     toggleModal('processingModal');
+    
     try {
         const response = await fetch(FUNCTION_URL, { 
             method: 'POST', 
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` }, 
+            headers: { 
+                'Content-Type': 'application/json', 
+                'Authorization': `Bearer ${SUPABASE_KEY}` 
+            }, 
             body: JSON.stringify({ 
                 action: 'create-checkout-session', 
                 invoiceId: invoiceId, 
-                amount: baseAmount, // The rent amount
-                fee: fee,           // The specific fee
+                amount: baseAmount, 
+                fee: fee, 
                 tenantId: USER_ID, 
                 paymentMethod: method 
             }) 
         });
-        const session = await response.json(); 
-        if(session.error) throw new Error(session.error);
-        const result = await stripe.redirectToCheckout({ sessionId: session.id }); 
-        if (result.error) throw new Error(result.error.message);
+
+        const data = await response.json(); 
+        
+        if(data.error) throw new Error(data.error);
+        
+        // --- REDIRECT FIX ---
+        // Instead of using the Stripe JS library to redirect by ID,
+        // we use the secure hosted URL Stripe gave us.
+        if (data.url) {
+            window.location.href = data.url;
+        } else {
+            throw new Error("Stripe did not return a payment URL.");
+        }
+        
     } catch (err) { 
         toggleModal('processingModal'); 
         showToast("Payment Error: " + err.message, 'error'); 
@@ -1348,6 +1362,7 @@
     </script>
 </body>
 </html>
+
 
 
 
