@@ -2768,87 +2768,84 @@ async function confirmPay() {
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
  function renderFinancials() {
-        const filterVal = document.getElementById('filter-financials').value;
-        const tbody = document.getElementById('table-financials');
-        const balanceDisplay = document.getElementById('fin-open-bal');
-        // FIX: Defined the missing variable here
-        const sumContainer = document.getElementById('fin-summary-container'); 
+    const filterVal = document.getElementById('filter-financials').value;
+    const tbody = document.getElementById('table-financials');
+    const balanceDisplay = document.getElementById('fin-open-bal');
+    const sumContainer = document.getElementById('fin-summary-container'); 
 
-        tbody.innerHTML = '';
-        let transactions = [];
+    tbody.innerHTML = '';
+    let transactions = [];
 
-        // Gather Data
-        state.invoices.forEach(inv => {
-            if (filterVal === 'all' || inv.tenant_id == filterVal) {
-                transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.date || inv.created_at).toLocaleDateString() });
+    state.invoices.forEach(inv => {
+        if (filterVal === 'all' || inv.tenant_id == filterVal) {
+            transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.date || inv.created_at).toLocaleDateString() });
+        }
+    });
+    state.payments.forEach(pay => {
+        if (filterVal === 'all' || pay.tenant_id == filterVal) {
+            transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() });
+        }
+    });
+
+    transactions.sort((a, b) => b.sortTime - a.sortTime);
+    let totalOutstandingDebt = 0;
+
+    transactions.forEach(item => {
+        const isInv = item.type === 'invoice';
+        const record = item.data;
+        const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
+        const dateStr = item.displayDate;
+        
+        if (isInv) {
+            const calc = calculateOverdueDetails(record, state.settings);
+            const unpaidBal = Math.max(0, (record.total || 0) - (record.amount_paid || 0));
+            const pendingAmt = Number(record.pending_amount) || 0;
+            
+            if (record.status !== 'Paid') totalOutstandingDebt += (unpaidBal + calc.fee);
+
+            let statusLabel = record.status;
+            let statusColor = 'text-slate-500 bg-slate-50';
+
+            if (record.status === 'Paid') {
+                statusColor = 'text-emerald-600 bg-emerald-50';
+            } else if (pendingAmt > 0) {
+                statusLabel = `Pending ($${pendingAmt})`;
+                statusColor = 'text-blue-600 bg-blue-50 animate-pulse';
+            } else if (calc.isOverdue) {
+                statusLabel = `Overdue (+${calc.daysLate}d)`;
+                statusColor = 'text-rose-600 bg-rose-50';
+            } else {
+                statusLabel = 'Unpaid';
+                statusColor = 'text-amber-600 bg-amber-50';
             }
-        });
-        state.payments.forEach(pay => {
-            if (filterVal === 'all' || pay.tenant_id == filterVal) {
-                transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() });
-            }
-        });
-
-        transactions.sort((a, b) => b.sortTime - a.sortTime);
-        let totalOutstandingDebt = 0;
-
-        transactions.forEach(item => {
-            const isInv = item.type === 'invoice';
-            const record = item.data;
-            const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
-            const dateStr = item.displayDate;
-            let rowHtml = '';
-            const hiddenClass = "hidden md:table-cell";
-
-            if (isInv) {
-                const calc = calculateOverdueDetails(record, state.settings);
-                
-                const baseBal = (record.total || 0) - (record.amount_paid || 0);
-                let currentDebtOnThis = baseBal;
-                
-                if (calc.isOverdue && baseBal > 0) {
-                    currentDebtOnThis += calc.fee;
-                }
-                
-                if (record.status !== 'Paid') totalOutstandingDebt += currentDebtOnThis;
-
-                const statusLabel = record.status === 'Paid' ? 'Paid' : (calc.isOverdue ? `Overdue (+${calc.daysLate}d)` : 'Unpaid');
-                const statusColor = record.status === 'Paid' ? 'text-emerald-600 bg-emerald-50' : (calc.isOverdue ? 'text-rose-600 bg-rose-50' : 'text-amber-600 bg-amber-50');
-                const displayAmount = record.total; 
-                const desc = (record.items && record.items[0]) ? record.items[0].desc : 'Invoice';
-                
-                rowHtml = `
-                <tr onclick="act_viewInvoice('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
+            
+            tbody.innerHTML += `
+                <tr onclick="act_viewInvoice('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">#${record.invoice_num || '---'}</span></td>
-                    <td class="p-5 text-sm text-slate-500 ${hiddenClass}">${desc}</td>
-                    <td class="p-5 text-right font-bold text-slate-800 ${hiddenClass}">$${(displayAmount||0).toLocaleString()}</td>
-                    <td class="p-5 text-right ${hiddenClass}"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
-                    <td class="p-5 text-right ${hiddenClass}"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
+                    <td class="p-5 text-sm text-slate-500 hidden md:table-cell">${(record.items && record.items[0]) ? record.items[0].desc : 'Rent'}</td>
+                    <td class="p-5 text-right font-bold text-slate-800 hidden md:table-cell">$${(record.total||0).toLocaleString()}</td>
+                    <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
+                    <td class="p-5 text-right hidden md:table-cell"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
                 </tr>`;
-            } else {
-                rowHtml = `
-                <tr onclick="act_viewPayment('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer active:bg-slate-100">
+        } else {
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
-                    <td class="p-5 text-sm text-slate-400 italic ${hiddenClass}">Payment Received</td>
-                    <td class="p-5 text-right font-bold text-emerald-600 ${hiddenClass}">+$${(record.amount||0).toLocaleString()}</td>
-                    <td class="p-5 text-right text-xs text-slate-400 ${hiddenClass}">-</td>
-                    <td class="p-5 text-right text-xs text-slate-400 ${hiddenClass}">-</td>
+                    <td class="p-5 text-sm text-slate-400 italic hidden md:table-cell">Bank Record</td>
+                    <td class="p-5 text-right font-bold text-emerald-600 hidden md:table-cell">+$${(record.amount||0).toLocaleString()}</td>
+                    <td class="p-5 text-right text-xs text-slate-400">-</td>
+                    <td class="p-5 text-right text-xs text-slate-400 hidden md:table-cell">-</td>
                 </tr>`;
-            }
-            tbody.innerHTML += rowHtml;
-        });
+        }
+    });
 
-        if(balanceDisplay) balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-        
-        // FIX: Now this variable exists
-        if(sumContainer) sumContainer.classList.remove('hidden-section');
-        
-        if (transactions.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="p-8 text-center text-slate-400 italic">No records found</td></tr>'; }
-    }
+    if(balanceDisplay) balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    if(sumContainer) sumContainer.classList.remove('hidden-section');
+}
     // New Helper Function for Mobile Payment Details
     function act_viewPayment(id) {
         const p = state.payments.find(x => x.id === id);
@@ -3722,6 +3719,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
