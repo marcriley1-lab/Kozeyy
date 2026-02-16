@@ -91,14 +91,27 @@
         }
 
         function checkRole() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const role = urlParams.get('role');
-            if (role === 'tenant') {
-                const radio = document.getElementById('role-tenant');
-                if (radio) radio.checked = true;
-                setRole('tenant');
-            }
+    const urlParams = new URLSearchParams(window.location.search);
+    const role = urlParams.get('role');
+    
+    // Default is owner, only proceed if tenant is detected
+    if (role === 'tenant') {
+        const radio = document.getElementById('role-tenant');
+        if (radio) {
+            // 1. Update the underlying radio button state
+            radio.checked = true;
+            
+            // 2. Trigger the render/styling for that role
+            setRole('tenant');
         }
+    } else {
+        // Fallback for organic traffic: ensure Landlord is visually set
+        setRole('owner');
+    }
+}
+
+// Trigger this as soon as the window is ready
+window.addEventListener('load', checkRole);
 
         async function handleSignup(e) {
             e.preventDefault();
@@ -145,10 +158,7 @@
             }
         }
 
-        // Trigger visual highlight immediately upon window load
-        window.addEventListener('load', () => {
-            checkRole();
-        });
     </script>
 </body>
 </html>
+
