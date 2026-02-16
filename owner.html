@@ -3212,13 +3212,12 @@ async function processLeaseFinalization() {
     btn.disabled = true;
     
     try {
-        // 1. Get Auth User
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error("You must be logged in.");
         const ownerId = user.id; 
         const now = new Date().toISOString(); 
 
-        // 2. Get Address
+        // 1. Get Address
         let finalAddress = null;
         if (app.listings && app.listings.address) {
             finalAddress = app.listings.address;
@@ -3231,13 +3230,13 @@ async function processLeaseFinalization() {
             if(listData) finalAddress = listData.address;
         }
 
-        // 3. Prepare Data
-        const cleanEmail = app.email.trim(); // Remove spaces
+        // 2. Prepare Data
+        const cleanEmail = app.email.trim();
         const tenantData = {
             name: app.name,
             email: cleanEmail,
             rent_amount: parseFloat(app.rent || 0),
-            status: 'Active',
+            status: 'Active', // FORCE STATUS TO ACTIVE
             owner_id: ownerId, 
             lease_url: app.lease_url,
             lease_signed_at: app.tenant_signed_at || now,
@@ -3245,48 +3244,62 @@ async function processLeaseFinalization() {
             address: finalAddress || "Address Pending"
         };
 
-        // 4. FIND EXISTING (The Fix for Duplicates)
-        // We use .ilike() for case-insensitive matching
-        const { data: existingTenant } = await supabaseClient
+        // 3. FIND & MERGE LOGIC (Fix for duplicate rows)
+        // We fetch ALL matches for this email to ensure we catch "Applicant" rows
+        const { data: existingTenants, error: searchError } = await supabaseClient
             .from('tenants')
-            .select('id')
-            .eq('owner_id', ownerId)
-            .ilike('email', cleanEmail) 
-            .maybeSingle();
+            .select('id, status')
+            .ilike('email', cleanEmail);
 
-        if (existingTenant) {
-            console.log("Found existing tenant. Updating ID:", existingTenant.id);
+        if (searchError) throw searchError;
+
+        if (existingTenants && existingTenants.length > 0) {
+            // Update the FIRST match found (Consolidating duplicates if they exist)
+            const targetId = existingTenants[0].id;
+            console.log(`Merging into existing tenant ID: ${targetId} (Old Status: ${existingTenants[0].status})`);
+            
             const { error: updateError } = await supabaseClient
                 .from('tenants')
                 .update(tenantData)
-                .eq('id', existingTenant.id);
+                .eq('id', targetId);
+            
             if (updateError) throw updateError;
+
+            // If there were accidentally multiple duplicates (like in your screenshot), 
+            // we optionally clean up the extras to keep the DB clean.
+            if (existingTenants.length > 1) {
+                const idsToDelete = existingTenants.slice(1).map(t => t.id);
+                await supabaseClient.from('tenants').delete().in('id', idsToDelete);
+            }
+
         } else {
-            console.log("No existing tenant found. Inserting new record.");
+            // Insert New only if ABSOLUTELY no match found
+            console.log("No existing record found. Creating new Active tenant.");
             const { error: insertError } = await supabaseClient
                 .from('tenants')
                 .insert([tenantData]);
+            
             if (insertError) throw insertError;
         }
 
-        // 5. Update App Status
+        // 4. Update App Status
         await supabaseClient.from('apps').update({ 
             status: 'Completed',
             owner_signed_at: now 
         }).eq('id', currentAppId);
 
-        // 6. Cleanup Ghost Data & Duplicates
-        // This removes the specific placeholder from the screenshot
+        // 5. Ghost Cleanup
         await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
         
-        // 7. Send Email
+        // 6. Send Email
         await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
         
-        // 8. Reset UI
+        // 7. Reset UI
         const confirmModal = document.getElementById('modal-platform-confirm');
         confirmModal.classList.add('hidden-section');
         confirmModal.classList.remove('flex');
         
+        // Restore Modal
         confirmModal.querySelector('div').innerHTML = `
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
                 <i class="fas fa-question"></i>
@@ -3301,9 +3314,9 @@ async function processLeaseFinalization() {
         
         await fetchData();
         renderAll();
-        showToast("Lease Countersigned & Tenant Activated!");
+        showToast("Lease Finalized & Tenant Profile Updated!");
 
-        // 9. Remove Listing Prompt
+        // 8. Remove Listing Prompt
         if(app.listing_id) {
             setTimeout(() => {
                 openPlatformConfirm(
@@ -3798,6 +3811,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
