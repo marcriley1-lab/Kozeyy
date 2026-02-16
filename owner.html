@@ -1373,12 +1373,12 @@ function renderAll() {
         setText('report-noi', `$${noi.toLocaleString()}`);
     }
 
-    function renderMaintenance() {
+   function renderMaintenance() {
     const container = document.getElementById('maint-list');
     if (!container) return;
     container.innerHTML = '';
 
-    // Sort: Active first, then by date descending
+    // 1. Sort: Active requests first, then newest to oldest
     const sorted = [...state.maintenance].sort((a, b) => {
         if (a.status === 'Active' && b.status !== 'Active') return -1;
         if (a.status !== 'Active' && b.status === 'Active') return 1;
@@ -1386,26 +1386,23 @@ function renderAll() {
     });
 
     if (sorted.length === 0) {
-        container.innerHTML = `
-            <div class="p-10 text-center bg-white rounded-xl border border-dashed border-slate-200">
-                <i class="fas fa-tools text-slate-300 text-3xl mb-3"></i>
-                <p class="text-slate-500">No maintenance requests yet.</p>
-            </div>`;
+        container.innerHTML = `<div class="p-10 text-center text-slate-400">No requests found.</div>`;
         return;
     }
 
     sorted.forEach(req => {
-        // Use String casting to ensure the UUIDs match properly
+        // 2. Link Tenant ID to Name (This is why names were missing)
         const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id)) || { name: 'Resident' };
         const dateStr = new Date(req.created_at).toLocaleDateString();
         
+        // 3. Status Styling logic
         let statusClass = 'bg-amber-100 text-amber-700'; // Active
         if (req.status === 'Completed') statusClass = 'bg-emerald-100 text-emerald-700';
         if (req.status === 'In Progress') statusClass = 'bg-blue-100 text-blue-700';
 
-        // Match your schema boolean: entry_permission
+        // 4. Entry Permission Logic (Matches your 'entry_permission' boolean column)
         const entryBadge = req.entry_permission 
-            ? `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100"><i class="fas fa-key mr-1"></i> Entry OK</span>`
+            ? `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100"><i class="fas fa-key mr-1"></i> Entry Allowed</span>`
             : `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-100"><i class="fas fa-phone mr-1"></i> Call First</span>`;
 
         container.innerHTML += `
@@ -1417,7 +1414,7 @@ function renderAll() {
                             <span class="text-[10px] uppercase font-black px-2 py-0.5 rounded ${statusClass}">${req.status}</span>
                         </div>
                         <div class="flex items-center gap-3 text-xs text-slate-500">
-                            <span><i class="fas fa-user mr-1 text-indigo-500"></i> ${tenant.name}</span>
+                            <span><i class="fas fa-user mr-1 text-indigo-500"></i> <strong class="text-slate-700">${tenant.name}</strong></span>
                             <span><i class="fas fa-calendar mr-1"></i> ${dateStr}</span>
                             ${entryBadge}
                         </div>
@@ -1425,7 +1422,7 @@ function renderAll() {
                     <div class="flex gap-2">
                         ${req.status !== 'Completed' ? `
                             <button onclick="updateMaintStatus('${req.id}', 'Completed')" 
-                                    class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700 shadow-sm transition">
+                                    class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-emerald-700 transition">
                                 <i class="fas fa-check"></i>
                             </button>
                         ` : ''}
@@ -1435,7 +1432,7 @@ function renderAll() {
                         </button>
                     </div>
                 </div>
-                <p class="text-sm text-slate-600 line-clamp-2 italic border-l-2 border-slate-100 pl-3">
+                <p class="text-sm text-slate-600 italic border-l-2 border-slate-100 pl-3">
                     "${req.description || 'No additional details.'}"
                 </p>
             </div>`;
@@ -3812,6 +3809,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
