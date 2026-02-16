@@ -1899,57 +1899,60 @@ async function act_saveTenant(e) {
     if (!editTenantId && !canAddProperty()) return; 
     
     const ownerId = localStorage.getItem('kozeyy_user_id');
-    const tenantEmail = document.getElementById('t-email').value;
-    const propertyAddr = document.getElementById('t-addr').value;
+    const targetEmail = document.getElementById('t-email').value;
+    const targetName = document.getElementById('t-name').value;
+    const targetAddr = document.getElementById('t-addr').value;
 
-    const tenantData = { 
+    const tenantRecord = { 
         owner_id: ownerId, 
-        name: document.getElementById('t-name').value, 
-        email: tenantEmail, 
+        name: targetName, 
+        email: targetEmail, 
         phone: document.getElementById('t-phone').value, 
         unit: document.getElementById('t-unit').value, 
-        rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
-        lease_start: document.getElementById('t-start').value||null, 
-        lease_end: document.getElementById('t-end').value||null, 
+        rent_amount: parseFloat(document.getElementById('t-rent').value) || 0, 
+        lease_start: document.getElementById('t-start').value || null, 
+        lease_end: document.getElementById('t-end').value || null, 
         status: document.getElementById('t-status').value, 
-        address: propertyAddr, 
+        address: targetAddr, 
         city: document.getElementById('t-city').value, 
         state: document.getElementById('t-state').value, 
         zip: document.getElementById('t-zip').value 
     }; 
 
-    if(editTenantId) {
-        await supabaseClient.from('tenants').update(tenantData).eq('id', editTenantId); 
-        showToast("Tenant updated successfully");
-    } else {
-        const { error } = await supabaseClient.from('tenants').insert([tenantData]); 
-        if(error) {
-            showToast("Error adding tenant", 'error');
-            return;
+    try {
+        if(editTenantId) {
+            await supabaseClient.from('tenants').update(tenantRecord).eq('id', editTenantId); 
+            showToast("Tenant updated");
+        } else {
+            const { error } = await supabaseClient.from('tenants').insert([tenantRecord]); 
+            if(error) throw error;
+
+            // Build the specific signup link
+            const inviteUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(targetEmail)}`;
+
+            // Send Email using the EXACT same format as your working Maintenance link
+            await sendEmail(
+                targetEmail, 
+                "Action Required: Set Up Your Kozeyy Portal", 
+                "action", 
+                {
+                    title: "Welcome Home!",
+                    message: `Marcus Riley has added you to the portal for <strong>${targetAddr}</strong>. Please click the button below to create your resident account.`,
+                    actionLink: inviteUrl,
+                    actionText: "Create Resident Account"
+                }
+            );
+            
+            showToast("Tenant added and invitation sent");
         }
-
-        // BUILD THE SIGNUP LINK
-        const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tenantEmail)}`;
-
-        // TRIGGER THE EMAIL - Passing variables explicitly
-        await sendEmail(
-            tenantEmail, 
-            "Action Required: Set Up Your Kozeyy Portal", 
-            "action", 
-            {
-                title: "Welcome to your new home!",
-                message: `You have been added as a resident for <strong>${propertyAddr}</strong>. Please use the button below to create your account.`,
-                actionLink: signupUrl,
-                actionText: "Create Resident Account"
-            }
-        );
         
-        showToast("Tenant added and invitation sent");
+        closeModal('modal-tenant'); 
+        await fetchData(); 
+        renderAll(); 
+    } catch (err) {
+        console.error("Critical Save Error:", err);
+        showToast("Error: " + err.message, 'error');
     }
-    
-    closeModal('modal-tenant'); 
-    await fetchData(); 
-    renderAll(); 
 }
     
     async function act_moveOut(id) {
@@ -3730,22 +3733,16 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 async function sendEmail(to, subject, type, data) {
     if (!to || !to.includes('@')) return;
 
-    // A. Ensure we have the link
-    const link = data.actionLink || "";
-    
-    // B. Create a plain text fallback for strict providers like AOL
-    const fallbackText = link ? `<br><br>If the button below doesn't work, copy and paste this link:<br> <a href="${link}">${link}</a>` : "";
-
     const emailHtml = `
     <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px 20px;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0;">
             <h1 style="color: #4f46e5; margin-bottom: 20px;">Kozeyy</h1>
-            <h2 style="font-size: 18px; color: #1e293b;">${data.title}</h2>
-            <p style="color: #475569; line-height: 1.6;">${data.message}${fallbackText}</p>
+            <h2 style="font-size: 18px; color: #1e293b;">${data.title || 'Notification'}</h2>
+            <p style="color: #475569; line-height: 1.6;">${data.message}</p>
             
-            ${link ? `
+            ${data.actionLink ? `
             <div style="margin-top: 30px; text-align: center;">
-                <a href="${link}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
                     ${data.actionText || 'Get Started'}
                 </a>
             </div>
@@ -3755,10 +3752,17 @@ async function sendEmail(to, subject, type, data) {
 
     try {
         await supabaseClient.functions.invoke('send-email', {
-            body: { to, subject, type, html: emailHtml }
+            body: { 
+                to: to, 
+                subject: subject, 
+                type: type, 
+                html: emailHtml, 
+                data: data // Pass full data to ensure actionLink is present
+            }
         });
-        console.log("Email dispatched to:", to);
-    } catch (e) { console.error("Email failed:", e); }
+    } catch (e) {
+        console.error("Email Dispatch Error:", e);
+    }
 }
 function signOut() {
         openPlatformConfirm(
@@ -3775,6 +3779,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
