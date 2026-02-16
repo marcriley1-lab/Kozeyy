@@ -1307,10 +1307,19 @@ function renderAll() {
                     statusColor = "bg-emerald-100 text-emerald-700";
                     actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Upload Lease</a>`;
                 }
-                else if (app.status === 'Lease Uploaded') {
-                    statusColor = "bg-teal-100 text-teal-700";
-                    actionButton = `<button onclick="act_initiateSendLease('${app.id}')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">Send Lease</button>`;
-                }
+              else if (app.status === 'Lease Uploaded') {
+    statusColor = "bg-teal-100 text-teal-700";
+    // UPDATE: Added Edit/Re-upload button
+    actionButton = `
+    <div class="flex items-center justify-end gap-2">
+        <a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" 
+           class="text-slate-400 hover:text-indigo-600 bg-white border border-slate-200 w-8 h-8 flex items-center justify-center rounded-lg transition" 
+           title="Edit / Re-upload Lease">
+            <i class="fas fa-pen text-xs"></i>
+        </a>
+        <button onclick="act_initiateSendLease('${app.id}')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">Send Lease</button>
+    </div>`;
+}
                 else if (app.status === 'Lease Sent') {
                     statusColor = "bg-purple-100 text-purple-700";
                     actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
@@ -2322,10 +2331,16 @@ function act_viewApp(id) {
     setText('sd-ratio', ratio);
     setText('sd-score', app.score || '---'); 
 
-    // 2. Setup Report Link visibility
+    // 2. Setup Report Link visibility (UPDATED LOGIC)
     const reportBtn = document.getElementById('sd-report-link');
-    if(app.notes && (app.notes.startsWith('http') || app.notes.includes('rentprep'))) {
-        reportBtn.href = app.notes;
+    
+    // We treat 'notes' as the URL because Admin.html saves the URL there
+    if(app.notes && app.notes.length > 3) {
+        let url = app.notes;
+        // Ensure it's a valid clickable link
+        if(!url.startsWith('http')) url = 'https://' + url;
+
+        reportBtn.href = url;
         reportBtn.classList.remove('hidden-section');
         reportBtn.innerHTML = `<i class="fas fa-external-link-alt mr-2"></i> View Background Report`;
     } else {
@@ -2354,7 +2369,7 @@ function act_viewApp(id) {
         document.getElementById('sd-banner').className = "p-4 rounded-xl border font-bold text-center bg-indigo-50 text-indigo-700 border-indigo-100";
         document.getElementById('sd-email-option').classList.remove('hidden-section');
     }
-    // Still in Progress
+    // Denied
     else if (app.status === 'Deny') {
         document.getElementById('sd-banner').classList.remove('hidden-section');
         document.getElementById('sd-banner').innerText = "Application Denied";
@@ -3198,7 +3213,7 @@ async function processLeaseFinalization() {
     
     try {
         const ownerId = localStorage.getItem('kozeyy_user_id');
-        const now = new Date().toISOString(); // The single source of truth for the timestamp
+        const now = new Date().toISOString(); 
 
         // 1. GHOST CLEANUP
         await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
@@ -3209,10 +3224,17 @@ async function processLeaseFinalization() {
             owner_signed_at: now 
         }).eq('id', currentAppId);
 
-        // 3. Create/Update Tenant Record (Ensuring owner_signed_at is included)
-        const existing = state.tenants.find(t => t.email === app.email);
-        const tenantData = {
-            id: app.user_id, 
+        // 3. Create/Update Tenant Record
+        // FIX: Split logic to prevent RLS "using expression" errors caused by upsert
+        
+        // A. Check if tenant exists by email
+        const { data: existing } = await supabaseClient
+            .from('tenants')
+            .select('id')
+            .eq('email', app.email)
+            .maybeSingle();
+
+        const baseTenantData = {
             name: app.name,
             email: app.email,
             rent_amount: app.rent,
@@ -3220,15 +3242,24 @@ async function processLeaseFinalization() {
             owner_id: ownerId,
             lease_url: app.lease_url,
             lease_signed_at: app.tenant_signed_at || now,
-            owner_signed_at: now, // <--- ADDED: Saves the date to the tenants table for the viewer
-            address: (app.listings && app.listings.address) ? app.listings.address : (existing ? existing.address : null)
+            owner_signed_at: now,
+            address: (app.listings && app.listings.address) ? app.listings.address : null
         };
 
-        const { error: tenantErr } = await supabaseClient
-            .from('tenants')
-            .upsert(tenantData);
-
-        if (tenantErr) throw tenantErr;
+        if (existing) {
+            // UPDATE EXISTING
+            const { error: updateErr } = await supabaseClient
+                .from('tenants')
+                .update(baseTenantData)
+                .eq('id', existing.id);
+            if (updateErr) throw updateErr;
+        } else {
+            // INSERT NEW (Let DB generate ID)
+            const { error: insertErr } = await supabaseClient
+                .from('tenants')
+                .insert([baseTenantData]);
+            if (insertErr) throw insertErr;
+        }
         
         // 4. Send Welcome Email
         await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
@@ -3238,6 +3269,7 @@ async function processLeaseFinalization() {
         confirmModal.classList.add('hidden-section');
         confirmModal.classList.remove('flex');
         
+        // Restore Modal Content
         confirmModal.querySelector('div').innerHTML = `
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
                 <i class="fas fa-question"></i>
@@ -3750,6 +3782,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
