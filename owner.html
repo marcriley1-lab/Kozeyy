@@ -1929,23 +1929,23 @@ function toggleFeeVisibility() {
             return;
         }
 
-        // --- THE CRITICAL FIX: Build the Signup URL with Role ---
-       const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(email)}`;
+        // --- THE FIX: BUILD THE DYNAMIC LINK ---
+        // 1. Points to signup.html instead of tenant.html
+        // 2. Passes the 'role' to trigger the Resident tab
+        // 3. Passes the 'email' to pre-fill the form
+        const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(email)}`;
 
-await sendEmail(
-    email, 
-    "Welcome to the Kozeyy Resident Portal", 
-    "action", 
-    {
-        title: "Welcome Home!",
-        message: `Marcus Riley has added you to the resident portal for <strong>${addr || 'your new home'}</strong>. Please click the button below to create your account.`,
-        // Use BOTH keys to ensure compatibility with your Edge Function template
-        actionLink: signupUrl, 
-        link: signupUrl,
-        actionText: "Create Resident Account",
-        buttonText: "Create Resident Account"
-    }
-);
+        await sendEmail(
+            email, 
+            "Welcome to the Kozeyy Resident Portal", 
+            "action", 
+            {
+                title: "Welcome Home!",
+                message: `Marcus Riley has added you to the resident portal for <strong>${addr || 'your new home'}</strong>. Please click the button below to create your account. Once registered, you can pay rent and submit maintenance requests.`,
+                actionLink: signupUrl, // Matches the template key at line 1140
+                actionText: "Create Resident Account"
+            }
+        );
         
         showToast("Tenant added and invitation sent");
     }
@@ -3795,6 +3795,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
