@@ -1141,6 +1141,11 @@ function viewInvoice(id) {
     const totalEl = document.getElementById('inv-total');
     const payBtnContainer = document.getElementById('inv-pay-btn-container');
 
+    // --- FIX: Check the invoice column 'landlord_stripe_id' first ---
+    // If the invoice has it (from your screenshot), use it. 
+    // Otherwise fallback to the cached owner lookup.
+    const validStripeId = inv.landlord_stripe_id || cachedOwnerStripeId;
+
     // 3. Payment Logic
     if (paidRaw >= totalRaw) {
         // FULLY PAID AND CLEARED
@@ -1158,10 +1163,10 @@ function viewInvoice(id) {
                 </div>`;
         }
 
-        // --- NEW CHECK: PREVENT ERROR IF LANDLORD HAS NO STRIPE ACCOUNT ---
-        if (!cachedOwnerStripeId) {
+        // --- CHECK IF STRIPE ID EXISTS ---
+        if (!validStripeId) {
+             // NO ID FOUND (Neither on invoice nor on owner record)
              feeSection.classList.add('hidden-section');
-             // Show the total due, but no way to pay it
              totalEl.innerText = `$${rentPlusLateFees.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
              
              payBtnContainer.innerHTML = pendingNotice + `
@@ -1171,9 +1176,9 @@ function viewInvoice(id) {
                     </div>
                     <h3 class="font-bold text-slate-800">Online Payment Unavailable</h3>
                     <p class="text-xs text-slate-500 mt-2 mb-2">
-                        The property owner has not set up their payment account yet.
+                        The property owner has not connected their bank account yet.
                     </p>
-                    <p class="text-xs font-bold text-amber-700">Please contact them to pay directly.</p>
+                    <p class="text-xs font-bold text-amber-700">Please contact them directly.</p>
                 </div>`;
         } 
         else if (currentBaseBalance <= 0) {
@@ -1427,6 +1432,7 @@ function viewInvoice(id) {
     </script>
 </body>
 </html>
+
 
 
 
