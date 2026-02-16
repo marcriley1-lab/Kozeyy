@@ -1858,14 +1858,21 @@ function toggleFeeVisibility() {
     
     // CRUD Functions
     
-  async function act_saveTenant(e) { 
+ async function act_saveTenant(e) { 
     e.preventDefault(); 
-      if (!editTenantId && !canAddProperty()) return; 
+    
+    // 1. Check subscription limits (only for new tenants)
+    if (!editTenantId && !canAddProperty()) return;
+
     const ownerId = localStorage.getItem('kozeyy_user_id');
-    if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
+    if (!ownerId) { 
+        showToast("Error: No owner logged in", 'error'); 
+        return; 
+    }
 
     const email = document.getElementById('t-email').value;
     const name = document.getElementById('t-name').value;
+    const address = document.getElementById('t-addr').value;
 
     const data = { 
         owner_id: ownerId, 
@@ -1873,34 +1880,38 @@ function toggleFeeVisibility() {
         email: email, 
         phone: document.getElementById('t-phone').value, 
         unit: document.getElementById('t-unit').value, 
-        rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
-        lease_start: document.getElementById('t-start').value||null, 
-        lease_end: document.getElementById('t-end').value||null, 
+        rent_amount: parseFloat(document.getElementById('t-rent').value) || 0, 
+        lease_start: document.getElementById('t-start').value || null, 
+        lease_end: document.getElementById('t-end').value || null, 
         status: document.getElementById('t-status').value, 
-        address: document.getElementById('t-addr').value, 
+        address: address, 
         city: document.getElementById('t-city').value, 
         state: document.getElementById('t-state').value, 
         zip: document.getElementById('t-zip').value 
-    }; 
+    };
 
-    if(editTenantId) {
-        await supabaseClient.from('tenants').update(data).eq('id', editTenantId); 
+    if (editTenantId) {
+        // Update existing tenant
+        await supabaseClient.from('tenants').update(data).eq('id', editTenantId);
         showToast("Tenant updated successfully");
     } else {
-        const { error } = await supabaseClient.from('tenants').insert([data]); 
-        if(error) {
+        // Insert new tenant
+        const { error } = await supabaseClient.from('tenants').insert([data]);
+        
+        if (error) {
             showToast("Error adding tenant: " + error.message, 'error');
             return;
         }
 
-        // --- UPDATED: Automatically set role to tenant ---
+        // 2. Trigger Invitation Email
+        // This uses the 'action' template to provide a clear button for account creation
         await sendEmail(
             email, 
             "Welcome to Kozeyy Resident Portal", 
             "action", 
             {
                 title: "Welcome Home!",
-                message: `You have been added to the resident portal for ${data.address || 'your new home'}. You can now log in to pay rent and submit maintenance requests.`,
+                message: `You have been added as a resident for ${address || 'your new home'}. Please create your account to pay rent and submit maintenance requests.`,
                 actionLink: "https://kozeyy.com/signup.html?role=tenant", 
                 actionText: "Create Account"
             }
@@ -1909,9 +1920,9 @@ function toggleFeeVisibility() {
         showToast("Tenant added and invitation sent");
     }
     
-    closeModal('modal-tenant'); 
-    await fetchData(); 
-    renderAll(); 
+    closeModal('modal-tenant');
+    await fetchData();
+    renderAll();
 }
     
     async function act_moveOut(id) {
@@ -3717,6 +3728,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
