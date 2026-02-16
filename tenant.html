@@ -1049,73 +1049,72 @@ if (globalData.user && globalData.user.owner_id) {
     }
 }
 
-    async function handleMaintSubmit(e) {
-        e.preventDefault();
-        const desc = document.getElementById('m-desc').value;
-        const cat = document.getElementById('m-cat').value;
-        const allowEntry = document.getElementById('entry').checked; 
+   async function handleMaintSubmit(e) {
+    e.preventDefault();
+    const desc = document.getElementById('m-desc').value;
+    const cat = document.getElementById('m-cat').value;
+    const allowEntry = document.getElementById('entry').checked; 
 
-        const tenantName = globalData.user ? globalData.user.name : "Tenant";
-        const ownerId = globalData.user ? globalData.user.owner_id : null;
+    const tenantName = globalData.user ? globalData.user.name : "Tenant";
+    const ownerId = globalData.user ? globalData.user.owner_id : null;
 
-        if (!ownerId) {
-            showToast("Error: Cannot find property owner to notify.", 'error');
-            return;
-        }
+    if (!ownerId) {
+        showToast("Error: Cannot find property owner to notify.", 'error');
+        return;
+    }
 
-        const permText = allowEntry ? "[Entry Permitted]" : "[Call for Entry]";
-        const fullDesc = `${desc} \n\n${permText}`;
-        const issueTitle = `${cat}: ${desc.substring(0, 30)}...`;
+    const permText = allowEntry ? "[Entry Permitted]" : "[Call for Entry]";
+    const fullDesc = `${desc} \n\n${permText}`;
+    const issueTitle = `${cat}: ${desc.substring(0, 30)}...`;
 
-        // UI Update
-        toggleModal('requestModal'); 
-        e.target.reset(); 
-        
-        const dateIso = new Date().toISOString();
-        optimisticMaint.push({ 
+    toggleModal('requestModal'); 
+    e.target.reset(); 
+    
+    // Optimistic UI update
+    const dateIso = new Date().toISOString();
+    optimisticMaint.push({ 
+        tenant_id: USER_ID, 
+        issue: issueTitle, 
+        category: cat, 
+        description: fullDesc, 
+        status: 'Active', 
+        created_at: dateIso 
+    });
+    localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
+    render(true); 
+
+    try {
+        const { error } = await supabaseClient.from('maintenance').insert([{ 
             tenant_id: USER_ID, 
+            owner_id: ownerId, 
             issue: issueTitle, 
             category: cat, 
             description: fullDesc, 
-            status: 'Active', 
-            created_at: dateIso 
+            status: 'Active' 
+        }]);
+        
+        if (error) throw error; 
+
+        // --- OWNER NOTIFICATION ---
+        const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', ownerId).single();
+        const targetEmail = owner?.email || "marcus.riley@kozeyy.com"; // Fallback
+
+        await sendEmail(targetEmail, "New Maintenance Request", 'alert', {
+            title: `New Request from ${tenantName}`,
+            message: `<strong>Category:</strong> ${cat}<br><strong>Issue:</strong> ${desc}<br><strong>Entry:</strong> ${allowEntry ? 'Yes' : 'No'}`,
+            actionLink: "https://kozeyy.com/owner.html"
         });
+
+        showToast("Request sent successfully!");
+
+    } catch(err) {
+        console.error("Maintenance submit error:", err);
+        optimisticMaint.pop();
         localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-        render(true); 
-
-        try {
-            const { error } = await supabaseClient.from('maintenance').insert([{ 
-                tenant_id: USER_ID, 
-                owner_id: ownerId, 
-                issue: issueTitle, 
-                category: cat, 
-                description: fullDesc, 
-                status: 'Active' 
-            }]);
-            
-            if (error) throw error; 
-
-            showToast("Request sent successfully!", "success");
-
-            try {
-                const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', ownerId).single();
-                if(owner && owner.email) {
-                    await sendEmail(owner.email, "New Maintenance Request", 'alert', {
-                        title: `New Request from ${tenantName}`,
-                        message: `<strong>Category:</strong> ${cat}<br><strong>Issue:</strong> ${desc}<br><strong>Entry:</strong> ${allowEntry ? 'Yes' : 'No'}`,
-                        actionLink: "https://kozeyy.com/owner.html"
-                    });
-                }
-            } catch (emailErr) { console.warn("Email failed but DB saved"); }
-
-        } catch(err) {
-            console.error("Maintenance submit error:", err);
-            optimisticMaint.pop();
-            localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-            render(true);
-            showToast("Network error: Request not saved.", 'error');
-        }
+        render(true);
+        showToast("Network error: Request not saved.", 'error');
     }
+}
         
     async function checkReturnParams() {
         const params = new URLSearchParams(window.location.search);
@@ -1571,6 +1570,7 @@ async function confirmPay() {
     </script>
 </body>
 </html>
+
 
 
 
