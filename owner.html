@@ -3212,59 +3212,76 @@ async function processLeaseFinalization() {
     btn.disabled = true;
     
     try {
-        const ownerId = localStorage.getItem('kozeyy_user_id');
+        // 1. RLS FIX: Get the Real User ID from the Active Session
+        // LocalStorage might be stale. RLS requires the exact auth.uid()
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error("You must be logged in to finalize a lease.");
+
+        const ownerId = user.id; 
         const now = new Date().toISOString(); 
 
-        // 1. GHOST CLEANUP
-        await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
+        // 2. GET ADDRESS (Fix for missing listing data)
+        let finalAddress = null;
+        if (app.listings && app.listings.address) {
+            finalAddress = app.listings.address;
+        } else if (app.listing_id) {
+            const { data: listData } = await supabaseClient
+                .from('listings')
+                .select('address')
+                .eq('id', app.listing_id)
+                .maybeSingle();
+            if(listData) finalAddress = listData.address;
+        }
 
-        // 2. Update Application (Status + Timestamp)
+        // 3. PREPARE TENANT DATA
+        const tenantData = {
+            name: app.name,
+            email: app.email,
+            rent_amount: parseFloat(app.rent || 0),
+            status: 'Active',
+            owner_id: ownerId, // Matches auth.uid() for RLS
+            lease_url: app.lease_url,
+            lease_signed_at: app.tenant_signed_at || now,
+            owner_signed_at: now,
+            address: finalAddress || "Address Pending"
+        };
+
+        // 4. MANUAL CHECK (Replaces Upsert to satisfy RLS)
+        // We look for a tenant with this email belonging to THIS owner.
+        const { data: existingTenant } = await supabaseClient
+            .from('tenants')
+            .select('id')
+            .eq('email', app.email)
+            .eq('owner_id', ownerId)
+            .maybeSingle();
+
+        if (existingTenant) {
+            // Update Existing
+            console.log("Updating existing tenant...");
+            const { error: updateError } = await supabaseClient
+                .from('tenants')
+                .update(tenantData)
+                .eq('id', existingTenant.id);
+            if (updateError) throw updateError;
+        } else {
+            // Insert New
+            console.log("Inserting new tenant...");
+            const { error: insertError } = await supabaseClient
+                .from('tenants')
+                .insert([tenantData]);
+            if (insertError) throw insertError;
+        }
+
+        // 5. UPDATE APPLICANT STATUS
         await supabaseClient.from('apps').update({ 
             status: 'Completed',
             owner_signed_at: now 
         }).eq('id', currentAppId);
 
-        // 3. Create/Update Tenant Record
-        // FIX: Split logic to prevent RLS "using expression" errors caused by upsert
-        
-        // A. Check if tenant exists by email
-        const { data: existing } = await supabaseClient
-            .from('tenants')
-            .select('id')
-            .eq('email', app.email)
-            .maybeSingle();
-
-        const baseTenantData = {
-            name: app.name,
-            email: app.email,
-            rent_amount: app.rent,
-            status: 'Active',
-            owner_id: ownerId,
-            lease_url: app.lease_url,
-            lease_signed_at: app.tenant_signed_at || now,
-            owner_signed_at: now,
-            address: (app.listings && app.listings.address) ? app.listings.address : null
-        };
-
-        if (existing) {
-            // UPDATE EXISTING
-            const { error: updateErr } = await supabaseClient
-                .from('tenants')
-                .update(baseTenantData)
-                .eq('id', existing.id);
-            if (updateErr) throw updateErr;
-        } else {
-            // INSERT NEW (Let DB generate ID)
-            const { error: insertErr } = await supabaseClient
-                .from('tenants')
-                .insert([baseTenantData]);
-            if (insertErr) throw insertErr;
-        }
-        
-        // 4. Send Welcome Email
+        // 6. SUCCESS: Send Welcome Email
         await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
         
-        // 5. MODAL RESET
+        // 7. UI RESET
         const confirmModal = document.getElementById('modal-platform-confirm');
         confirmModal.classList.add('hidden-section');
         confirmModal.classList.remove('flex');
@@ -3286,27 +3303,27 @@ async function processLeaseFinalization() {
         renderAll();
         showToast("Lease Countersigned & Tenant Activated!");
 
-        // 6. Delete Listing Logic
+        // 8. Remove Listing Prompt
         if(app.listing_id) {
             setTimeout(() => {
                 openPlatformConfirm(
                     "Remove Listing?", 
-                    "Tenant has been placed successfully. Do you want to delete the public listing for this property?", 
+                    "Tenant has been placed. Delete public listing?", 
                     async () => {
-                        const { error } = await supabaseClient.from('listings').delete().eq('id', app.listing_id);
-                        if(!error) {
-                            showToast("Listing removed successfully.");
-                            await fetchData();
-                            renderAll();
-                        }
+                        await supabaseClient.from('listings').delete().eq('id', app.listing_id);
+                        showToast("Listing removed.");
+                        await fetchData();
+                        renderAll();
                     }
                 );
-            }, 1000);
+            }, 800);
         }
 
     } catch(err) {
         console.error("Finalize Error:", err);
-        showToast("Error: " + err.message, 'error');
+        // Show the actual database error to help debug
+        showToast("DB Error: " + err.message, 'error');
+    } finally {
         btn.innerText = "Finalize Lease";
         btn.disabled = false;
     }
@@ -3782,6 +3799,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
