@@ -1899,13 +1899,12 @@ async function act_saveTenant(e) {
     if (!editTenantId && !canAddProperty()) return; 
     
     const ownerId = localStorage.getItem('kozeyy_user_id');
-    const tenantEmail = document.getElementById('t-email').value; // Use unique variable name
-    const tenantName = document.getElementById('t-name').value;
+    const tenantEmail = document.getElementById('t-email').value;
     const propertyAddr = document.getElementById('t-addr').value;
 
-    const tenantPayload = { 
+    const tenantData = { 
         owner_id: ownerId, 
-        name: tenantName, 
+        name: document.getElementById('t-name').value, 
         email: tenantEmail, 
         phone: document.getElementById('t-phone').value, 
         unit: document.getElementById('t-unit').value, 
@@ -1920,27 +1919,27 @@ async function act_saveTenant(e) {
     }; 
 
     if(editTenantId) {
-        await supabaseClient.from('tenants').update(tenantPayload).eq('id', editTenantId); 
+        await supabaseClient.from('tenants').update(tenantData).eq('id', editTenantId); 
         showToast("Tenant updated successfully");
     } else {
-        const { error } = await supabaseClient.from('tenants').insert([tenantPayload]); 
+        const { error } = await supabaseClient.from('tenants').insert([tenantData]); 
         if(error) {
             showToast("Error adding tenant", 'error');
             return;
         }
 
-        // BUILD THE BUTTON LINK PROPERLY
+        // BUILD THE SIGNUP LINK
         const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tenantEmail)}`;
 
-        // TRIGGER THE EMAIL
+        // TRIGGER THE EMAIL - Passing variables explicitly
         await sendEmail(
             tenantEmail, 
             "Action Required: Set Up Your Kozeyy Portal", 
             "action", 
             {
-                title: "Welcome Home!",
-                message: `Marcus Riley has added you to the portal for <strong>${propertyAddr || 'your new home'}</strong>. Please click the button below to create your resident account.`,
-                actionLink: signupUrl, // This matches the template's Gatekeeper
+                title: "Welcome to your new home!",
+                message: `You have been added as a resident for <strong>${propertyAddr}</strong>. Please use the button below to create your account.`,
+                actionLink: signupUrl,
                 actionText: "Create Resident Account"
             }
         );
@@ -3731,36 +3730,34 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 async function sendEmail(to, subject, type, data) {
     if (!to || !to.includes('@')) return;
 
-    // Nuclear Fallback: If for some reason the button logic fails, 
-    // we ensure the link is at least in the text.
-    const messageBody = data.message + (data.actionLink ? `<br><br>---<br>Or copy this link: ${data.actionLink}` : '');
+    // A. Ensure we have the link
+    const link = data.actionLink || "";
+    
+    // B. Create a plain text fallback for strict providers like AOL
+    const fallbackText = link ? `<br><br>If the button below doesn't work, copy and paste this link:<br> <a href="${link}">${link}</a>` : "";
 
     const emailHtml = `
-    <div style="font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
-            <div style="background-color: #4f46e5; padding: 30px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Kozeyy</h1>
+    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h1 style="color: #4f46e5; margin-bottom: 20px;">Kozeyy</h1>
+            <h2 style="font-size: 18px; color: #1e293b;">${data.title}</h2>
+            <p style="color: #475569; line-height: 1.6;">${data.message}${fallbackText}</p>
+            
+            ${link ? `
+            <div style="margin-top: 30px; text-align: center;">
+                <a href="${link}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                    ${data.actionText || 'Get Started'}
+                </a>
             </div>
-            <div style="padding: 40px 30px;">
-                <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">${data.title || 'Notification'}</h2>
-                <p style="font-size: 16px; line-height: 1.6; color: #475569;">${messageBody}</p>
-                
-                ${data.actionLink ? `
-                <div style="margin-top: 30px; text-align: center;">
-                    <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block;">
-                        ${data.actionText || 'Click Here'}
-                    </a>
-                </div>
-                ` : ''}
-            </div>
+            ` : ''}
         </div>
     </div>`;
 
     try {
         await supabaseClient.functions.invoke('send-email', {
-            body: { to, subject, type, html: emailHtml, data }
+            body: { to, subject, type, html: emailHtml }
         });
-        console.log("Email sent successfully!");
+        console.log("Email dispatched to:", to);
     } catch (e) { console.error("Email failed:", e); }
 }
 function signOut() {
@@ -3778,6 +3775,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
