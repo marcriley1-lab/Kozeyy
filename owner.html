@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1196,7 +1197,7 @@ const KOZEYY_PLANS = {
         state.invoices = i.data || [];
         
         state.payments = (p.data || []);
-        state.maint = (m.data || []);
+        state.maintenance = (m.data || []);
         
         const serverMsgs = msg.data || [];
         state.msgs = serverMsgs; 
@@ -1308,10 +1309,19 @@ function renderAll() {
                     statusColor = "bg-emerald-100 text-emerald-700";
                     actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Upload Lease</a>`;
                 }
-                else if (app.status === 'Lease Uploaded') {
-                    statusColor = "bg-teal-100 text-teal-700";
-                    actionButton = `<button onclick="act_initiateSendLease('${app.id}')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">Send Lease</button>`;
-                }
+              else if (app.status === 'Lease Uploaded') {
+    statusColor = "bg-teal-100 text-teal-700";
+    // UPDATE: Added Edit/Re-upload button
+    actionButton = `
+    <div class="flex items-center justify-end gap-2">
+        <a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" 
+           class="text-slate-400 hover:text-indigo-600 bg-white border border-slate-200 w-8 h-8 flex items-center justify-center rounded-lg transition" 
+           title="Edit / Re-upload Lease">
+            <i class="fas fa-pen text-xs"></i>
+        </a>
+        <button onclick="act_initiateSendLease('${app.id}')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">Send Lease</button>
+    </div>`;
+}
                 else if (app.status === 'Lease Sent') {
                     statusColor = "bg-purple-100 text-purple-700";
                     actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
@@ -1365,110 +1375,50 @@ function renderAll() {
         setText('report-noi', `$${noi.toLocaleString()}`);
     }
 
-    function renderMaintenance() {
-    const ma = document.getElementById('list-maint-active');
-    const mh = document.getElementById('list-maint-history');
-    const activeHeader = document.getElementById('maint-active-header');
-    if(!ma || !mh) return;
-
-    ma.innerHTML = ''; 
-    mh.innerHTML = '';
-
-    const activeList = state.maint.filter(m => m.status === 'Active');
-    const historyList = state.maint.filter(m => m.status !== 'Active').sort((a,b) => new Date(b.completed_date) - new Date(a.completed_date));
-
-    // Update Stats
-    setText('maint-count-active', activeList.length);
-    setText('maint-count-closed', historyList.length);
-
-    // Toggle the "Attention Required" header visibility
-    if (activeList.length > 0) {
-        activeHeader.classList.remove('hidden');
-        activeHeader.classList.add('flex');
-    } else {
-        activeHeader.classList.add('hidden');
-        activeHeader.classList.remove('flex');
+   function renderMaintenance() {
+    const container = document.getElementById('maint-list');
+    if (!container) {
+        console.error("Critical Error: HTML element #maint-list not found!");
+        return;
     }
 
-    // Helper for Category Styling
-    const getCatStyles = (cat) => {
-        const c = String(cat).toLowerCase();
-        if (c.includes('plumbing')) return { icon: 'fa-droplet', color: 'text-blue-600 bg-blue-50 border-blue-100' };
-        if (c.includes('elect')) return { icon: 'fa-bolt', color: 'text-amber-600 bg-amber-50 border-amber-100' };
-        if (c.includes('appliance')) return { icon: 'fa-plug', color: 'text-orange-600 bg-orange-50 border-orange-100' };
-        return { icon: 'fa-wrench', color: 'text-slate-600 bg-slate-50 border-slate-200' };
-    };
+    // DEBUG: This will show you exactly what is in your 'bucket'
+    console.log("Rendering Maintenance with data:", state.maintenance);
+    
+    container.innerHTML = '';
 
-    // Render Active Cards
-    if(activeList.length === 0) {
-        ma.innerHTML = `
-            <div class="bg-white rounded-3xl p-12 border-2 border-dashed border-slate-200 text-center">
-                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
-                    <i class="fas fa-check-double text-2xl"></i>
-                </div>
-                <p class="text-slate-500 font-medium">All caught up!</p>
-                <p class="text-xs text-slate-400">No active maintenance requests.</p>
-            </div>`;
-    } else {
-        activeList.forEach(m => {
-            const tenant = state.tenants.find(t => t.id === m.tenant_id) || { name: 'Resident', id: null };
-            const style = getCatStyles(m.category);
-            const date = new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-            const isNew = !viewedMaintIds.has(String(m.id));
+    const data = state.maintenance || [];
 
-            ma.innerHTML += `
-            <div class="bg-white p-5 rounded-3xl border ${isNew ? 'border-indigo-200 ring-2 ring-indigo-50' : 'border-slate-200'} shadow-sm hover:shadow-md transition relative overflow-hidden group">
-                ${isNew ? '<div class="absolute top-0 right-0 bg-indigo-600 text-white text-[9px] px-3 py-1 font-black uppercase rounded-bl-xl tracking-tighter">New</div>' : ''}
-                <div class="flex justify-between items-start mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm ${style.color} border">
-                            <i class="fas ${style.icon}"></i>
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-black uppercase tracking-widest ${style.color.split(' ')[0]}">${m.category}</span>
-                            <h4 class="font-bold text-slate-800 leading-tight">${m.issue}</h4>
-                        </div>
-                    </div>
-                    <span class="text-xs font-bold text-slate-400">${date}</span>
-                </div>
-                
-                <div class="bg-slate-50 rounded-2xl p-3 mb-4 border border-slate-100">
-                    <p class="text-[11px] text-slate-400 font-bold uppercase mb-1">Requested By</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm font-bold text-slate-700">${tenant.name}</span>
-                        ${tenant.id ? `<button onclick="openChat('${tenant.id}'); navTo('messages')" class="text-indigo-600 text-xs font-bold hover:underline">Message</button>` : ''}
-                    </div>
-                </div>
-
-                <div class="flex gap-2">
-                    <button onclick="viewMaintNote('${m.id}')" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-200 transition">View Details</button>
-                    <button onclick="act_completeMaint('${m.id}')" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Mark Resolved</button>
-                </div>
-            </div>`;
-        });
+    if (data.length === 0) {
+        container.innerHTML = `<div class="p-10 text-center text-slate-400 italic border border-dashed rounded-xl">No maintenance requests found in the database.</div>`;
+        return;
     }
 
-    // Render History Rows
-    if(historyList.length === 0) {
-        mh.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm italic">No resolution history found.</div>';
-    } else {
-        historyList.forEach(m => {
-            const date = m.completed_date ? new Date(m.completed_date).toLocaleDateString() : '---';
-            mh.innerHTML += `
-            <div class="p-4 hover:bg-slate-50 transition flex justify-between items-center group">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-xs">
-                        <i class="fas fa-check"></i>
-                    </div>
+    data.forEach(req => {
+        // String comparison to match Jay Riley's ID
+        const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id)) || { name: 'Resident' };
+        
+        const entryBadge = req.entry_permission 
+            ? `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100">Entry OK</span>`
+            : `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-100">Call First</span>`;
+
+        container.innerHTML += `
+            <div class="p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
+                <div class="flex justify-between items-start">
                     <div>
-                        <p class="font-bold text-sm text-slate-700 group-hover:text-indigo-950 transition">${m.issue}</p>
-                        <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tight">${m.category} • Resolved ${date}</p>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h4 class="font-bold text-slate-800">${req.issue || 'Repair Request'}</h4>
+                            <span class="text-[10px] uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">${req.status}</span>
+                            ${entryBadge}
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            <strong>${tenant.name}</strong> &bull; ${new Date(req.created_at).toLocaleDateString()}
+                        </p>
+                        <p class="text-sm text-slate-600 mt-2 italic">"${req.description}"</p>
                     </div>
                 </div>
-                <button onclick="viewMaintNote('${m.id}')" class="text-slate-400 hover:text-indigo-600 p-2"><i class="fas fa-eye"></i></button>
             </div>`;
-        });
-    }
+    });
 }
     // --- UTILS ---
     function showToast(message, type = 'success') {
@@ -1945,60 +1895,65 @@ function toggleFeeVisibility() {
     
     // CRUD Functions
     
-  async function act_saveTenant(e) { 
+async function act_saveTenant(e) { 
     e.preventDefault(); 
-      if (!editTenantId && !canAddProperty()) return; 
+    if (!editTenantId && !canAddProperty()) return; 
+    
     const ownerId = localStorage.getItem('kozeyy_user_id');
-    if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
+    const targetEmail = document.getElementById('t-email').value;
+    const targetName = document.getElementById('t-name').value;
+    const targetAddr = document.getElementById('t-addr').value;
 
-    const email = document.getElementById('t-email').value;
-    const name = document.getElementById('t-name').value;
-
-    const data = { 
+    const tenantRecord = { 
         owner_id: ownerId, 
-        name: name, 
-        email: email, 
+        name: targetName, 
+        email: targetEmail, 
         phone: document.getElementById('t-phone').value, 
         unit: document.getElementById('t-unit').value, 
-        rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
-        lease_start: document.getElementById('t-start').value||null, 
-        lease_end: document.getElementById('t-end').value||null, 
+        rent_amount: parseFloat(document.getElementById('t-rent').value) || 0, 
+        lease_start: document.getElementById('t-start').value || null, 
+        lease_end: document.getElementById('t-end').value || null, 
         status: document.getElementById('t-status').value, 
-        address: document.getElementById('t-addr').value, 
+        address: targetAddr, 
         city: document.getElementById('t-city').value, 
         state: document.getElementById('t-state').value, 
         zip: document.getElementById('t-zip').value 
     }; 
 
-    if(editTenantId) {
-        await supabaseClient.from('tenants').update(data).eq('id', editTenantId); 
-        showToast("Tenant updated successfully");
-    } else {
-        const { error } = await supabaseClient.from('tenants').insert([data]); 
-        if(error) {
-            showToast("Error adding tenant: " + error.message, 'error');
-            return;
-        }
+    try {
+        if(editTenantId) {
+            await supabaseClient.from('tenants').update(tenantRecord).eq('id', editTenantId); 
+            showToast("Tenant updated");
+        } else {
+            const { error } = await supabaseClient.from('tenants').insert([tenantRecord]); 
+            if(error) throw error;
 
-        // --- UPDATED: Automatically set role to tenant ---
-        await sendEmail(
-            email, 
-            "Welcome to Kozeyy Resident Portal", 
-            "action", 
-            {
-                title: "Welcome Home!",
-                message: `You have been added to the resident portal for ${data.address || 'your new home'}. You can now log in to pay rent and submit maintenance requests.`,
-                actionLink: "https://kozeyy.com/signup.html?role=tenant", 
-                actionText: "Create Account"
-            }
-        );
+            // Build the specific signup link
+            const inviteUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(targetEmail)}`;
+
+            // Send Email using the EXACT same format as your working Maintenance link
+            await sendEmail(
+                targetEmail, 
+                "Action Required: Set Up Your Kozeyy Portal", 
+                "action", 
+                {
+                    title: "Welcome Home!",
+                    message: `Marcus Riley has added you to the portal for <strong>${targetAddr}</strong>. Please click the button below to create your resident account.`,
+                    actionLink: inviteUrl,
+                    actionText: "Create Resident Account"
+                }
+            );
+            
+            showToast("Tenant added and invitation sent");
+        }
         
-        showToast("Tenant added and invitation sent");
+        closeModal('modal-tenant'); 
+        await fetchData(); 
+        renderAll(); 
+    } catch (err) {
+        console.error("Critical Save Error:", err);
+        showToast("Error: " + err.message, 'error');
     }
-    
-    closeModal('modal-tenant'); 
-    await fetchData(); 
-    renderAll(); 
 }
     
     async function act_moveOut(id) {
@@ -2323,10 +2278,16 @@ function act_viewApp(id) {
     setText('sd-ratio', ratio);
     setText('sd-score', app.score || '---'); 
 
-    // 2. Setup Report Link visibility
+    // 2. Setup Report Link visibility (UPDATED LOGIC)
     const reportBtn = document.getElementById('sd-report-link');
-    if(app.notes && (app.notes.startsWith('http') || app.notes.includes('rentprep'))) {
-        reportBtn.href = app.notes;
+    
+    // We treat 'notes' as the URL because Admin.html saves the URL there
+    if(app.notes && app.notes.length > 3) {
+        let url = app.notes;
+        // Ensure it's a valid clickable link
+        if(!url.startsWith('http')) url = 'https://' + url;
+
+        reportBtn.href = url;
         reportBtn.classList.remove('hidden-section');
         reportBtn.innerHTML = `<i class="fas fa-external-link-alt mr-2"></i> View Background Report`;
     } else {
@@ -2355,7 +2316,7 @@ function act_viewApp(id) {
         document.getElementById('sd-banner').className = "p-4 rounded-xl border font-bold text-center bg-indigo-50 text-indigo-700 border-indigo-100";
         document.getElementById('sd-email-option').classList.remove('hidden-section');
     }
-    // Still in Progress
+    // Denied
     else if (app.status === 'Deny') {
         document.getElementById('sd-banner').classList.remove('hidden-section');
         document.getElementById('sd-banner').innerText = "Application Denied";
@@ -2518,7 +2479,7 @@ function act_markAsSigned(appId) {
     }
 
     // Helper to actually save to Supabase
-    async function saveDecisionToDB(status, note) {
+   async function saveDecisionToDB(status, note) {
     const updateData = { status: status };
     if(note) updateData.notes = note; 
 
@@ -2527,25 +2488,33 @@ function act_markAsSigned(appId) {
     if (error) {
         showToast("Error saving: " + error.message, 'error');
     } else {
-        // --- ADDED: NOTIFY APPLICANT ---
         const app = state.apps.find(a => a.id === currentAppId);
         if(app && app.email) {
             let emailSubject = "Update on your Rental Application";
-            let emailMessage = "";
+            let title = "Application Update";
+            let message = "";
+            let actionText = "View Portal";
 
             if (status === 'Conditional') {
-                emailMessage = `The owner has offered a conditional approval for your application. <strong>Condition:</strong> ${note}. Please log in to your portal to accept or decline.`;
+                title = "Conditional Approval Offered";
+                message = `The owner has offered a conditional approval for your application.<br><br><strong>Condition:</strong> ${note}<br><br>Please log in to your portal to review this condition and respond.`;
+                actionText = "Review Condition";
             } else if (status === 'Deny') {
                 emailSubject = "Application Status: Important Notice";
-                emailMessage = `We regret to inform you that your application has not been selected at this time. You can view the formal Statement of Denial (Adverse Action Notice) in your applicant portal.`;
-            } else {
-                emailMessage = `Your application status has been updated to: ${status}. Please log in to view next steps.`;
+                title = "Application Decision";
+                message = `We regret to inform you that your application has not been selected at this time. You can view the formal Statement of Denial (Adverse Action Notice) in your portal.`;
+                actionText = "View Adverse Action";
+            } else if (status === 'Approved') {
+                title = "You're Approved!";
+                message = `Great news! Your application for the property at **$${app.rent.toLocaleString()}/mo** has been approved. The owner will prepare your lease agreement shortly.`;
+                actionText = "Go to Portal";
             }
 
             await sendEmail(app.email, emailSubject, 'alert', {
-                title: `Application Status: ${status}`,
-                message: emailMessage,
-                actionLink: "https://kozeyy.com/applicantportal.html"
+                title: title,
+                message: message,
+                actionLink: "https://kozeyy.com/applicantportal.html",
+                actionText: actionText
             });
         }
 
@@ -2556,38 +2525,31 @@ function act_markAsSigned(appId) {
     }
 }
 
-  function act_initiateSendLease(appId) {
-        openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
-            
-            // 1. Update DB Status
-            const { error } = await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
-            
-            if(error) {
-                showToast("Error updating status: " + error.message, "error");
-                return;
-            }
+ function act_initiateSendLease(appId) {
+    openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
+        const { error } = await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
+        
+        if(error) {
+            showToast("Error updating status: " + error.message, "error");
+            return;
+        }
 
-            // 2. SEND EMAIL
-            const app = state.apps.find(a => a.id === appId);
-            if(app && app.email) {
-                 await sendEmail(
-                     app.email, 
-                     "Action Required: Sign Your Lease", 
-                     'alert',
-                     {
-                         title: "Lease Ready for Signature",
-                         message: "Your lease agreement is ready for review. Please sign it digitally to finalize your move-in.",
-                         actionLink: "https://kozeyy.com/applicantportal.html"
-                     }
-                 );
-            }
+        const app = state.apps.find(a => a.id === appId);
+        if(app && app.email) {
+             await sendEmail(app.email, "Action Required: Sign Your Lease", 'alert', {
+                 title: "Lease Ready for Signature",
+                 message: `Your lease agreement for **${app.name}** is ready. Please review and sign it digitally to finalize your move-in.`,
+                 actionLink: "https://kozeyy.com/applicantportal.html",
+                 actionText: "Review & Sign Lease"
+             });
+        }
 
-            await fetchData();
-            renderAll();
-            closeModal('modal-screening-detail'); // Close modal after sending
-            showToast("Lease notification sent successfully");
-        });
-    }
+        await fetchData();
+        renderAll();
+        closeModal('modal-screening-detail');
+        showToast("Lease notification sent successfully");
+    });
+}
     function act_initiateFinalize(appId) {
         openPlatformConfirm("Finalize Tenant?", "Confirm lease signed. Converts applicant to Active tenant.", async () => {
             const app = state.apps.find(a => a.id === appId);
@@ -2769,32 +2731,24 @@ async function confirmPay() {
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
  function renderFinancials() {
-    const filterVal = document.getElementById('filter-financials').value;
-    const tbody = document.getElementById('table-financials');
-    const balanceDisplay = document.getElementById('fin-open-bal');
-    const sumContainer = document.getElementById('fin-summary-container'); 
-
+    const tbody = document.getElementById('financials-tbody');
     tbody.innerHTML = '';
-    let transactions = [];
+    
+    // Combine invoices and payments for a unified ledger
+    let transactions = [
+        ...state.invoices.map(i => ({ type: 'invoice', date: i.date, displayDate: formatDate(i.date), data: i })),
+        ...state.payments.map(p => ({ type: 'payment', date: p.date, displayDate: formatDate(p.date), data: p }))
+    ];
+    
+    // Sort by date descending
+    transactions.sort((a,b) => new Date(b.date) - new Date(a.date));
 
-    state.invoices.forEach(inv => {
-        if (filterVal === 'all' || inv.tenant_id == filterVal) {
-            transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.date || inv.created_at).toLocaleDateString() });
-        }
-    });
-    state.payments.forEach(pay => {
-        if (filterVal === 'all' || pay.tenant_id == filterVal) {
-            transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() });
-        }
-    });
-
-    transactions.sort((a, b) => b.sortTime - a.sortTime);
     let totalOutstandingDebt = 0;
 
     transactions.forEach(item => {
         const isInv = item.type === 'invoice';
         const record = item.data;
-        const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
+        const tenant = state.tenants.find(t => String(t.id) === String(record.tenant_id)) || { name: 'Unknown' };
         const dateStr = item.displayDate;
         
         if (isInv) {
@@ -2806,6 +2760,8 @@ async function confirmPay() {
 
             let statusLabel = record.status;
             let statusColor = 'text-slate-500 bg-slate-50';
+            // Default eye icon for all rows
+            let actionContent = `<button onclick="act_viewInvoice('${record.id}')" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button>`;
 
             if (record.status === 'Paid') {
                 statusColor = 'text-emerald-600 bg-emerald-50';
@@ -2815,37 +2771,51 @@ async function confirmPay() {
             } else if (calc.isOverdue) {
                 statusLabel = `Overdue (+${calc.daysLate}d)`;
                 statusColor = 'text-rose-600 bg-rose-50';
+                
+                // INJECT REMIND BUTTON: Only for overdue invoices
+                actionContent = `
+                    <div class="flex items-center justify-end gap-3">
+                        <button onclick="sendLateNotice('${record.id}')" 
+                                class="bg-rose-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-rose-700 transition flex items-center">
+                            <i class="fas fa-bell mr-1"></i> Remind
+                        </button>
+                        <button onclick="act_viewInvoice('${record.id}')" class="text-slate-400 hover:text-indigo-600">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>`;
             } else {
                 statusLabel = 'Unpaid';
                 statusColor = 'text-amber-600 bg-amber-50';
             }
             
             tbody.innerHTML += `
-                <tr onclick="act_viewInvoice('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer">
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">#${record.invoice_num || '---'}</span></td>
                     <td class="p-5 text-sm text-slate-500 hidden md:table-cell">${(record.items && record.items[0]) ? record.items[0].desc : 'Rent'}</td>
                     <td class="p-5 text-right font-bold text-slate-800 hidden md:table-cell">$${(record.total||0).toLocaleString()}</td>
                     <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
-                    <td class="p-5 text-right hidden md:table-cell"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
+                    <td class="p-5 text-right">${actionContent}</td>
                 </tr>`;
         } else {
+            // Logic for rendering payment rows
             tbody.innerHTML += `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer">
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100 bg-emerald-50/30">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
-                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
-                    <td class="p-5 text-sm text-slate-400 italic hidden md:table-cell">Bank Record</td>
+                    <td class="p-5"><span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Payment Received</span></td>
+                    <td class="p-5 text-sm text-slate-500 hidden md:table-cell italic">Rent Payment</td>
                     <td class="p-5 text-right font-bold text-emerald-600 hidden md:table-cell">+$${(record.amount||0).toLocaleString()}</td>
-                    <td class="p-5 text-right text-xs text-slate-400">-</td>
-                    <td class="p-5 text-right text-xs text-slate-400 hidden md:table-cell">-</td>
+                    <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase text-emerald-600 bg-emerald-100">Applied</span></td>
+                    <td class="p-5 text-right"><i class="fas fa-check-double text-emerald-400"></i></td>
                 </tr>`;
         }
     });
 
-    if(balanceDisplay) balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-    if(sumContainer) sumContainer.classList.remove('hidden-section');
+    // Update the Summary Stat at the top
+    const debtEl = document.getElementById('stat-total-outstanding');
+    if (debtEl) debtEl.innerText = `$${totalOutstandingDebt.toLocaleString()}`;
 }
     // New Helper Function for Mobile Payment Details
     function act_viewPayment(id) {
@@ -2885,6 +2855,42 @@ async function confirmPay() {
 
     openModal('modal-invoice');
     logic_invMode('fixed');
+}
+
+    async function sendLateNotice(invoiceId) {
+    // 1. Find the invoice in your local state
+    const inv = state.invoices.find(i => String(i.id) === String(invoiceId));
+    if (!inv) return;
+
+    // 2. Calculate the specific late details for the email
+    const calc = calculateOverdueDetails(inv, state.settings);
+    
+    try {
+        // 3. Look up the tenant's email address from the database
+        const { data: tenant, error } = await supabaseClient
+            .from('tenants')
+            .select('email, name')
+            .eq('id', inv.tenant_id)
+            .single();
+
+        if (error || !tenant?.email) {
+            showToast("Could not find tenant email.", "error");
+            return;
+        }
+
+        // 4. Trigger the email using your existing Spruce-themed sendEmail function
+        await sendEmail(tenant.email, `URGENT: Rent Overdue - Invoice #${inv.invoice_num}`, 'alert', {
+            title: "Late Rent Notice",
+            message: `Hello ${tenant.name}, your rent for Invoice #${inv.invoice_num} is currently ${calc.daysLate} days past its ${inv.grace_period}-day grace period. A late fee of $${calc.fee.toFixed(2)} has been applied to your balance.`,
+            actionLink: "https://kozeyy.com/tenant.html",
+            actionText: "Pay Now"
+        });
+
+        showToast(`Late notice sent to ${tenant.name}`);
+    } catch (err) {
+        console.error("Late Notice Error:", err);
+        showToast("Failed to send notice.", "error");
+    }
 }
 function act_viewInvoice(id) {
         const inv = state.invoices.find(i => i.id === id);
@@ -3197,43 +3203,84 @@ async function processLeaseFinalization() {
     btn.disabled = true;
     
     try {
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        const now = new Date().toISOString(); // The single source of truth for the timestamp
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error("You must be logged in.");
+        const ownerId = user.id; 
+        const now = new Date().toISOString(); 
 
-        // 1. GHOST CLEANUP
-        await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
+        // 1. Get Address
+        let finalAddress = null;
+        if (app.listings && app.listings.address) {
+            finalAddress = app.listings.address;
+        } else if (app.listing_id) {
+            const { data: listData } = await supabaseClient
+                .from('listings')
+                .select('address')
+                .eq('id', app.listing_id)
+                .maybeSingle();
+            if(listData) finalAddress = listData.address;
+        }
 
-        // 2. Update Application (Status + Timestamp)
+        // 2. Prepare Data
+        const cleanEmail = app.email.trim();
+        const tenantData = {
+            name: app.name,
+            email: cleanEmail,
+            rent_amount: parseFloat(app.rent || 0),
+            status: 'Active',
+            owner_id: ownerId, 
+            lease_url: app.lease_url,
+            lease_signed_at: app.tenant_signed_at || now,
+            owner_signed_at: now,
+            address: finalAddress || "Address Pending"
+        };
+
+        // 3. DETERMINE TARGET TENANT ID
+        // Priority A: Use the user_id directly from the application if it exists
+        // Priority B: Search local state by Email
+        let targetTenantId = app.user_id;
+
+        if (!targetTenantId) {
+            const localMatch = state.tenants.find(t => 
+                t.email && t.email.trim().toLowerCase() === cleanEmail.toLowerCase()
+            );
+            if (localMatch) targetTenantId = localMatch.id;
+        }
+
+        // 4. PERFORM UPSERT (Update if ID exists, Insert if not)
+        if (targetTenantId) {
+            console.log(`Updating existing tenant ID: ${targetTenantId}`);
+            // Explicitly set the ID in the data object to force an update on that row
+            tenantData.id = targetTenantId; 
+            
+            const { error: upsertError } = await supabaseClient
+                .from('tenants')
+                .upsert(tenantData); // Upsert works best when we provide the PK (id)
+            
+            if (upsertError) throw upsertError;
+        } else {
+            console.log("No link found. Creating new tenant.");
+            // No ID known -> Insert new row
+            const { error: insertError } = await supabaseClient
+                .from('tenants')
+                .insert([tenantData]);
+            
+            if (insertError) throw insertError;
+        }
+
+        // 5. Update App Status
         await supabaseClient.from('apps').update({ 
             status: 'Completed',
             owner_signed_at: now 
         }).eq('id', currentAppId);
 
-        // 3. Create/Update Tenant Record (Ensuring owner_signed_at is included)
-        const existing = state.tenants.find(t => t.email === app.email);
-        const tenantData = {
-            id: app.user_id, 
-            name: app.name,
-            email: app.email,
-            rent_amount: app.rent,
-            status: 'Active',
-            owner_id: ownerId,
-            lease_url: app.lease_url,
-            lease_signed_at: app.tenant_signed_at || now,
-            owner_signed_at: now, // <--- ADDED: Saves the date to the tenants table for the viewer
-            address: (app.listings && app.listings.address) ? app.listings.address : (existing ? existing.address : null)
-        };
-
-        const { error: tenantErr } = await supabaseClient
-            .from('tenants')
-            .upsert(tenantData);
-
-        if (tenantErr) throw tenantErr;
+        // 6. Cleanup Ghost Data
+        await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
         
-        // 4. Send Welcome Email
+        // 7. Send Email
         await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
         
-        // 5. MODAL RESET
+        // 8. Reset UI
         const confirmModal = document.getElementById('modal-platform-confirm');
         confirmModal.classList.add('hidden-section');
         confirmModal.classList.remove('flex');
@@ -3252,29 +3299,28 @@ async function processLeaseFinalization() {
         
         await fetchData();
         renderAll();
-        showToast("Lease Countersigned & Tenant Activated!");
+        showToast("Lease Finalized & Tenant Profile Updated!");
 
-        // 6. Delete Listing Logic
+        // 9. Remove Listing Prompt
         if(app.listing_id) {
             setTimeout(() => {
                 openPlatformConfirm(
                     "Remove Listing?", 
-                    "Tenant has been placed successfully. Do you want to delete the public listing for this property?", 
+                    "Tenant has been placed. Delete public listing?", 
                     async () => {
-                        const { error } = await supabaseClient.from('listings').delete().eq('id', app.listing_id);
-                        if(!error) {
-                            showToast("Listing removed successfully.");
-                            await fetchData();
-                            renderAll();
-                        }
+                        await supabaseClient.from('listings').delete().eq('id', app.listing_id);
+                        showToast("Listing removed.");
+                        await fetchData();
+                        renderAll();
                     }
                 );
-            }, 1000);
+            }, 800);
         }
 
     } catch(err) {
         console.error("Finalize Error:", err);
         showToast("Error: " + err.message, 'error');
+    } finally {
         btn.innerText = "Finalize Lease";
         btn.disabled = false;
     }
@@ -3684,27 +3730,41 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     }
     
 // --- EMAIL HELPER FUNCTION (Supabase Edge Function) ---
-    async function sendEmail(to, subject, type, data) {
-        if (!to || !to.includes('@')) {
-            console.warn("Skipping email: Invalid address", to);
-            return;
-        }
-        
-        console.log(`Sending ${type} email to ${to}...`);
-        
-        try {
-            const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
-                body: { to, subject, type, data }
-            });
+   // --- COMPLETE REPLACEMENT FOR sendEmail ---
+async function sendEmail(to, subject, type, data) {
+    if (!to || !to.includes('@')) return;
 
-            if (error) throw error;
-            console.log("Email sent successfully!", result);
-        } catch (e) {
-            console.error("Email failed:", e);
-            showToast("Notification email failed to send", "error");
-        }
+    const emailHtml = `
+    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h1 style="color: #4f46e5; margin-bottom: 20px;">Kozeyy</h1>
+            <h2 style="font-size: 18px; color: #1e293b;">${data.title || 'Notification'}</h2>
+            <p style="color: #475569; line-height: 1.6;">${data.message}</p>
+            
+            ${data.actionLink ? `
+            <div style="margin-top: 30px; text-align: center;">
+                <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                    ${data.actionText || 'Get Started'}
+                </a>
+            </div>
+            ` : ''}
+        </div>
+    </div>`;
+
+    try {
+        await supabaseClient.functions.invoke('send-email', {
+            body: { 
+                to: to, 
+                subject: subject, 
+                type: type, 
+                html: emailHtml, 
+                data: data // Pass full data to ensure actionLink is present
+            }
+        });
+    } catch (e) {
+        console.error("Email Dispatch Error:", e);
     }
-
+}
 function signOut() {
         openPlatformConfirm(
             "Sign Out?", 
@@ -3720,6 +3780,30 @@ function signOut() {
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
