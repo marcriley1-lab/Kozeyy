@@ -1894,53 +1894,53 @@ function toggleFeeVisibility() {
     
     // CRUD Functions
     
- async function act_saveTenant(e) { 
+async function act_saveTenant(e) { 
     e.preventDefault(); 
     if (!editTenantId && !canAddProperty()) return; 
     
     const ownerId = localStorage.getItem('kozeyy_user_id');
-    const email = document.getElementById('t-email').value;
-    const name = document.getElementById('t-name').value;
-    const addr = document.getElementById('t-addr').value;
+    const tenantEmail = document.getElementById('t-email').value; // Use unique variable name
+    const tenantName = document.getElementById('t-name').value;
+    const propertyAddr = document.getElementById('t-addr').value;
 
-    const data = { 
+    const tenantPayload = { 
         owner_id: ownerId, 
-        name: name, 
-        email: email, 
+        name: tenantName, 
+        email: tenantEmail, 
         phone: document.getElementById('t-phone').value, 
         unit: document.getElementById('t-unit').value, 
         rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
         lease_start: document.getElementById('t-start').value||null, 
         lease_end: document.getElementById('t-end').value||null, 
         status: document.getElementById('t-status').value, 
-        address: addr, 
+        address: propertyAddr, 
         city: document.getElementById('t-city').value, 
         state: document.getElementById('t-state').value, 
         zip: document.getElementById('t-zip').value 
     }; 
 
     if(editTenantId) {
-        await supabaseClient.from('tenants').update(data).eq('id', editTenantId); 
+        await supabaseClient.from('tenants').update(tenantPayload).eq('id', editTenantId); 
         showToast("Tenant updated successfully");
     } else {
-        const { error } = await supabaseClient.from('tenants').insert([data]); 
+        const { error } = await supabaseClient.from('tenants').insert([tenantPayload]); 
         if(error) {
-            showToast("Error adding tenant: " + error.message, 'error');
+            showToast("Error adding tenant", 'error');
             return;
         }
 
-        // 1. Build the dynamic link for the signup page
-        const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(email)}`;
+        // BUILD THE BUTTON LINK PROPERLY
+        const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tenantEmail)}`;
 
-        // 2. Trigger the email with the EXACT key 'actionLink' required by Line 1140
+        // TRIGGER THE EMAIL
         await sendEmail(
-            email, 
-            "Welcome to the Kozeyy Resident Portal", 
+            tenantEmail, 
+            "Action Required: Set Up Your Kozeyy Portal", 
             "action", 
             {
                 title: "Welcome Home!",
-                message: `Marcus Riley has added you as a resident for <strong>${addr || 'your new property'}</strong>. Please click the button below to create your account and set up your portal.`,
-                actionLink: signupUrl, // MATCHES THE TEMPLATE KEY
+                message: `Marcus Riley has added you to the portal for <strong>${propertyAddr || 'your new home'}</strong>. Please click the button below to create your resident account.`,
+                actionLink: signupUrl, // This matches the template's Gatekeeper
                 actionText: "Create Resident Account"
             }
         );
@@ -3731,60 +3731,38 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 async function sendEmail(to, subject, type, data) {
     if (!to || !to.includes('@')) return;
 
-    // Log for debugging: Open your browser console (F12) to see this
-    console.log("Attempting to send email with data:", { to, subject, type, data });
+    // Nuclear Fallback: If for some reason the button logic fails, 
+    // we ensure the link is at least in the text.
+    const messageBody = data.message + (data.actionLink ? `<br><br>---<br>Or copy this link: ${data.actionLink}` : '');
 
-    // Define the Spruce Theme exactly as needed for the template
     const emailHtml = `
     <div style="font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
             <div style="background-color: #4f46e5; padding: 30px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: -0.5px;">Kozeyy</h1>
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Kozeyy</h1>
             </div>
-            
             <div style="padding: 40px 30px;">
                 <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">${data.title || 'Notification'}</h2>
-                <p style="font-size: 16px; line-height: 1.6; color: #475569;">${data.message}</p>
+                <p style="font-size: 16px; line-height: 1.6; color: #475569;">${messageBody}</p>
                 
                 ${data.actionLink ? `
                 <div style="margin-top: 30px; text-align: center;">
-                    <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; display: inline-block;">
-                        ${data.actionText || 'View Details'}
+                    <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block;">
+                        ${data.actionText || 'Click Here'}
                     </a>
                 </div>
                 ` : ''}
             </div>
-
-            <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-                <p style="margin: 0; font-size: 12px; color: #94a3b8;">
-                    &copy; 2026 Kozeyy Property Management. All rights reserved.<br>
-                    Sent via Kozeyy Secure Automation.
-                </p>
-            </div>
         </div>
-    </div>
-    `;
+    </div>`;
 
     try {
-        const { error } = await supabaseClient.functions.invoke('send-email', {
-            body: { 
-                to, 
-                subject, 
-                type, 
-                html: emailHtml,
-                data: {
-                    ...data,
-                    actionLink: data.actionLink // Explicitly ensuring this is passed
-                }
-            }
+        await supabaseClient.functions.invoke('send-email', {
+            body: { to, subject, type, html: emailHtml, data }
         });
-        if (error) throw error;
         console.log("Email sent successfully!");
-    } catch (e) {
-        console.error("Email failed:", e);
-    }
+    } catch (e) { console.error("Email failed:", e); }
 }
-
 function signOut() {
         openPlatformConfirm(
             "Sign Out?", 
@@ -3800,6 +3778,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
