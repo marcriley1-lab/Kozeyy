@@ -3212,15 +3212,13 @@ async function processLeaseFinalization() {
     btn.disabled = true;
     
     try {
-        // 1. RLS FIX: Get the Real User ID from the Active Session
-        // LocalStorage might be stale. RLS requires the exact auth.uid()
+        // 1. Get Auth User
         const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error("You must be logged in to finalize a lease.");
-
+        if (!user) throw new Error("You must be logged in.");
         const ownerId = user.id; 
         const now = new Date().toISOString(); 
 
-        // 2. GET ADDRESS (Fix for missing listing data)
+        // 2. Get Address
         let finalAddress = null;
         if (app.listings && app.listings.address) {
             finalAddress = app.listings.address;
@@ -3233,60 +3231,62 @@ async function processLeaseFinalization() {
             if(listData) finalAddress = listData.address;
         }
 
-        // 3. PREPARE TENANT DATA
+        // 3. Prepare Data
+        const cleanEmail = app.email.trim(); // Remove spaces
         const tenantData = {
             name: app.name,
-            email: app.email,
+            email: cleanEmail,
             rent_amount: parseFloat(app.rent || 0),
             status: 'Active',
-            owner_id: ownerId, // Matches auth.uid() for RLS
+            owner_id: ownerId, 
             lease_url: app.lease_url,
             lease_signed_at: app.tenant_signed_at || now,
             owner_signed_at: now,
             address: finalAddress || "Address Pending"
         };
 
-        // 4. MANUAL CHECK (Replaces Upsert to satisfy RLS)
-        // We look for a tenant with this email belonging to THIS owner.
+        // 4. FIND EXISTING (The Fix for Duplicates)
+        // We use .ilike() for case-insensitive matching
         const { data: existingTenant } = await supabaseClient
             .from('tenants')
             .select('id')
-            .eq('email', app.email)
             .eq('owner_id', ownerId)
+            .ilike('email', cleanEmail) 
             .maybeSingle();
 
         if (existingTenant) {
-            // Update Existing
-            console.log("Updating existing tenant...");
+            console.log("Found existing tenant. Updating ID:", existingTenant.id);
             const { error: updateError } = await supabaseClient
                 .from('tenants')
                 .update(tenantData)
                 .eq('id', existingTenant.id);
             if (updateError) throw updateError;
         } else {
-            // Insert New
-            console.log("Inserting new tenant...");
+            console.log("No existing tenant found. Inserting new record.");
             const { error: insertError } = await supabaseClient
                 .from('tenants')
                 .insert([tenantData]);
             if (insertError) throw insertError;
         }
 
-        // 5. UPDATE APPLICANT STATUS
+        // 5. Update App Status
         await supabaseClient.from('apps').update({ 
             status: 'Completed',
             owner_signed_at: now 
         }).eq('id', currentAppId);
 
-        // 6. SUCCESS: Send Welcome Email
+        // 6. Cleanup Ghost Data & Duplicates
+        // This removes the specific placeholder from the screenshot
+        await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
+        
+        // 7. Send Email
         await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
         
-        // 7. UI RESET
+        // 8. Reset UI
         const confirmModal = document.getElementById('modal-platform-confirm');
         confirmModal.classList.add('hidden-section');
         confirmModal.classList.remove('flex');
         
-        // Restore Modal Content
         confirmModal.querySelector('div').innerHTML = `
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
                 <i class="fas fa-question"></i>
@@ -3303,7 +3303,7 @@ async function processLeaseFinalization() {
         renderAll();
         showToast("Lease Countersigned & Tenant Activated!");
 
-        // 8. Remove Listing Prompt
+        // 9. Remove Listing Prompt
         if(app.listing_id) {
             setTimeout(() => {
                 openPlatformConfirm(
@@ -3321,7 +3321,6 @@ async function processLeaseFinalization() {
 
     } catch(err) {
         console.error("Finalize Error:", err);
-        // Show the actual database error to help debug
         showToast("DB Error: " + err.message, 'error');
     } finally {
         btn.innerText = "Finalize Lease";
@@ -3799,6 +3798,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
