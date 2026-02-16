@@ -1894,14 +1894,14 @@ function toggleFeeVisibility() {
     
     // CRUD Functions
     
-  async function act_saveTenant(e) { 
+ async function act_saveTenant(e) { 
     e.preventDefault(); 
-      if (!editTenantId && !canAddProperty()) return; 
+    if (!editTenantId && !canAddProperty()) return; 
+    
     const ownerId = localStorage.getItem('kozeyy_user_id');
-    if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
-
     const email = document.getElementById('t-email').value;
     const name = document.getElementById('t-name').value;
+    const addr = document.getElementById('t-addr').value;
 
     const data = { 
         owner_id: ownerId, 
@@ -1913,7 +1913,7 @@ function toggleFeeVisibility() {
         lease_start: document.getElementById('t-start').value||null, 
         lease_end: document.getElementById('t-end').value||null, 
         status: document.getElementById('t-status').value, 
-        address: document.getElementById('t-addr').value, 
+        address: addr, 
         city: document.getElementById('t-city').value, 
         state: document.getElementById('t-state').value, 
         zip: document.getElementById('t-zip').value 
@@ -1929,16 +1929,19 @@ function toggleFeeVisibility() {
             return;
         }
 
-        // --- UPDATED: Automatically set role to tenant ---
+        // --- THE CRITICAL FIX: Build the Signup URL with Role ---
+        const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(email)}`;
+
+        // We use the 'action' type which supports the actionLink button
         await sendEmail(
             email, 
-            "Welcome to Kozeyy Resident Portal", 
+            "Welcome to the Kozeyy Resident Portal", 
             "action", 
             {
                 title: "Welcome Home!",
-                message: `You have been added to the resident portal for ${data.address || 'your new home'}. You can now log in to pay rent and submit maintenance requests.`,
-                actionLink: "https://kozeyy.com/signup.html?role=tenant", 
-                actionText: "Create Account"
+                message: `Marcus Riley has added you to the resident portal for <strong>${addr || 'your new home'}</strong>. Please click the button below to create your account. Once registered, you can pay rent and submit maintenance requests.`,
+                actionLink: signupUrl, // This generates the button
+                actionText: "Create Resident Account"
             }
         );
         
@@ -3790,6 +3793,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
