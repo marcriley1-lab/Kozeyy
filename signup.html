@@ -263,12 +263,39 @@ const { error: dbError } = await supabaseClient.from(table).upsert([payload]);
             document.getElementById('modal-msg').innerText = msg;
             document.getElementById('platform-modal').classList.remove('hidden-modal');
         }
+
+        // Function to detect role from URL and update UI
+function checkRole() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const role = urlParams.get('role');
+    
+    if (role === 'tenant') {
+        // Targets the Resident radio button ID
+        const tenantRadio = document.getElementById('role-tenant');
+        if (tenantRadio) {
+            tenantRadio.checked = true;
+            setRole('tenant');
+        }
+        
+        // Updates the button text specifically for residents
+        const btnText = document.getElementById('btn-text');
+        if (btnText) {
+            btnText.innerText = "Create Resident Account";
+        }
+    }
+}
+
+// Update your existing onload to include the check
+window.onload = function() {
+    checkRole();
+};
         function closeModal() {
             document.getElementById('platform-modal').classList.add('hidden-modal');
         }
     </script>
 </body>
 </html>
+
 
 
 
