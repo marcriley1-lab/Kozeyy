@@ -1374,66 +1374,45 @@ function renderAll() {
     }
 
    function renderMaintenance() {
-    console.log("Current Maintenance Data:", state.maintenance); // Debugging
-    console.log("Current Tenant Data:", state.tenants); // Debugging
-
     const container = document.getElementById('maint-list');
-    if (!container) return;
-    container.innerHTML = '';
-
-    if (!state.maintenance || state.maintenance.length === 0) {
-        container.innerHTML = `<div class="p-10 text-center text-slate-400 font-medium italic">No requests found in database.</div>`;
+    if (!container) {
+        console.error("Critical Error: HTML element #maint-list not found!");
         return;
     }
 
-    // Sort: Active first
-    const sorted = [...state.maintenance].sort((a, b) => {
-        if (a.status === 'Active' && b.status !== 'Active') return -1;
-        return new Date(b.created_at) - new Date(a.created_at);
-    });
+    // DEBUG: This will show you exactly what is in your 'bucket'
+    console.log("Rendering Maintenance with data:", state.maintenance);
+    
+    container.innerHTML = '';
 
-    sorted.forEach(req => {
-        // Attempt to match the tenant
-        const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id));
-        const tenantName = tenant ? tenant.name : "Resident (ID: " + String(req.tenant_id).substring(0,4) + ")";
-        
-        const dateStr = req.created_at ? new Date(req.created_at).toLocaleDateString() : 'N/A';
-        
-        let statusClass = 'bg-amber-100 text-amber-700';
-        if (req.status === 'Completed') statusClass = 'bg-emerald-100 text-emerald-700';
+    const data = state.maintenance || [];
 
-        // Entry logic - explicitly checking for the boolean
-        const canEnter = (req.entry_permission === true) 
-            ? '<span class="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100"><i class="fas fa-key mr-1"></i> Entry OK</span>'
-            : '<span class="text-rose-600 bg-rose-50 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-100"><i class="fas fa-phone mr-1"></i> Call First</span>';
+    if (data.length === 0) {
+        container.innerHTML = `<div class="p-10 text-center text-slate-400 italic border border-dashed rounded-xl">No maintenance requests found in the database.</div>`;
+        return;
+    }
+
+    data.forEach(req => {
+        // String comparison to match Jay Riley's ID
+        const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id)) || { name: 'Resident' };
+        
+        const entryBadge = req.entry_permission 
+            ? `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100">Entry OK</span>`
+            : `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-100">Call First</span>`;
 
         container.innerHTML += `
-            <div class="p-5 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
-                <div class="flex justify-between items-start gap-4">
-                    <div class="flex-1">
+            <div class="p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
+                <div class="flex justify-between items-start">
+                    <div>
                         <div class="flex items-center gap-2 mb-1">
-                            <h4 class="font-bold text-slate-800">${req.issue || 'Maintenance Request'}</h4>
-                            <span class="text-[10px] uppercase font-black px-2 py-0.5 rounded ${statusClass}">${req.status}</span>
-                            ${canEnter}
+                            <h4 class="font-bold text-slate-800">${req.issue || 'Repair Request'}</h4>
+                            <span class="text-[10px] uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">${req.status}</span>
+                            ${entryBadge}
                         </div>
-                        <p class="text-xs text-slate-500 mb-2">
-                            <i class="fas fa-user mr-1 text-indigo-500"></i> <span class="font-bold text-slate-700">${tenantName}</span> &bull; 
-                            <i class="fas fa-calendar mr-1 ml-2"></i> ${dateStr}
+                        <p class="text-xs text-slate-500">
+                            <strong>${tenant.name}</strong> &bull; ${new Date(req.created_at).toLocaleDateString()}
                         </p>
-                        <p class="text-sm text-slate-600 italic">"${req.description || 'No details provided.'}"</p>
-                    </div>
-                    
-                    <div class="flex gap-2">
-                        ${req.status !== 'Completed' ? `
-                            <button onclick="updateMaintStatus('${req.id}', 'Completed')" 
-                                    class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold shadow-sm hover:bg-emerald-700 transition">
-                                <i class="fas fa-check"></i>
-                            </button>
-                        ` : ''}
-                        <button onclick="viewMaintDetail('${req.id}')" 
-                                class="bg-white border border-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-50">
-                            Details
-                        </button>
+                        <p class="text-sm text-slate-600 mt-2 italic">"${req.description}"</p>
                     </div>
                 </div>
             </div>`;
@@ -3810,6 +3789,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
