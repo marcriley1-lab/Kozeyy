@@ -283,16 +283,18 @@ function checkRole() {
     }
 }
 
-// Update your existing onload to include the check
-window.onload = function() {
-    checkRole();
-};
+// This ensures the boxes and CSS are fully loaded before highlighting
+window.addEventListener('DOMContentLoaded', () => {
+    // A 10ms delay ensures the 'setRole' indigo classes take effect
+    setTimeout(checkRole, 10); 
+});
         function closeModal() {
             document.getElementById('platform-modal').classList.add('hidden-modal');
         }
     </script>
 </body>
 </html>
+
 
 
 
