@@ -259,26 +259,25 @@ const { error: dbError } = await supabaseClient.from(table).upsert([payload]);
             }
         }
 
+// Replace the checkRole function in signup (6).html
 function checkRole() {
     const urlParams = new URLSearchParams(window.location.search);
     const role = urlParams.get('role');
     
     if (role === 'tenant') {
-        // 1. Select the Tenant Radio
-        const radio = document.querySelector('input[value="tenant"]');
-        if (radio) radio.checked = true;
-
-        // 2. Target the Div IDs from your HTML
-        const ownerDiv = document.getElementById('role-owner');
-        const tenantDiv = document.getElementById('role-tenant');
-
-        if (ownerDiv && tenantDiv) {
-            // Swap classes to the "selected" blue theme
-            tenantDiv.className = 'role-selected border-2 rounded-xl p-3 text-center transition';
-            ownerDiv.className = 'role-default border-2 rounded-xl p-3 text-center transition';
+        const tenantRadio = document.querySelector('input[value="tenant"]');
+        if (tenantRadio) {
+            tenantRadio.checked = true;
+            toggleRole(tenantRadio); // Triggers the visual Indigo highlight
         }
+        
+        const sub = document.getElementById('subtitle-text');
+        if(sub) sub.innerText = "Complete your resident profile to continue";
     }
 }
+
+// Add this to ensure it runs on load
+window.addEventListener('DOMContentLoaded', checkRole);
         
         function showModal(title, msg) {
             document.getElementById('modal-title').innerText = title;
@@ -291,6 +290,7 @@ function checkRole() {
     </script>
 </body>
 </html>
+
 
 
 
