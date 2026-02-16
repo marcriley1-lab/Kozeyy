@@ -344,7 +344,6 @@
     renderStep(getStepFromUrl());
     window.addEventListener('popstate', (event) => { renderStep(getStepFromUrl()); });
 };
-
         function updatePropUI(prop) {
             const address = prop.address || prop.addr || 'Unknown Address';
             const addrParts = address.split(',');
