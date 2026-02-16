@@ -1930,20 +1930,22 @@ function toggleFeeVisibility() {
         }
 
         // --- THE CRITICAL FIX: Build the Signup URL with Role ---
-        const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(email)}`;
+       const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(email)}`;
 
-        // We use the 'action' type which supports the actionLink button
-        await sendEmail(
-            email, 
-            "Welcome to the Kozeyy Resident Portal", 
-            "action", 
-            {
-                title: "Welcome Home!",
-                message: `Marcus Riley has added you to the resident portal for <strong>${addr || 'your new home'}</strong>. Please click the button below to create your account. Once registered, you can pay rent and submit maintenance requests.`,
-                actionLink: signupUrl, // This generates the button
-                actionText: "Create Resident Account"
-            }
-        );
+await sendEmail(
+    email, 
+    "Welcome to the Kozeyy Resident Portal", 
+    "action", 
+    {
+        title: "Welcome Home!",
+        message: `Marcus Riley has added you to the resident portal for <strong>${addr || 'your new home'}</strong>. Please click the button below to create your account.`,
+        // Use BOTH keys to ensure compatibility with your Edge Function template
+        actionLink: signupUrl, 
+        link: signupUrl,
+        actionText: "Create Resident Account",
+        buttonText: "Create Resident Account"
+    }
+);
         
         showToast("Tenant added and invitation sent");
     }
@@ -3793,6 +3795,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
