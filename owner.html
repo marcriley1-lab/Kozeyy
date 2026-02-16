@@ -2517,7 +2517,7 @@ function act_markAsSigned(appId) {
     }
 
     // Helper to actually save to Supabase
-    async function saveDecisionToDB(status, note) {
+   async function saveDecisionToDB(status, note) {
     const updateData = { status: status };
     if(note) updateData.notes = note; 
 
@@ -2526,25 +2526,33 @@ function act_markAsSigned(appId) {
     if (error) {
         showToast("Error saving: " + error.message, 'error');
     } else {
-        // --- ADDED: NOTIFY APPLICANT ---
         const app = state.apps.find(a => a.id === currentAppId);
         if(app && app.email) {
             let emailSubject = "Update on your Rental Application";
-            let emailMessage = "";
+            let title = "Application Update";
+            let message = "";
+            let actionText = "View Portal";
 
             if (status === 'Conditional') {
-                emailMessage = `The owner has offered a conditional approval for your application. <strong>Condition:</strong> ${note}. Please log in to your portal to accept or decline.`;
+                title = "Conditional Approval Offered";
+                message = `The owner has offered a conditional approval for your application.<br><br><strong>Condition:</strong> ${note}<br><br>Please log in to your portal to review this condition and respond.`;
+                actionText = "Review Condition";
             } else if (status === 'Deny') {
                 emailSubject = "Application Status: Important Notice";
-                emailMessage = `We regret to inform you that your application has not been selected at this time. You can view the formal Statement of Denial (Adverse Action Notice) in your applicant portal.`;
-            } else {
-                emailMessage = `Your application status has been updated to: ${status}. Please log in to view next steps.`;
+                title = "Application Decision";
+                message = `We regret to inform you that your application has not been selected at this time. You can view the formal Statement of Denial (Adverse Action Notice) in your portal.`;
+                actionText = "View Adverse Action";
+            } else if (status === 'Approved') {
+                title = "You're Approved!";
+                message = `Great news! Your application for the property at **$${app.rent.toLocaleString()}/mo** has been approved. The owner will prepare your lease agreement shortly.`;
+                actionText = "Go to Portal";
             }
 
             await sendEmail(app.email, emailSubject, 'alert', {
-                title: `Application Status: ${status}`,
-                message: emailMessage,
-                actionLink: "https://kozeyy.com/applicantportal.html"
+                title: title,
+                message: message,
+                actionLink: "https://kozeyy.com/applicantportal.html",
+                actionText: actionText
             });
         }
 
@@ -2555,38 +2563,31 @@ function act_markAsSigned(appId) {
     }
 }
 
-  function act_initiateSendLease(appId) {
-        openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
-            
-            // 1. Update DB Status
-            const { error } = await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
-            
-            if(error) {
-                showToast("Error updating status: " + error.message, "error");
-                return;
-            }
+ function act_initiateSendLease(appId) {
+    openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
+        const { error } = await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
+        
+        if(error) {
+            showToast("Error updating status: " + error.message, "error");
+            return;
+        }
 
-            // 2. SEND EMAIL
-            const app = state.apps.find(a => a.id === appId);
-            if(app && app.email) {
-                 await sendEmail(
-                     app.email, 
-                     "Action Required: Sign Your Lease", 
-                     'alert',
-                     {
-                         title: "Lease Ready for Signature",
-                         message: "Your lease agreement is ready for review. Please sign it digitally to finalize your move-in.",
-                         actionLink: "https://kozeyy.com/applicantportal.html"
-                     }
-                 );
-            }
+        const app = state.apps.find(a => a.id === appId);
+        if(app && app.email) {
+             await sendEmail(app.email, "Action Required: Sign Your Lease", 'alert', {
+                 title: "Lease Ready for Signature",
+                 message: `Your lease agreement for **${app.name}** is ready. Please review and sign it digitally to finalize your move-in.`,
+                 actionLink: "https://kozeyy.com/applicantportal.html",
+                 actionText: "Review & Sign Lease"
+             });
+        }
 
-            await fetchData();
-            renderAll();
-            closeModal('modal-screening-detail'); // Close modal after sending
-            showToast("Lease notification sent successfully");
-        });
-    }
+        await fetchData();
+        renderAll();
+        closeModal('modal-screening-detail');
+        showToast("Lease notification sent successfully");
+    });
+}
     function act_initiateFinalize(appId) {
         openPlatformConfirm("Finalize Tenant?", "Confirm lease signed. Converts applicant to Active tenant.", async () => {
             const app = state.apps.find(a => a.id === appId);
@@ -3749,6 +3750,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
