@@ -224,110 +224,126 @@
             return parseInt(step) || 1;
         }
 
-        window.onload = async function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            // --- HANDLE PAYMENT SUCCESS ---
-            if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
-                const appId = urlParams.get('app_id');
+       window.onload = async function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // --- 1. HANDLE STRIPE PAYMENT SUCCESS ---
+    if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
+        const appId = urlParams.get('app_id');
+        
+        // Visual loading state for the applicant
+        document.body.innerHTML = `
+            <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-800">
+                <div class="loader border-t-indigo-600 mb-4"></div>
+                <h2 class="text-xl font-bold">Finalizing Application...</h2>
+                <p class="text-sm text-slate-500">Sending your receipt and notifying the owner...</p>
+            </div>`;
+
+        if (appId && supabaseClient) {
+            try { 
+                // Update database status to 'Paid'
+                await supabaseClient.from('apps').update({ 
+                    payment_status: 'Paid', 
+                    status: 'Pending' 
+                }).eq('id', appId);
                 
-                document.body.innerHTML = `
-                    <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-800">
-                        <div class="loader border-t-indigo-600 mb-4"></div>
-                        <h2 class="text-xl font-bold">Finalizing Application...</h2>
-                        <p class="text-sm text-slate-500">Sending receipt...</p>
-                    </div>`;
+                // Fetch the app data to trigger notifications
+                const { data: appData } = await supabaseClient.from('apps').select('*').eq('id', appId).single();
+                
+                if (appData) {
+                    // Send Spruced Receipt to Applicant
+                    await sendEmail(appData.email, "Payment Receipt - Kozeyy", "receipt", {
+                        title: "Payment Received",
+                        message: `Your screening fee of **$49.99** has been successfully processed. We have notified the property owner and will begin your background check immediately.`,
+                        actionLink: "https://kozeyy.com/applicantportal.html",
+                        actionText: "Check My Status"
+                    });
 
-                if(appId && supabaseClient) {
-                    try { 
-                        await supabaseClient.from('apps').update({ payment_status: 'Paid', status: 'Pending' }).eq('id', appId);
-                        
-                        const { data: appData } = await supabaseClient.from('apps').select('*').eq('id', appId).single();
-                        
-                        if(appData) {
-                            await sendEmail(appData.email, "Payment Receipt - Kozeyy", `
-                                <h2>Payment Received</h2>
-                                <p>Hi ${appData.name},</p>
-                                <p>This email confirms we have received your screening fee of <strong>$49.99</strong>.</p>
-                                <p>You can view your application status in the portal below.</p>
-                                <br>
-                                <a href="https://kozeyy.com/applicantportal.html" style="background-color:#4f46e5; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">Go to Portal</a>
-                            `);
-
-                            if(appData.owner_id) {
-                                const { data: ownerData } = await supabaseClient.from('owners').select('email').eq('id', appData.owner_id).single();
-                                if(ownerData && ownerData.email) {
-                                    await sendEmail(ownerData.email, "Action Required: New Application", `
-                                        <h2>New Paid Application</h2>
-                                        <p><strong>Applicant:</strong> ${appData.name}</p>
-                                        <p><strong>Income:</strong> $${appData.income}</p>
-                                        <p>This applicant has paid the screening fee and is ready for your review.</p>
-                                        <a href="https://kozeyy.com/owner.html">Review Now</a>
-                                    `);
-                                }
-                            }
-                        }
-                    } catch(e) { console.error("Success handling error:", e); }
-                }
-                window.location.href = 'applicantportal.html';
-                return;
-            }
-
-            currentListingId = urlParams.get('listing_id');
-            if (!currentListingId) {
-                const storedLid = localStorage.getItem('pending_application_lid');
-                if (storedLid) {
-                    currentListingId = storedLid;
-                    const newUrl = new URL(window.location);
-                    newUrl.searchParams.set('listing_id', currentListingId);
-                    window.history.replaceState({}, '', newUrl);
-                }
-            }
-
-            loadSessionData();
-            
-            try {
-                if(supabaseClient && currentListingId) {
-                    const { data: prop, error } = await supabaseClient.from('listings').select('*').eq('id', currentListingId).single();
-                    if (prop) {
-                        selectedProp = prop;
-                        updatePropUI(selectedProp);
-                        
-                        // Check Conditional Settings
-                        if(prop.owner_id) {
-                            const { data: settings } = await supabaseClient.from('settings').select('*').eq('owner_id', prop.owner_id).maybeSingle();
-                            if(settings) {
-                                const evictContainer = document.getElementById('container-evict');
-                                const crimContainer = document.getElementById('container-crim');
-                                
-                                let evictDisabled = false;
-                                let crimDisabled = false;
-
-                                if (settings.require_no_evictions === false) {
-                                    evictContainer.classList.add('hidden');
-                                    appData.evictions = false;
-                                    evictDisabled = true;
-                                }
-                                
-                                if (settings.require_no_criminal_history === false) {
-                                    crimContainer.classList.add('hidden');
-                                    appData.criminal = false;
-                                    crimDisabled = true;
-                                }
-
-                                if (evictDisabled && crimDisabled) {
-                                    skipHistoryStep = true;
-                                    document.getElementById('btn-step-3').classList.add('hidden');
-                                }
-                            }
+                    // Send Spruced Alert to Property Owner
+                    if (appData.owner_id) {
+                        const { data: ownerData } = await supabaseClient.from('owners').select('email').eq('id', appData.owner_id).single();
+                        if (ownerData && ownerData.email) {
+                            await sendEmail(ownerData.email, "Action Required: New Application", "alert", {
+                                title: "New Paid Application",
+                                message: `**Applicant:** ${appData.name}<br><strong>Monthly Income:</strong> $${appData.income.toLocaleString()}<br><br>The applicant has paid the screening fee. Please log in to review the report and make a decision.`,
+                                actionLink: "https://kozeyy.com/owner.html",
+                                actionText: "Review Application"
+                            });
                         }
                     }
                 }
-            } catch (err) { console.warn("Fetch error:", err); }
+            } catch (e) { 
+                console.error("Success handling error:", e); 
+            }
+        }
+        // Redirect to the portal once processing is complete
+        window.location.href = 'applicantportal.html';
+        return;
+    }
 
-            renderStep(getStepFromUrl());
-            window.addEventListener('popstate', (event) => { renderStep(getStepFromUrl()); });
-        };
+    // --- 2. HANDLE NEW APPLICATION INITIALIZATION ---
+    currentListingId = urlParams.get('listing_id');
+    
+    // Check local storage if listing_id is missing from URL
+    if (!currentListingId) {
+        const storedLid = localStorage.getItem('pending_application_lid');
+        if (storedLid) {
+            currentListingId = storedLid;
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('listing_id', currentListingId);
+            window.history.replaceState({}, '', newUrl);
+        }
+    }
+
+    loadSessionData();
+    
+    try {
+        if (supabaseClient && currentListingId) {
+            // Fetch property details to display in the sidebar
+            const { data: prop, error } = await supabaseClient.from('listings').select('*').eq('id', currentListingId).single();
+            if (prop) {
+                selectedProp = prop;
+                updatePropUI(selectedProp);
+                
+                // Check Owner Settings for conditional fields
+                if (prop.owner_id) {
+                    const { data: settings } = await supabaseClient.from('settings').select('*').eq('owner_id', prop.owner_id).maybeSingle();
+                    if (settings) {
+                        const evictContainer = document.getElementById('container-evict');
+                        const crimContainer = document.getElementById('container-crim');
+                        
+                        let evictDisabled = false;
+                        let crimDisabled = false;
+
+                        if (settings.require_no_evictions === false) {
+                            evictContainer.classList.add('hidden');
+                            appData.evictions = false;
+                            evictDisabled = true;
+                        }
+                        
+                        if (settings.require_no_criminal_history === false) {
+                            crimContainer.classList.add('hidden');
+                            appData.criminal = false;
+                            crimDisabled = true;
+                        }
+
+                        // Skip Step 3 (History) if all background checks are disabled by owner
+                        if (evictDisabled && crimDisabled) {
+                            skipHistoryStep = true;
+                            document.getElementById('btn-step-3').classList.add('hidden');
+                        }
+                    }
+                }
+            }
+        }
+    } catch (err) { 
+        console.warn("Fetch error:", err); 
+    }
+
+    // Render the appropriate step based on the URL or default to 1
+    renderStep(getStepFromUrl());
+    window.addEventListener('popstate', (event) => { renderStep(getStepFromUrl()); });
+};
 
         function updatePropUI(prop) {
             const address = prop.address || prop.addr || 'Unknown Address';
