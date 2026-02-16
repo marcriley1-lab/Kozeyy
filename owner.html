@@ -1212,159 +1212,63 @@ const KOZEYY_PLANS = {
         state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
     }
 function renderAll() {
-        // --- 1. Dashboard Stats (Updated Occupancy Logic) ---
-        // Get unique property addresses from both lists to prevent double-counting
-        const uniqueAddresses = new Set([
-            ...state.tenants.map(t => String(t.address)),
-            ...state.listings.map(l => String(l.address))
-        ]);
+    // Dashboard Stats Calculation
+    const uniqueAddresses = new Set([
+        ...state.tenants.map(t => String(t.address)),
+        ...state.listings.map(l => String(l.address))
+    ]);
 
-        const totalUnits = uniqueAddresses.size;
-        const activeTenants = state.tenants.filter(t => t.status === 'Active').length;
-        
-        const stats = calculateGlobalStats();
-        const occ = totalUnits > 0 ? Math.round((activeTenants / totalUnits) * 100) : 0;
-        
-        setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
-        setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
-        setText('dash-occupancy', `${occ}%`);
-        setText('dash-maintenance', state.maint.filter(m => m.status === 'Active').length);
-        
-        initChart(stats);
-
-        // --- 2. Tenant Directory (Ensuring String IDs) ---
-        const tBody = document.getElementById('table-tenants');
-        if(tBody) {
-            tBody.innerHTML = '';
-            const filter = document.getElementById('filter-tenant-status') ? document.getElementById('filter-tenant-status').value : 'Active';
-            state.tenants.forEach(t => {
-                if(filter !== 'all' && t.status !== filter) return;
-                
-                const statusColor = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500';
-                tBody.innerHTML += `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                    <td class="p-5 font-bold text-slate-700"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold">${t.name.charAt(0)}</div>${t.name}</div></td>
-                    <td class="p-5 hidden md:table-cell text-slate-500 text-sm">${t.address}</td>
-                    <td class="p-5 hidden md:table-cell text-slate-500 text-sm">${t.unit}</td>
-                    <td class="p-5 hidden md:table-cell font-bold text-slate-700">$${t.rent_amount}</td>
-                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${t.status}</span></td>
-                    <td class="p-5 text-right">
-                        <button onclick="act_viewTenant('${t.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-eye"></i></button>
-                        <button onclick="act_editTenant('${t.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-edit"></i></button>
-                        <button onclick="act_delTenant('${t.id}')" class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            });
-        }
-
-        // --- 3. Listings Grid (Updated Fallback Images & String IDs) ---
-        const lGrid = document.getElementById('grid-listings');
-        if (lGrid) {
-            lGrid.innerHTML = '';
-            state.listings.forEach(l => {
-                // Reliable fallback image from Unsplash to fix ERR_NAME_NOT_RESOLVED
-                const img = (l.images && l.images[0]) || l.image_url || 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80';
-                
-                lGrid.innerHTML += `
-                <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden group hover:shadow-md transition">
-                    <div class="h-40 bg-slate-200 relative overflow-hidden">
-                        <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                        <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-xs font-bold shadow-sm">$${l.price}/mo</div>
-                    </div>
-                    <div class="p-4">
-                        <h4 class="font-bold text-slate-800 mb-1 truncate">${l.address}</h4>
-                        <div class="flex gap-3 text-xs text-slate-500 mb-4">
-                            <span><i class="fas fa-bed mr-1"></i>${l.beds || 0}</span>
-                            <span><i class="fas fa-bath mr-1"></i>${l.baths || 0}</span>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="showShareModal('${l.id}')" class="flex-1 bg-indigo-50 text-indigo-700 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100">Share</button>
-                            <button onclick="act_editListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-slate-600"><i class="fas fa-edit"></i></button>
-                            <button onclick="act_delListing('${l.id}')" class="w-10 bg-slate-50 text-slate-400 py-2 rounded-xl text-xs hover:text-rose-600"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>
-                </div>`;
-            });
-        }
-
-        // --- 4. Screening Table ---
-        const sBody = document.getElementById('table-screening');
-        if(sBody) {
-            sBody.innerHTML = '';
-            state.apps.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at)).forEach(app => {
-                let displayStatus = app.status;
-                let statusColor = "bg-slate-100 text-slate-500";
-                let actionButton = '';
-
-                if(app.status === 'Pending') {
-                    displayStatus = 'Pending';
-                    actionButton = `<button onclick="act_viewApp('${app.id}')" class="text-slate-400 font-bold text-xs"><i class="fas fa-eye"></i> View</button>`;
-                }
-                else if (app.status === 'Ready for Review') {
-                    statusColor = "bg-indigo-100 text-indigo-700";
-                    actionButton = `<button onclick="act_viewApp('${app.id}')" class="text-indigo-600 font-bold text-sm bg-indigo-50 px-3 py-1 rounded hover:bg-indigo-100">Review</button>`;
-                }
-                else if (app.status === 'Approved') {
-                    statusColor = "bg-emerald-100 text-emerald-700";
-                    actionButton = `<a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" class="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-emerald-700">Upload Lease</a>`;
-                }
-              else if (app.status === 'Lease Uploaded') {
-    statusColor = "bg-teal-100 text-teal-700";
-    // UPDATE: Added Edit/Re-upload button
-    actionButton = `
-    <div class="flex items-center justify-end gap-2">
-        <a href="lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}" 
-           class="text-slate-400 hover:text-indigo-600 bg-white border border-slate-200 w-8 h-8 flex items-center justify-center rounded-lg transition" 
-           title="Edit / Re-upload Lease">
-            <i class="fas fa-pen text-xs"></i>
-        </a>
-        <button onclick="act_initiateSendLease('${app.id}')" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-indigo-700">Send Lease</button>
-    </div>`;
-}
-                else if (app.status === 'Lease Sent') {
-                    statusColor = "bg-purple-100 text-purple-700";
-                    actionButton = `<span class="text-purple-600 text-xs font-bold"><i class="fas fa-clock"></i> Signing...</span>`;
-                }
-                else if (app.status === 'Lease Signed') {
-                    statusColor = "bg-blue-100 text-blue-800";
-                    actionButton = `<button onclick="act_openCountersign('${app.id}')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow hover:bg-blue-700 animate-pulse">Countersign</button>`;
-                }
-                else if (app.status === 'Active' || app.status === 'Completed') {
-                    statusColor = "bg-slate-100 text-slate-600";
-                    displayStatus = "Active";
-                    actionButton = `<span class="text-emerald-600 font-bold text-xs"><i class="fas fa-check"></i> Active</span>`;
-                }
-
-                const eval = evalApplicant(app);
-
-                sBody.innerHTML += `
-                    <tr class="border-b border-slate-100 hover:bg-slate-50 transition">
-                        <td class="p-5 font-bold cursor-pointer" onclick="act_viewApp('${app.id}')">
-                            ${app.name}
-                            <div class="text-xs text-slate-400 font-normal">Income: $${parseInt(app.income||0).toLocaleString()}</div>
-                        </td>
-                        <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${eval.color}">${eval.status}</span></td>
-                        <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${displayStatus}</span></td>
-                        <td class="p-5 text-right">${actionButton}</td>
-                    </tr>`;
-            });
-        }
-
-        // --- 6. Notifications ---
-        updateBadge('screening', state.notifications.screening);
-        updateBadge('maintenance', state.notifications.maintenance);
-        updateBadge('messages', state.notifications.messages);
+    const totalUnits = uniqueAddresses.size;
+    const activeTenants = state.tenants.filter(t => t.status === 'Active').length;
     
-        renderFinancials();
-        renderMaintenance()
-        renderExpenses();
-        renderReports();
+    const stats = calculateGlobalStats();
+    const occ = totalUnits > 0 ? Math.round((activeTenants / totalUnits) * 100) : 0;
+    
+    setText('dash-revenue', `$${stats.revenue.toLocaleString()}`);
+    setText('dash-overdue', `$${stats.overdue.toLocaleString()}`);
+    setText('dash-occupancy', `${occ}%`);
+    setText('dash-maintenance', state.maint.filter(m => m.status === 'Active').length);
+    
+    initChart(stats);
 
-     if (state.owner_data && !state.owner_data.is_founder) {
+    // Tenant Directory rendering
+    const tBody = document.getElementById('table-tenants');
+    if(tBody) {
+        tBody.innerHTML = '';
+        const filter = document.getElementById('filter-tenant-status')?.value || 'Active';
+        state.tenants.forEach(t => {
+            if(filter !== 'all' && t.status !== filter) return;
+            const statusColor = t.status === 'Active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500';
+            tBody.innerHTML += `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                <td class="p-5 font-bold text-slate-700"><div class="flex items-center gap-3"><div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold">${t.name.charAt(0)}</div>${t.name}</div></td>
+                <td class="p-5 hidden md:table-cell text-slate-500 text-sm">${t.address}</td>
+                <td class="p-5 hidden md:table-cell text-slate-500 text-sm">${t.unit}</td>
+                <td class="p-5 hidden md:table-cell font-bold text-slate-700">$${t.rent_amount}</td>
+                <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${t.status}</span></td>
+                <td class="p-5 text-right">
+                    <button onclick="act_viewTenant('${t.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-eye"></i></button>
+                    <button onclick="act_editTenant('${t.id}')" class="text-slate-400 hover:text-indigo-600 mx-1"><i class="fas fa-edit"></i></button>
+                    <button onclick="act_delTenant('${t.id}')" class="text-slate-400 hover:text-rose-600 mx-1"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    // Wrapped sub-renders to prevent "Stop-the-World" crashes
+    try { renderFinancials(); } catch (e) { console.error("Financials render failed", e); }
+    try { renderMaintenance(); } catch (e) { console.error("Maintenance render failed", e); }
+    try { renderExpenses(); } catch (e) { console.error("Expenses render failed", e); }
+    try { renderReports(); } catch (e) { console.error("Reports render failed", e); }
+
+    updateBadge('screening', state.notifications.screening);
+    updateBadge('maintenance', state.notifications.maintenance);
+    updateBadge('messages', state.notifications.messages);
+
+    if (state.owner_data && !state.owner_data.is_founder) {
         renderSubscriptionUsage(state.owner_data);
     }
-    }
-
+}
     function renderReports() {
         const totalRev = state.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
         const totalExp = state.expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
@@ -2784,13 +2688,15 @@ async function confirmPay() {
     
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
- function renderFinancials() {
-    const filterVal = document.getElementById('filter-financials').value;
+function renderFinancials() {
+    const filterVal = document.getElementById('filter-financials')?.value || 'all';
     const tbody = document.getElementById('table-financials');
     const balanceDisplay = document.getElementById('fin-open-bal');
     const sumContainer = document.getElementById('fin-summary-container'); 
 
+    if (!tbody) return; // Guard against missing table body
     tbody.innerHTML = '';
+    
     let transactions = [];
 
     state.invoices.forEach(inv => {
@@ -2860,8 +2766,13 @@ async function confirmPay() {
         }
     });
 
-    if(balanceDisplay) balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-    if(sumContainer) sumContainer.classList.remove('hidden-section');
+    // Wrapped in Null Guards
+    if (balanceDisplay) {
+        balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    }
+    if (sumContainer) {
+        sumContainer.classList.remove('hidden-section');
+    }
 }
     // New Helper Function for Mobile Payment Details
     function act_viewPayment(id) {
@@ -3806,6 +3717,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
