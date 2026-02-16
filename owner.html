@@ -1929,20 +1929,18 @@ function toggleFeeVisibility() {
             return;
         }
 
-        // --- THE FIX: BUILD THE DYNAMIC LINK ---
-        // 1. Points to signup.html instead of tenant.html
-        // 2. Passes the 'role' to trigger the Resident tab
-        // 3. Passes the 'email' to pre-fill the form
+        // 1. Build the dynamic link for the signup page
         const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(email)}`;
 
+        // 2. Trigger the email with the EXACT key 'actionLink' required by Line 1140
         await sendEmail(
             email, 
             "Welcome to the Kozeyy Resident Portal", 
             "action", 
             {
                 title: "Welcome Home!",
-                message: `Marcus Riley has added you to the resident portal for <strong>${addr || 'your new home'}</strong>. Please click the button below to create your account. Once registered, you can pay rent and submit maintenance requests.`,
-                actionLink: signupUrl, // Matches the template key at line 1140
+                message: `Marcus Riley has added you as a resident for <strong>${addr || 'your new property'}</strong>. Please click the button below to create your account and set up your portal.`,
+                actionLink: signupUrl, // MATCHES THE TEMPLATE KEY
                 actionText: "Create Resident Account"
             }
         );
@@ -3795,6 +3793,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
