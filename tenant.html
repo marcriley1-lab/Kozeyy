@@ -564,263 +564,306 @@
         }
         return { isOverdue, daysLate, fee };
     }
-        // --- MAIN RENDER FUNCTION ---
+       // --- MAIN RENDER FUNCTION ---
         async function render(skipFetch = false) {
-    if(!supabaseClient) return;
+            if(!supabaseClient) return;
 
-    if(!skipFetch) {
-        const [u, i, m, mt] = await Promise.all([
-           supabaseClient.from('tenants').select('*').eq('id', USER_ID).single(),
-           supabaseClient.from('invoices').select('*').eq('tenant_id', USER_ID),
-           supabaseClient.from('msgs').select('*').eq('tenant_id', USER_ID),
-           supabaseClient.from('maintenance').select('*').eq('tenant_id', USER_ID)
-        ]);
+            if(!skipFetch) {
+                const [u, i, m, mt] = await Promise.all([
+                   supabaseClient.from('tenants').select('*').eq('id', USER_ID).single(),
+                   supabaseClient.from('invoices').select('*').eq('tenant_id', USER_ID),
+                   supabaseClient.from('msgs').select('*').eq('tenant_id', USER_ID),
+                   supabaseClient.from('maintenance').select('*').eq('tenant_id', USER_ID)
+                ]);
 
-        globalData.user = u.data || { name: "Guest User", email: "", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
-        globalData.invoices = i.data || [];
+                globalData.user = u.data || { name: "Guest User", email: "", phone: "", unit: "N/A", credit_reporting: false, insurance: false };
+                globalData.invoices = i.data || [];
 
-        
-        // --- OWNER NAME & STRIPE ID CACHING LOGIC ---
-        if (globalData.user && globalData.user.owner_id) {
-            if (!cachedOwnerName) {
-                // MODIFIED: Added stripe_account_id to the select query
-                const { data: owner } = await supabaseClient
-                    .from('owners')
-                    .select('name, stripe_account_id')
-                    .eq('id', globalData.user.owner_id)
-                    .maybeSingle();
-                    
-                if (owner) {
-                    cachedOwnerName = owner.name || "Property Manager";
-                    cachedOwnerStripeId = owner.stripe_account_id; // <--- STORE THE STRIPE ID
-                } else {
-                    cachedOwnerName = "Property Manager"; 
-                    cachedOwnerStripeId = null;
+                // --- OWNER NAME & STRIPE ID CACHING LOGIC ---
+                if (globalData.user && globalData.user.owner_id) {
+                    if (!cachedOwnerName) {
+                        const { data: owner } = await supabaseClient
+                            .from('owners')
+                            .select('name, stripe_account_id')
+                            .eq('id', globalData.user.owner_id)
+                            .maybeSingle();
+                            
+                        if (owner) {
+                            cachedOwnerName = owner.name || "Property Manager";
+                            cachedOwnerStripeId = owner.stripe_account_id;
+                        } else {
+                            cachedOwnerName = "Property Manager"; 
+                            cachedOwnerStripeId = null;
+                        }
+                    }
+                    const headerName = document.getElementById('msg-header-name');
+                    if (headerName && cachedOwnerName) {
+                        headerName.innerText = cachedOwnerName;
+                    }
+                }
+                
+                // Message Merge
+                const serverMsgs = m.data || [];
+                serverMsgs.forEach(msg => {
+                    if(locallyReadIds.has(msg.id)) {
+                        if(msg.read_at) { locallyReadIds.delete(msg.id); localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds])); } 
+                        else { msg.read_at = locallyReadIds.get(msg.id); }
+                    }
+                });
+                globalData.msgs = serverMsgs;
+                
+                // Maintenance Merge
+                globalData.maint = mt.data || [];
+                if(optimisticMaint.length > 0) {
+                     const serverDates = new Set(globalData.maint.map(m => m.created_at));
+                     const serverIssues = new Set(globalData.maint.map(m => m.issue));
+                     const filteredOptimistic = optimisticMaint.filter(m => !serverDates.has(m.created_at) && !serverIssues.has(m.issue));
+                     if(filteredOptimistic.length !== optimisticMaint.length) {
+                         optimisticMaint = filteredOptimistic;
+                         localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
+                     }
+                     globalData.maint = [...globalData.maint, ...optimisticMaint];
                 }
             }
 
-            // Update header if exists
-            const headerName = document.getElementById('msg-header-name');
-            if (headerName && cachedOwnerName) {
-                headerName.innerText = cachedOwnerName;
+            const { user, invoices, msgs, maint } = globalData;
+
+            if(activeTab === 'messages') {
+                const unreadIds = msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
+                if(unreadIds.length > 0) {
+                    supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
+                    const now = new Date().toISOString();
+                    let updatedMap = false;
+                    unreadIds.forEach(id => { if(!locallyReadIds.has(id)) { locallyReadIds.set(id, now); updatedMap = true; } });
+                    if(updatedMap) localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds]));
+                    globalData.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = locallyReadIds.get(m.id); });
+                }
+            }
+
+            const unreadMsgCount = globalData.msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
+            notifications.messages = unreadMsgCount > 0 && activeTab !== 'messages';
+            updateBadge('messages', notifications.messages);
+
+            const currentMaintHash = JSON.stringify(maint.map(m => ({id: m.id, status: m.status})).sort((a,b)=>a.id-b.id));
+            if(lastMaintHash && lastMaintHash !== currentMaintHash) {
+                if(activeTab !== 'maintenance') { notifications.maintenance = true; updateBadge('maintenance', true); }
+            }
+            lastMaintHash = currentMaintHash;
+
+            if(user.name && user.name !== document.getElementById('user-name').innerText) {
+                document.getElementById('user-name').innerText = user.name;
+                document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name);
+                document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name.charAt(0));
+            }
+            if(user.email) document.getElementById('set-email').innerText = user.email;
+            if(user.phone) document.getElementById('set-phone').innerText = user.phone;
+            
+            const settingsModal = document.getElementById('settingsModal');
+            if (settingsModal && settingsModal.classList.contains('hidden-section')) {
+                document.getElementById('edit-email').value = user.email || '';
+                document.getElementById('edit-phone').value = user.phone || '';
+            }
+            
+            if(user.unit && user.unit.trim() !== '') {
+                document.getElementById('unit-info-container').classList.remove('hidden-section');
+                document.getElementById('display-unit').innerText = user.unit;
+            } else { document.getElementById('unit-info-container').classList.add('hidden-section'); }
+
+            if(user.insurance) {
+                 document.getElementById('insurance-missing').classList.add('hidden-section');
+                 document.getElementById('insurance-verified').classList.remove('hidden-section');
+            } else {
+                 document.getElementById('insurance-missing').classList.remove('hidden-section');
+                 document.getElementById('insurance-verified').classList.add('hidden-section');
+            }
+            
+            const toggle = document.getElementById('toggle-credit');
+            if(toggle && toggle.checked !== user.credit_reporting) toggle.checked = user.credit_reporting;
+            
+            const currentInvStr = JSON.stringify(invoices);
+            if (currentInvStr !== lastRenderedState.invoices) {
+                const unpaid = invoices.filter(i => { 
+                    const bal = i.total - (i.amount_paid || 0); 
+                    return bal > 0 && i.status !== 'Paid'; 
+                });
+
+                let grandTotal = 0;
+                let activeUnpaidCount = 0;
+                
+                const uCont = document.getElementById('unpaid-container'); 
+                uCont.innerHTML = ''; 
+                
+                if(unpaid.length > 0) { 
+                    unpaid.forEach(i => { 
+                        // --- FIX START: Account for Pending ACH ---
+                        const pending = i.pending_amount || 0;
+                        const paid = i.amount_paid || 0;
+                        
+                        // "Effective Balance" is what's left after Paid AND Pending
+                        let effectiveBalance = i.total - paid - pending;
+                        
+                        // Master Calculator for overdue fees
+                        const calc = calculateOverdueDetails(i);
+                        
+                        let finalDisplayAmount = 0;
+                        let isFullyProcessing = false;
+
+                        // If pending payment covers the balance (or more, due to fees), treat as processing
+                        if (effectiveBalance <= 0 && pending > 0) {
+                            finalDisplayAmount = 0; 
+                            isFullyProcessing = true;
+                        } else {
+                            // Otherwise, calculate what is legally due right now
+                            finalDisplayAmount = Math.max(0, effectiveBalance) + calc.fee;
+                            grandTotal += finalDisplayAmount;
+                            activeUnpaidCount++;
+                        }
+                        
+                        const displayDate = new Date(i.date).toLocaleDateString();
+
+                        // -- Dynamic UI Generation --
+                        let statusHtml = '';
+                        let amountHtml = '';
+                        let buttonHtml = '';
+
+                        if (isFullyProcessing) {
+                            // PROCESSING STATE
+                            statusHtml = `<p class="text-xs text-blue-600 font-bold mt-2 animate-pulse"><i class="fas fa-sync fa-spin mr-1"></i> Processing Payment...</p>`;
+                            amountHtml = `<div class="text-right md:text-left"><span class="font-extrabold text-2xl text-blue-600">$${pending.toLocaleString()}</span><p class="text-[10px] text-slate-400">Pending Clearance</p></div>`;
+                            buttonHtml = `<button disabled class="bg-slate-100 text-slate-400 px-5 py-2.5 rounded-xl font-bold cursor-not-allowed text-sm flex items-center gap-2"><span>Processing</span></button>`;
+                        } else {
+                            // UNPAID/DUE STATE
+                            const overdueClass = calc.isOverdue ? 'text-rose-500 font-bold' : 'text-slate-400';
+                            const dueText = calc.isOverdue ? `Overdue (Includes $${calc.fee.toFixed(2)} fee)` : `Due: ${displayDate}`;
+                            
+                            statusHtml = `<p class="text-xs ${overdueClass} mt-2">${dueText}</p>`;
+                            
+                            let pendingTag = pending > 0 ? `<p class="text-[10px] text-blue-600 mt-0.5">($${pending.toLocaleString()} Processing)</p>` : '';
+                            
+                            amountHtml = `<div class="text-right md:text-left"><span class="font-extrabold text-2xl text-slate-900">$${finalDisplayAmount.toLocaleString()}</span>${pendingTag}</div>`;
+                            buttonHtml = `<button onclick="viewInvoice('${i.id}')" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2"><span>Pay Now</span><i class="fas fa-lock text-[10px] opacity-70"></i></button>`;
+                        }
+
+                        uCont.innerHTML += `
+                        <div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4">
+                            <div class="w-full md:w-auto">
+                                <div class="flex items-center gap-2">
+                                    <p class="font-bold text-lg text-slate-800">Invoice #${i.invoice_num || '---'}</p>
+                                    <button onclick="viewInvoice('${i.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button>
+                                </div>
+                                ${statusHtml}
+                            </div>
+                            <div class="flex items-center justify-between w-full md:w-auto gap-4">
+                                ${amountHtml}
+                                ${buttonHtml}
+                            </div>
+                        </div>`; 
+                        // --- FIX END ---
+                    });
+
+                    // Update Top Card Stats
+                    document.getElementById('total-balance').innerText = `$${grandTotal.toLocaleString()}`;
+                    const badge = document.getElementById('payment-status-badge');
+                    
+                    if (grandTotal > 0) {
+                        badge.className = "bg-rose-100 text-rose-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; 
+                        badge.innerText = `${activeUnpaidCount} Due`; 
+                        document.getElementById('payment-due-date').innerText = `Total Due Now`;
+                    } else if (unpaid.length > 0) {
+                        // Everything is processing
+                        badge.className = "bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; 
+                        badge.innerText = "Processing"; 
+                        document.getElementById('payment-due-date').innerText = `Payment Clearing...`;
+                    } else {
+                        // Fallback (should be covered by empty else block below)
+                        badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; 
+                        badge.innerText = "All Paid"; 
+                    }
+
+                } else { 
+                    // Empty State
+                    document.getElementById('total-balance').innerText = `$0.00`;
+                    const badge = document.getElementById('payment-status-badge');
+                    badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; 
+                    badge.innerText = "All Paid"; 
+                    document.getElementById('payment-due-date').innerText = "No upcoming payments";
+                    uCont.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3"><i class="fas fa-check text-emerald-400 text-xl"></i></div><p class="text-sm font-medium text-slate-600">You're all caught up!</p></div>`;
+                }
+
+                const hBody = document.getElementById('history-body'); const hMob = document.getElementById('history-mobile');
+                hBody.innerHTML = ''; hMob.innerHTML = '';
+                const historyItems = invoices.filter(i => i.status === 'Paid');
+                if(historyItems.length === 0) {
+                    hMob.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No payment history</div>';
+                    hBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">No payment history</td></tr>';
+                } else {
+                    historyItems.forEach(i => { 
+                        const totalAmt = i.total; 
+                        hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.invoice_num || '---'}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice('${i.id}')" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
+                        hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice('${i.id}')"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.invoice_num || '---'}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
+                    });
+                }
+                lastRenderedState.invoices = currentInvStr;
+            }
+
+            const currentMaintStr = JSON.stringify(maint);
+            if(currentMaintStr !== lastRenderedState.maint) {
+                const maintList = document.getElementById('maint-list'); 
+                if (maint.length === 0) { 
+                    maintList.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-100 mb-2"></i><p class="text-sm">No maintenance requests found</p></div>`; 
+                } else {
+                    maintList.innerHTML = '';
+                    const sortedMaint = maint.sort((a,b) => {
+                        if(a.status === 'Active' && b.status !== 'Active') return -1;
+                        if(a.status !== 'Active' && b.status === 'Active') return 1;
+                        return new Date(b.created_at) - new Date(a.created_at);
+                    });
+                    sortedMaint.forEach(m => { 
+                        const isActive = m.status === 'Active';
+                        const statusColor = isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'; 
+                        const opacity = isActive ? '' : 'opacity-70';
+                        const displayDate = m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Just now';
+                        maintList.innerHTML += `
+                        <div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100 ${opacity}">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-${isActive ? 'wrench' : 'check'}"></i></div>
+                                    <div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${displayDate}</p></div>
+                                </div>
+                                <span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span>
+                            </div>
+                        </div>`; 
+                    });
+                }
+                lastRenderedState.maint = currentMaintStr;
+            }
+            if (activeTab === 'messages') renderMessages();
+
+            // LEASE TAB LOGIC
+            const leaseCard = document.getElementById('lease-active-card');
+            const leaseEmpty = document.getElementById('lease-empty-state');
+            
+            if(globalData.user.lease_url && globalData.user.lease_url.length > 5) {
+                if(leaseCard) {
+                    leaseCard.classList.remove('hidden-section');
+                    leaseEmpty.classList.add('hidden-section');
+                    
+                    // Populate Details
+                    document.getElementById('lease-detail-address').innerText = globalData.user.address || 'Primary Residence';
+                    document.getElementById('lease-detail-rent').innerText = `$${parseInt(globalData.user.rent_amount || 0).toLocaleString()}`;
+                    document.getElementById('lease-detail-start').innerText = globalData.user.lease_start ? new Date(globalData.user.lease_start).toLocaleDateString() : 'N/A';
+                    document.getElementById('lease-detail-end').innerText = globalData.user.lease_end ? new Date(globalData.user.lease_end).toLocaleDateString() : 'N/A';
+                    
+                    const signedDate = globalData.user.lease_signed_at ? new Date(globalData.user.lease_signed_at).toLocaleDateString() : 'Active';
+                    document.getElementById('lease-detail-signed').innerText = signedDate;
+                }
+            } else {
+                if(leaseCard) {
+                    leaseCard.classList.add('hidden-section');
+                    leaseEmpty.classList.remove('hidden-section');
+                }
             }
         }
-        
-        // Message Merge
-        const serverMsgs = m.data || [];
-        serverMsgs.forEach(msg => {
-            if(locallyReadIds.has(msg.id)) {
-                if(msg.read_at) { locallyReadIds.delete(msg.id); localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds])); } 
-                else { msg.read_at = locallyReadIds.get(msg.id); }
-            }
-        });
-        globalData.msgs = serverMsgs;
-        
-        // Maintenance Merge
-        globalData.maint = mt.data || [];
-        if(optimisticMaint.length > 0) {
-             const serverDates = new Set(globalData.maint.map(m => m.created_at));
-             const serverIssues = new Set(globalData.maint.map(m => m.issue));
-             const filteredOptimistic = optimisticMaint.filter(m => !serverDates.has(m.created_at) && !serverIssues.has(m.issue));
-             if(filteredOptimistic.length !== optimisticMaint.length) {
-                 optimisticMaint = filteredOptimistic;
-                 localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-             }
-             globalData.maint = [...globalData.maint, ...optimisticMaint];
-        }
-    }
-
-    const { user, invoices, msgs, maint } = globalData;
-
-    if(activeTab === 'messages') {
-        const unreadIds = msgs.filter(m => m.from === 'Owner' && !m.read_at).map(m => m.id);
-        if(unreadIds.length > 0) {
-            supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds).then(()=>{});
-            const now = new Date().toISOString();
-            let updatedMap = false;
-            unreadIds.forEach(id => { if(!locallyReadIds.has(id)) { locallyReadIds.set(id, now); updatedMap = true; } });
-            if(updatedMap) localStorage.setItem('kozeyy_read_map', JSON.stringify([...locallyReadIds]));
-            globalData.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = locallyReadIds.get(m.id); });
-        }
-    }
-
-    const unreadMsgCount = globalData.msgs.filter(m => m.from === 'Owner' && !m.read_at).length;
-    notifications.messages = unreadMsgCount > 0 && activeTab !== 'messages';
-    updateBadge('messages', notifications.messages);
-
-    const currentMaintHash = JSON.stringify(maint.map(m => ({id: m.id, status: m.status})).sort((a,b)=>a.id-b.id));
-    if(lastMaintHash && lastMaintHash !== currentMaintHash) {
-        if(activeTab !== 'maintenance') { notifications.maintenance = true; updateBadge('maintenance', true); }
-    }
-    lastMaintHash = currentMaintHash;
-
-    if(user.name && user.name !== document.getElementById('user-name').innerText) {
-        document.getElementById('user-name').innerText = user.name;
-        document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name);
-        document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name.charAt(0));
-    }
-    if(user.email) document.getElementById('set-email').innerText = user.email;
-    if(user.phone) document.getElementById('set-phone').innerText = user.phone;
-    
-    const settingsModal = document.getElementById('settingsModal');
-    if (settingsModal && settingsModal.classList.contains('hidden-section')) {
-        document.getElementById('edit-email').value = user.email || '';
-        document.getElementById('edit-phone').value = user.phone || '';
-    }
-    
-    if(user.unit && user.unit.trim() !== '') {
-        document.getElementById('unit-info-container').classList.remove('hidden-section');
-        document.getElementById('display-unit').innerText = user.unit;
-    } else { document.getElementById('unit-info-container').classList.add('hidden-section'); }
-
-    if(user.insurance) {
-         document.getElementById('insurance-missing').classList.add('hidden-section');
-         document.getElementById('insurance-verified').classList.remove('hidden-section');
-    } else {
-         document.getElementById('insurance-missing').classList.remove('hidden-section');
-         document.getElementById('insurance-verified').classList.add('hidden-section');
-    }
-    
-    const toggle = document.getElementById('toggle-credit');
-    if(toggle && toggle.checked !== user.credit_reporting) toggle.checked = user.credit_reporting;
-
-    const currentInvStr = JSON.stringify(invoices);
-    if (currentInvStr !== lastRenderedState.invoices) {
-        const unpaid = invoices.filter(i => { 
-            const bal = i.total - (i.amount_paid || 0); 
-            return bal > 0 && i.status !== 'Paid'; 
-        });
-
-        let grandTotal = 0;
-        const now = new Date();
-        
-        const uCont = document.getElementById('unpaid-container'); 
-        uCont.innerHTML = ''; 
-        
-        if(unpaid.length > 0) { 
-            unpaid.forEach(i => { 
-                const currentBaseBalance = i.total - (i.amount_paid || 0);
-                
-                // USE MASTER CALCULATOR
-                const calc = calculateOverdueDetails(i);
-                
-                const finalDisplayAmount = currentBaseBalance + calc.fee;
-                grandTotal += finalDisplayAmount;
-
-                const displayDate = new Date(i.date).toLocaleDateString();
-
-                uCont.innerHTML += `
-                <div class="p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center hover:bg-slate-50 transition border-b border-slate-100 gap-4">
-                    <div class="w-full md:w-auto">
-                        <div class="flex items-center gap-2">
-                            <p class="font-bold text-lg text-slate-800">Invoice #${i.invoice_num || '---'}</p>
-                            <button onclick="viewInvoice('${i.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded text-slate-600 font-bold transition"><i class="fas fa-eye mr-1"></i> Details</button>
-                        </div>
-                        <p class="text-xs ${calc.isOverdue ? 'text-rose-500 font-bold' : 'text-slate-400'} mt-2">
-                            ${calc.isOverdue ? `Overdue (Includes $${calc.fee.toFixed(2)} fee)` : `Due: ${displayDate}`}
-                        </p>
-                    </div>
-                    <div class="flex items-center justify-between w-full md:w-auto gap-4">
-                        <div class="text-right md:text-left">
-                            <span class="font-extrabold text-2xl text-slate-900">$${finalDisplayAmount.toLocaleString()}</span>
-                        </div>
-                        <button onclick="viewInvoice('${i.id}')" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition text-sm flex items-center gap-2">
-                            <span>Pay Now</span>
-                            <i class="fas fa-lock text-[10px] opacity-70"></i>
-                        </button>
-                    </div>
-                </div>`; 
-            });
-
-            document.getElementById('total-balance').innerText = `$${grandTotal.toLocaleString()}`;
-            const badge = document.getElementById('payment-status-badge');
-            badge.className = "bg-rose-100 text-rose-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; 
-            badge.innerText = `${unpaid.length} Due`; 
-            document.getElementById('payment-due-date').innerText = `Total Due Now`;
-
-        } else { 
-            document.getElementById('total-balance').innerText = `$0.00`;
-            const badge = document.getElementById('payment-status-badge');
-            badge.className = "bg-emerald-100 text-emerald-700 text-xs px-3 py-1 rounded-full font-bold uppercase"; 
-            badge.innerText = "All Paid"; 
-            document.getElementById('payment-due-date').innerText = "No upcoming payments";
-            uCont.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><div class="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-3"><i class="fas fa-check text-emerald-400 text-xl"></i></div><p class="text-sm font-medium text-slate-600">You're all caught up!</p></div>`;
-        }
-
-        const hBody = document.getElementById('history-body'); const hMob = document.getElementById('history-mobile');
-        hBody.innerHTML = ''; hMob.innerHTML = '';
-        const historyItems = invoices.filter(i => i.status === 'Paid');
-        if(historyItems.length === 0) {
-            hMob.innerHTML = '<div class="text-center text-slate-400 text-sm py-4">No payment history</div>';
-            hBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-400 italic">No payment history</td></tr>';
-        } else {
-            historyItems.forEach(i => { 
-                const totalAmt = i.total; 
-                hBody.innerHTML += `<tr class="hover:bg-slate-50 transition border-b border-slate-100"><td class="p-4 text-slate-500">${i.paid_date || i.date || '-'}</td><td class="p-4 text-slate-800 font-medium">Invoice #${i.invoice_num || '---'}</td><td class="p-4 font-bold">$${totalAmt.toLocaleString()}</td><td class="p-4 text-right"><button onclick="viewInvoice('${i.id}')" class="text-indigo-600 font-bold text-xs hover:underline">View</button> <span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-xs font-bold uppercase ml-2">Paid</span></td></tr>`; 
-                hMob.innerHTML += `<div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center" onclick="viewInvoice('${i.id}')"><div><p class="font-bold text-slate-800 text-sm">Invoice #${i.invoice_num || '---'}</p><p class="text-xs text-slate-500">${i.paid_date || i.date}</p></div><div class="text-right"><p class="font-bold text-slate-900">$${totalAmt.toLocaleString()}</p><span class="text-[10px] font-bold text-emerald-600 uppercase">Paid</span></div></div>`;
-            });
-        }
-        lastRenderedState.invoices = currentInvStr;
-    }
-
-    const currentMaintStr = JSON.stringify(maint);
-    if(currentMaintStr !== lastRenderedState.maint) {
-        const maintList = document.getElementById('maint-list'); 
-        if (maint.length === 0) { 
-            maintList.innerHTML = `<div class="p-8 text-center text-slate-400 flex flex-col items-center"><i class="fas fa-check-circle text-3xl text-emerald-100 mb-2"></i><p class="text-sm">No maintenance requests found</p></div>`; 
-        } else {
-            maintList.innerHTML = '';
-            const sortedMaint = maint.sort((a,b) => {
-                if(a.status === 'Active' && b.status !== 'Active') return -1;
-                if(a.status !== 'Active' && b.status === 'Active') return 1;
-                return new Date(b.created_at) - new Date(a.created_at);
-            });
-            sortedMaint.forEach(m => { 
-                const isActive = m.status === 'Active';
-                const statusColor = isActive ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'; 
-                const opacity = isActive ? '' : 'opacity-70';
-                const displayDate = m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Just now';
-                maintList.innerHTML += `
-                <div class="p-4 flex flex-col hover:bg-slate-50 transition border-b border-slate-100 ${opacity}">
-                    <div class="flex justify-between items-start">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 text-xs"><i class="fas fa-${isActive ? 'wrench' : 'check'}"></i></div>
-                            <div><h4 class="font-bold text-sm text-slate-800">${m.issue}</h4><p class="text-xs text-slate-400">${displayDate}</p></div>
-                        </div>
-                        <span class="${statusColor} px-2 py-1 rounded-full text-[10px] font-bold uppercase">${m.status}</span>
-                    </div>
-                </div>`; 
-            });
-        }
-        lastRenderedState.maint = currentMaintStr;
-    }
-    if (activeTab === 'messages') renderMessages();
-
-    // LEASE TAB LOGIC
-    const leaseCard = document.getElementById('lease-active-card');
-    const leaseEmpty = document.getElementById('lease-empty-state');
-    
-    if(globalData.user.lease_url && globalData.user.lease_url.length > 5) {
-        if(leaseCard) {
-            leaseCard.classList.remove('hidden-section');
-            leaseEmpty.classList.add('hidden-section');
-            
-            // Populate Details
-            document.getElementById('lease-detail-address').innerText = globalData.user.address || 'Primary Residence';
-            document.getElementById('lease-detail-rent').innerText = `$${parseInt(globalData.user.rent_amount || 0).toLocaleString()}`;
-            document.getElementById('lease-detail-start').innerText = globalData.user.lease_start ? new Date(globalData.user.lease_start).toLocaleDateString() : 'N/A';
-            document.getElementById('lease-detail-end').innerText = globalData.user.lease_end ? new Date(globalData.user.lease_end).toLocaleDateString() : 'N/A';
-            
-            const signedDate = globalData.user.lease_signed_at ? new Date(globalData.user.lease_signed_at).toLocaleDateString() : 'Active';
-            document.getElementById('lease-detail-signed').innerText = signedDate;
-        }
-    } else {
-        if(leaseCard) {
-            leaseCard.classList.add('hidden-section');
-            leaseEmpty.classList.remove('hidden-section');
-        }
-    }
-}
         function updateBadge(type, show) {
             const mobBtn = document.getElementById(`mob-${type}`);
             if(type === 'messages') {
@@ -1432,6 +1475,7 @@ function viewInvoice(id) {
     </script>
 </body>
 </html>
+
 
 
 
