@@ -34,10 +34,7 @@
                     <div class="bg-indigo-600 text-white w-8 h-8 rounded-full flex items-center justify-center">K</div>
                     <span class="text-xl font-bold text-slate-800 brand-font tracking-tight">Kozeyy</span>
                 </div>
-               <button type="submit" id="btn-signup" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition flex items-center justify-center shadow-lg shadow-indigo-200 brand-font group">
-    <span id="btn-text">Create Account</span>
-    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-</button>
+                <h2 class="text-2xl font-bold text-slate-800 brand-font">Create Account</h2>
                 <p class="text-sm text-slate-500 mt-2" id="subtitle-text">Join the future of property management</p>
             </div>
 
@@ -273,17 +270,15 @@ function checkRole() {
     const role = urlParams.get('role');
     
     if (role === 'tenant') {
-        // Targets the Resident radio button ID
+        // 1. Find the Resident radio button ID from your file
         const tenantRadio = document.getElementById('role-tenant');
-        if (tenantRadio) {
-            tenantRadio.checked = true;
-            setRole('tenant');
-        }
         
-        // Updates the button text specifically for residents
-        const btnText = document.getElementById('btn-text');
-        if (btnText) {
-            btnText.innerText = "Create Resident Account";
+        if (tenantRadio) {
+            // 2. Mark it as checked
+            tenantRadio.checked = true;
+            
+            // 3. Trigger your existing setRole function to update the CSS highlights
+            setRole('tenant');
         }
     }
 }
@@ -298,6 +293,7 @@ window.onload = function() {
     </script>
 </body>
 </html>
+
 
 
 
