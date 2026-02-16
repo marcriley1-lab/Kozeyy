@@ -580,27 +580,32 @@
                 globalData.invoices = i.data || [];
 
                 // --- OWNER NAME & STRIPE ID CACHING LOGIC ---
-                if (globalData.user && globalData.user.owner_id) {
-                    if (!cachedOwnerName) {
-                        const { data: owner } = await supabaseClient
-                            .from('owners')
-                            .select('name, stripe_account_id')
-                            .eq('id', globalData.user.owner_id)
-                            .maybeSingle();
-                            
-                        if (owner) {
-                            cachedOwnerName = owner.name || "Property Manager";
-                            cachedOwnerStripeId = owner.stripe_account_id;
-                        } else {
-                            cachedOwnerName = "Property Manager"; 
-                            cachedOwnerStripeId = null;
-                        }
-                    }
-                    const headerName = document.getElementById('msg-header-name');
-                    if (headerName && cachedOwnerName) {
-                        headerName.innerText = cachedOwnerName;
-                    }
-                }
+               // Optimized lookup to fetch whatever name is in the database
+if (globalData.user && globalData.user.owner_id) {
+    if (!cachedOwnerName) {
+        // We only select 'name' because selecting missing columns causes the query to fail
+        const { data: owner, error } = await supabaseClient
+            .from('owners')
+            .select('name') 
+            .eq('id', globalData.user.owner_id)
+            .maybeSingle();
+            
+        if (owner && owner.name) {
+            // Success: cachedOwnerName is now set to your DB value (Marcus Riley)
+            cachedOwnerName = owner.name; 
+        } else {
+            // If the query fails or name is empty, it stays as Property Manager
+            console.error("Owner name not found in DB:", error);
+            cachedOwnerName = "Property Manager"; 
+        }
+    }
+    
+    // Update the UI
+    const headerName = document.getElementById('msg-header-name');
+    if (headerName && cachedOwnerName) {
+        headerName.innerText = cachedOwnerName;
+    }
+}
                 
                 // Message Merge
                 const serverMsgs = m.data || [];
@@ -1475,6 +1480,7 @@ function viewInvoice(id) {
     </script>
 </body>
 </html>
+
 
 
 
