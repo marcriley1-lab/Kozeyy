@@ -552,17 +552,56 @@
             }
         }
         
-        async function sendEmail(to, subject, htmlContent) {
-            if(!to || !to.includes('@')) return;
-            const templateParams = {
-                to_email: to,
-                subject: subject,
-                message: htmlContent
-            };
-            try {
-                await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams);
-            } catch (error) { console.error("Email failed:", error); }
-        }
+       async function sendEmail(to, subject, type, data) {
+    if (!to || !to.includes('@')) return;
+
+    // Define the Spruce Theme
+    const emailHtml = `
+    <div style="font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+            <div style="background-color: #4f46e5; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: -0.5px;">Kozeyy</h1>
+            </div>
+            
+            <div style="padding: 40px 30px;">
+                <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">${data.title || 'Notification'}</h2>
+                <p style="font-size: 16px; line-height: 1.6; color: #475569;">${data.message}</p>
+                
+                ${data.actionLink ? `
+                <div style="margin-top: 30px; text-align: center;">
+                    <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; display: inline-block;">
+                        ${data.actionText || 'View Details'}
+                    </a>
+                </div>
+                ` : ''}
+            </div>
+
+            <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                    &copy; 2026 Kozeyy Property Management. All rights reserved.<br>
+                    Sent via Kozeyy Secure Automation.
+                </p>
+            </div>
+        </div>
+    </div>
+    `;
+
+    try {
+        const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
+            body: { 
+                to, 
+                subject, 
+                type, 
+                html: emailHtml, // Pass the spruced HTML
+                data 
+            }
+        });
+        if (error) throw error;
+        console.log("Email sent successfully!");
+    } catch (e) {
+        console.error("Email failed:", e);
+    }
+}
     </script>
 </body>
 </html>
