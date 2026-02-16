@@ -90,6 +90,27 @@
             return isNaN(d.getTime()) ? 'Pending Signature' : d.toLocaleString();
         };
 
+        function generateQR() {
+            const qrContainer = document.getElementById("qrcode");
+            if (!qrContainer) return;
+            
+            // Clear container before generating to prevent duplicates
+            qrContainer.innerHTML = "";
+
+            try {
+                new QRCode(qrContainer, {
+                    text: window.location.href,
+                    width: 96,
+                    height: 96,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            } catch (err) {
+                console.error("QR Generation Error:", err);
+            }
+        }
+
         function initialRender() {
             document.getElementById('pdf-frame').src = params.get('url') || '';
             document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
@@ -98,14 +119,8 @@
             document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
             document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
             
-            new QRCode(document.getElementById("qrcode"), {
-                text: window.location.href,
-                width: 96,
-                height: 96,
-                colorDark : "#000000",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
+            // Small delay to ensure the QRCode library is fully initialized in the DOM
+            setTimeout(generateQR, 100);
         }
 
         async function fetchFreshData() {
@@ -124,11 +139,16 @@
                         document.getElementById('landlord-dot').classList.replace('bg-slate-300', 'bg-indigo-500');
                     }
                 }
-            } catch (err) { console.warn(\"DB Background fetch failed.\"); }
+            } catch (err) { 
+                console.warn("DB Background fetch failed."); 
+            }
         }
 
-        initialRender();
-        fetchFreshData();
+        // Initialize
+        window.onload = () => {
+            initialRender();
+            fetchFreshData();
+        };
     </script>
 </body>
 </html>
