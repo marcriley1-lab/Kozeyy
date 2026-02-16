@@ -3727,10 +3727,14 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     }
     
 // --- EMAIL HELPER FUNCTION (Supabase Edge Function) ---
-    async function sendEmail(to, subject, type, data) {
+   // --- COMPLETE REPLACEMENT FOR sendEmail ---
+async function sendEmail(to, subject, type, data) {
     if (!to || !to.includes('@')) return;
 
-    // Define the Spruce Theme
+    // Log for debugging: Open your browser console (F12) to see this
+    console.log("Attempting to send email with data:", { to, subject, type, data });
+
+    // Define the Spruce Theme exactly as needed for the template
     const emailHtml = `
     <div style="font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b;">
         <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
@@ -3762,13 +3766,16 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     `;
 
     try {
-        const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
+        const { error } = await supabaseClient.functions.invoke('send-email', {
             body: { 
                 to, 
                 subject, 
                 type, 
-                html: emailHtml, // Pass the spruced HTML
-                data 
+                html: emailHtml,
+                data: {
+                    ...data,
+                    actionLink: data.actionLink // Explicitly ensuring this is passed
+                }
             }
         });
         if (error) throw error;
@@ -3793,6 +3800,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
