@@ -3,58 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Your Account | Kozeyy</title>
+    <title>Create Account | Kozeyy</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
-        .brand-font { font-family: 'Outfit', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .brand-font { font-family: 'Outfit', sans-serif; }
+        .glass-panel { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .bg-image { background-image: url('https://images.unsplash.com/photo-1560518883-ce090590a0cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80'); background-size: cover; background-position: center; }
+        .role-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .hidden-modal { display: none; }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 bg-image">
+    <div class="absolute inset-0 bg-indigo-900/20 backdrop-blur-[2px]"></div>
 
-    <div class="w-full max-w-md">
-        <div class="text-center mb-10">
-            <div class="flex justify-center mb-4">
-                <svg width="48" height="48" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="6" y="6" width="10" height="28" rx="2" fill="#4f46e5" />
-                    <path d="M18 18L30 6H34C35.1046 6 36 6.89543 36 8V10L22 22H18V18Z" fill="#4f46e5" fill-opacity="0.8" />
-                    <path d="M22 24L36 38V40C36 41.1046 35.1046 42 34 42H30L18 30V24H22Z" transform="translate(0 -2)" fill="#4f46e5" fill-opacity="0.9" />
-                </svg>
+    <div class="w-full max-w-md relative z-10">
+        <div class="glass-panel p-8 rounded-[2rem] shadow-2xl border border-white/50">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 mb-4">
+                    <i class="fas fa-home-alt text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Create Account</h1>
+                <p class="text-slate-500 mt-2 font-medium">Join the Kozeyy community today</p>
             </div>
-            <h1 class="text-3xl font-extrabold text-slate-900 brand-font">Join Kozeyy</h1>
-            <p class="text-slate-500 mt-2">The modern way to manage and live.</p>
-        </div>
 
-        <div class="bg-white p-8 rounded-3xl shadow-xl border border-slate-200">
-            
-            <div class="grid grid-cols-2 gap-4 mb-8">
-                <label id="role-owner-box" onclick="setRole('owner')" class="cursor-pointer p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-600 text-white transition-all text-center">
+            <div class="flex gap-4 mb-8">
+                <div id="role-owner-box" onclick="setRole('owner')" class="role-card flex-1 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-600 text-white text-center cursor-pointer shadow-md">
                     <input type="radio" name="role" id="role-owner" class="hidden" checked>
-                    <i class="fas fa-building mb-2 block text-xl"></i>
-                    <span class="text-xs font-bold uppercase tracking-wider">Landlord</span>
-                </label>
-                <label id="role-tenant-box" onclick="setRole('tenant')" class="cursor-pointer p-4 rounded-2xl border-2 border-slate-100 bg-white text-slate-400 hover:border-indigo-200 transition-all text-center">
+                    <i class="fas fa-building text-xl mb-2"></i>
+                    <p class="text-xs font-bold uppercase tracking-wider">Landlord</p>
+                </div>
+                <div id="role-tenant-box" onclick="setRole('tenant')" class="role-card flex-1 p-4 rounded-2xl border-2 border-slate-100 bg-white text-slate-400 text-center cursor-pointer hover:border-indigo-100">
                     <input type="radio" name="role" id="role-tenant" class="hidden">
-                    <i class="fas fa-user-home mb-2 block text-xl"></i>
-                    <span class="text-xs font-bold uppercase tracking-wider">Resident</span>
-                </label>
+                    <i class="fas fa-user-house text-xl mb-2"></i>
+                    <p class="text-xs font-bold uppercase tracking-wider">Resident</p>
+                </div>
             </div>
 
-            <form onsubmit="handleSignup(event)" class="space-y-4">
+            <form onsubmit="handleSignup(event)" class="space-y-5">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase ml-1 mb-1">Full Name</label>
-                    <input type="text" id="name" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="John Doe">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Full Name</label>
+                    <input type="text" id="name" required class="w-full px-5 py-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-900 placeholder:text-slate-400" placeholder="John Doe">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase ml-1 mb-1">Email Address</label>
-                    <input type="email" id="email" required class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="name@email.com">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Email Address</label>
+                    <input type="email" id="email" required class="w-full px-5 py-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-900 placeholder:text-slate-400" placeholder="john@example.com">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase ml-1 mb-1">Create Password</label>
-                    <input type="password" id="password" required minlength="6" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="••••••••">
+                    <label class="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">Password</label>
+                    <input type="password" id="password" required minlength="6" class="w-full px-5 py-4 rounded-xl bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none text-slate-900 placeholder:text-slate-400" placeholder="••••••••">
                 </div>
 
                 <button type="submit" id="btn-signup" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition flex items-center justify-center shadow-lg shadow-indigo-200 brand-font group">
@@ -63,16 +63,27 @@
                 </button>
             </form>
 
-            <div class="mt-8 pt-6 border-t border-slate-100 text-center">
-                <p class="text-sm text-slate-500">Already have an account? <a href="login.html" class="text-indigo-600 font-bold hover:underline">Log In</a></p>
+            <p class="text-center mt-8 text-slate-500 text-sm font-medium">
+                Already have an account? <a href="login.html" class="text-indigo-600 font-bold hover:text-indigo-700">Log In</a>
+            </p>
+        </div>
+    </div>
+
+    <div id="platform-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 hidden-modal">
+        <div class="bg-white rounded-[2rem] max-w-sm w-full p-8 shadow-2xl text-center">
+            <div class="w-16 h-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-info-circle text-indigo-600 text-2xl"></i>
             </div>
+            <h3 id="modal-title" class="text-xl font-bold text-slate-900 mb-2"></h3>
+            <p id="modal-msg" class="text-slate-500 mb-6"></p>
+            <button onclick="closeModal()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition">Understood</button>
         </div>
     </div>
 
     <script>
         const SUPABASE_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        const supabase = netlify = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let currentRole = 'owner';
 
@@ -80,42 +91,32 @@
             currentRole = role;
             const ownerBox = document.getElementById('role-owner-box');
             const tenantBox = document.getElementById('role-tenant-box');
+            const ownerRadio = document.getElementById('role-owner');
+            const tenantRadio = document.getElementById('role-tenant');
 
             if (role === 'owner') {
-                ownerBox.className = 'cursor-pointer p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-600 text-white transition-all text-center';
-                tenantBox.className = 'cursor-pointer p-4 rounded-2xl border-2 border-slate-100 bg-white text-slate-400 hover:border-indigo-200 transition-all text-center';
+                ownerRadio.checked = true;
+                ownerBox.className = 'role-card flex-1 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-600 text-white text-center cursor-pointer shadow-md';
+                tenantBox.className = 'role-card flex-1 p-4 rounded-2xl border-2 border-slate-100 bg-white text-slate-400 text-center cursor-pointer hover:border-indigo-100';
             } else {
-                tenantBox.className = 'cursor-pointer p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-600 text-white transition-all text-center';
-                ownerBox.className = 'cursor-pointer p-4 rounded-2xl border-2 border-slate-100 bg-white text-slate-400 hover:border-indigo-200 transition-all text-center';
+                tenantRadio.checked = true;
+                tenantBox.className = 'role-card flex-1 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-600 text-white text-center cursor-pointer shadow-md';
+                ownerBox.className = 'role-card flex-1 p-4 rounded-2xl border-2 border-slate-100 bg-white text-slate-400 text-center cursor-pointer hover:border-indigo-100';
             }
         }
 
         function checkRole() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const role = urlParams.get('role');
-    
-    // Default is owner, only proceed if tenant is detected
-    if (role === 'tenant') {
-        const radio = document.getElementById('role-tenant');
-        if (radio) {
-            // 1. Update the underlying radio button state
-            radio.checked = true;
-            
-            // 2. Trigger the render/styling for that role
-            setRole('tenant');
+            const urlParams = new URLSearchParams(window.location.search);
+            const role = urlParams.get('role');
+            if (role === 'tenant') {
+                setRole('tenant');
+            }
         }
-    } else {
-        // Fallback for organic traffic: ensure Landlord is visually set
-        setRole('owner');
-    }
-}
-
-// Trigger this as soon as the window is ready
-window.addEventListener('load', checkRole);
 
         async function handleSignup(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-signup');
+            const originalText = btn.innerHTML;
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
 
@@ -124,15 +125,13 @@ window.addEventListener('load', checkRole);
             const password = document.getElementById('password').value;
 
             try {
-                // 1. Auth Signup
-                const { data: authData, error: authError } = await supabase.auth.signUp({ 
-                    email, 
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email,
                     password,
-                    options: { data: { full_name: name, role: currentRole } } 
+                    options: { data: { full_name: name, role: currentRole } }
                 });
                 if (authError) throw authError;
 
-                // 2. Profile Creation
                 const table = currentRole === 'owner' ? 'owners' : 'tenants';
                 const { error: profileError } = await supabase.from(table).insert([{
                     id: authData.user.id,
@@ -143,8 +142,8 @@ window.addEventListener('load', checkRole);
                 if (profileError) throw profileError;
 
                 localStorage.setItem('kozeyy_user_id', authData.user.id);
-
-                // 3. Dynamic Redirection
+                
+                // Redirection logic
                 if (currentRole === 'tenant') {
                     window.location.href = 'tenant.html';
                 } else {
@@ -152,13 +151,30 @@ window.addEventListener('load', checkRole);
                 }
 
             } catch (err) {
-                alert(err.message);
+                console.error(err);
+                if (err.message.includes("already registered")) {
+                    showModal("Account Exists", "This email is already registered. Please log in.");
+                    setTimeout(() => window.location.href = 'login.html', 2000);
+                } else {
+                    showModal("Signup Failed", err.message);
+                }
+                btn.innerHTML = originalText;
                 btn.disabled = false;
-                btn.innerHTML = 'Create Account <i class="fas fa-arrow-right ml-2"></i>';
             }
         }
 
+        function showModal(title, msg) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-msg').innerText = msg;
+            document.getElementById('platform-modal').classList.remove('hidden-modal');
+        }
+        
+        function closeModal() {
+            document.getElementById('platform-modal').classList.add('hidden-modal');
+        }
+
+        // Initialize role detection after DOM is ready
+        window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
-
