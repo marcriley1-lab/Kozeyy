@@ -1375,48 +1375,49 @@ function renderAll() {
         setText('report-noi', `$${noi.toLocaleString()}`);
     }
 
-   function renderMaintenance() {
-    const container = document.getElementById('maint-list');
-    if (!container) {
-        console.error("Critical Error: HTML element #maint-list not found!");
-        return;
-    }
+  function renderMaintenance() {
+    // This matches the IDs in your HTML at lines 273 and 283
+    const activeList = document.getElementById('list-maint-active');
+    const historyList = document.getElementById('list-maint-history');
+    if (!activeList || !historyList) return;
 
-    // DEBUG: This will show you exactly what is in your 'bucket'
-    console.log("Rendering Maintenance with data:", state.maintenance);
-    
-    container.innerHTML = '';
+    activeList.innerHTML = '';
+    historyList.innerHTML = '';
 
-    const data = state.maintenance || [];
+    const data = state.maint || [];
 
-    if (data.length === 0) {
-        container.innerHTML = `<div class="p-10 text-center text-slate-400 italic border border-dashed rounded-xl">No maintenance requests found in the database.</div>`;
-        return;
-    }
+    const activeReqs = data.filter(r => r.status !== 'Completed');
+    const historyReqs = data.filter(r => r.status === 'Completed');
 
-    data.forEach(req => {
-        // String comparison to match Jay Riley's ID
+    // Update Counts on the dashboard
+    setText('maint-count-active', activeReqs.length);
+    setText('maint-count-closed', historyReqs.length);
+
+    activeReqs.forEach(req => {
         const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id)) || { name: 'Resident' };
-        
-        const entryBadge = req.entry_permission 
-            ? `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100">Entry OK</span>`
-            : `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-100">Call First</span>`;
-
-        container.innerHTML += `
-            <div class="p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <h4 class="font-bold text-slate-800">${req.issue || 'Repair Request'}</h4>
-                            <span class="text-[10px] uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">${req.status}</span>
-                            ${entryBadge}
-                        </div>
-                        <p class="text-xs text-slate-500">
-                            <strong>${tenant.name}</strong> &bull; ${new Date(req.created_at).toLocaleDateString()}
-                        </p>
-                        <p class="text-sm text-slate-600 mt-2 italic">"${req.description}"</p>
-                    </div>
+        activeList.innerHTML += `
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-slate-800">${req.issue}</h4>
+                    <span class="text-[10px] font-black px-2 py-1 rounded bg-amber-100 text-amber-700 uppercase">${req.status}</span>
                 </div>
+                <p class="text-xs text-slate-500 mb-3"><i class="fas fa-user mr-1 text-indigo-500"></i> ${tenant.name}</p>
+                <div class="flex gap-2">
+                    <button onclick="act_completeMaint('${req.id}')" class="flex-1 bg-emerald-600 text-white py-2 rounded-xl text-xs font-bold">Mark Done</button>
+                    <button onclick="viewMaintNote('${req.id}')" class="px-4 py-2 border rounded-xl text-xs font-bold text-slate-600">Details</button>
+                </div>
+            </div>`;
+    });
+
+    historyReqs.forEach(req => {
+        const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id)) || { name: 'Resident' };
+        historyList.innerHTML += `
+            <div class="p-4 flex justify-between items-center border-b border-slate-50 last:border-0">
+                <div>
+                    <p class="text-sm font-bold text-slate-700">${req.issue}</p>
+                    <p class="text-[10px] text-slate-400">${tenant.name} &bull; ${new Date(req.completed_date).toLocaleDateString()}</p>
+                </div>
+                <button onclick="viewMaintNote('${req.id}')" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-chevron-right"></i></button>
             </div>`;
     });
 }
@@ -1932,18 +1933,18 @@ async function act_saveTenant(e) {
             const { error } = await supabaseClient.from('tenants').insert([payload]); 
             if(error) throw error;
 
-            // Generate the link
-            const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tEmail)}`;
+            // Generate the link for signup.html
+            const inviteUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tEmail)}`;
 
-            // SEND EMAIL - Using the exact same pattern as Maintenance
+            // SEND EMAIL - Uses unique keys to avoid breaking maintenance state
             await sendEmail(
                 tEmail, 
                 "Welcome to Kozeyy", 
                 "action", 
                 {
                     title: "Welcome Home!",
-                    message: `You have been added to the portal for <strong>${tAddr}</strong>. Please create your account to begin.`,
-                    actionLink: signupUrl,
+                    message: `Marcus Riley has added you to the portal for <strong>${tAddr}</strong>. Please create your account to begin.`,
+                    actionLink: inviteUrl,
                     actionText: "Create Resident Account"
                 }
             );
@@ -3779,6 +3780,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
