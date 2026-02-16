@@ -1904,14 +1904,13 @@ function toggleFeeVisibility() {
         }
 
         // 2. Trigger Invitation Email
-        // This uses the 'action' template to provide a clear button for account creation
         await sendEmail(
             email, 
             "Welcome to Kozeyy Resident Portal", 
             "action", 
             {
                 title: "Welcome Home!",
-                message: `You have been added as a resident for ${address || 'your new home'}. Please create your account to pay rent and submit maintenance requests.`,
+                message: `You have been added as a resident for ${data.address || 'your new home'}. Please create your account to pay rent and submit maintenance requests.`,
                 actionLink: "https://kozeyy.com/signup.html?role=tenant", 
                 actionText: "Create Account"
             }
@@ -3728,6 +3727,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
