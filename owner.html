@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1898,62 +1899,60 @@ async function act_saveTenant(e) {
     e.preventDefault(); 
     if (!editTenantId && !canAddProperty()) return; 
     
-    // Safety check for null elements
-    const emailEl = document.getElementById('t-email');
-    const addrEl = document.getElementById('t-addr');
-    const nameEl = document.getElementById('t-name');
-    
-    if(!emailEl || !addrEl || !nameEl) {
-        showToast("Error: Required form fields missing", "error");
-        return;
-    }
+    const ownerId = localStorage.getItem('kozeyy_user_id');
+    const targetEmail = document.getElementById('t-email').value;
+    const targetName = document.getElementById('t-name').value;
+    const targetAddr = document.getElementById('t-addr').value;
 
-    const tEmail = emailEl.value;
-    const tAddr = addrEl.value;
-    const tName = nameEl.value;
-
-    const payload = { 
-        owner_id: localStorage.getItem('kozeyy_user_id'), 
-        name: tName, 
-        email: tEmail, 
-        address: tAddr,
-        phone: document.getElementById('t-phone')?.value || "",
-        unit: document.getElementById('t-unit')?.value || "",
-        rent_amount: parseFloat(document.getElementById('t-rent')?.value || 0),
-        status: document.getElementById('t-status')?.value || 'Active'
+    const tenantRecord = { 
+        owner_id: ownerId, 
+        name: targetName, 
+        email: targetEmail, 
+        phone: document.getElementById('t-phone').value, 
+        unit: document.getElementById('t-unit').value, 
+        rent_amount: parseFloat(document.getElementById('t-rent').value) || 0, 
+        lease_start: document.getElementById('t-start').value || null, 
+        lease_end: document.getElementById('t-end').value || null, 
+        status: document.getElementById('t-status').value, 
+        address: targetAddr, 
+        city: document.getElementById('t-city').value, 
+        state: document.getElementById('t-state').value, 
+        zip: document.getElementById('t-zip').value 
     }; 
 
     try {
         if(editTenantId) {
-            await supabaseClient.from('tenants').update(payload).eq('id', editTenantId); 
+            await supabaseClient.from('tenants').update(tenantRecord).eq('id', editTenantId); 
             showToast("Tenant updated");
         } else {
-            const { error } = await supabaseClient.from('tenants').insert([payload]); 
+            const { error } = await supabaseClient.from('tenants').insert([tenantRecord]); 
             if(error) throw error;
 
-            // Generate the link
-            const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tEmail)}`;
+            // Build the specific signup link
+            const inviteUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(targetEmail)}`;
 
-            // SEND EMAIL - Using the exact same pattern as Maintenance
+            // Send Email using the EXACT same format as your working Maintenance link
             await sendEmail(
-                tEmail, 
-                "Welcome to Kozeyy", 
+                targetEmail, 
+                "Action Required: Set Up Your Kozeyy Portal", 
                 "action", 
                 {
                     title: "Welcome Home!",
-                    message: `You have been added to the portal for <strong>${tAddr}</strong>. Please create your account to begin.`,
-                    actionLink: signupUrl,
+                    message: `Marcus Riley has added you to the portal for <strong>${targetAddr}</strong>. Please click the button below to create your resident account.`,
+                    actionLink: inviteUrl,
                     actionText: "Create Resident Account"
                 }
             );
             
             showToast("Tenant added and invitation sent");
         }
+        
         closeModal('modal-tenant'); 
         await fetchData(); 
         renderAll(); 
     } catch (err) {
-        showToast("Save Error: " + err.message, 'error');
+        console.error("Critical Save Error:", err);
+        showToast("Error: " + err.message, 'error');
     }
 }
     
@@ -2858,35 +2857,39 @@ async function confirmPay() {
     logic_invMode('fixed');
 }
 
-    async function sendEmail(to, subject, type, data) {
-    if (!to || !to.includes('@')) return;
+    async function sendLateNotice(invoiceId) {
+    // 1. Find the invoice in your local state
+    const inv = state.invoices.find(i => String(i.id) === String(invoiceId));
+    if (!inv) return;
 
-    const emailHtml = `
-    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0;">
-            <h1 style="color: #4f46e5;">Kozeyy</h1>
-            <h2 style="color: #1e293b;">${data.title || 'Notification'}</h2>
-            <p style="color: #475569; line-height: 1.6;">${data.message}</p>
-            
-            <div style="margin-top: 30px; text-align: center;">
-                <a href="${data.actionLink || 'https://kozeyy.com'}" 
-                   style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                    ${data.actionText || 'Click Here'}
-                </a>
-            </div>
-            
-            <p style="margin-top: 20px; font-size: 10px; color: #94a3b8; text-align: center;">
-                If the button doesn't work, copy this: ${data.actionLink || ''}
-            </p>
-        </div>
-    </div>`;
-
+    // 2. Calculate the specific late details for the email
+    const calc = calculateOverdueDetails(inv, state.settings);
+    
     try {
-        await supabaseClient.functions.invoke('send-email', {
-            body: { to, subject, type, html: emailHtml, data }
+        // 3. Look up the tenant's email address from the database
+        const { data: tenant, error } = await supabaseClient
+            .from('tenants')
+            .select('email, name')
+            .eq('id', inv.tenant_id)
+            .single();
+
+        if (error || !tenant?.email) {
+            showToast("Could not find tenant email.", "error");
+            return;
+        }
+
+        // 4. Trigger the email using your existing Spruce-themed sendEmail function
+        await sendEmail(tenant.email, `URGENT: Rent Overdue - Invoice #${inv.invoice_num}`, 'alert', {
+            title: "Late Rent Notice",
+            message: `Hello ${tenant.name}, your rent for Invoice #${inv.invoice_num} is currently ${calc.daysLate} days past its ${inv.grace_period}-day grace period. A late fee of $${calc.fee.toFixed(2)} has been applied to your balance.`,
+            actionLink: "https://kozeyy.com/tenant.html",
+            actionText: "Pay Now"
         });
-    } catch (e) {
-        console.error("Email Error:", e);
+
+        showToast(`Late notice sent to ${tenant.name}`);
+    } catch (err) {
+        console.error("Late Notice Error:", err);
+        showToast("Failed to send notice.", "error");
     }
 }
 function act_viewInvoice(id) {
@@ -3777,7 +3780,6 @@ function signOut() {
 </script>
 </body>
 </html>
-
 
 
 
