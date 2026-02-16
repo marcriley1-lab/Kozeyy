@@ -7,8 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Load library safely -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: #e2e8f0; } 
         .brand { font-family: 'Outfit', sans-serif; }
@@ -19,67 +19,66 @@
 
     <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-10">
         <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-bold"><i class="fas fa-file-contract"></i></div>
-            <div>
-                <h1 class="text-lg font-bold text-slate-800 brand">Lease Agreement</h1>
-                <p class="text-xs text-slate-500">Digital Document Viewer</p>
+            <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white">
+                <i class="fas fa-home text-sm"></i>
             </div>
+            <h1 class="text-xl font-bold text-slate-800 brand">Kozeyy <span class="font-normal text-slate-400 ml-1">Sign</span></h1>
         </div>
-        <button onclick="window.print()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition">
-            <i class="fas fa-print mr-2"></i> Print / Save
-        </button>
+        <div id="executed-badge" class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+            Digital Certificate
+        </div>
     </nav>
 
-    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
-        <!-- PDF Viewer -->
-        <div class="flex-1 bg-slate-500 relative">
-            <iframe id="pdf-frame" class="w-full h-full border-none" src=""></iframe>
-        </div>
+    <div class="flex-1 flex overflow-hidden">
+        <main class="flex-1 bg-slate-200 overflow-hidden flex items-center justify-center p-4 md:p-8">
+            <div class="w-full h-full max-w-5xl bg-white shadow-2xl rounded-lg overflow-hidden border border-slate-300">
+                <iframe id="pdf-frame" class="w-full h-full border-none" src=""></iframe>
+            </div>
+        </main>
 
-        <!-- Signature Certificate Sidebar -->
-        <div class="w-full md:w-80 bg-white border-l border-slate-200 overflow-y-auto shadow-xl z-20">
-            <div class="p-6">
-                <div class="mb-6 pb-6 border-b border-slate-100">
-                    <span id="executed-badge" class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-                        <i class="fas fa-clock mr-1"></i> Finalizing...
-                    </span>
-                    <h2 class="text-xl font-bold text-slate-800 mt-4 brand">Signature Certificate</h2>
-                    <p class="text-xs text-slate-400 mt-1">Ref ID: <span id="ref-id" class="font-mono">...</span></p>
+        <aside class="w-80 bg-white border-l border-slate-200 overflow-y-auto hidden lg:flex flex-col p-6 shadow-xl">
+            <div class="mb-8">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Verification Seal</h3>
+                <div id="qrcode" class="mx-auto mb-3 flex justify-center p-1 bg-white border border-slate-100 shadow-sm w-24 h-24"></div>
+                <p class="text-[10px] text-slate-400 text-center leading-relaxed">
+                    Scan to verify document authenticity.<br>This document is digitally secured by Kozeyy.
+                </p>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Signature Certificate</h3>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-2">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Ref ID</p>
+                    <p class="text-sm font-mono font-bold text-slate-700" id="ref-id">...</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <div class="relative pl-6 border-l-2 border-indigo-500">
+                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-indigo-500 rounded-full border-4 border-white"></div>
+                    <p class="text-[10px] font-black text-indigo-500 uppercase tracking-wider mb-1">Tenant Signature</p>
+                    <h4 class="font-bold text-slate-800 sig-font text-xl" id="t-name">...</h4>
+                    <p class="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fas fa-clock"></i> <span id="t-date">...</span>
+                    </p>
                 </div>
 
-                <div class="space-y-6">
-                    <!-- Tenant Sig -->
-                    <div class="relative pl-4 border-l-2 border-slate-200">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 bg-indigo-600 rounded-full border-2 border-white"></div>
-                        <p class="text-xs font-bold text-slate-400 uppercase mb-1">Tenant Signature</p>
-                        <p class="font-bold text-slate-800 text-lg sig-font" id="t-name">...</p>
-                        <div class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
-                            <i class="fas fa-clock mr-1"></i> Signed: <br>
-                            <span id="t-date" class="font-mono font-bold text-[11px]">...</span>
-                        </div>
-                    </div>
-
-                    <!-- Owner Sig -->
-                    <div class="relative pl-4 border-l-2 border-slate-200">
-                        <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-800 rounded-full border-2 border-white"></div>
-                        <p class="text-xs font-bold text-slate-400 uppercase mb-1">Landlord Signature</p>
-                        <p class="font-bold text-slate-800 text-lg sig-font" id="o-name">...</p>
-                        <div class="text-xs text-slate-500 mt-1 bg-slate-50 p-2 rounded border border-slate-100">
-                            <i class="fas fa-clock mr-1"></i> Signed: <br>
-                            <span id="o-date" class="font-mono font-bold text-[11px]">...</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mt-8 pt-6 border-t border-slate-100 text-center">
-                    <img id="verification-qr" src="" class="w-24 h-24 mx-auto mb-3 shadow-sm border border-slate-100 p-1 bg-white" alt="Verification QR">
-                    <p class="text-[10px] text-slate-400 leading-tight">
-                        Scan to verify document authenticity.<br>
-                        This document is digitally secured by Kozeyy.
+                <div class="relative pl-6 border-l-2 border-slate-300" id="landlord-sig-block">
+                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-300 rounded-full border-4 border-white" id="landlord-dot"></div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Landlord Signature</p>
+                    <h4 class="font-bold text-slate-800 sig-font text-xl" id="o-name">...</h4>
+                    <p class="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fas fa-clock"></i> <span id="o-date">...</span>
                     </p>
                 </div>
             </div>
-        </div>
+
+            <div class="mt-auto pt-8">
+                <button onclick="window.print()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-900 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-print"></i> Print Receipt
+                </button>
+            </div>
+        </aside>
     </div>
 
     <script>
@@ -88,7 +87,7 @@
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
 
         const params = new URLSearchParams(window.location.search);
-        
+
         // Helper: Format Dates safely
         const formatDate = (iso) => {
             if (!iso || iso === 'null' || iso === 'undefined') return 'Pending Signature';
@@ -105,8 +104,15 @@
             document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
             document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
             
-            // Set QR code based on URL
-            document.getElementById('verification-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.href)}`;
+            // Generate QR code pointing to this verification page
+            new QRCode(document.getElementById("qrcode"), {
+                text: window.location.href,
+                width: 96,
+                height: 96,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
         }
 
         // 2. BACKGROUND FETCH (Fresh data from tenants table)
@@ -126,11 +132,17 @@
                     document.getElementById('t-date').innerText = formatDate(data.lease_signed_at);
                     document.getElementById('o-date').innerText = formatDate(data.owner_signed_at);
                     
-                    // Update badge to green if fully executed
+                    // Update visuals if fully executed
                     if (data.lease_signed_at && data.owner_signed_at) {
                         const badge = document.getElementById('executed-badge');
                         badge.className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
                         badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Executed';
+
+                        // Change landlord signature styling to active
+                        const oBlock = document.getElementById('landlord-sig-block');
+                        const oDot = document.getElementById('landlord-dot');
+                        oBlock.classList.replace('border-slate-300', 'border-indigo-500');
+                        oDot.classList.replace('bg-slate-300', 'bg-indigo-500');
                     }
                 }
             } catch (err) {
