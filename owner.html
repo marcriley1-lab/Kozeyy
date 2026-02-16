@@ -3203,7 +3203,7 @@ function renderLeases() {
     return true;
 }
 
-asyncasync function processLeaseFinalization() {
+async function processLeaseFinalization() {
     const app = state.apps.find(a => a.id === currentAppId);
     if(!app) return;
     
@@ -3799,6 +3799,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
