@@ -1375,49 +1375,48 @@ function renderAll() {
         setText('report-noi', `$${noi.toLocaleString()}`);
     }
 
-  function renderMaintenance() {
-    // This matches the IDs in your HTML at lines 273 and 283
-    const activeList = document.getElementById('list-maint-active');
-    const historyList = document.getElementById('list-maint-history');
-    if (!activeList || !historyList) return;
+   function renderMaintenance() {
+    const container = document.getElementById('maint-list');
+    if (!container) {
+        console.error("Critical Error: HTML element #maint-list not found!");
+        return;
+    }
 
-    activeList.innerHTML = '';
-    historyList.innerHTML = '';
+    // DEBUG: This will show you exactly what is in your 'bucket'
+    console.log("Rendering Maintenance with data:", state.maintenance);
+    
+    container.innerHTML = '';
 
-    const data = state.maint || [];
+    const data = state.maintenance || [];
 
-    const activeReqs = data.filter(r => r.status !== 'Completed');
-    const historyReqs = data.filter(r => r.status === 'Completed');
+    if (data.length === 0) {
+        container.innerHTML = `<div class="p-10 text-center text-slate-400 italic border border-dashed rounded-xl">No maintenance requests found in the database.</div>`;
+        return;
+    }
 
-    // Update Counts on the dashboard
-    setText('maint-count-active', activeReqs.length);
-    setText('maint-count-closed', historyReqs.length);
-
-    activeReqs.forEach(req => {
+    data.forEach(req => {
+        // String comparison to match Jay Riley's ID
         const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id)) || { name: 'Resident' };
-        activeList.innerHTML += `
-            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm hover:shadow-md transition">
-                <div class="flex justify-between items-start mb-2">
-                    <h4 class="font-bold text-slate-800">${req.issue}</h4>
-                    <span class="text-[10px] font-black px-2 py-1 rounded bg-amber-100 text-amber-700 uppercase">${req.status}</span>
-                </div>
-                <p class="text-xs text-slate-500 mb-3"><i class="fas fa-user mr-1 text-indigo-500"></i> ${tenant.name}</p>
-                <div class="flex gap-2">
-                    <button onclick="act_completeMaint('${req.id}')" class="flex-1 bg-emerald-600 text-white py-2 rounded-xl text-xs font-bold">Mark Done</button>
-                    <button onclick="viewMaintNote('${req.id}')" class="px-4 py-2 border rounded-xl text-xs font-bold text-slate-600">Details</button>
-                </div>
-            </div>`;
-    });
+        
+        const entryBadge = req.entry_permission 
+            ? `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100">Entry OK</span>`
+            : `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-100">Call First</span>`;
 
-    historyReqs.forEach(req => {
-        const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id)) || { name: 'Resident' };
-        historyList.innerHTML += `
-            <div class="p-4 flex justify-between items-center border-b border-slate-50 last:border-0">
-                <div>
-                    <p class="text-sm font-bold text-slate-700">${req.issue}</p>
-                    <p class="text-[10px] text-slate-400">${tenant.name} &bull; ${new Date(req.completed_date).toLocaleDateString()}</p>
+        container.innerHTML += `
+            <div class="p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <h4 class="font-bold text-slate-800">${req.issue || 'Repair Request'}</h4>
+                            <span class="text-[10px] uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">${req.status}</span>
+                            ${entryBadge}
+                        </div>
+                        <p class="text-xs text-slate-500">
+                            <strong>${tenant.name}</strong> &bull; ${new Date(req.created_at).toLocaleDateString()}
+                        </p>
+                        <p class="text-sm text-slate-600 mt-2 italic">"${req.description}"</p>
+                    </div>
                 </div>
-                <button onclick="viewMaintNote('${req.id}')" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-chevron-right"></i></button>
             </div>`;
     });
 }
@@ -1933,18 +1932,18 @@ async function act_saveTenant(e) {
             const { error } = await supabaseClient.from('tenants').insert([payload]); 
             if(error) throw error;
 
-            // Generate the link for signup.html
-            const inviteUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tEmail)}`;
+            // Generate the link
+            const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tEmail)}`;
 
-            // SEND EMAIL - Uses unique keys to avoid breaking maintenance state
+            // SEND EMAIL - Using the exact same pattern as Maintenance
             await sendEmail(
                 tEmail, 
                 "Welcome to Kozeyy", 
                 "action", 
                 {
                     title: "Welcome Home!",
-                    message: `Marcus Riley has added you to the portal for <strong>${tAddr}</strong>. Please create your account to begin.`,
-                    actionLink: inviteUrl,
+                    message: `You have been added to the portal for <strong>${tAddr}</strong>. Please create your account to begin.`,
+                    actionLink: signupUrl,
                     actionText: "Create Resident Account"
                 }
             );
@@ -2860,39 +2859,35 @@ async function confirmPay() {
     logic_invMode('fixed');
 }
 
-    async function sendLateNotice(invoiceId) {
-    // 1. Find the invoice in your local state
-    const inv = state.invoices.find(i => String(i.id) === String(invoiceId));
-    if (!inv) return;
+    async function sendEmail(to, subject, type, data) {
+    if (!to || !to.includes('@')) return;
 
-    // 2. Calculate the specific late details for the email
-    const calc = calculateOverdueDetails(inv, state.settings);
-    
+    const emailHtml = `
+    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h1 style="color: #4f46e5;">Kozeyy</h1>
+            <h2 style="color: #1e293b;">${data.title || 'Notification'}</h2>
+            <p style="color: #475569; line-height: 1.6;">${data.message}</p>
+            
+            <div style="margin-top: 30px; text-align: center;">
+                <a href="${data.actionLink || 'https://kozeyy.com'}" 
+                   style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                    ${data.actionText || 'Click Here'}
+                </a>
+            </div>
+            
+            <p style="margin-top: 20px; font-size: 10px; color: #94a3b8; text-align: center;">
+                If the button doesn't work, copy this: ${data.actionLink || ''}
+            </p>
+        </div>
+    </div>`;
+
     try {
-        // 3. Look up the tenant's email address from the database
-        const { data: tenant, error } = await supabaseClient
-            .from('tenants')
-            .select('email, name')
-            .eq('id', inv.tenant_id)
-            .single();
-
-        if (error || !tenant?.email) {
-            showToast("Could not find tenant email.", "error");
-            return;
-        }
-
-        // 4. Trigger the email using your existing Spruce-themed sendEmail function
-        await sendEmail(tenant.email, `URGENT: Rent Overdue - Invoice #${inv.invoice_num}`, 'alert', {
-            title: "Late Rent Notice",
-            message: `Hello ${tenant.name}, your rent for Invoice #${inv.invoice_num} is currently ${calc.daysLate} days past its ${inv.grace_period}-day grace period. A late fee of $${calc.fee.toFixed(2)} has been applied to your balance.`,
-            actionLink: "https://kozeyy.com/tenant.html",
-            actionText: "Pay Now"
+        await supabaseClient.functions.invoke('send-email', {
+            body: { to, subject, type, html: emailHtml, data }
         });
-
-        showToast(`Late notice sent to ${tenant.name}`);
-    } catch (err) {
-        console.error("Late Notice Error:", err);
-        showToast("Failed to send notice.", "error");
+    } catch (e) {
+        console.error("Email Error:", e);
     }
 }
 function act_viewInvoice(id) {
@@ -3738,31 +3733,34 @@ async function sendEmail(to, subject, type, data) {
     if (!to || !to.includes('@')) return;
 
     const emailHtml = `
-    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0;">
-            <h1 style="color: #4f46e5;">Kozeyy</h1>
-            <h2 style="color: #1e293b;">${data.title || 'Notification'}</h2>
+    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px 20px;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <h1 style="color: #4f46e5; margin-bottom: 20px;">Kozeyy</h1>
+            <h2 style="font-size: 18px; color: #1e293b;">${data.title || 'Notification'}</h2>
             <p style="color: #475569; line-height: 1.6;">${data.message}</p>
             
+            ${data.actionLink ? `
             <div style="margin-top: 30px; text-align: center;">
-                <a href="${data.actionLink || 'https://kozeyy.com'}" 
-                   style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                    ${data.actionText || 'Click Here'}
+                <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                    ${data.actionText || 'Get Started'}
                 </a>
             </div>
-            
-            <p style="margin-top: 20px; font-size: 10px; color: #94a3b8; text-align: center;">
-                If the button doesn't work, copy this: ${data.actionLink || ''}
-            </p>
+            ` : ''}
         </div>
     </div>`;
 
     try {
         await supabaseClient.functions.invoke('send-email', {
-            body: { to, subject, type, html: emailHtml, data }
+            body: { 
+                to: to, 
+                subject: subject, 
+                type: type, 
+                html: emailHtml, 
+                data: data // Pass full data to ensure actionLink is present
+            }
         });
     } catch (e) {
-        console.error("Email Error:", e);
+        console.error("Email Dispatch Error:", e);
     }
 }
 function signOut() {
@@ -3780,7 +3778,6 @@ function signOut() {
 </script>
 </body>
 </html>
-
 
 
 
