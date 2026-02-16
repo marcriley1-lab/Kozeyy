@@ -1,6 +1,5 @@
 
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1197,7 +1196,7 @@ const KOZEYY_PLANS = {
         state.invoices = i.data || [];
         
         state.payments = (p.data || []);
-        state.maintenance = (m.data || []);
+        state.maint = (m.data || []);
         
         const serverMsgs = msg.data || [];
         state.msgs = serverMsgs; 
@@ -1375,50 +1374,110 @@ function renderAll() {
         setText('report-noi', `$${noi.toLocaleString()}`);
     }
 
-   function renderMaintenance() {
-    const container = document.getElementById('maint-list');
-    if (!container) {
-        console.error("Critical Error: HTML element #maint-list not found!");
-        return;
+    function renderMaintenance() {
+    const ma = document.getElementById('list-maint-active');
+    const mh = document.getElementById('list-maint-history');
+    const activeHeader = document.getElementById('maint-active-header');
+    if(!ma || !mh) return;
+
+    ma.innerHTML = ''; 
+    mh.innerHTML = '';
+
+    const activeList = state.maint.filter(m => m.status === 'Active');
+    const historyList = state.maint.filter(m => m.status !== 'Active').sort((a,b) => new Date(b.completed_date) - new Date(a.completed_date));
+
+    // Update Stats
+    setText('maint-count-active', activeList.length);
+    setText('maint-count-closed', historyList.length);
+
+    // Toggle the "Attention Required" header visibility
+    if (activeList.length > 0) {
+        activeHeader.classList.remove('hidden');
+        activeHeader.classList.add('flex');
+    } else {
+        activeHeader.classList.add('hidden');
+        activeHeader.classList.remove('flex');
     }
 
-    // DEBUG: This will show you exactly what is in your 'bucket'
-    console.log("Rendering Maintenance with data:", state.maintenance);
-    
-    container.innerHTML = '';
+    // Helper for Category Styling
+    const getCatStyles = (cat) => {
+        const c = String(cat).toLowerCase();
+        if (c.includes('plumbing')) return { icon: 'fa-droplet', color: 'text-blue-600 bg-blue-50 border-blue-100' };
+        if (c.includes('elect')) return { icon: 'fa-bolt', color: 'text-amber-600 bg-amber-50 border-amber-100' };
+        if (c.includes('appliance')) return { icon: 'fa-plug', color: 'text-orange-600 bg-orange-50 border-orange-100' };
+        return { icon: 'fa-wrench', color: 'text-slate-600 bg-slate-50 border-slate-200' };
+    };
 
-    const data = state.maintenance || [];
+    // Render Active Cards
+    if(activeList.length === 0) {
+        ma.innerHTML = `
+            <div class="bg-white rounded-3xl p-12 border-2 border-dashed border-slate-200 text-center">
+                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                    <i class="fas fa-check-double text-2xl"></i>
+                </div>
+                <p class="text-slate-500 font-medium">All caught up!</p>
+                <p class="text-xs text-slate-400">No active maintenance requests.</p>
+            </div>`;
+    } else {
+        activeList.forEach(m => {
+            const tenant = state.tenants.find(t => t.id === m.tenant_id) || { name: 'Resident', id: null };
+            const style = getCatStyles(m.category);
+            const date = new Date(m.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+            const isNew = !viewedMaintIds.has(String(m.id));
 
-    if (data.length === 0) {
-        container.innerHTML = `<div class="p-10 text-center text-slate-400 italic border border-dashed rounded-xl">No maintenance requests found in the database.</div>`;
-        return;
-    }
-
-    data.forEach(req => {
-        // String comparison to match Jay Riley's ID
-        const tenant = state.tenants.find(t => String(t.id) === String(req.tenant_id)) || { name: 'Resident' };
-        
-        const entryBadge = req.entry_permission 
-            ? `<span class="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded text-[10px] font-bold border border-emerald-100">Entry OK</span>`
-            : `<span class="bg-rose-50 text-rose-600 px-2 py-0.5 rounded text-[10px] font-bold border border-rose-100">Call First</span>`;
-
-        container.innerHTML += `
-            <div class="p-4 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <div class="flex items-center gap-2 mb-1">
-                            <h4 class="font-bold text-slate-800">${req.issue || 'Repair Request'}</h4>
-                            <span class="text-[10px] uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold">${req.status}</span>
-                            ${entryBadge}
+            ma.innerHTML += `
+            <div class="bg-white p-5 rounded-3xl border ${isNew ? 'border-indigo-200 ring-2 ring-indigo-50' : 'border-slate-200'} shadow-sm hover:shadow-md transition relative overflow-hidden group">
+                ${isNew ? '<div class="absolute top-0 right-0 bg-indigo-600 text-white text-[9px] px-3 py-1 font-black uppercase rounded-bl-xl tracking-tighter">New</div>' : ''}
+                <div class="flex justify-between items-start mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm ${style.color} border">
+                            <i class="fas ${style.icon}"></i>
                         </div>
-                        <p class="text-xs text-slate-500">
-                            <strong>${tenant.name}</strong> &bull; ${new Date(req.created_at).toLocaleDateString()}
-                        </p>
-                        <p class="text-sm text-slate-600 mt-2 italic">"${req.description}"</p>
+                        <div>
+                            <span class="text-[10px] font-black uppercase tracking-widest ${style.color.split(' ')[0]}">${m.category}</span>
+                            <h4 class="font-bold text-slate-800 leading-tight">${m.issue}</h4>
+                        </div>
+                    </div>
+                    <span class="text-xs font-bold text-slate-400">${date}</span>
+                </div>
+                
+                <div class="bg-slate-50 rounded-2xl p-3 mb-4 border border-slate-100">
+                    <p class="text-[11px] text-slate-400 font-bold uppercase mb-1">Requested By</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-bold text-slate-700">${tenant.name}</span>
+                        ${tenant.id ? `<button onclick="openChat('${tenant.id}'); navTo('messages')" class="text-indigo-600 text-xs font-bold hover:underline">Message</button>` : ''}
                     </div>
                 </div>
+
+                <div class="flex gap-2">
+                    <button onclick="viewMaintNote('${m.id}')" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-200 transition">View Details</button>
+                    <button onclick="act_completeMaint('${m.id}')" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition">Mark Resolved</button>
+                </div>
             </div>`;
-    });
+        });
+    }
+
+    // Render History Rows
+    if(historyList.length === 0) {
+        mh.innerHTML = '<div class="p-8 text-center text-slate-400 text-sm italic">No resolution history found.</div>';
+    } else {
+        historyList.forEach(m => {
+            const date = m.completed_date ? new Date(m.completed_date).toLocaleDateString() : '---';
+            mh.innerHTML += `
+            <div class="p-4 hover:bg-slate-50 transition flex justify-between items-center group">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center text-xs">
+                        <i class="fas fa-check"></i>
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm text-slate-700 group-hover:text-indigo-950 transition">${m.issue}</p>
+                        <p class="text-[10px] text-slate-400 font-medium uppercase tracking-tight">${m.category} • Resolved ${date}</p>
+                    </div>
+                </div>
+                <button onclick="viewMaintNote('${m.id}')" class="text-slate-400 hover:text-indigo-600 p-2"><i class="fas fa-eye"></i></button>
+            </div>`;
+        });
+    }
 }
     // --- UTILS ---
     function showToast(message, type = 'success') {
@@ -1895,67 +1954,60 @@ function toggleFeeVisibility() {
     
     // CRUD Functions
     
-async function act_saveTenant(e) { 
+  async function act_saveTenant(e) { 
     e.preventDefault(); 
-    if (!editTenantId && !canAddProperty()) return; 
-    
-    // Safety check for null elements
-    const emailEl = document.getElementById('t-email');
-    const addrEl = document.getElementById('t-addr');
-    const nameEl = document.getElementById('t-name');
-    
-    if(!emailEl || !addrEl || !nameEl) {
-        showToast("Error: Required form fields missing", "error");
-        return;
-    }
+      if (!editTenantId && !canAddProperty()) return; 
+    const ownerId = localStorage.getItem('kozeyy_user_id');
+    if (!ownerId) { showToast("Error: No owner logged in", 'error'); return; }
 
-    const tEmail = emailEl.value;
-    const tAddr = addrEl.value;
-    const tName = nameEl.value;
+    const email = document.getElementById('t-email').value;
+    const name = document.getElementById('t-name').value;
 
-    const payload = { 
-        owner_id: localStorage.getItem('kozeyy_user_id'), 
-        name: tName, 
-        email: tEmail, 
-        address: tAddr,
-        phone: document.getElementById('t-phone')?.value || "",
-        unit: document.getElementById('t-unit')?.value || "",
-        rent_amount: parseFloat(document.getElementById('t-rent')?.value || 0),
-        status: document.getElementById('t-status')?.value || 'Active'
+    const data = { 
+        owner_id: ownerId, 
+        name: name, 
+        email: email, 
+        phone: document.getElementById('t-phone').value, 
+        unit: document.getElementById('t-unit').value, 
+        rent_amount: parseFloat(document.getElementById('t-rent').value)||0, 
+        lease_start: document.getElementById('t-start').value||null, 
+        lease_end: document.getElementById('t-end').value||null, 
+        status: document.getElementById('t-status').value, 
+        address: document.getElementById('t-addr').value, 
+        city: document.getElementById('t-city').value, 
+        state: document.getElementById('t-state').value, 
+        zip: document.getElementById('t-zip').value 
     }; 
 
-    try {
-        if(editTenantId) {
-            await supabaseClient.from('tenants').update(payload).eq('id', editTenantId); 
-            showToast("Tenant updated");
-        } else {
-            const { error } = await supabaseClient.from('tenants').insert([payload]); 
-            if(error) throw error;
-
-            // Generate the link
-            const signupUrl = `https://kozeyy.com/signup.html?role=tenant&email=${encodeURIComponent(tEmail)}`;
-
-            // SEND EMAIL - Using the exact same pattern as Maintenance
-            await sendEmail(
-                tEmail, 
-                "Welcome to Kozeyy", 
-                "action", 
-                {
-                    title: "Welcome Home!",
-                    message: `You have been added to the portal for <strong>${tAddr}</strong>. Please create your account to begin.`,
-                    actionLink: signupUrl,
-                    actionText: "Create Resident Account"
-                }
-            );
-            
-            showToast("Tenant added and invitation sent");
+    if(editTenantId) {
+        await supabaseClient.from('tenants').update(data).eq('id', editTenantId); 
+        showToast("Tenant updated successfully");
+    } else {
+        const { error } = await supabaseClient.from('tenants').insert([data]); 
+        if(error) {
+            showToast("Error adding tenant: " + error.message, 'error');
+            return;
         }
-        closeModal('modal-tenant'); 
-        await fetchData(); 
-        renderAll(); 
-    } catch (err) {
-        showToast("Save Error: " + err.message, 'error');
+
+        // --- UPDATED: Automatically set role to tenant ---
+        await sendEmail(
+            email, 
+            "Welcome to Kozeyy Resident Portal", 
+            "action", 
+            {
+                title: "Welcome Home!",
+                message: `You have been added to the resident portal for ${data.address || 'your new home'}. You can now log in to pay rent and submit maintenance requests.`,
+                actionLink: "https://kozeyy.com/signup.html?role=tenant", 
+                actionText: "Create Account"
+            }
+        );
+        
+        showToast("Tenant added and invitation sent");
     }
+    
+    closeModal('modal-tenant'); 
+    await fetchData(); 
+    renderAll(); 
 }
     
     async function act_moveOut(id) {
@@ -2859,35 +2911,39 @@ async function confirmPay() {
     logic_invMode('fixed');
 }
 
-    async function sendEmail(to, subject, type, data) {
-    if (!to || !to.includes('@')) return;
+    async function sendLateNotice(invoiceId) {
+    // 1. Find the invoice in your local state
+    const inv = state.invoices.find(i => String(i.id) === String(invoiceId));
+    if (!inv) return;
 
-    const emailHtml = `
-    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; border: 1px solid #e2e8f0;">
-            <h1 style="color: #4f46e5;">Kozeyy</h1>
-            <h2 style="color: #1e293b;">${data.title || 'Notification'}</h2>
-            <p style="color: #475569; line-height: 1.6;">${data.message}</p>
-            
-            <div style="margin-top: 30px; text-align: center;">
-                <a href="${data.actionLink || 'https://kozeyy.com'}" 
-                   style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                    ${data.actionText || 'Click Here'}
-                </a>
-            </div>
-            
-            <p style="margin-top: 20px; font-size: 10px; color: #94a3b8; text-align: center;">
-                If the button doesn't work, copy this: ${data.actionLink || ''}
-            </p>
-        </div>
-    </div>`;
-
+    // 2. Calculate the specific late details for the email
+    const calc = calculateOverdueDetails(inv, state.settings);
+    
     try {
-        await supabaseClient.functions.invoke('send-email', {
-            body: { to, subject, type, html: emailHtml, data }
+        // 3. Look up the tenant's email address from the database
+        const { data: tenant, error } = await supabaseClient
+            .from('tenants')
+            .select('email, name')
+            .eq('id', inv.tenant_id)
+            .single();
+
+        if (error || !tenant?.email) {
+            showToast("Could not find tenant email.", "error");
+            return;
+        }
+
+        // 4. Trigger the email using your existing Spruce-themed sendEmail function
+        await sendEmail(tenant.email, `URGENT: Rent Overdue - Invoice #${inv.invoice_num}`, 'alert', {
+            title: "Late Rent Notice",
+            message: `Hello ${tenant.name}, your rent for Invoice #${inv.invoice_num} is currently ${calc.daysLate} days past its ${inv.grace_period}-day grace period. A late fee of $${calc.fee.toFixed(2)} has been applied to your balance.`,
+            actionLink: "https://kozeyy.com/tenant.html",
+            actionText: "Pay Now"
         });
-    } catch (e) {
-        console.error("Email Error:", e);
+
+        showToast(`Late notice sent to ${tenant.name}`);
+    } catch (err) {
+        console.error("Late Notice Error:", err);
+        showToast("Failed to send notice.", "error");
     }
 }
 function act_viewInvoice(id) {
@@ -3728,41 +3784,57 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     }
     
 // --- EMAIL HELPER FUNCTION (Supabase Edge Function) ---
-   // --- COMPLETE REPLACEMENT FOR sendEmail ---
-async function sendEmail(to, subject, type, data) {
+    async function sendEmail(to, subject, type, data) {
     if (!to || !to.includes('@')) return;
 
+    // Define the Spruce Theme
     const emailHtml = `
-    <div style="font-family: sans-serif; background-color: #f8fafc; padding: 40px 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; padding: 40px; border-radius: 12px; border: 1px solid #e2e8f0;">
-            <h1 style="color: #4f46e5; margin-bottom: 20px;">Kozeyy</h1>
-            <h2 style="font-size: 18px; color: #1e293b;">${data.title || 'Notification'}</h2>
-            <p style="color: #475569; line-height: 1.6;">${data.message}</p>
-            
-            ${data.actionLink ? `
-            <div style="margin-top: 30px; text-align: center;">
-                <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                    ${data.actionText || 'Get Started'}
-                </a>
+    <div style="font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+            <div style="background-color: #4f46e5; padding: 30px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: -0.5px;">Kozeyy</h1>
             </div>
-            ` : ''}
+            
+            <div style="padding: 40px 30px;">
+                <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">${data.title || 'Notification'}</h2>
+                <p style="font-size: 16px; line-height: 1.6; color: #475569;">${data.message}</p>
+                
+                ${data.actionLink ? `
+                <div style="margin-top: 30px; text-align: center;">
+                    <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; display: inline-block;">
+                        ${data.actionText || 'View Details'}
+                    </a>
+                </div>
+                ` : ''}
+            </div>
+
+            <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                    &copy; 2026 Kozeyy Property Management. All rights reserved.<br>
+                    Sent via Kozeyy Secure Automation.
+                </p>
+            </div>
         </div>
-    </div>`;
+    </div>
+    `;
 
     try {
-        await supabaseClient.functions.invoke('send-email', {
+        const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
             body: { 
-                to: to, 
-                subject: subject, 
-                type: type, 
-                html: emailHtml, 
-                data: data // Pass full data to ensure actionLink is present
+                to, 
+                subject, 
+                type, 
+                html: emailHtml, // Pass the spruced HTML
+                data 
             }
         });
+        if (error) throw error;
+        console.log("Email sent successfully!");
     } catch (e) {
-        console.error("Email Dispatch Error:", e);
+        console.error("Email failed:", e);
     }
 }
+
 function signOut() {
         openPlatformConfirm(
             "Sign Out?", 
@@ -3778,21 +3850,6 @@ function signOut() {
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
