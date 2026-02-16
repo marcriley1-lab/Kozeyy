@@ -7,10 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
     <style>
         body { font-family: 'Inter', sans-serif; background: #e2e8f0; } 
         .brand { font-family: 'Outfit', sans-serif; }
@@ -69,7 +67,7 @@
 
             <div class="mt-auto pt-8 border-t border-slate-100">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Verification Seal</h3>
-                <div id="qrcode" class="mx-auto mb-3 p-2 bg-white border border-slate-100 shadow-sm w-[112px] h-[112px] flex items-center justify-center"></div>
+                <div id="qrcode" class="mx-auto mb-3 flex justify-center p-2 bg-white border border-slate-100 shadow-sm w-32 h-32 items-center"></div>
                 <p class="text-[10px] text-slate-400 text-center leading-relaxed mb-6">
                     Scan to verify document authenticity.<br>This document is digitally secured by Kozeyy.
                 </p>
@@ -97,18 +95,18 @@
             if (!qrContainer) return;
             qrContainer.innerHTML = "";
 
-            // Use a clean URL for the scanner
-            const currentUrl = new URL(window.location.href);
-            const cleanUrl = currentUrl.origin + currentUrl.pathname + currentUrl.search;
+            // Create a minimized verification URL
+            const verifyUrl = new URL(window.location.href);
+            const shortUrl = `${verifyUrl.origin}${verifyUrl.pathname}?id=${params.get('id')}`;
 
             try {
                 new QRCode(qrContainer, {
-                    text: cleanUrl.trim(), // Remove hidden spaces
-                    width: 96,
-                    height: 96,
+                    text: shortUrl,
+                    width: 110,
+                    height: 110,
                     colorDark : "#000000",
                     colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.M // Medium correction level for easier scanning
+                    correctLevel : QRCode.CorrectLevel.Q // High reliability level
                 });
             } catch (err) {
                 console.error("QR Error:", err);
@@ -123,8 +121,7 @@
             document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
             document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
             
-            // Allow DOM to breathe before generating QR
-            setTimeout(generateQR, 200);
+            setTimeout(generateQR, 300);
         }
 
         async function fetchFreshData() {
@@ -137,14 +134,13 @@
                     document.getElementById('t-date').innerText = formatDate(data.lease_signed_at);
                     document.getElementById('o-date').innerText = formatDate(data.owner_signed_at);
                     if (data.lease_signed_at && data.owner_signed_at) {
-                        const badge = document.getElementById('executed-badge');
-                        badge.className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
-                        badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Executed';
+                        document.getElementById('executed-badge').className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
+                        document.getElementById('executed-badge').innerHTML = '<i class="fas fa-check-circle mr-1"></i> Executed';
                         document.getElementById('landlord-sig-block').classList.replace('border-slate-300', 'border-indigo-500');
                         document.getElementById('landlord-dot').classList.replace('bg-slate-300', 'bg-indigo-500');
                     }
                 }
-            } catch (err) { console.warn("DB update failed."); }
+            } catch (err) { console.warn("Background fetch failed."); }
         }
 
         window.onload = () => {
