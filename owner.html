@@ -3236,7 +3236,7 @@ async function processLeaseFinalization() {
             name: app.name,
             email: cleanEmail,
             rent_amount: parseFloat(app.rent || 0),
-            status: 'Active', // FORCE STATUS TO ACTIVE
+            status: 'Active',
             owner_id: ownerId, 
             lease_url: app.lease_url,
             lease_signed_at: app.tenant_signed_at || now,
@@ -3244,37 +3244,32 @@ async function processLeaseFinalization() {
             address: finalAddress || "Address Pending"
         };
 
-        // 3. FIND & MERGE LOGIC (Fix for duplicate rows)
-        // We fetch ALL matches for this email to ensure we catch "Applicant" rows
-        const { data: existingTenants, error: searchError } = await supabaseClient
-            .from('tenants')
-            .select('id, status')
-            .ilike('email', cleanEmail);
+        // 3. DETERMINE TARGET TENANT ID
+        // Priority A: Use the user_id directly from the application if it exists
+        // Priority B: Search local state by Email
+        let targetTenantId = app.user_id;
 
-        if (searchError) throw searchError;
+        if (!targetTenantId) {
+            const localMatch = state.tenants.find(t => 
+                t.email && t.email.trim().toLowerCase() === cleanEmail.toLowerCase()
+            );
+            if (localMatch) targetTenantId = localMatch.id;
+        }
 
-        if (existingTenants && existingTenants.length > 0) {
-            // Update the FIRST match found (Consolidating duplicates if they exist)
-            const targetId = existingTenants[0].id;
-            console.log(`Merging into existing tenant ID: ${targetId} (Old Status: ${existingTenants[0].status})`);
+        // 4. PERFORM UPSERT (Update if ID exists, Insert if not)
+        if (targetTenantId) {
+            console.log(`Updating existing tenant ID: ${targetTenantId}`);
+            // Explicitly set the ID in the data object to force an update on that row
+            tenantData.id = targetTenantId; 
             
-            const { error: updateError } = await supabaseClient
+            const { error: upsertError } = await supabaseClient
                 .from('tenants')
-                .update(tenantData)
-                .eq('id', targetId);
+                .upsert(tenantData); // Upsert works best when we provide the PK (id)
             
-            if (updateError) throw updateError;
-
-            // If there were accidentally multiple duplicates (like in your screenshot), 
-            // we optionally clean up the extras to keep the DB clean.
-            if (existingTenants.length > 1) {
-                const idsToDelete = existingTenants.slice(1).map(t => t.id);
-                await supabaseClient.from('tenants').delete().in('id', idsToDelete);
-            }
-
+            if (upsertError) throw upsertError;
         } else {
-            // Insert New only if ABSOLUTELY no match found
-            console.log("No existing record found. Creating new Active tenant.");
+            console.log("No link found. Creating new tenant.");
+            // No ID known -> Insert new row
             const { error: insertError } = await supabaseClient
                 .from('tenants')
                 .insert([tenantData]);
@@ -3282,24 +3277,23 @@ async function processLeaseFinalization() {
             if (insertError) throw insertError;
         }
 
-        // 4. Update App Status
+        // 5. Update App Status
         await supabaseClient.from('apps').update({ 
             status: 'Completed',
             owner_signed_at: now 
         }).eq('id', currentAppId);
 
-        // 5. Ghost Cleanup
+        // 6. Cleanup Ghost Data
         await supabaseClient.from('tenants').delete().eq('email', 'tenant@example.com');
         
-        // 6. Send Email
+        // 7. Send Email
         await sendEmail(app.email, "Welcome to Kozeyy!", 'welcome', { name: app.name, link: "https://kozeyy.com/tenant.html" });
         
-        // 7. Reset UI
+        // 8. Reset UI
         const confirmModal = document.getElementById('modal-platform-confirm');
         confirmModal.classList.add('hidden-section');
         confirmModal.classList.remove('flex');
         
-        // Restore Modal
         confirmModal.querySelector('div').innerHTML = `
             <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
                 <i class="fas fa-question"></i>
@@ -3316,7 +3310,7 @@ async function processLeaseFinalization() {
         renderAll();
         showToast("Lease Finalized & Tenant Profile Updated!");
 
-        // 8. Remove Listing Prompt
+        // 9. Remove Listing Prompt
         if(app.listing_id) {
             setTimeout(() => {
                 openPlatformConfirm(
@@ -3334,7 +3328,7 @@ async function processLeaseFinalization() {
 
     } catch(err) {
         console.error("Finalize Error:", err);
-        showToast("DB Error: " + err.message, 'error');
+        showToast("Error: " + err.message, 'error');
     } finally {
         btn.innerText = "Finalize Lease";
         btn.disabled = false;
@@ -3811,6 +3805,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
