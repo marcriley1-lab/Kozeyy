@@ -38,14 +38,6 @@
 
         <aside class="w-80 bg-white border-l border-slate-200 overflow-y-auto hidden lg:flex flex-col p-6 shadow-xl">
             <div class="mb-8">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Verification Seal</h3>
-                <div id="qrcode" class="mx-auto mb-3 flex justify-center p-1 bg-white border border-slate-100 shadow-sm w-24 h-24"></div>
-                <p class="text-[10px] text-slate-400 text-center leading-relaxed">
-                    Scan to verify document authenticity.<br>This document is digitally secured by Kozeyy.
-                </p>
-            </div>
-
-            <div class="mb-8">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Signature Certificate</h3>
                 <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-2">
                     <p class="text-[10px] text-slate-400 font-bold uppercase">Ref ID</p>
@@ -73,7 +65,13 @@
                 </div>
             </div>
 
-            <div class="mt-auto pt-8">
+            <div class="mt-auto pt-8 border-t border-slate-100">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Verification Seal</h3>
+                <div id="qrcode" class="mx-auto mb-3 flex justify-center p-1 bg-white border border-slate-100 shadow-sm w-24 h-24"></div>
+                <p class="text-[10px] text-slate-400 text-center leading-relaxed mb-6">
+                    Scan to verify document authenticity.<br>This document is digitally secured by Kozeyy.
+                </p>
+                
                 <button onclick="window.print()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-900 transition flex items-center justify-center gap-2">
                     <i class="fas fa-print"></i> Print Receipt
                 </button>
@@ -82,20 +80,16 @@
     </div>
 
     <script>
-        // CONFIG
         const S_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-
         const params = new URLSearchParams(window.location.search);
 
-        // Helper: Format Dates safely
         const formatDate = (iso) => {
             if (!iso || iso === 'null' || iso === 'undefined') return 'Pending Signature';
             const d = new Date(iso);
             return isNaN(d.getTime()) ? 'Pending Signature' : d.toLocaleString();
         };
 
-        // 1. IMMEDIATE RENDER (From URL params)
         function initialRender() {
             document.getElementById('pdf-frame').src = params.get('url') || '';
             document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
@@ -104,7 +98,6 @@
             document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
             document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
             
-            // Generate QR code pointing to this verification page
             new QRCode(document.getElementById("qrcode"), {
                 text: window.location.href,
                 width: 96,
@@ -115,42 +108,25 @@
             });
         }
 
-        // 2. BACKGROUND FETCH (Fresh data from tenants table)
         async function fetchFreshData() {
             const tenantId = params.get('id');
             if (!tenantId || !window.supabase) return;
-
             try {
                 const supabase = window.supabase.createClient(S_URL, S_KEY);
-                const { data, error } = await supabase
-                    .from('tenants')
-                    .select('lease_signed_at, owner_signed_at')
-                    .eq('id', tenantId)
-                    .maybeSingle();
-
+                const { data, error } = await supabase.from('tenants').select('lease_signed_at, owner_signed_at').eq('id', tenantId).maybeSingle();
                 if (data && !error) {
                     document.getElementById('t-date').innerText = formatDate(data.lease_signed_at);
                     document.getElementById('o-date').innerText = formatDate(data.owner_signed_at);
-                    
-                    // Update visuals if fully executed
                     if (data.lease_signed_at && data.owner_signed_at) {
-                        const badge = document.getElementById('executed-badge');
-                        badge.className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
-                        badge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Executed';
-
-                        // Change landlord signature styling to active
-                        const oBlock = document.getElementById('landlord-sig-block');
-                        const oDot = document.getElementById('landlord-dot');
-                        oBlock.classList.replace('border-slate-300', 'border-indigo-500');
-                        oDot.classList.replace('bg-slate-300', 'bg-indigo-500');
+                        document.getElementById('executed-badge').className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
+                        document.getElementById('executed-badge').innerHTML = '<i class="fas fa-check-circle mr-1"></i> Executed';
+                        document.getElementById('landlord-sig-block').classList.replace('border-slate-300', 'border-indigo-500');
+                        document.getElementById('landlord-dot').classList.replace('bg-slate-300', 'bg-indigo-500');
                     }
                 }
-            } catch (err) {
-                console.warn("DB Background fetch failed, using URL data instead.");
-            }
+            } catch (err) { console.warn(\"DB Background fetch failed.\"); }
         }
 
-        // Run Logic
         initialRender();
         fetchFreshData();
     </script>
