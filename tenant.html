@@ -1457,6 +1457,97 @@ function viewInvoice(id) {
         }, 3000);
     }
 
+async function confirmPay() { 
+    let tid = document.getElementById('pay-tenant-id').value; 
+    const sel = document.getElementById('pay-tenant-select'); 
+    const ownerId = localStorage.getItem('kozeyy_user_id'); 
+
+    // Handle selection from dropdown if the hidden ID field is empty
+    if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
+    
+    let amt = parseFloat(document.getElementById('pay-amount').value); 
+    let payDate = document.getElementById('pay-date').value;
+    
+    if(!tid || isNaN(amt) || amt <= 0) {
+        showToast("Please enter a valid amount and tenant.", "error");
+        return;
+    }
+
+    try {
+        // 1. Insert Payment Record into the 'payments' table
+        const { error: payError } = await supabaseClient.from('payments').insert([{ 
+            owner_id: ownerId,
+            tenant_id: tid, 
+            amount: amt, 
+            date: payDate 
+        }]);
+
+        if (payError) throw payError;
+
+        // 2. Apply payment to open invoices (FIFO logic)
+        const openInvoices = state.invoices
+            .filter(i => String(i.tenant_id) === String(tid) && i.status !== 'Paid')
+            .sort((a,b) => new Date(a.date) - new Date(b.date)); 
+        
+        let remainingAmt = amt;
+        for(const inv of openInvoices) { 
+            if (remainingAmt <= 0) break; 
+            const due = inv.total - (inv.amount_paid || 0); 
+            const pay = Math.min(remainingAmt, due); 
+            const newPaid = (inv.amount_paid || 0) + pay; 
+            const newStatus = newPaid >= inv.total ? 'Paid' : 'Unpaid'; 
+            
+            const updateData = { amount_paid: newPaid, status: newStatus };
+            if (newStatus === 'Paid') updateData.paid_date = new Date().toISOString();
+
+            await supabaseClient.from('invoices').update(updateData).eq('id', inv.id); 
+            remainingAmt -= pay; 
+        } 
+
+        // 3. TRIGGER EMAILS
+        // Ensure we have the tenant record to get their email
+        const tenant = state.tenants.find(t => String(t.id) === String(tid));
+        
+        if(tenant && tenant.email) {
+            // A. Send Receipt to Tenant
+            await sendEmail(tenant.email, "Rent Payment Receipt", 'receipt', { 
+                name: tenant.name, 
+                amount: amt.toLocaleString(undefined, {minimumFractionDigits: 2}), 
+                date: new Date(payDate).toLocaleDateString(),
+                title: "Payment Received",
+                message: `Thank you! Your payment of $${amt.toLocaleString()} has been processed and applied to your balance.`,
+                actionLink: "https://kozeyy.com/tenant.html"
+            });
+
+            // B. Send Alert to Owner (Marcus Riley)
+            // We fetch your email dynamically from the owners table
+            const { data: owner } = await supabaseClient
+                .from('owners')
+                .select('email')
+                .eq('id', ownerId)
+                .single();
+
+            const targetOwnerEmail = owner?.email || "marcus.riley@kozeyy.com";
+
+            await sendEmail(targetOwnerEmail, "New Payment Received", 'alert', {
+                title: "Rent Paid Alert",
+                message: `Your tenant, ${tenant.name}, has recorded a payment of $${amt.toLocaleString()} for the date of ${payDate}.`,
+                actionLink: "https://kozeyy.com/owner.html",
+                actionText: "View Dashboard"
+            });
+        }
+
+        closeModal('modal-pay'); 
+        await fetchData(); // Refresh local state
+        renderAll(); // Refresh UI
+        showToast("Payment Recorded & Notifications Sent"); 
+
+    } catch (err) {
+        console.error("Payment Process Error:", err);
+        showToast("Error processing payment: " + err.message, "error");
+    }
+}
+        
     function openPlatformConfirm(title, message, callback) {
         document.getElementById('plat-conf-title').innerText = title;
         document.getElementById('plat-conf-msg').innerText = message;
@@ -1480,6 +1571,7 @@ function viewInvoice(id) {
     </script>
 </body>
 </html>
+
 
 
 
