@@ -2785,24 +2785,32 @@ async function confirmPay() {
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
  function renderFinancials() {
-    const tbody = document.getElementById('financials-tbody');
-    tbody.innerHTML = '';
-    
-    // Combine invoices and payments for a unified ledger
-    let transactions = [
-        ...state.invoices.map(i => ({ type: 'invoice', date: i.date, displayDate: formatDate(i.date), data: i })),
-        ...state.payments.map(p => ({ type: 'payment', date: p.date, displayDate: formatDate(p.date), data: p }))
-    ];
-    
-    // Sort by date descending
-    transactions.sort((a,b) => new Date(b.date) - new Date(a.date));
+    const filterVal = document.getElementById('filter-financials').value;
+    const tbody = document.getElementById('table-financials');
+    const balanceDisplay = document.getElementById('fin-open-bal');
+    const sumContainer = document.getElementById('fin-summary-container'); 
 
+    tbody.innerHTML = '';
+    let transactions = [];
+
+    state.invoices.forEach(inv => {
+        if (filterVal === 'all' || inv.tenant_id == filterVal) {
+            transactions.push({ type: 'invoice', data: inv, sortTime: new Date(inv.created_at).getTime(), displayDate: new Date(inv.date || inv.created_at).toLocaleDateString() });
+        }
+    });
+    state.payments.forEach(pay => {
+        if (filterVal === 'all' || pay.tenant_id == filterVal) {
+            transactions.push({ type: 'payment', data: pay, sortTime: new Date(pay.created_at).getTime(), displayDate: new Date(pay.date || pay.created_at).toLocaleDateString() });
+        }
+    });
+
+    transactions.sort((a, b) => b.sortTime - a.sortTime);
     let totalOutstandingDebt = 0;
 
     transactions.forEach(item => {
         const isInv = item.type === 'invoice';
         const record = item.data;
-        const tenant = state.tenants.find(t => String(t.id) === String(record.tenant_id)) || { name: 'Unknown' };
+        const tenant = state.tenants.find(t => t.id == record.tenant_id) || { name: 'Unknown' };
         const dateStr = item.displayDate;
         
         if (isInv) {
@@ -2814,8 +2822,6 @@ async function confirmPay() {
 
             let statusLabel = record.status;
             let statusColor = 'text-slate-500 bg-slate-50';
-            // Default eye icon for all rows
-            let actionContent = `<button onclick="act_viewInvoice('${record.id}')" class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button>`;
 
             if (record.status === 'Paid') {
                 statusColor = 'text-emerald-600 bg-emerald-50';
@@ -2825,51 +2831,37 @@ async function confirmPay() {
             } else if (calc.isOverdue) {
                 statusLabel = `Overdue (+${calc.daysLate}d)`;
                 statusColor = 'text-rose-600 bg-rose-50';
-                
-                // INJECT REMIND BUTTON: Only for overdue invoices
-                actionContent = `
-                    <div class="flex items-center justify-end gap-3">
-                        <button onclick="sendLateNotice('${record.id}')" 
-                                class="bg-rose-600 text-white px-3 py-1 rounded text-[10px] font-bold shadow-sm hover:bg-rose-700 transition flex items-center">
-                            <i class="fas fa-bell mr-1"></i> Remind
-                        </button>
-                        <button onclick="act_viewInvoice('${record.id}')" class="text-slate-400 hover:text-indigo-600">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                    </div>`;
             } else {
                 statusLabel = 'Unpaid';
                 statusColor = 'text-amber-600 bg-amber-50';
             }
             
             tbody.innerHTML += `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                <tr onclick="act_viewInvoice('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                     <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">#${record.invoice_num || '---'}</span></td>
                     <td class="p-5 text-sm text-slate-500 hidden md:table-cell">${(record.items && record.items[0]) ? record.items[0].desc : 'Rent'}</td>
                     <td class="p-5 text-right font-bold text-slate-800 hidden md:table-cell">$${(record.total||0).toLocaleString()}</td>
                     <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
-                    <td class="p-5 text-right">${actionContent}</td>
+                    <td class="p-5 text-right hidden md:table-cell"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
                 </tr>`;
         } else {
-            // Logic for rendering payment rows
             tbody.innerHTML += `
-                <tr class="hover:bg-slate-50 transition border-b border-slate-100 bg-emerald-50/30">
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer">
                     <td class="p-5 text-sm font-medium text-slate-500">${dateStr}</td>
                     <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
-                    <td class="p-5"><span class="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Payment Received</span></td>
-                    <td class="p-5 text-sm text-slate-500 hidden md:table-cell italic">Rent Payment</td>
+                    <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600">PAYMENT</span></td>
+                    <td class="p-5 text-sm text-slate-400 italic hidden md:table-cell">Bank Record</td>
                     <td class="p-5 text-right font-bold text-emerald-600 hidden md:table-cell">+$${(record.amount||0).toLocaleString()}</td>
-                    <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase text-emerald-600 bg-emerald-100">Applied</span></td>
-                    <td class="p-5 text-right"><i class="fas fa-check-double text-emerald-400"></i></td>
+                    <td class="p-5 text-right text-xs text-slate-400">-</td>
+                    <td class="p-5 text-right text-xs text-slate-400 hidden md:table-cell">-</td>
                 </tr>`;
         }
     });
 
-    // Update the Summary Stat at the top
-    const debtEl = document.getElementById('stat-total-outstanding');
-    if (debtEl) debtEl.innerText = `$${totalOutstandingDebt.toLocaleString()}`;
+    if(balanceDisplay) balanceDisplay.innerText = `$${totalOutstandingDebt.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+    if(sumContainer) sumContainer.classList.remove('hidden-section');
 }
     // New Helper Function for Mobile Payment Details
     function act_viewPayment(id) {
@@ -2909,42 +2901,6 @@ async function confirmPay() {
 
     openModal('modal-invoice');
     logic_invMode('fixed');
-}
-
-    async function sendLateNotice(invoiceId) {
-    // 1. Find the invoice in your local state
-    const inv = state.invoices.find(i => String(i.id) === String(invoiceId));
-    if (!inv) return;
-
-    // 2. Calculate the specific late details for the email
-    const calc = calculateOverdueDetails(inv, state.settings);
-    
-    try {
-        // 3. Look up the tenant's email address from the database
-        const { data: tenant, error } = await supabaseClient
-            .from('tenants')
-            .select('email, name')
-            .eq('id', inv.tenant_id)
-            .single();
-
-        if (error || !tenant?.email) {
-            showToast("Could not find tenant email.", "error");
-            return;
-        }
-
-        // 4. Trigger the email using your existing Spruce-themed sendEmail function
-        await sendEmail(tenant.email, `URGENT: Rent Overdue - Invoice #${inv.invoice_num}`, 'alert', {
-            title: "Late Rent Notice",
-            message: `Hello ${tenant.name}, your rent for Invoice #${inv.invoice_num} is currently ${calc.daysLate} days past its ${inv.grace_period}-day grace period. A late fee of $${calc.fee.toFixed(2)} has been applied to your balance.`,
-            actionLink: "https://kozeyy.com/tenant.html",
-            actionText: "Pay Now"
-        });
-
-        showToast(`Late notice sent to ${tenant.name}`);
-    } catch (err) {
-        console.error("Late Notice Error:", err);
-        showToast("Failed to send notice.", "error");
-    }
 }
 function act_viewInvoice(id) {
         const inv = state.invoices.find(i => i.id === id);
@@ -3850,7 +3806,6 @@ function signOut() {
 </script>
 </body>
 </html>
-
 
 
 
