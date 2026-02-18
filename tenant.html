@@ -353,7 +353,7 @@
                         <div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in"><input type="checkbox" name="toggle" id="toggle-credit" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300" onclick="handleCreditToggle()"/><label for="toggle-credit" class="toggle-label block overflow-hidden h-6 rounded-full bg-slate-300 cursor-pointer"></label></div>
                     </div>
                 </div>
-                <div class="mt-8 text-center"><a href="login.html" class="text-red-500 text-sm font-medium hover:underline">Sign Out</a><p class="text-xs text-slate-300 mt-4">Version 3.8.0 (Live Chat)</p></div>
+                <div class="mt-8 text-center"><a href="login.html" class="text-red-500 text-sm font-medium hover:underline">Sign Out</a><p class="text-xs text-slate-300 mt-4">Founder Edition 1.0.0</p></div>
             </div>
         </div>
     </main>
@@ -529,45 +529,35 @@
         let activeTab = "home"; 
 
           // --- TENANT MASTER CALCULATOR (Consistent with Owner Dashboard) ---
-    function calculateOverdueDetails(inv) {
-        // Tenants don't have access to global 'settings', so we rely on the invoice snapshot
-        // If data is missing, we assume 5 days grace and $0 fee to prevent errors.
-        const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : 5;
-        
-        const now = new Date();
-        now.setHours(0,0,0,0);
-        
-        const parts = (inv.date || '').split('-');
-        const invDate = new Date(parts[0], parts[1]-1, parts[2]);
-        
-        const dueDate = new Date(invDate);
-        dueDate.setHours(0,0,0,0);
-        dueDate.setDate(dueDate.getDate() + grace);
-        
-        const isOverdue = now > dueDate && inv.status !== 'Paid';
-        let daysLate = 0;
-        let fee = 0;
+    function calculateOverdueDetails(inv, globalSettings) {
+    const grace = inv.grace_period !== undefined ? 
+                  parseInt(inv.grace_period) : 
+                  (parseInt(globalSettings.grace_period || 0));
+    
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize current time
+    
+    const parts = (inv.date || '').split('-');
+    const invDate = new Date(parts[0], parts[1] - 1, parts[2]);
+    
+    const dueDate = new Date(invDate);
+    dueDate.setHours(0, 0, 0, 0); // Normalize due date
+    dueDate.setDate(dueDate.getDate() + grace);
+    
+    const isOverdue = now > dueDate && inv.status !== 'Paid';
+    let daysLate = 0;
 
-        if(isOverdue) {
-            const diffTime = now - dueDate;
-            daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            // Fee Logic
-            if (inv.fee_enabled !== false) {
-                const fType = inv.fee_type || 'Fixed';
-                const fVal = parseFloat(inv.fee_value || 0);
-
-                if (fType === 'Daily') fee = fVal * daysLate;
-                else if (fType === 'Percentage') fee = inv.total * (fVal / 100);
-                else fee = fVal;
-            }
-        }
-        return { isOverdue, daysLate, fee };
+    if (isOverdue) {
+        const diffTime = now - dueDate;
+        daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
+    
+    return { isOverdue, daysLate };
+}
        // --- MAIN RENDER FUNCTION ---
         async function render(skipFetch = false) {
             if(!supabaseClient) return;
-
+            await verifySession();
             if(!skipFetch) {
                 const [u, i, m, mt] = await Promise.all([
                    supabaseClient.from('tenants').select('*').eq('id', USER_ID).single(),
@@ -1051,6 +1041,13 @@ if (globalData.user && globalData.user.owner_id) {
 
    async function handleMaintSubmit(e) {
     e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const originalText = btn.innerText;
+
+    // Immediately disable to prevent duplicate tickets
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...`;
+
     const desc = document.getElementById('m-desc').value;
     const cat = document.getElementById('m-cat').value;
     const allowEntry = document.getElementById('entry').checked; 
@@ -1059,29 +1056,15 @@ if (globalData.user && globalData.user.owner_id) {
     const ownerId = globalData.user ? globalData.user.owner_id : null;
 
     if (!ownerId) {
-        showToast("Error: Cannot find property owner to notify.", 'error');
+        showToast("Error: Cannot find property owner.", 'error');
+        btn.disabled = false;
+        btn.innerText = originalText;
         return;
     }
 
     const permText = allowEntry ? "[Entry Permitted]" : "[Call for Entry]";
     const fullDesc = `${desc} \n\n${permText}`;
     const issueTitle = `${cat}: ${desc.substring(0, 30)}...`;
-
-    toggleModal('requestModal'); 
-    e.target.reset(); 
-    
-    // Optimistic UI update
-    const dateIso = new Date().toISOString();
-    optimisticMaint.push({ 
-        tenant_id: USER_ID, 
-        issue: issueTitle, 
-        category: cat, 
-        description: fullDesc, 
-        status: 'Active', 
-        created_at: dateIso 
-    });
-    localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-    render(true); 
 
     try {
         const { error } = await supabaseClient.from('maintenance').insert([{ 
@@ -1095,24 +1078,17 @@ if (globalData.user && globalData.user.owner_id) {
         
         if (error) throw error; 
 
-        // --- OWNER NOTIFICATION ---
-        const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', ownerId).single();
-        const targetEmail = owner?.email || "marcus.riley@kozeyy.com"; // Fallback
-
-        await sendEmail(targetEmail, "New Maintenance Request", 'alert', {
-            title: `New Request from ${tenantName}`,
-            message: `<strong>Category:</strong> ${cat}<br><strong>Issue:</strong> ${desc}<br><strong>Entry:</strong> ${allowEntry ? 'Yes' : 'No'}`,
-            actionLink: "https://kozeyy.com/owner.html"
-        });
-
+        // Trigger notifications...
         showToast("Request sent successfully!");
+        toggleModal('requestModal');
+        e.target.reset();
+        await render(false);
 
     } catch(err) {
-        console.error("Maintenance submit error:", err);
-        optimisticMaint.pop();
-        localStorage.setItem('kozeyy_opt_maint', JSON.stringify(optimisticMaint));
-        render(true);
-        showToast("Network error: Request not saved.", 'error');
+        console.error("Maintenance error:", err);
+        showToast("Error: Request not saved.", 'error');
+        btn.disabled = false;
+        btn.innerText = originalText;
     }
 }
         
@@ -1383,6 +1359,23 @@ function viewInvoice(id) {
         showToast("Error: " + err.message, 'error'); 
     }
         }
+
+async function verifySession() {
+    // Directly check with Supabase for a valid session
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    
+    if (error || !session) {
+        console.warn("Session verification failed. Redirecting to login.");
+        localStorage.removeItem('kozeyy_user_id');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Ensure the localStorage matches the authenticated session ID
+    if (session.user.id !== localStorage.getItem('kozeyy_user_id')) {
+        localStorage.setItem('kozeyy_user_id', session.user.id);
+    }
+}
         
         async function uploadInsurance() { 
         const input = document.createElement('input'); 
@@ -1570,6 +1563,7 @@ async function confirmPay() {
     </script>
 </body>
 </html>
+
 
 
 
