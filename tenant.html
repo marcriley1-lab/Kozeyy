@@ -528,31 +528,56 @@
         let lastMaintHash = "";
         let activeTab = "home"; 
 
+        const stateTimezones = {
+    'AL': 'America/Chicago', 'AK': 'America/Anchorage', 'AZ': 'America/Phoenix', 'AR': 'America/Chicago',
+    'CA': 'America/Los_Angeles', 'CO': 'America/Denver', 'CT': 'America/New_York', 'DE': 'America/New_York',
+    'FL': 'America/New_York', 'GA': 'America/New_York', 'HI': 'Pacific/Honolulu', 'ID': 'America/Boise',
+    'IL': 'America/Chicago', 'IN': 'America/Indiana/Indianapolis', 'IA': 'America/Chicago', 'KS': 'America/Chicago',
+    'KY': 'America/Kentucky/Louisville', 'LA': 'America/Chicago', 'ME': 'America/New_York', 'MD': 'America/New_York',
+    'MA': 'America/New_York', 'MI': 'America/Detroit', 'MN': 'America/Chicago', 'MS': 'America/Chicago',
+    'MO': 'America/Chicago', 'MT': 'America/Denver', 'NE': 'America/Chicago', 'NV': 'America/Los_Angeles',
+    'NH': 'America/New_York', 'NJ': 'America/New_York', 'NM': 'America/Denver', 'NY': 'America/New_York',
+    'NC': 'America/New_York', 'ND': 'America/Chicago', 'OH': 'America/New_York', 'OK': 'America/Chicago',
+    'OR': 'America/Los_Angeles', 'PA': 'America/New_York', 'RI': 'America/New_York', 'SC': 'America/New_York',
+    'SD': 'America/Chicago', 'TN': 'America/Chicago', 'TX': 'America/Chicago', 'UT': 'America/Denver',
+    'VT': 'America/New_York', 'VA': 'America/New_York', 'WA': 'America/Los_Angeles', 'WV': 'America/New_York',
+    'WI': 'America/Chicago', 'WY': 'America/Denver', 'DC': 'America/New_York'
+};
+
           // --- TENANT MASTER CALCULATOR (Consistent with Owner Dashboard) ---
-    function calculateOverdueDetails(inv, globalSettings) {
-    const grace = inv.grace_period !== undefined ? 
-                  parseInt(inv.grace_period) : 
-                  (parseInt(globalSettings.grace_period || 0));
+   function calculateOverdueDetails(inv) {
+    const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : 5;
     
-    const now = new Date();
-    now.setHours(0, 0, 0, 0); // Normalize current time
+    // Use tenant profile state as fallback if not on invoice
+    const propertyState = inv.state || (globalData && globalData.user ? globalData.user.state : 'GA');
+    const tz = stateTimezones[propertyState] || 'America/New_York';
+    
+    const tzString = new Date().toLocaleString("en-US", {timeZone: tz});
+    const now = new Date(tzString);
+    now.setHours(0,0,0,0);
     
     const parts = (inv.date || '').split('-');
-    const invDate = new Date(parts[0], parts[1] - 1, parts[2]);
-    
-    const dueDate = new Date(invDate);
-    dueDate.setHours(0, 0, 0, 0); // Normalize due date
+    const dueDate = new Date(parts[0], parts[1]-1, parts[2]);
+    dueDate.setHours(0,0,0,0);
     dueDate.setDate(dueDate.getDate() + grace);
     
     const isOverdue = now > dueDate && inv.status !== 'Paid';
     let daysLate = 0;
+    let fee = 0;
 
-    if (isOverdue) {
+    if(isOverdue) {
         const diffTime = now - dueDate;
         daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (inv.fee_enabled !== false) {
+            const fType = inv.fee_type || 'Fixed';
+            const fVal = parseFloat(inv.fee_value || 0);
+            if (fType === 'Daily') fee = fVal * daysLate;
+            else if (fType === 'Percentage') fee = inv.total * (fVal / 100);
+            else fee = fVal;
+        }
     }
-    
-    return { isOverdue, daysLate };
+    return { isOverdue, daysLate, fee };
 }
        // --- MAIN RENDER FUNCTION ---
         async function render(skipFetch = false) {
@@ -1361,17 +1386,12 @@ function viewInvoice(id) {
         }
 
 async function verifySession() {
-    // Directly check with Supabase for a valid session
     const { data: { session }, error } = await supabaseClient.auth.getSession();
-    
     if (error || !session) {
-        console.warn("Session verification failed. Redirecting to login.");
         localStorage.removeItem('kozeyy_user_id');
         window.location.href = 'login.html';
         return;
     }
-
-    // Ensure the localStorage matches the authenticated session ID
     if (session.user.id !== localStorage.getItem('kozeyy_user_id')) {
         localStorage.setItem('kozeyy_user_id', session.user.id);
     }
@@ -1563,6 +1583,7 @@ async function confirmPay() {
     </script>
 </body>
 </html>
+
 
 
 
