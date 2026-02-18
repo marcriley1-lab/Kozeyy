@@ -1099,45 +1099,48 @@ const KOZEYY_PLANS = {
     let platformConfirmCallback = null;
 
     // --- MASTER CALCULATOR (Fixes Time-of-Day Bugs) ---
-    function calculateOverdueDetails(inv, globalSettings) {
-        // 1. Get Grace Period (Invoice specific or Global default)
-        const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : (parseInt(globalSettings.grace_period || 0));
-        
-        // 2. Normalize Dates (Strip Time to ensure exact day count)
-        const now = new Date();
-        now.setHours(0,0,0,0);
-        
-        // Parse Invoice Date safely
-        const parts = (inv.date || '').split('-');
-        const invDate = new Date(parts[0], parts[1]-1, parts[2]);
-        
-        const dueDate = new Date(invDate);
-        dueDate.setHours(0,0,0,0);
-        dueDate.setDate(dueDate.getDate() + grace);
-        
-        const isOverdue = now > dueDate && inv.status !== 'Paid';
-        let daysLate = 0;
-        let fee = 0;
+    function calculateOverdueDetails(inv, globalSettings = {}) {
+    const grace = inv.grace_period !== undefined ? 
+                  parseInt(inv.grace_period) : 
+                  (parseInt(globalSettings.grace_period || 0));
+    
+    // Fallback: Use invoice state, then default to Georgia
+    const propertyState = inv.state || 'GA';
+    const tz = stateTimezones[propertyState] || 'America/New_York';
 
-        if(isOverdue) {
-            const diffTime = now - dueDate;
-            daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            // 3. Calculate Fee
-            const fEnabled = inv.fee_enabled !== undefined ? inv.fee_enabled : (globalSettings.late_fee_enabled !== false);
-            
-            if (fEnabled) {
-                const fType = inv.fee_type || globalSettings.late_fee_method || 'Fixed';
-                const fVal = parseFloat(inv.fee_value !== undefined ? inv.fee_value : (globalSettings.late_fee_amount || 0));
+    // Get "Now" in the property's specific timezone
+    const tzString = new Date().toLocaleString("en-US", {timeZone: tz});
+    const now = new Date(tzString);
+    now.setHours(0,0,0,0);
+    
+    const parts = (inv.date || '').split('-');
+    const dueDate = new Date(parts[0], parts[1]-1, parts[2]);
+    dueDate.setHours(0,0,0,0);
+    dueDate.setDate(dueDate.getDate() + grace);
+    
+    const isOverdue = now > dueDate && inv.status !== 'Paid';
+    let daysLate = 0;
+    let fee = 0;
 
-                if (fType === 'Daily') fee = fVal * daysLate; // Fixes the "missing multiplier" bug
-                else if (fType === 'Percentage') fee = inv.total * (fVal / 100);
-                else fee = fVal; // Fixed
-            }
+    if(isOverdue) {
+        const diffTime = now - dueDate;
+        daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        const fEnabled = inv.fee_enabled !== undefined ? 
+                         inv.fee_enabled : (globalSettings.late_fee_enabled !== false);
+        
+        if (fEnabled) {
+            const fType = inv.fee_type || globalSettings.late_fee_method || 'Fixed';
+            const fVal = parseFloat(inv.fee_value !== undefined ? 
+                         inv.fee_value : (globalSettings.late_fee_amount || 0));
+
+            if (fType === 'Daily') fee = fVal * daysLate;
+            else if (fType === 'Percentage') fee = inv.total * (fVal / 100);
+            else fee = fVal;
         }
-        return { isOverdue, daysLate, fee };
     }
-
+    return { isOverdue, daysLate, fee };
+}
     // --- 1. INIT & POLLING ---
    async function initSystem() {
     try {
@@ -2596,37 +2599,44 @@ function act_markAsSigned(appId) {
     }
     function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
 
-   function initChart(stats = {revenue:0, overdue:0}) { 
-        const ctx = document.getElementById('revenueChart'); 
-        if(!ctx) return; 
-        
-        // FIX: Update existing chart instead of destroying it
-        if (chartInstance) {
-            chartInstance.data.datasets[0].data = [stats.revenue, stats.outstanding, stats.overdue];
-            chartInstance.update();
-            return;
-        }
-
-        const context = ctx.getContext('2d'); 
-        chartInstance = new Chart(context, { 
-            type: 'bar', 
-            data: { 
-                labels: ['Collected', 'Outstanding', 'Overdue'], 
-                datasets: [{ 
-                    label: 'Financials', 
-                    // Use the stats values passed in
-                    data: [stats.revenue, stats.outstanding, stats.overdue], 
-                    backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], 
-                    borderRadius: 6 
-                }] 
-            }, 
-            options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
-                plugins: { legend: { display: false } } 
-            } 
-        }); 
+   function initChart(stats = {revenue:0, overdue:0, outstanding:0}) { 
+    const ctx = document.getElementById('revenueChart'); 
+    if(!ctx) return; 
+    
+    if (chartInstance) {
+        chartInstance.data.datasets[0].data = [stats.revenue, stats.outstanding, stats.overdue];
+        chartInstance.update();
+        return;
     }
+
+    const context = ctx.getContext('2d'); 
+    chartInstance = new Chart(context, { 
+        type: 'bar', 
+        data: { 
+            labels: ['Collected', 'Outstanding', 'Overdue'], 
+            datasets: [{ 
+                label: 'Financials', 
+                data: [stats.revenue, stats.outstanding, stats.overdue], 
+                backgroundColor: ['#10b981', '#f59e0b', '#f43f5e'], 
+                borderRadius: 6 
+            }] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } }, // Vertical lines removed
+                y: {
+                    beginAtZero: true,
+                    min: 0,
+                    max: 3000, // Fixed scale for launch baseline
+                    grid: { display: false } // Horizontal lines removed
+                }
+            }
+        } 
+    }); 
+}
     function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart'); if(!ctx) return; const context = ctx.getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(context, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
     function getMonthlyFinancials() { const months = [], revenueData = [], expenseData = []; const today = new Date(); for(let i=5; i>=0; i--) { const d = new Date(today.getFullYear(), today.getMonth() - i, 1); const mKey = d.getMonth(); const yKey = d.getFullYear(); months.push(d.toLocaleString('default', { month: 'short' })); const monthRev = state.payments.reduce((sum, p) => { const pd = parseDateStr(p.date); return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum; }, 0); revenueData.push(monthRev); const monthExp = state.expenses.reduce((sum, e) => { const ed = parseDateStr(e.date); return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum; }, 0); expenseData.push(monthExp); } return { labels: months, revenue: revenueData, expenses: expenseData }; }
 
@@ -3727,6 +3737,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
