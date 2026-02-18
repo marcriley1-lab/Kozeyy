@@ -183,11 +183,12 @@
         }
 
         // --- AUTH LOGIC ---
-    async function handleLogin(e) {
+   async function handleLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-login');
     const originalText = btn.innerText;
     
+    // UI Feedback: Start loading
     btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Logging in...`;
     btn.disabled = true;
 
@@ -202,11 +203,10 @@
 
         if (error) throw error;
 
-        // 1. Store User ID
+        // 1. Establish the Session Identity
         localStorage.setItem('kozeyy_user_id', data.user.id);
 
-        // 2. Determine Role and Redirect Fallback
-        // Check if user exists in the 'owners' table
+        // 2. Identify Role: Check if this user is a Landlord (Owner)
         const { data: ownerProfile } = await supabaseClient
             .from('owners')
             .select('id')
@@ -214,7 +214,7 @@
             .maybeSingle();
 
         if (ownerProfile) {
-            // User is a Landlord/Owner
+            // Success: Redirect to Landlord Dashboard
             localStorage.setItem('kozeyy_role', 'owner');
             window.location.href = 'owner.html';
         } else {
@@ -225,7 +225,7 @@
             const pendingListing = localStorage.getItem('pending_application_lid');
             
             if (pendingListing) {
-                // User was in the middle of applying
+                // User was in the middle of applying; send them back to finish
                 window.location.href = `applicant.html?listing_id=${pendingListing}`;
             } else {
                 // Standard resident login
@@ -240,7 +240,7 @@
             errorEl.innerText = "Invalid email or password.";
             errorEl.classList.remove('hidden-section');
         }
-    } finally {
+        // Reset button only on failure
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
@@ -263,6 +263,7 @@
     </script>
 </body>
 </html>
+
 
 
 
