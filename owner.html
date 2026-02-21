@@ -1744,23 +1744,31 @@ function toggleFeeVisibility() {
     }
 
    function renderChatList() { 
-        const l = document.getElementById('list-chats'); 
-        if(!l) return;
-        l.innerHTML = ''; 
-        const sortedChats = state.tenants.filter(t => t.status !== 'Vacant').map(t => {
-            const msgs = state.msgs.filter(m => m.tenant_id === t.id);
-            const lastTime = msgs.length > 0 ? new Date(msgs[msgs.length - 1].created_at).getTime() : 0;
-            const unread = msgs.filter(m => m.from === 'Tenant' && !m.read_at).length;
-            return { tenant: t, time: lastTime, unread: unread };
-        }).sort((a, b) => b.time - a.time); 
+    const l = document.getElementById('list-chats'); 
+    if(!l) return;
+    l.innerHTML = ''; 
+    const sortedChats = state.tenants.filter(t => t.status !== 'Vacant').map(t => {
+        const msgs = state.msgs.filter(m => m.tenant_id === t.id);
+        const lastTime = msgs.length > 0 ? new Date(msgs[msgs.length - 1].created_at).getTime() : 0;
+        const unread = msgs.filter(m => m.from === 'Tenant' && !m.read_at).length;
+        return { tenant: t, time: lastTime, unread: unread };
+    }).sort((a, b) => b.time - a.time); 
 
-        sortedChats.forEach(item => { 
-            const t = item.tenant;
-            const badge = item.unread > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">${item.unread}</span>` : '';
-            // FIX: Added single quotes around ${t.id} in onclick event
-            l.innerHTML += `<div onclick="openChat('${t.id}')" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition"><div><span>${t.name}</span></div><div class="flex items-center gap-2">${badge}<i class="fas fa-chevron-right text-slate-300 text-xs"></i></div></div>`; 
-        }); 
-    }
+    sortedChats.forEach(item => { 
+        const t = item.tenant;
+        const badge = item.unread > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">${item.unread}</span>` : '';
+        
+        // FIX: Wrap ${t.id} in single quotes so it is passed as a string
+        l.innerHTML += `
+            <div onclick="openChat('${t.id}')" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition">
+                <div><span>${t.name}</span></div>
+                <div class="flex items-center gap-2">
+                    ${badge}
+                    <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
+                </div>
+            </div>`; 
+    }); 
+}
 
     async function openChat(id) { 
         currentChatId=id; 
@@ -3751,6 +3759,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
