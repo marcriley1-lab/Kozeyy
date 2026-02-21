@@ -512,9 +512,9 @@
                         </div>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
-                        <input type="number" id="fee-grace" class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 5">
-                    </div>
+    <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
+    <input type="number" id="fee-grace" min="0" class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 5">
+</div>
                 </div>
             </div>
         </div>
@@ -548,6 +548,12 @@
                             <span class="text-sm font-bold text-slate-700">No Criminal History</span>
                         </label>
                     </div>
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+    <label class="flex items-center gap-3 cursor-pointer">
+        <input type="checkbox" id="set-require-insurance" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
+        <span class="text-sm font-bold text-slate-700">Require Renter's Insurance</span>
+    </label>
+</div>
                 </div>
             </div>
         </div>
@@ -1699,7 +1705,7 @@ function renderAll() {
         
         if(view === 'financials') populateFinFilter();
         if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
-        if(view === 'messages') { renderChatList(); backToChatList(); }
+        if(view === 'messages') { renderChatList(); backToChatList();} // Triggers the hidden state for the view panel
         if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
         if(view === 'settings') { renderSettings(); } 
     }
@@ -1714,27 +1720,27 @@ function toggleFeeVisibility() {
     }
 }
     
-   function renderSettings() {
+  function renderSettings() {
     const s = state.settings;
     if(!s) return;
     if(document.getElementById('set-stripe-id')) document.getElementById('set-stripe-id').value = s.stripe_connect_id || '';
-    
     if(document.getElementById('set-fee-active')) {
-        // --- UPDATED: Default to false if never set ---
         const isActive = s.late_fee_enabled === true; 
         document.getElementById('set-fee-active').checked = isActive;
         toggleFeeVisibility();
     }
     if(document.getElementById('fee-amount')) document.getElementById('fee-amount').value = s.late_fee_amount || 50; 
-    if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 5; 
+    if(document.getElementById('fee-grace')) document.getElementById('fee-grace').value = s.grace_period || 0; 
     if(document.getElementById('fee-method')) document.getElementById('fee-method').value = s.late_fee_method || 'Fixed';
-
     if(document.getElementById('set-min-score')) document.getElementById('set-min-score').value = s.min_credit_score || 650;
     if(document.getElementById('set-min-income')) document.getElementById('set-min-income').value = s.min_income_ratio || 3.0;
     if(document.getElementById('set-no-evict')) document.getElementById('set-no-evict').checked = !!s.require_no_evictions;
     if(document.getElementById('set-no-crim')) document.getElementById('set-no-crim').checked = !!s.require_no_criminal_history;
+    // Load insurance requirement state
+    if(document.getElementById('set-require-insurance')) {
+        document.getElementById('set-require-insurance').checked = !!s.require_insurance;
+    }
 }
-
     function viewMaintNote(id) { 
         const m = state.maint.find(x => x.id == id); 
         setText('md-issue', m.issue); 
@@ -1773,19 +1779,34 @@ function toggleFeeVisibility() {
 }
 
     async function openChat(id) { 
-        currentChatId=id; 
-        setText('chat-title', state.tenants.find(x=>x.id==id).name); 
-        renderMessages(true);
-        const unreadIds = state.msgs.filter(m => m.tenant_id === id && m.from === 'Tenant' && !m.read_at).map(m => m.id);
-        if(unreadIds.length > 0) {
-            unreadIds.forEach(uid => locallyReadMsgIds.add(String(uid)));
-            localStorage.setItem('kozeyy_read_msgs', JSON.stringify([...locallyReadMsgIds]));
-            state.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
-            await supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
-            renderAll(); 
-        }
-        if(window.innerWidth < 768) { document.getElementById('msg-list-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('hidden'); document.getElementById('msg-view-panel').classList.add('flex'); } 
+    currentChatId = id; 
+    const tenant = state.tenants.find(x => x.id == id);
+    if(!tenant) return;
+
+    // UI Enhancement: Reveal the chat window only after a tenant is selected
+    const viewPanel = document.getElementById('msg-view-panel');
+    if (viewPanel) {
+        viewPanel.classList.remove('hidden');
+        viewPanel.classList.add('flex');
     }
+
+    setText('chat-title', tenant.name); 
+    renderMessages(true);
+
+    const unreadIds = state.msgs.filter(m => m.tenant_id === id && m.from === 'Tenant' && !m.read_at).map(m => m.id);
+    if(unreadIds.length > 0) {
+        unreadIds.forEach(uid => locallyReadMsgIds.add(String(uid)));
+        localStorage.setItem('kozeyy_read_msgs', JSON.stringify([...locallyReadMsgIds]));
+        state.msgs.forEach(m => { if(unreadIds.includes(m.id)) m.read_at = new Date().toISOString(); });
+        await supabaseClient.from('msgs').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
+        renderAll(); 
+    }
+
+    if(window.innerWidth < 768) { 
+        const listPanel = document.getElementById('msg-list-panel');
+        if (listPanel) listPanel.classList.add('hidden'); 
+    } 
+}
 
     function renderMessages(force = false) { 
         const b = document.getElementById('box-chat'); 
@@ -2585,43 +2606,55 @@ function act_markAsSigned(appId) {
         });
     }
     
-   async function act_saveSettings(e) { 
-        e.preventDefault(); 
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        const stripeId = document.getElementById('set-stripe-id').value;
-        
-        const { error } = await supabaseClient.from('settings').upsert({ 
-            owner_id: ownerId, 
-            stripe_connect_id: stripeId, 
-            late_fee_enabled: document.getElementById('set-fee-active').checked,
-            late_fee_method: document.getElementById('fee-method').value, 
-            late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0, 
-            grace_period: parseInt(document.getElementById('fee-grace').value) || 0,     
-            min_credit_score: parseInt(document.getElementById('set-min-score').value) || 600,
-            min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
-            require_no_evictions: document.getElementById('set-no-evict').checked,
-            require_no_criminal_history: document.getElementById('set-no-crim').checked,
-            require_insurance: false
-        }, { onConflict: 'owner_id' });
-        
-        if (error) { 
-            showToast("Save Failed: " + error.message, 'error'); 
-        } else { 
-            // UPDATE: Retroactively enable payments for existing unpaid invoices
-            if(stripeId && stripeId.trim() !== '') {
-                await supabaseClient
-                    .from('invoices')
-                    .update({ landlord_stripe_id: stripeId })
-                    .eq('owner_id', ownerId)
-                    .eq('status', 'Unpaid')
-                    .is('landlord_stripe_id', null);
-            }
-
-            showToast("Configuration Saved & Active Invoices Updated"); 
-            await fetchData(); 
+  async function act_saveSettings(e) { 
+    e.preventDefault(); 
+    const ownerId = localStorage.getItem('kozeyy_user_id');
+    const stripeId = document.getElementById('set-stripe-id').value;
+    
+    const { error } = await supabaseClient.from('settings').upsert({ 
+        owner_id: ownerId, 
+        stripe_connect_id: stripeId, 
+        late_fee_enabled: document.getElementById('set-fee-active').checked,
+        late_fee_method: document.getElementById('fee-method').value, 
+        late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0, 
+        // Force positive integer for grace period
+        grace_period: Math.max(0, parseInt(document.getElementById('fee-grace').value) || 0),     
+        min_credit_score: parseInt(document.getElementById('set-min-score').value) || 600,
+        min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
+        require_no_evictions: document.getElementById('set-no-evict').checked,
+        require_no_criminal_history: document.getElementById('set-no-crim').checked,
+        require_insurance: document.getElementById('set-require-insurance').checked
+    }, { onConflict: 'owner_id' });
+    
+    if (error) { 
+        showToast("Save Failed: " + error.message, 'error'); 
+    } else { 
+        if(stripeId && stripeId.trim() !== '') {
+            await supabaseClient
+                .from('invoices')
+                .update({ landlord_stripe_id: stripeId })
+                .eq('owner_id', ownerId)
+                .eq('status', 'Unpaid')
+                .is('landlord_stripe_id', null);
         }
+        showToast("Configuration Saved"); 
+        await fetchData(); 
     }
-    function backToChatList() { if(window.innerWidth < 768) { document.getElementById('msg-view-panel').classList.add('hidden'); document.getElementById('msg-view-panel').classList.remove('flex'); document.getElementById('msg-list-panel').classList.remove('hidden'); } }
+}
+
+   function backToChatList() { 
+    // UI Enhancement: Hide the message panel when returning to the list
+    const viewPanel = document.getElementById('msg-view-panel');
+    if (viewPanel) {
+        viewPanel.classList.add('hidden');
+        viewPanel.classList.remove('flex');
+    }
+    
+    if(window.innerWidth < 768) { 
+        const listPanel = document.getElementById('msg-list-panel');
+        if (listPanel) listPanel.classList.remove('hidden'); 
+    } 
+}
 
    function initChart(stats = {revenue:0, overdue:0, outstanding:0}) { 
     const ctx = document.getElementById('revenueChart'); 
@@ -2661,7 +2694,38 @@ function act_markAsSigned(appId) {
         } 
     }); 
 }
-    function renderMonthlyChart() { const ctx = document.getElementById('monthlyChart'); if(!ctx) return; const context = ctx.getContext('2d'); if(monthlyChartInstance) monthlyChartInstance.destroy(); const fin = getMonthlyFinancials(); monthlyChartInstance = new Chart(context, { type: 'bar', data: { labels: fin.labels, datasets: [ { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: false }, y: { beginAtZero: true } } } }); }
+    ffunction renderMonthlyChart() { 
+    const ctx = document.getElementById('monthlyChart'); 
+    if(!ctx) return; 
+    const context = ctx.getContext('2d'); 
+    if(monthlyChartInstance) monthlyChartInstance.destroy(); 
+    const fin = getMonthlyFinancials(); 
+
+    monthlyChartInstance = new Chart(context, { 
+        type: 'bar', 
+        data: { 
+            labels: fin.labels, 
+            datasets: [ 
+                { label: 'Revenue', data: fin.revenue, backgroundColor: '#10b981' }, 
+                { label: 'Expenses', data: fin.expenses, backgroundColor: '#f43f5e' } 
+            ] 
+        }, 
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { 
+                x: { stacked: false }, 
+                y: { 
+                    beginAtZero: true,
+                    suggestedMax: 1000, // Forces the range to at least $1000
+                    ticks: {
+                        callback: function(value) { return '$' + value; } // Adds dollar sign
+                    }
+                } 
+            } 
+        } 
+    }); 
+}
     function getMonthlyFinancials() { const months = [], revenueData = [], expenseData = []; const today = new Date(); for(let i=5; i>=0; i--) { const d = new Date(today.getFullYear(), today.getMonth() - i, 1); const mKey = d.getMonth(); const yKey = d.getFullYear(); months.push(d.toLocaleString('default', { month: 'short' })); const monthRev = state.payments.reduce((sum, p) => { const pd = parseDateStr(p.date); return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum; }, 0); revenueData.push(monthRev); const monthExp = state.expenses.reduce((sum, e) => { const ed = parseDateStr(e.date); return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum; }, 0); expenseData.push(monthExp); } return { labels: months, revenue: revenueData, expenses: expenseData }; }
 
     function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
@@ -3761,6 +3825,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
