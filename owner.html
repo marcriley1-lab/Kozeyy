@@ -241,7 +241,7 @@
             <div class="p-4 border-b border-slate-200 bg-slate-50 font-bold text-slate-700 brand-font">Conversations</div>
             <div id="list-chats" class="flex-1 overflow-y-auto p-2 space-y-2"></div>
         </div>
-        <div id="msg-view-panel" class="absolute inset-0 bg-white md:static w-full md:w-2/3 flex-col hidden md:flex z-20">
+       <div id="msg-view-panel" class="absolute inset-0 bg-white md:static w-full md:w-2/3 flex-col hidden z-20">
             <div id="header-chat" class="p-4 border-b border-slate-200 bg-white font-bold text-slate-800 brand-font flex items-center gap-3">
                 <button onclick="backToChatList()" class="md:hidden text-slate-500 mr-2 p-2 rounded-full hover:bg-slate-100"><i class="fas fa-arrow-left"></i></button>
                 <span id="chat-title">Select a tenant</span>
@@ -1708,14 +1708,14 @@ function renderAll() {
     if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
     
     // Updated Messages Case: Ensures right panel starts hidden
-    if(view === 'messages') { 
-        renderChatList(); 
-        const viewPanel = document.getElementById('msg-view-panel');
-        if (viewPanel) {
-            viewPanel.classList.add('hidden');
-            viewPanel.classList.remove('flex');
-        }
+   if(view === 'messages') { 
+    renderChatList(); 
+    const viewPanel = document.getElementById('msg-view-panel');
+    if (viewPanel) {
+        viewPanel.classList.add('hidden');
+        viewPanel.classList.remove('flex');
     }
+}
     
     if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
     if(view === 'settings') { renderSettings(); } 
@@ -1794,7 +1794,7 @@ function toggleFeeVisibility() {
     const tenant = state.tenants.find(x => x.id == id);
     if(!tenant) return;
 
-    // Show the entire right panel only when a tenant is selected
+    // Remove hidden and add flex to show the panel
     const viewPanel = document.getElementById('msg-view-panel');
     if (viewPanel) {
         viewPanel.classList.remove('hidden');
@@ -1804,7 +1804,6 @@ function toggleFeeVisibility() {
     setText('chat-title', tenant.name); 
     renderMessages(true);
 
-    // Mark messages as read
     const unreadIds = state.msgs.filter(m => m.tenant_id === id && m.from === 'Tenant' && !m.read_at).map(m => m.id);
     if(unreadIds.length > 0) {
         unreadIds.forEach(uid => locallyReadMsgIds.add(String(uid)));
@@ -1814,13 +1813,11 @@ function toggleFeeVisibility() {
         renderAll(); 
     }
 
-    // Hide list on mobile to focus on the chat
     if(window.innerWidth < 768) { 
         const listPanel = document.getElementById('msg-list-panel');
         if (listPanel) listPanel.classList.add('hidden'); 
     } 
 }
-
     function renderMessages(force = false) { 
         const b = document.getElementById('box-chat'); 
         if(!b) return;
@@ -2655,15 +2652,13 @@ function act_markAsSigned(appId) {
     }
 }
 
-   function backToChatList() { 
-    // Entirely hide the right-side panel
+  function backToChatList() { 
     const viewPanel = document.getElementById('msg-view-panel');
     if (viewPanel) {
         viewPanel.classList.add('hidden');
         viewPanel.classList.remove('flex');
     }
     
-    // Show list on mobile
     if(window.innerWidth < 768) { 
         const listPanel = document.getElementById('msg-list-panel');
         if (listPanel) listPanel.classList.remove('hidden'); 
@@ -3839,6 +3834,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
