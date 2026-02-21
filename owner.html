@@ -1743,10 +1743,12 @@ function toggleFeeVisibility() {
         openModal('modal-maint-detail'); 
     }
 
-   function renderChatList() { 
+  function renderChatList() { 
     const l = document.getElementById('list-chats'); 
     if(!l) return;
     l.innerHTML = ''; 
+
+    // Sort tenants by most recent message
     const sortedChats = state.tenants.filter(t => t.status !== 'Vacant').map(t => {
         const msgs = state.msgs.filter(m => m.tenant_id === t.id);
         const lastTime = msgs.length > 0 ? new Date(msgs[msgs.length - 1].created_at).getTime() : 0;
@@ -1758,7 +1760,7 @@ function toggleFeeVisibility() {
         const t = item.tenant;
         const badge = item.unread > 0 ? `<span class="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">${item.unread}</span>` : '';
         
-        // FIX: Wrap ${t.id} in single quotes so it is passed as a string
+        // Use a backtick-safe string for the ID
         l.innerHTML += `
             <div onclick="openChat('${t.id}')" class="p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 font-bold text-sm mb-2 shadow-sm flex justify-between items-center transition">
                 <div><span>${t.name}</span></div>
@@ -3759,6 +3761,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
