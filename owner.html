@@ -1671,7 +1671,6 @@ function renderAll() {
     const link = document.getElementById('link-' + view);
     if(link) link.classList.add('sidebar-active');
     
-    // Update the titles list here
     const titles = { 
         dashboard: 'Portfolio Overview', 
         tenants: 'Tenant Directory', 
@@ -1683,33 +1682,45 @@ function renderAll() {
         screening: 'Applicant Queue', 
         messages: 'Communication Center', 
         maintenance: 'Maintenance Requests',
-        leases: 'Document Archive' // Add this
+        leases: 'Document Archive'
     };
     setText('desktop-page-title', titles[view] || 'Dashboard');
     
-    if(window.innerWidth < 768) { document.getElementById('sidebar').classList.add('-translate-x-full'); document.getElementById('mobile-overlay').classList.add('hidden'); }
-    
-    // Add this trigger
-    if(view === 'leases') renderLeases();
-        
-        if(view === 'maintenance') {
-            state.maint.filter(m => m.status === 'Active').forEach(m => viewedMaintIds.add(String(m.id)));
-            localStorage.setItem('kozeyy_viewed_maint', JSON.stringify([...viewedMaintIds]));
-            updateBadge('maintenance', 0);
-        }
-        if(view === 'screening') {
-            state.apps.filter(a => a.status === 'Pending').forEach(a => viewedAppIds.add(String(a.id)));
-            localStorage.setItem('kozeyy_viewed_apps', JSON.stringify([...viewedAppIds]));
-            updateBadge('screening', 0);
-        }
-        
-        if(view === 'financials') populateFinFilter();
-        if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
-        if(view === 'messages') { renderChatList(); backToChatList();} // Triggers the hidden state for the view panel
-        if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
-        if(view === 'settings') { renderSettings(); } 
+    if(window.innerWidth < 768) { 
+        document.getElementById('sidebar').classList.add('-translate-x-full'); 
+        document.getElementById('mobile-overlay').classList.add('hidden'); 
     }
-
+    
+    if(view === 'leases') renderLeases();
+    
+    if(view === 'maintenance') {
+        state.maint.filter(m => m.status === 'Active').forEach(m => viewedMaintIds.add(String(m.id)));
+        localStorage.setItem('kozeyy_viewed_maint', JSON.stringify([...viewedMaintIds]));
+        updateBadge('maintenance', 0);
+    }
+    if(view === 'screening') {
+        state.apps.filter(a => a.status === 'Pending').forEach(a => viewedAppIds.add(String(a.id)));
+        localStorage.setItem('kozeyy_viewed_apps', JSON.stringify([...viewedAppIds]));
+        updateBadge('screening', 0);
+    }
+    
+    if(view === 'financials') populateFinFilter();
+    if(view === 'expenses') { populateExpenseModal(); populateExpFilter(); }
+    
+    // Updated Messages Case: Ensures right panel starts hidden
+    if(view === 'messages') { 
+        renderChatList(); 
+        const viewPanel = document.getElementById('msg-view-panel');
+        if (viewPanel) {
+            viewPanel.classList.add('hidden');
+            viewPanel.classList.remove('flex');
+        }
+    }
+    
+    if(view === 'reports') { setTimeout(renderMonthlyChart, 50); }
+    if(view === 'settings') { renderSettings(); } 
+}
+    
 function toggleFeeVisibility() {
     const isActive = document.getElementById('set-fee-active').checked;
     const container = document.getElementById('fee-inputs-container');
@@ -1783,7 +1794,7 @@ function toggleFeeVisibility() {
     const tenant = state.tenants.find(x => x.id == id);
     if(!tenant) return;
 
-    // UI Enhancement: Reveal the chat window only after a tenant is selected
+    // Show the entire right panel only when a tenant is selected
     const viewPanel = document.getElementById('msg-view-panel');
     if (viewPanel) {
         viewPanel.classList.remove('hidden');
@@ -1793,6 +1804,7 @@ function toggleFeeVisibility() {
     setText('chat-title', tenant.name); 
     renderMessages(true);
 
+    // Mark messages as read
     const unreadIds = state.msgs.filter(m => m.tenant_id === id && m.from === 'Tenant' && !m.read_at).map(m => m.id);
     if(unreadIds.length > 0) {
         unreadIds.forEach(uid => locallyReadMsgIds.add(String(uid)));
@@ -1802,6 +1814,7 @@ function toggleFeeVisibility() {
         renderAll(); 
     }
 
+    // Hide list on mobile to focus on the chat
     if(window.innerWidth < 768) { 
         const listPanel = document.getElementById('msg-list-panel');
         if (listPanel) listPanel.classList.add('hidden'); 
@@ -2643,13 +2656,14 @@ function act_markAsSigned(appId) {
 }
 
    function backToChatList() { 
-    // UI Enhancement: Hide the message panel when returning to the list
+    // Entirely hide the right-side panel
     const viewPanel = document.getElementById('msg-view-panel');
     if (viewPanel) {
         viewPanel.classList.add('hidden');
         viewPanel.classList.remove('flex');
     }
     
+    // Show list on mobile
     if(window.innerWidth < 768) { 
         const listPanel = document.getElementById('msg-list-panel');
         if (listPanel) listPanel.classList.remove('hidden'); 
@@ -3825,6 +3839,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
