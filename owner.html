@@ -2568,39 +2568,36 @@ function act_markAsSigned(appId) {
     }
 
     if (decision === 'Deny') {
-        // We prompt for a specific reason key to ensure compliant wording
         const promptText = `Enter Reason Code for Denial:\n- score: Credit/RentScore\n- income: Insufficient Income\n- eviction: Eviction History\n- criminal: Criminal Background\n- other: Incomplete/Other`;
         
         openPrompt(promptText, async (choice) => {
             const valid = ['score', 'income', 'eviction', 'criminal', 'other'];
-            if (!choice || !valid.includes(choice.toLowerCase().trim())) {
+            const key = choice ? choice.toLowerCase().trim() : '';
+            if (!key || !valid.includes(key)) {
                 return showToast("A valid reason code is required for legal compliance.", 'error');
             }
-            await saveDecisionToDB('Deny', choice.toLowerCase().trim());
+            await saveDecisionToDB('Deny', key);
         });
         return;
     }
 
     saveDecisionToDB(decision, null);
 }
-
+    
 async function saveDecisionToDB(status, reasonKey) {
     const app = state.apps.find(a => a.id === currentAppId);
     if(!app) return;
 
-    // Mapping for legally compliant wording
     const legalWording = {
         score: `Your credit score or RentScore did not meet our minimum requirement of ${state.settings?.min_credit_score || 600}. Score used: ${app.score || 'N/A'}.`,
         income: `Your verified household income did not meet our required income-to-rent ratio of ${state.settings?.min_income_ratio || 3}x.`,
         eviction: `A review of public records indicated a prior eviction filing or judgment within the last 7 years.`,
-        criminal: `Your background check revealed a criminal conviction that conflicts with our established safety and property protection policies.`,
+        criminal: `Your background check revealed a criminal conviction that conflicts with our safety policies.`,
         other: `Your application was incomplete or did not meet other established rental criteria.`
     };
 
     const finalNote = legalWording[reasonKey] || reasonKey;
-    const updateData = { status: status, notes: finalNote };
-
-    const { error } = await supabaseClient.from('apps').update(updateData).eq('id', currentAppId);
+    const { error } = await supabaseClient.from('apps').update({ status: status, notes: finalNote }).eq('id', currentAppId);
 
     if (error) {
         showToast("Error saving: " + error.message, 'error');
@@ -2609,7 +2606,6 @@ async function saveDecisionToDB(status, reasonKey) {
             showToast("Generating Adverse Action Notice...");
             const pdfBlob = await generateAdverseActionPDF(app, finalNote);
             
-            // Convert to Base64 for the Edge Function
             const reader = new FileReader();
             reader.readAsDataURL(pdfBlob);
             reader.onloadend = async () => {
@@ -2625,7 +2621,6 @@ async function saveDecisionToDB(status, reasonKey) {
                 });
             };
         } else {
-            // ... standard Approval/Conditional email logic ...
             await sendEmail(app.email, "Update on your Rental Application", 'alert', {
                 title: status === 'Approved' ? "You're Approved!" : "Conditional Approval Offered",
                 message: status === 'Approved' ? "Your application was successful!" : `Condition: ${finalNote}`,
@@ -2708,31 +2703,21 @@ async function saveDecisionToDB(status, reasonKey) {
 async function generateAdverseActionPDF(app, reason) {
     const element = document.createElement('div');
     element.innerHTML = `
-        <div style="padding: 50px; font-family: 'Helvetica', 'Arial', sans-serif; color: #334155; line-height: 1.6;">
-            <div style="text-align: right; color: #64748b; font-size: 12px; margin-bottom: 40px;">
-                KOZEYY SECURE SCREENING SYSTEM<br>DOCUMENT ID: AA-${app.id.split('-')[0].toUpperCase()}
-            </div>
-            <h1 style="color: #1e293b; font-size: 24px; margin-bottom: 10px;">Statement of Denial</h1>
-            <h2 style="color: #64748b; font-size: 14px; font-weight: normal; margin-bottom: 30px;">Adverse Action Notice</h2>
-            
+        <div style="padding: 50px; font-family: sans-serif; color: #334155; line-height: 1.6;">
+            <div style="text-align: right; color: #94a3b8; font-size: 10px; margin-bottom: 40px;">KOZEYY PROPERTY MANAGEMENT</div>
+            <h1 style="color: #1e293b; font-size: 22px;">Statement of Denial / Adverse Action Notice</h1>
             <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
             <p><strong>To:</strong> ${app.name}</p>
-            
-            <p style="margin-top: 30px;">Thank you for your application. This notice is to inform you that your application for residency has been declined based on the following principal reason(s):</p>
-            
+            <p style="margin-top: 30px;">Thank you for your interest in renting our property. This notice is to inform you that your application has been declined for the following principal reason(s):</p>
             <div style="background: #f1f5f9; padding: 20px; border-left: 4px solid #e11d48; font-weight: bold; margin: 25px 0;">
                 ${reason}
             </div>
-
-            <p>Our decision was based in whole or in part on information contained in a consumer report provided by the following agency:</p>
+            <p>This decision was based in whole or in part on information contained in a consumer report provided by:</p>
             <p><strong>RentPrep (TransUnion)</strong><br>956 Ellicott Creek Rd, Ste 408<br>Amherst, NY 14228<br>Phone: (888) 387-3504</p>
-            
-            <p style="font-size: 12px; margin-top: 40px; color: #64748b;">
-                <strong>Note:</strong> The consumer reporting agency did not make the decision to take the adverse action and is unable to provide the specific reasons why the action was taken. Under the Fair Credit Reporting Act, you have a right to obtain a free copy of the report from the agency if you request it within 60 days.
-            </p>
+            <p style="font-size: 11px; margin-top: 40px; color: #64748b;">The consumer reporting agency did not make the decision to take the adverse action and is unable to provide the specific reasons why the action was taken. You have a right to obtain a free copy of the report if requested within 60 days.</p>
         </div>
     `;
-    return html2pdf().from(element).set({ margin: 0, filename: 'Notice.pdf', jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).output('blob');
+    return html2pdf().from(element).set({ margin: 0.5 }).output('blob');
 }
     
   async function act_saveSettings(e) { 
@@ -3880,57 +3865,18 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     }
     
 // --- EMAIL HELPER FUNCTION (Supabase Edge Function) ---
-    async function sendEmail(to, subject, type, data) {
-    if (!to || !to.includes('@')) return;
-
-    // Define the Spruce Theme
-    const emailHtml = `
-    <div style="font-family: 'Inter', Helvetica, Arial, sans-serif; background-color: #f8fafc; padding: 40px 20px; color: #1e293b;">
-        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
-            <div style="background-color: #4f46e5; padding: 30px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: -0.5px;">Kozeyy</h1>
-            </div>
-            
-            <div style="padding: 40px 30px;">
-                <h2 style="color: #0f172a; margin-top: 0; font-size: 20px;">${data.title || 'Notification'}</h2>
-                <p style="font-size: 16px; line-height: 1.6; color: #475569;">${data.message}</p>
-                
-                ${data.actionLink ? `
-                <div style="margin-top: 30px; text-align: center;">
-                    <a href="${data.actionLink}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 10px; font-weight: bold; font-size: 14px; display: inline-block;">
-                        ${data.actionText || 'View Details'}
-                    </a>
-                </div>
-                ` : ''}
-            </div>
-
-            <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-top: 1px solid #e2e8f0;">
-                <p style="margin: 0; font-size: 12px; color: #94a3b8;">
-                    &copy; 2026 Kozeyy Property Management. All rights reserved.<br>
-                    Sent via Kozeyy Secure Automation.
-                </p>
-            </div>
-        </div>
-    </div>
-    `;
-
-    try {
-        const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
-    body: { 
-        to, 
-        subject, 
-        type, 
-        html: emailHtml,
-        data,
-        attachment: data.attachment, // NEW: Pass the base64 string
-        fileName: data.fileName       // NEW: Pass the filename
-    }
-});
-        if (error) throw error;
-        console.log("Email sent successfully!");
-    } catch (e) {
-        console.error("Email failed:", e);
-    }
+   async function sendEmail(to, subject, type, data) {
+    const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
+        body: { 
+            to, 
+            subject, 
+            type, 
+            data,
+            attachment: data.attachment || null, // Capture PDF base64 if it exists
+            fileName: data.fileName || null     // Capture filename if it exists
+        }
+    });
+    if (error) console.error("Email delivery failed:", error);
 }
 
 function signOut() {
@@ -3948,6 +3894,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
