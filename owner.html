@@ -741,6 +741,33 @@
                     </div>
                 </div>
 
+                <div id="denial-reason-box" class="hidden mt-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+    <p class="text-xs font-bold text-rose-700 uppercase tracking-widest mb-3">Select Primary Reason for Denial</p>
+    <div class="grid grid-cols-1 gap-2">
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="denyReason" value="score" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Credit / RentScore below minimum</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="denyReason" value="income" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Insufficient Income (Below 3x Ratio)</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="denyReason" value="eviction" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Prior Eviction History found</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="denyReason" value="criminal" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Criminal Background conflicts with policy</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="denyReason" value="other" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Incomplete or Other Criteria</span>
+        </label>
+    </div>
+    <button onclick="act_confirmDeny()" class="w-full mt-4 bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow-sm hover:bg-rose-700 transition">Confirm Denial & Send Notice</button>
+</div>
+
                 <!-- LEASE BUTTON AREA -->
                 <div id="vt-lease-area"></div>
 
@@ -2556,7 +2583,7 @@ function act_markAsSigned(appId) {
         });
     }
 
-   function act_screenDecision(decision) {
+  function act_screenDecision(decision) {
     if (!currentAppId) return;
 
     if (decision === 'Conditional') {
@@ -2568,76 +2595,76 @@ function act_markAsSigned(appId) {
     }
 
     if (decision === 'Deny') {
-        // This is the specific prompt that gives the owner options
-        const promptText = `Enter Reason Code for Denial:\n- score: Credit/RentScore\n- income: Insufficient Income\n- eviction: Eviction History\n- criminal: Criminal Background\n- other: Incomplete/Other`;
-        
-        openPrompt(promptText, async (choice) => {
-            const valid = ['score', 'income', 'eviction', 'criminal', 'other'];
-            const key = choice ? choice.toLowerCase().trim() : '';
-            if (!key || !valid.includes(key)) {
-                return showToast("A valid reason code is required for legal compliance.", 'error');
-            }
-            await saveDecisionToDB('Deny', key);
-        });
+        // Toggle the visibility of the new reason box
+        const box = document.getElementById('denial-reason-box');
+        box.classList.toggle('hidden');
+        box.scrollIntoView({ behavior: 'smooth' });
         return;
     }
 
     saveDecisionToDB(decision, null);
 }
+/ 2. New function to handle the checkbox confirmation
+async function act_confirmDeny() {
+    const selected = document.querySelector('input[name="denyReason"]:checked');
+    if (!selected) {
+        return showToast("Please select a reason for legal compliance", 'error');
+    }
+    await saveDecisionToDB('Deny', selected.value);
+}
 
-// 2. Updated Database Saving and Emailing Logic
+// 3. Updated saveDecisionToDB to handle UI transitions and Lease Upload
 async function saveDecisionToDB(status, reasonKey) {
     const app = state.apps.find(a => a.id === currentAppId);
     if(!app) return;
 
-    // Use specific legal wording based on owner's choice
-    const legalWording = {
-        score: `Your credit score or RentScore did not meet our minimum requirement of ${state.settings?.min_credit_score || 600}. Score used: ${app.score || 'N/A'}.`,
-        income: `Your verified household income did not meet our required income-to-rent ratio of ${state.settings?.min_income_ratio || 3}x.`,
-        eviction: `A review of public records indicated a prior eviction filing or judgment within the last 7 years.`,
-        criminal: `Your background check revealed a criminal conviction that conflicts with our safety policies.`,
-        other: `Your application was incomplete or did not meet other established rental criteria.`
+    const wording = {
+        score: `Credit/RentScore below requirement (${state.settings?.min_credit_score || 600}). Score: ${app.score || 'N/A'}.`,
+        income: `Income below ${state.settings?.min_income_ratio || 3}x rent ratio.`,
+        eviction: `Prior eviction record found within 7 years.`,
+        criminal: `Criminal record conflicts with safety policy.`,
+        other: `Application incomplete or failed other criteria.`
     };
 
-    const finalNote = legalWording[reasonKey] || reasonKey;
+    const finalNote = wording[reasonKey] || reasonKey;
     const { error } = await supabaseClient.from('apps').update({ status: status, notes: finalNote }).eq('id', currentAppId);
 
     if (error) {
-        showToast("Error saving: " + error.message, 'error');
-    } else {
-        if (status === 'Deny') {
-            showToast("Generating Adverse Action Notice...");
-            const pdfBlob = await generateAdverseActionPDF(app, finalNote);
-            
-            const reader = new FileReader();
-            reader.readAsDataURL(pdfBlob);
-            reader.onloadend = async () => {
-                const base64data = reader.result.split(',')[1];
-                
-                // Explicitly passing attachment and fileName in the data object
-                await sendEmail(app.email, "Application Status: Important Notice", 'alert', {
-                    title: "Application Decision",
-                    message: `We regret to inform you that your application has not been selected. Attached is your formal Statement of Denial (Adverse Action Notice).`,
-                    actionLink: "https://kozeyy.com/applicantportal.html",
-                    actionText: "View Portal",
-                    attachment: base64data,
-                    fileName: "Adverse_Action_Notice.pdf"
-                });
-            };
-        } else {
-            await sendEmail(app.email, "Update on your Rental Application", 'alert', {
-                title: status === 'Approved' ? "You're Approved!" : "Conditional Approval Offered",
-                message: status === 'Approved' ? "Your application was successful!" : `Condition: ${finalNote}`,
-                actionLink: "https://kozeyy.com/applicantportal.html",
-                actionText: "Go to Portal"
-            });
-        }
-
-        closeModal('modal-view-app');
-        await fetchData();
-        renderAll();
-        showToast(`Decision finalized.`);
+        showToast("Error: " + error.message, 'error');
+        return;
     }
+
+    if (status === 'Deny') {
+        showToast("Generating Adverse Action PDF...");
+        const pdfBlob = await generateAdverseActionPDF(app, finalNote);
+        const reader = new FileReader();
+        reader.readAsDataURL(pdfBlob);
+        reader.onloadend = async () => {
+            await sendEmail(app.email, "Application Status: Important Notice", 'alert', {
+                title: "Application Decision",
+                message: `Your application was not selected. Formal notice attached.`,
+                attachment: reader.result.split(',')[1],
+                fileName: "Adverse_Action_Notice.pdf"
+            });
+        };
+        closeModal('modal-view-app'); // Auto-close box
+    } 
+    else if (status === 'Approved') {
+        await sendEmail(app.email, "You're Approved!", 'alert', {
+            title: "Application Approved",
+            message: "Your application was successful! Proceed to lease signing."
+        });
+        
+        closeModal('modal-view-app'); // Close vetting modal
+        act_initiateSendLease(app.id); // Trigger lease upload process
+    } 
+    else {
+        closeModal('modal-view-app');
+    }
+
+    await fetchData();
+    renderAll();
+    showToast(`${status} processed.`);
 }
  function act_initiateSendLease(appId) {
     openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
@@ -3898,6 +3925,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
