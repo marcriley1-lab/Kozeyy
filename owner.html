@@ -2556,7 +2556,7 @@ function act_markAsSigned(appId) {
         });
     }
 
-    function act_screenDecision(decision) {
+   function act_screenDecision(decision) {
     if (!currentAppId) return;
 
     if (decision === 'Conditional') {
@@ -2568,6 +2568,7 @@ function act_markAsSigned(appId) {
     }
 
     if (decision === 'Deny') {
+        // This is the specific prompt that gives the owner options
         const promptText = `Enter Reason Code for Denial:\n- score: Credit/RentScore\n- income: Insufficient Income\n- eviction: Eviction History\n- criminal: Criminal Background\n- other: Incomplete/Other`;
         
         openPrompt(promptText, async (choice) => {
@@ -2583,11 +2584,13 @@ function act_markAsSigned(appId) {
 
     saveDecisionToDB(decision, null);
 }
-    
+
+// 2. Updated Database Saving and Emailing Logic
 async function saveDecisionToDB(status, reasonKey) {
     const app = state.apps.find(a => a.id === currentAppId);
     if(!app) return;
 
+    // Use specific legal wording based on owner's choice
     const legalWording = {
         score: `Your credit score or RentScore did not meet our minimum requirement of ${state.settings?.min_credit_score || 600}. Score used: ${app.score || 'N/A'}.`,
         income: `Your verified household income did not meet our required income-to-rent ratio of ${state.settings?.min_income_ratio || 3}x.`,
@@ -2611,6 +2614,7 @@ async function saveDecisionToDB(status, reasonKey) {
             reader.onloadend = async () => {
                 const base64data = reader.result.split(',')[1];
                 
+                // Explicitly passing attachment and fileName in the data object
                 await sendEmail(app.email, "Application Status: Important Notice", 'alert', {
                     title: "Application Decision",
                     message: `We regret to inform you that your application has not been selected. Attached is your formal Statement of Denial (Adverse Action Notice).`,
@@ -2714,7 +2718,6 @@ async function generateAdverseActionPDF(app, reason) {
             </div>
             <p>This decision was based in whole or in part on information contained in a consumer report provided by:</p>
             <p><strong>RentPrep (TransUnion)</strong><br>956 Ellicott Creek Rd, Ste 408<br>Amherst, NY 14228<br>Phone: (888) 387-3504</p>
-            <p style="font-size: 11px; margin-top: 40px; color: #64748b;">The consumer reporting agency did not make the decision to take the adverse action and is unable to provide the specific reasons why the action was taken. You have a right to obtain a free copy of the report if requested within 60 days.</p>
         </div>
     `;
     return html2pdf().from(element).set({ margin: 0.5 }).output('blob');
@@ -3865,15 +3868,16 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
     }
     
 // --- EMAIL HELPER FUNCTION (Supabase Edge Function) ---
-   async function sendEmail(to, subject, type, data) {
+  async function sendEmail(to, subject, type, data) {
+    // This part ensures the Edge Function gets the attachment at the top level of the body
     const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
         body: { 
             to, 
             subject, 
             type, 
             data,
-            attachment: data.attachment || null, // Capture PDF base64 if it exists
-            fileName: data.fileName || null     // Capture filename if it exists
+            attachment: data.attachment || null, 
+            fileName: data.fileName || null     
         }
     });
     if (error) console.error("Email delivery failed:", error);
@@ -3894,6 +3898,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
