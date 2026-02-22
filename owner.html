@@ -1,5 +1,6 @@
 
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -741,30 +742,28 @@
                     </div>
                 </div>
 
-                <div class="flex gap-3 mt-6" id="screening-actions">
-    <button onclick="act_screenDecision('Approved')" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-emerald-700 transition">Approve</button>
-    <button onclick="act_screenDecision('Conditional')" class="flex-1 bg-amber-500 text-white py-3 rounded-xl font-bold text-sm hover:bg-amber-600 transition">Conditional</button>
-    <button onclick="act_screenDecision('Deny')" class="flex-1 bg-rose-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-rose-700 transition">Deny</button>
-</div>
-
-<div id="denial-reason-box" class="hidden mt-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+                <div id="denial-reason-box" class="hidden mt-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
     <p class="text-xs font-bold text-rose-700 uppercase tracking-widest mb-3">Select Primary Reason for Denial</p>
-    <div class="space-y-2">
+    <div class="grid grid-cols-1 gap-2">
         <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
             <input type="radio" name="denyReason" value="score" class="w-4 h-4 text-rose-600">
             <span class="text-sm font-medium text-slate-700">Credit / RentScore below minimum</span>
         </label>
         <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
             <input type="radio" name="denyReason" value="income" class="w-4 h-4 text-rose-600">
-            <span class="text-sm font-medium text-slate-700">Insufficient Income (Below 3x)</span>
+            <span class="text-sm font-medium text-slate-700">Insufficient Income (Below 3x Ratio)</span>
         </label>
         <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
             <input type="radio" name="denyReason" value="eviction" class="w-4 h-4 text-rose-600">
-            <span class="text-sm font-medium text-slate-700">Prior Eviction History</span>
+            <span class="text-sm font-medium text-slate-700">Prior Eviction History found</span>
         </label>
         <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
             <input type="radio" name="denyReason" value="criminal" class="w-4 h-4 text-rose-600">
-            <span class="text-sm font-medium text-slate-700">Criminal Background</span>
+            <span class="text-sm font-medium text-slate-700">Criminal Background conflicts with policy</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="denyReason" value="other" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Incomplete or Other Criteria</span>
         </label>
     </div>
     <button onclick="act_confirmDeny()" class="w-full mt-4 bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow-sm hover:bg-rose-700 transition">Confirm Denial & Send Notice</button>
@@ -2585,11 +2584,8 @@ function act_markAsSigned(appId) {
         });
     }
 
- ffunction act_screenDecision(decision) {
+ function act_screenDecision(decision) {
     if (!currentAppId) return;
-
-    // Reset UI state
-    document.getElementById('denial-reason-box').classList.add('hidden');
 
     if (decision === 'Conditional') {
         openPrompt("Enter Condition (e.g. Double Deposit):", async (val) => {
@@ -2600,10 +2596,12 @@ function act_markAsSigned(appId) {
     }
 
     if (decision === 'Deny') {
-        // Explicitly reveal the checkbox selection box
+        // Correctly reveals the checkbox UI in the modal
         const box = document.getElementById('denial-reason-box');
-        box.classList.remove('hidden');
-        box.scrollIntoView({ behavior: 'smooth' });
+        if (box) {
+            box.classList.remove('hidden');
+            box.scrollIntoView({ behavior: 'smooth' });
+        }
         return;
     }
 
@@ -2638,49 +2636,49 @@ async function saveDecisionToDB(status, reasonKey) {
 
     if (error) {
         showToast("Error: " + error.message, 'error');
-        return;
-    }
-
-    // ROUTING HANDOFFS
-    if (status === 'Deny') {
-        showToast("Processing Denial...");
-        const pdfBlob = await generateAdverseActionPDF(app, finalNote);
-        const reader = new FileReader();
-        reader.readAsDataURL(pdfBlob);
-        reader.onloadend = async () => {
-            await sendEmail(app.email, "Application Update", 'alert', {
-                title: "Application Decision",
-                message: `Your application was not selected. Formal notice attached.`,
-                attachment: reader.result.split(',')[1],
-                fileName: "Adverse_Action_Notice.pdf"
+    } else {
+        // ROUTING LOGIC
+        if (status === 'Deny') {
+            showToast("Generating Adverse Action Notice...");
+            const pdfBlob = await generateAdverseActionPDF(app, finalNote);
+            const reader = new FileReader();
+            reader.readAsDataURL(pdfBlob);
+            reader.onloadend = async () => {
+                await sendEmail(app.email, "Application Status: Important Notice", 'alert', {
+                    title: "Application Decision",
+                    message: `We regret to inform you that your application was not selected. Formal notice attached.`,
+                    attachment: reader.result.split(',')[1],
+                    fileName: "Adverse_Action_Notice.pdf"
+                });
+            };
+            closeModal('modal-view-app'); 
+        } 
+        else if (status === 'Approved') {
+            await sendEmail(app.email, "You're Approved!", 'alert', {
+                title: "Application Approved",
+                message: "Your application was successful! We are preparing your lease now."
             });
-        };
-        closeModal('modal-view-app'); 
-    } 
-    else if (status === 'Approved') {
-        // APPROVAL ROUTING
-        showToast("Application Approved. Redirecting to Lease...");
-        await sendEmail(app.email, "You're Approved!", 'alert', {
-            title: "Application Approved",
-            message: "Your application was successful! We are preparing your lease now."
-        });
-        
-        closeModal('modal-view-app'); // Close the vetting modal
-        
-        // This triggers your existing upload lease modal
-        if (typeof act_initiateSendLease === 'function') {
+            
+            // APPROVAL ROUTING: Close vetting and start lease upload
+            closeModal('modal-view-app'); 
             act_initiateSendLease(app.id); 
+        } 
+        else if (status === 'Conditional') {
+            await sendEmail(app.email, "Application Update", 'alert', {
+                title: "Conditional Approval",
+                message: `We are offering a conditional approval: ${finalNote}`
+            });
+            closeModal('modal-view-app');
         } else {
-            console.error("act_initiateSendLease function not found. Check line ~1050.");
+            closeModal('modal-view-app');
         }
-    } 
-    else {
-        closeModal('modal-view-app');
-    }
 
-    await fetchData();
-    renderAll();
+        await fetchData();
+        renderAll();
+        showToast(`${status} processed successfully.`);
+    }
 }
+
 async function generateAdverseActionPDF(app, reason) {
     const element = document.createElement('div');
     element.innerHTML = `
@@ -3949,7 +3947,6 @@ function signOut() {
 </script>
 </body>
 </html>
-
 
 
 
