@@ -2556,74 +2556,90 @@ function act_markAsSigned(appId) {
         });
     }
 
-    async function act_screenDecision(decision) {
-        if (!currentAppId) return;
+    function act_screenDecision(decision) {
+    if (!currentAppId) return;
 
-        let conditionNote = null;
-
-        // 1. If Conditional, ASK FOR DETAILS
-        if (decision === 'Conditional') {
-            // We use the existing 'openPrompt' helper you already have
-            openPrompt("Enter Condition (e.g. Double Deposit):", async (val) => {
-                if (!val) return showToast("Condition required", 'error');
-                
-                // Save decision WITH the note
-                await saveDecisionToDB('Conditional', val);
-            });
-            return; // Stop here, wait for prompt callback
-        }
-
-        // 2. If Approve/Deny, just save immediately
-        await saveDecisionToDB(decision, null);
+    if (decision === 'Conditional') {
+        openPrompt("Enter Condition (e.g. Double Deposit):", async (val) => {
+            if (!val) return showToast("Condition required", 'error');
+            await saveDecisionToDB('Conditional', val);
+        });
+        return;
     }
 
-    // Helper to actually save to Supabase
-   async function saveDecisionToDB(status, note) {
-    const updateData = { status: status };
-    if(note) updateData.notes = note; 
+    if (decision === 'Deny') {
+        // We prompt for a specific reason key to ensure compliant wording
+        const promptText = `Enter Reason Code for Denial:\n- score: Credit/RentScore\n- income: Insufficient Income\n- eviction: Eviction History\n- criminal: Criminal Background\n- other: Incomplete/Other`;
+        
+        openPrompt(promptText, async (choice) => {
+            const valid = ['score', 'income', 'eviction', 'criminal', 'other'];
+            if (!choice || !valid.includes(choice.toLowerCase().trim())) {
+                return showToast("A valid reason code is required for legal compliance.", 'error');
+            }
+            await saveDecisionToDB('Deny', choice.toLowerCase().trim());
+        });
+        return;
+    }
+
+    saveDecisionToDB(decision, null);
+}
+
+async function saveDecisionToDB(status, reasonKey) {
+    const app = state.apps.find(a => a.id === currentAppId);
+    if(!app) return;
+
+    // Mapping for legally compliant wording
+    const legalWording = {
+        score: `Your credit score or RentScore did not meet our minimum requirement of ${state.settings?.min_credit_score || 600}. Score used: ${app.score || 'N/A'}.`,
+        income: `Your verified household income did not meet our required income-to-rent ratio of ${state.settings?.min_income_ratio || 3}x.`,
+        eviction: `A review of public records indicated a prior eviction filing or judgment within the last 7 years.`,
+        criminal: `Your background check revealed a criminal conviction that conflicts with our established safety and property protection policies.`,
+        other: `Your application was incomplete or did not meet other established rental criteria.`
+    };
+
+    const finalNote = legalWording[reasonKey] || reasonKey;
+    const updateData = { status: status, notes: finalNote };
 
     const { error } = await supabaseClient.from('apps').update(updateData).eq('id', currentAppId);
 
     if (error) {
         showToast("Error saving: " + error.message, 'error');
     } else {
-        const app = state.apps.find(a => a.id === currentAppId);
-        if(app && app.email) {
-            let emailSubject = "Update on your Rental Application";
-            let title = "Application Update";
-            let message = "";
-            let actionText = "View Portal";
-
-            if (status === 'Conditional') {
-                title = "Conditional Approval Offered";
-                message = `The owner has offered a conditional approval for your application.<br><br><strong>Condition:</strong> ${note}<br><br>Please log in to your portal to review this condition and respond.`;
-                actionText = "Review Condition";
-            } else if (status === 'Deny') {
-                emailSubject = "Application Status: Important Notice";
-                title = "Application Decision";
-                message = `We regret to inform you that your application has not been selected at this time. You can view the formal Statement of Denial (Adverse Action Notice) in your portal.`;
-                actionText = "View Adverse Action";
-            } else if (status === 'Approved') {
-                title = "You're Approved!";
-                message = `Great news! Your application for the property at **$${app.rent.toLocaleString()}/mo** has been approved. The owner will prepare your lease agreement shortly.`;
-                actionText = "Go to Portal";
-            }
-
-            await sendEmail(app.email, emailSubject, 'alert', {
-                title: title,
-                message: message,
+        if (status === 'Deny') {
+            showToast("Generating Adverse Action Notice...");
+            const pdfBlob = await generateAdverseActionPDF(app, finalNote);
+            
+            // Convert to Base64 for the Edge Function
+            const reader = new FileReader();
+            reader.readAsDataURL(pdfBlob);
+            reader.onloadend = async () => {
+                const base64data = reader.result.split(',')[1];
+                
+                await sendEmail(app.email, "Application Status: Important Notice", 'alert', {
+                    title: "Application Decision",
+                    message: `We regret to inform you that your application has not been selected. Attached is your formal Statement of Denial (Adverse Action Notice).`,
+                    actionLink: "https://kozeyy.com/applicantportal.html",
+                    actionText: "View Portal",
+                    attachment: base64data,
+                    fileName: "Adverse_Action_Notice.pdf"
+                });
+            };
+        } else {
+            // ... standard Approval/Conditional email logic ...
+            await sendEmail(app.email, "Update on your Rental Application", 'alert', {
+                title: status === 'Approved' ? "You're Approved!" : "Conditional Approval Offered",
+                message: status === 'Approved' ? "Your application was successful!" : `Condition: ${finalNote}`,
                 actionLink: "https://kozeyy.com/applicantportal.html",
-                actionText: actionText
+                actionText: "Go to Portal"
             });
         }
 
-        closeModal('modal-screening-detail');
+        closeModal('modal-view-app');
         await fetchData();
         renderAll();
-        showToast(`Decision saved and applicant notified.`);
+        showToast(`Decision finalized.`);
     }
 }
-
  function act_initiateSendLease(appId) {
     openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
         const { error } = await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
@@ -2688,6 +2704,36 @@ function act_markAsSigned(appId) {
             showToast("Tenant finalized and Welcome email sent!");
         });
     }
+
+async function generateAdverseActionPDF(app, reason) {
+    const element = document.createElement('div');
+    element.innerHTML = `
+        <div style="padding: 50px; font-family: 'Helvetica', 'Arial', sans-serif; color: #334155; line-height: 1.6;">
+            <div style="text-align: right; color: #64748b; font-size: 12px; margin-bottom: 40px;">
+                KOZEYY SECURE SCREENING SYSTEM<br>DOCUMENT ID: AA-${app.id.split('-')[0].toUpperCase()}
+            </div>
+            <h1 style="color: #1e293b; font-size: 24px; margin-bottom: 10px;">Statement of Denial</h1>
+            <h2 style="color: #64748b; font-size: 14px; font-weight: normal; margin-bottom: 30px;">Adverse Action Notice</h2>
+            
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>To:</strong> ${app.name}</p>
+            
+            <p style="margin-top: 30px;">Thank you for your application. This notice is to inform you that your application for residency has been declined based on the following principal reason(s):</p>
+            
+            <div style="background: #f1f5f9; padding: 20px; border-left: 4px solid #e11d48; font-weight: bold; margin: 25px 0;">
+                ${reason}
+            </div>
+
+            <p>Our decision was based in whole or in part on information contained in a consumer report provided by the following agency:</p>
+            <p><strong>RentPrep (TransUnion)</strong><br>956 Ellicott Creek Rd, Ste 408<br>Amherst, NY 14228<br>Phone: (888) 387-3504</p>
+            
+            <p style="font-size: 12px; margin-top: 40px; color: #64748b;">
+                <strong>Note:</strong> The consumer reporting agency did not make the decision to take the adverse action and is unable to provide the specific reasons why the action was taken. Under the Fair Credit Reporting Act, you have a right to obtain a free copy of the report from the agency if you request it within 60 days.
+            </p>
+        </div>
+    `;
+    return html2pdf().from(element).set({ margin: 0, filename: 'Notice.pdf', jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).output('blob');
+}
     
   async function act_saveSettings(e) { 
     e.preventDefault(); 
@@ -3870,14 +3916,16 @@ function calculateLateFee(total, invoice, daysOverdue = 1) {
 
     try {
         const { data: result, error } = await supabaseClient.functions.invoke('send-email', {
-            body: { 
-                to, 
-                subject, 
-                type, 
-                html: emailHtml, // Pass the spruced HTML
-                data 
-            }
-        });
+    body: { 
+        to, 
+        subject, 
+        type, 
+        html: emailHtml,
+        data,
+        attachment: data.attachment, // NEW: Pass the base64 string
+        fileName: data.fileName       // NEW: Pass the filename
+    }
+});
         if (error) throw error;
         console.log("Email sent successfully!");
     } catch (e) {
@@ -3900,6 +3948,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
