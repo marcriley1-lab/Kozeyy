@@ -2632,7 +2632,6 @@ async function saveDecisionToDB(status, reasonKey) {
     if (error) {
         showToast("Error: " + error.message, 'error');
         return;
-    }
 
     if (status === 'Deny') {
         showToast("Generating Adverse Action PDF...");
@@ -3925,6 +3924,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
