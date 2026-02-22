@@ -2629,6 +2629,7 @@ async function saveDecisionToDB(status, reasonKey) {
 
     const finalNote = wording[reasonKey] || reasonKey || status;
     
+    // 1. Update Backend
     const { error } = await supabaseClient.from('apps').update({ 
         status: status, 
         notes: finalNote 
@@ -2636,47 +2637,50 @@ async function saveDecisionToDB(status, reasonKey) {
 
     if (error) {
         showToast("Error: " + error.message, 'error');
-    } else {
-        // ROUTING LOGIC
-        if (status === 'Deny') {
-            showToast("Generating Adverse Action Notice...");
-            const pdfBlob = await generateAdverseActionPDF(app, finalNote);
-            const reader = new FileReader();
-            reader.readAsDataURL(pdfBlob);
-            reader.onloadend = async () => {
-                await sendEmail(app.email, "Application Status: Important Notice", 'alert', {
-                    title: "Application Decision",
-                    message: `We regret to inform you that your application was not selected. Formal notice attached.`,
-                    attachment: reader.result.split(',')[1],
-                    fileName: "Adverse_Action_Notice.pdf"
-                });
-            };
-            closeModal('modal-view-app'); 
-        } 
-        else if (status === 'Approved') {
-            await sendEmail(app.email, "You're Approved!", 'alert', {
-                title: "Application Approved",
-                message: "Your application was successful! We are preparing your lease now."
-            });
-            
-            // APPROVAL ROUTING: Close vetting and start lease upload
-            closeModal('modal-view-app'); 
-            act_initiateSendLease(app.id); 
-        } 
-        else if (status === 'Conditional') {
-            await sendEmail(app.email, "Application Update", 'alert', {
-                title: "Conditional Approval",
-                message: `We are offering a conditional approval: ${finalNote}`
-            });
-            closeModal('modal-view-app');
-        } else {
-            closeModal('modal-view-app');
-        }
-
-        await fetchData();
-        renderAll();
-        showToast(`${status} processed successfully.`);
+        return;
     }
+
+    // 2. Routing & UI Updates
+    // FIX: Changed 'modal-view-app' to 'modal-screening-detail'
+    if (status === 'Deny') {
+        showToast("Processing Denial...");
+        const pdfBlob = await generateAdverseActionPDF(app, finalNote);
+        const reader = new FileReader();
+        reader.readAsDataURL(pdfBlob);
+        reader.onloadend = async () => {
+            await sendEmail(app.email, "Application Update", 'alert', {
+                title: "Application Decision",
+                message: `Your application was not selected. Formal notice attached.`,
+                attachment: reader.result.split(',')[1],
+                fileName: "Adverse_Action_Notice.pdf"
+            });
+        };
+        closeModal('modal-screening-detail'); 
+    } 
+    else if (status === 'Approved') {
+        // APPROVAL ROUTING
+        showToast("Application Approved. Redirecting to Lease...");
+        await sendEmail(app.email, "You're Approved!", 'alert', {
+            title: "Application Approved",
+            message: "Your application was successful! We are preparing your lease now."
+        });
+        
+        closeModal('modal-screening-detail'); // FIX: Correct Modal ID
+        
+        // Trigger the next step
+        if (typeof act_initiateSendLease === 'function') {
+            setTimeout(() => act_initiateSendLease(app.id), 500); // Small delay for smooth UI transition
+        } else {
+            console.error("act_initiateSendLease function not found.");
+        }
+    } 
+    else {
+        // Conditional / Other
+        closeModal('modal-screening-detail'); // FIX: Correct Modal ID
+    }
+
+    await fetchData();
+    renderAll();
 }
 
 async function generateAdverseActionPDF(app, reason) {
@@ -3947,6 +3951,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
