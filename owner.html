@@ -2583,7 +2583,7 @@ function act_markAsSigned(appId) {
         });
     }
 
-  function act_screenDecision(decision) {
+ function act_screenDecision(decision) {
     if (!currentAppId) return;
 
     if (decision === 'Conditional') {
@@ -2595,75 +2595,116 @@ function act_markAsSigned(appId) {
     }
 
     if (decision === 'Deny') {
-        // Toggle the visibility of the new reason box
+        // Correctly reveals the checkbox UI in the modal
         const box = document.getElementById('denial-reason-box');
-        box.classList.toggle('hidden');
-        box.scrollIntoView({ behavior: 'smooth' });
+        if (box) {
+            box.classList.remove('hidden');
+            box.scrollIntoView({ behavior: 'smooth' });
+        }
         return;
     }
 
+    // Direct routing for Approval
     saveDecisionToDB(decision, null);
 }
-/ 2. New function to handle the checkbox confirmation
+
 async function act_confirmDeny() {
     const selected = document.querySelector('input[name="denyReason"]:checked');
-    if (!selected) {
-        return showToast("Please select a reason for legal compliance", 'error');
-    }
+    if (!selected) return showToast("Please select a reason", 'error');
     await saveDecisionToDB('Deny', selected.value);
 }
 
-// 3. Updated saveDecisionToDB to handle UI transitions and Lease Upload
 async function saveDecisionToDB(status, reasonKey) {
     const app = state.apps.find(a => a.id === currentAppId);
-    if(!app) return;
+    if (!app) return;
 
     const wording = {
-        score: `Credit/RentScore below requirement (${state.settings?.min_credit_score || 600}). Score: ${app.score || 'N/A'}.`,
-        income: `Income below ${state.settings?.min_income_ratio || 3}x rent ratio.`,
+        score: `Credit/RentScore below requirement. Score: ${app.score || 'N/A'}.`,
+        income: `Income below required rent ratio.`,
         eviction: `Prior eviction record found within 7 years.`,
         criminal: `Criminal record conflicts with safety policy.`,
         other: `Application incomplete or failed other criteria.`
     };
 
-    const finalNote = wording[reasonKey] || reasonKey;
-    const { error } = await supabaseClient.from('apps').update({ status: status, notes: finalNote }).eq('id', currentAppId);
+    const finalNote = wording[reasonKey] || reasonKey || status;
+    
+    const { error } = await supabaseClient.from('apps').update({ 
+        status: status, 
+        notes: finalNote 
+    }).eq('id', currentAppId);
 
     if (error) {
         showToast("Error: " + error.message, 'error');
-        return;
-
-    if (status === 'Deny') {
-        showToast("Generating Adverse Action PDF...");
-        const pdfBlob = await generateAdverseActionPDF(app, finalNote);
-        const reader = new FileReader();
-        reader.readAsDataURL(pdfBlob);
-        reader.onloadend = async () => {
-            await sendEmail(app.email, "Application Status: Important Notice", 'alert', {
-                title: "Application Decision",
-                message: `Your application was not selected. Formal notice attached.`,
-                attachment: reader.result.split(',')[1],
-                fileName: "Adverse_Action_Notice.pdf"
+    } else {
+        // ROUTING LOGIC
+        if (status === 'Deny') {
+            showToast("Generating Adverse Action Notice...");
+            const pdfBlob = await generateAdverseActionPDF(app, finalNote);
+            const reader = new FileReader();
+            reader.readAsDataURL(pdfBlob);
+            reader.onloadend = async () => {
+                await sendEmail(app.email, "Application Status: Important Notice", 'alert', {
+                    title: "Application Decision",
+                    message: `We regret to inform you that your application was not selected. Formal notice attached.`,
+                    attachment: reader.result.split(',')[1],
+                    fileName: "Adverse_Action_Notice.pdf"
+                });
+            };
+            closeModal('modal-view-app'); 
+        } 
+        else if (status === 'Approved') {
+            await sendEmail(app.email, "You're Approved!", 'alert', {
+                title: "Application Approved",
+                message: "Your application was successful! We are preparing your lease now."
             });
-        };
-        closeModal('modal-view-app'); // Auto-close box
-    } 
-    else if (status === 'Approved') {
-        await sendEmail(app.email, "You're Approved!", 'alert', {
-            title: "Application Approved",
-            message: "Your application was successful! Proceed to lease signing."
-        });
-        
-        closeModal('modal-view-app'); // Close vetting modal
-        act_initiateSendLease(app.id); // Trigger lease upload process
-    } 
-    else {
-        closeModal('modal-view-app');
-    }
+            
+            // APPROVAL ROUTING: Close vetting and start lease upload
+            closeModal('modal-view-app'); 
+            act_initiateSendLease(app.id); 
+        } 
+        else if (status === 'Conditional') {
+            await sendEmail(app.email, "Application Update", 'alert', {
+                title: "Conditional Approval",
+                message: `We are offering a conditional approval: ${finalNote}`
+            });
+            closeModal('modal-view-app');
+        } else {
+            closeModal('modal-view-app');
+        }
 
-    await fetchData();
-    renderAll();
-    showToast(`${status} processed.`);
+        await fetchData();
+        renderAll();
+        showToast(`${status} processed successfully.`);
+    }
+}
+
+async function generateAdverseActionPDF(app, reason) {
+    const element = document.createElement('div');
+    element.innerHTML = `
+        <div style="padding: 50px; font-family: sans-serif; color: #334155; line-height: 1.6;">
+            <h1 style="color: #1e293b; font-size: 22px;">Statement of Denial / Adverse Action Notice</h1>
+            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+            <p><strong>Applicant:</strong> ${app.name}</p>
+            <div style="background: #f1f5f9; padding: 20px; border-left: 4px solid #e11d48; font-weight: bold; margin: 25px 0;">
+                ${reason}
+            </div>
+            <p>Decision based on a report provided by: <strong>RentPrep (TransUnion)</strong></p>
+        </div>
+    `;
+    return html2pdf().from(element).set({ margin: 0.5 }).output('blob');
+}
+
+async function sendEmail(to, subject, type, data) {
+    await supabaseClient.functions.invoke('send-email', {
+        body: { 
+            to, 
+            subject, 
+            type, 
+            data,
+            attachment: data.attachment || null,
+            fileName: data.fileName || null     
+        }
+    });
 }
  function act_initiateSendLease(appId) {
     openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
@@ -2729,25 +2770,6 @@ async function saveDecisionToDB(status, reasonKey) {
             showToast("Tenant finalized and Welcome email sent!");
         });
     }
-
-async function generateAdverseActionPDF(app, reason) {
-    const element = document.createElement('div');
-    element.innerHTML = `
-        <div style="padding: 50px; font-family: sans-serif; color: #334155; line-height: 1.6;">
-            <div style="text-align: right; color: #94a3b8; font-size: 10px; margin-bottom: 40px;">KOZEYY PROPERTY MANAGEMENT</div>
-            <h1 style="color: #1e293b; font-size: 22px;">Statement of Denial / Adverse Action Notice</h1>
-            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>To:</strong> ${app.name}</p>
-            <p style="margin-top: 30px;">Thank you for your interest in renting our property. This notice is to inform you that your application has been declined for the following principal reason(s):</p>
-            <div style="background: #f1f5f9; padding: 20px; border-left: 4px solid #e11d48; font-weight: bold; margin: 25px 0;">
-                ${reason}
-            </div>
-            <p>This decision was based in whole or in part on information contained in a consumer report provided by:</p>
-            <p><strong>RentPrep (TransUnion)</strong><br>956 Ellicott Creek Rd, Ste 408<br>Amherst, NY 14228<br>Phone: (888) 387-3504</p>
-        </div>
-    `;
-    return html2pdf().from(element).set({ margin: 0.5 }).output('blob');
-}
     
   async function act_saveSettings(e) { 
     e.preventDefault(); 
@@ -3924,6 +3946,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
