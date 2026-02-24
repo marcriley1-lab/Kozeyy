@@ -1058,14 +1058,42 @@
                 <button onclick="act_screenDecision('Conditional')" class="bg-amber-400 text-white py-3 rounded-xl font-bold text-sm shadow">Conditional</button>
                 <button onclick="act_screenDecision('Deny')" class="bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow">Deny</button>
             </div>
+
+                   <!-- PASTE THIS INSIDE id="modal-screening-detail", right after id="sd-actions" -->
+<div id="sd-denial-box" class="hidden mt-4 p-4 bg-rose-50 border border-rose-100 rounded-2xl">
+    <p class="text-xs font-bold text-rose-700 uppercase tracking-widest mb-3">Reason for Denial</p>
+    <div class="space-y-2">
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="sdDenyReason" value="score" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Credit Score / Risk Model</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="sdDenyReason" value="income" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Insufficient Income</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="sdDenyReason" value="eviction" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Eviction History</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="sdDenyReason" value="criminal" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Criminal History</span>
+        </label>
+         <label class="flex items-center gap-3 p-3 bg-white rounded-xl border border-rose-100 cursor-pointer hover:bg-rose-100/50 transition">
+            <input type="radio" name="sdDenyReason" value="other" class="w-4 h-4 text-rose-600">
+            <span class="text-sm font-medium text-slate-700">Other / Application Incomplete</span>
+        </label>
+    </div>
+    <button onclick="act_confirmDeny()" class="w-full mt-4 bg-rose-600 text-white py-3 rounded-xl font-bold text-sm shadow-sm hover:bg-rose-700 transition">
+        Confirm Denial & Send Notice
+    </button>
+</div>     
             
             <div id="sd-email-option" class="hidden-section text-center p-4 bg-slate-50 rounded-xl">
                 <p class="text-sm text-slate-500 mb-2">Decision Saved.</p>
                 <button onclick="closeModal('modal-screening-detail')" class="text-indigo-600 font-bold text-sm hover:underline">Close</button>
             </div>
-        </div>
-    </div>
-</div>
+                               
 <div id="modal-payment-view" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
     <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm relative text-center">
         <button onclick="closeModal('modal-payment-view')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times"></i></button>
@@ -2587,6 +2615,11 @@ function act_markAsSigned(appId) {
  function act_screenDecision(decision) {
     if (!currentAppId) return;
 
+    // 1. Hide the box initially in case it was left open
+    const denialBox = document.getElementById('sd-denial-box');
+    if (denialBox) denialBox.classList.add('hidden');
+
+    // 2. Handle Conditional
     if (decision === 'Conditional') {
         openPrompt("Enter Condition (e.g. Double Deposit):", async (val) => {
             if (!val) return showToast("Condition required", 'error');
@@ -2595,23 +2628,32 @@ function act_markAsSigned(appId) {
         return;
     }
 
+    // 3. Handle Deny - Reveal the new box inside the screening modal
     if (decision === 'Deny') {
-        // Correctly reveals the checkbox UI in the modal
-        const box = document.getElementById('denial-reason-box');
-        if (box) {
-            box.classList.remove('hidden');
-            box.scrollIntoView({ behavior: 'smooth' });
+        if (denialBox) {
+            denialBox.classList.remove('hidden');
+            denialBox.scrollIntoView({ behavior: 'smooth' });
+        } else {
+            console.error("Error: Denial box (id='sd-denial-box') not found in HTML.");
         }
-        return;
+        return; // Stop here, wait for user to click "Confirm" in the box
     }
 
-    // Direct routing for Approval
+    // 4. Handle Approve immediately
     saveDecisionToDB(decision, null);
 }
-
 async function act_confirmDeny() {
-    const selected = document.querySelector('input[name="denyReason"]:checked');
-    if (!selected) return showToast("Please select a reason", 'error');
+    // Look for the radio buttons in the NEW box first
+    let selected = document.querySelector('input[name="sdDenyReason"]:checked');
+    
+    // Fallback logic in case you didn't update the HTML name attribute
+    if (!selected) {
+        selected = document.querySelector('input[name="denyReason"]:checked');
+    }
+
+    if (!selected) return showToast("Please select a reason for denial", 'error');
+    
+    // Proceed to save and generate PDF
     await saveDecisionToDB('Deny', selected.value);
 }
 
@@ -3951,6 +3993,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
