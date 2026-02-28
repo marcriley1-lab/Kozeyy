@@ -2661,17 +2661,24 @@ async function saveDecisionToDB(status, reasonKey) {
     const app = state.apps.find(a => a.id === currentAppId);
     if (!app) return;
 
-    const wording = {
-        score: `Credit/RentScore below requirement. Score: ${app.score || 'N/A'}.`,
-        income: `Income below required rent ratio.`,
-        eviction: `Prior eviction record found within 7 years.`,
-        criminal: `Criminal record conflicts with safety policy.`,
-        other: `Application incomplete or failed other criteria.`
-    };
+    // 1. Determine the note to save to DB
+    let finalNote = reasonKey || status;
 
-    const finalNote = wording[reasonKey] || reasonKey || status;
-    
-    // 1. Update Backend
+    if (status === 'Deny') {
+        const wording = {
+            score: `Credit/RentScore below requirement. Score: ${app.score || 'N/A'}.`,
+            income: `Income below required rent ratio.`,
+            eviction: `Prior eviction record found within 7 years.`,
+            criminal: `Criminal record conflicts with safety policy.`,
+            other: `Application incomplete or failed other criteria.`
+        };
+        finalNote = wording[reasonKey] || reasonKey;
+    } 
+    else if (status === 'Conditional') {
+        finalNote = `Conditional Approval: ${reasonKey}`;
+    }
+
+    // 2. Update Backend
     const { error } = await supabaseClient.from('apps').update({ 
         status: status, 
         notes: finalNote 
@@ -2682,12 +2689,9 @@ async function saveDecisionToDB(status, reasonKey) {
         return;
     }
 
-    // 2. Routing & UI Updates
-    // FIX: Changed 'modal-view-app' to 'modal-screening-detail'
-   if (status === 'Deny') {
+    // 3. Routing & Email Logic
+    if (status === 'Deny') {
         showToast("Processing Denial...");
-        
-        // Generate the formal legal PDF
         const pdfBlob = await generateAdverseActionPDF(app, finalNote);
         const reader = new FileReader();
         reader.readAsDataURL(pdfBlob);
@@ -2695,12 +2699,11 @@ async function saveDecisionToDB(status, reasonKey) {
         reader.onloadend = async () => {
             await sendEmail(
                 app.email, 
-                "Update regarding your rental application", // Better Subject Line
+                "Status of your rental application", 
                 'alert', 
                 {
-                    title: "Application Status Update", // Better Title
-                    // Professional Message Body
-                    message: `Thank you for your interest in the property. After carefully reviewing your application, we regret to inform you that your application was not approved.\n\nPlease review the attached formal notice, which explains the specific reason for this decision and contains important information regarding your rights under the Fair Credit Reporting Act.`,
+                    title: "Application Status Update",
+                    message: `Thank you for your interest in the property. Please be advised that the application for tenancy will not be moving forward at this time.\n\nA formal notice is attached to this email. This document explains the specific reason for this decision and contains important information regarding your rights under the Fair Credit Reporting Act.`,
                     attachment: reader.result.split(',')[1],
                     fileName: "Adverse_Action_Notice.pdf"
                 }
@@ -2708,26 +2711,39 @@ async function saveDecisionToDB(status, reasonKey) {
         };
         closeModal('modal-screening-detail'); 
     } 
+    else if (status === 'Conditional') {
+        // --- NEW: Send Conditional Offer Email ---
+        showToast("Sending Conditional Offer...");
+        
+        // reasonKey holds the specific condition text (e.g., "Double Deposit")
+        await sendEmail(
+            app.email,
+            "Update regarding your rental application",
+            'action', // Triggers the button style in your new email template
+            {
+                title: "Conditional Approval",
+                message: `Thank you for your interest in the property. We are pleased to inform you that your application has been approved contingent on the following condition:\n\n"${reasonKey}"\n\nPlease log in to your applicant portal to accept or decline this condition so we can move forward with the lease agreement.`,
+                actionLink: "https://kozeyy.com/applicantportal.html",
+                actionText: "Review & Respond"
+            }
+        );
+        closeModal('modal-screening-detail');
+    }
     else if (status === 'Approved') {
-        // APPROVAL ROUTING
         showToast("Application Approved. Redirecting to Lease...");
         await sendEmail(app.email, "You're Approved!", 'alert', {
             title: "Application Approved",
             message: "Your application was successful! We are preparing your lease now."
         });
         
-        closeModal('modal-screening-detail'); // FIX: Correct Modal ID
+        closeModal('modal-screening-detail');
         
-        // Trigger the next step
         if (typeof act_initiateSendLease === 'function') {
-            setTimeout(() => act_initiateSendLease(app.id), 500); // Small delay for smooth UI transition
-        } else {
-            console.error("act_initiateSendLease function not found.");
+            setTimeout(() => act_initiateSendLease(app.id), 500);
         }
     } 
     else {
-        // Conditional / Other
-        closeModal('modal-screening-detail'); // FIX: Correct Modal ID
+        closeModal('modal-screening-detail');
     }
 
     await fetchData();
@@ -4057,6 +4073,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
