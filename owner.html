@@ -2684,18 +2684,27 @@ async function saveDecisionToDB(status, reasonKey) {
 
     // 2. Routing & UI Updates
     // FIX: Changed 'modal-view-app' to 'modal-screening-detail'
-    if (status === 'Deny') {
+   if (status === 'Deny') {
         showToast("Processing Denial...");
+        
+        // Generate the formal legal PDF
         const pdfBlob = await generateAdverseActionPDF(app, finalNote);
         const reader = new FileReader();
         reader.readAsDataURL(pdfBlob);
+        
         reader.onloadend = async () => {
-            await sendEmail(app.email, "Application Update", 'alert', {
-                title: "Application Decision",
-                message: `Your application was not selected. Formal notice attached.`,
-                attachment: reader.result.split(',')[1],
-                fileName: "Adverse_Action_Notice.pdf"
-            });
+            await sendEmail(
+                app.email, 
+                "Update regarding your rental application", // Better Subject Line
+                'alert', 
+                {
+                    title: "Application Status Update", // Better Title
+                    // Professional Message Body
+                    message: `Thank you for your interest in the property. After carefully reviewing your application, we regret to inform you that your application was not approved.\n\nPlease review the attached formal notice, which explains the specific reason for this decision and contains important information regarding your rights under the Fair Credit Reporting Act.`,
+                    attachment: reader.result.split(',')[1],
+                    fileName: "Adverse_Action_Notice.pdf"
+                }
+            );
         };
         closeModal('modal-screening-detail'); 
     } 
@@ -4048,6 +4057,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
