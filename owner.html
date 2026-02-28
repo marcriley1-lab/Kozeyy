@@ -2726,19 +2726,74 @@ async function saveDecisionToDB(status, reasonKey) {
 }
 
 async function generateAdverseActionPDF(app, reason) {
+    // 1. Get Owner Name for signature
+    const ownerName = document.getElementById('owner-name-display')?.innerText || "Property Management";
+    
+    // 2. Try to find the property address (fallback to generic if missing)
+    // If you store listing address in app.listing_address, use that. Otherwise:
+    const propAddress = app.rent_addr || app.address || "the rental property applied for";
+
+    // 3. Create the Full HTML Template
     const element = document.createElement('div');
     element.innerHTML = `
-        <div style="padding: 50px; font-family: sans-serif; color: #334155; line-height: 1.6;">
-            <h1 style="color: #1e293b; font-size: 22px;">Statement of Denial / Adverse Action Notice</h1>
-            <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-            <p><strong>Applicant:</strong> ${app.name}</p>
-            <div style="background: #f1f5f9; padding: 20px; border-left: 4px solid #e11d48; font-weight: bold; margin: 25px 0;">
-                ${reason}
+        <div style="padding: 40px; font-family: 'Helvetica', 'Arial', sans-serif; color: #1e293b; line-height: 1.6; max-width: 800px; margin: 0 auto; font-size: 11pt;">
+            
+            <div style="border-bottom: 2px solid #334155; padding-bottom: 20px; margin-bottom: 30px;">
+                <h1 style="margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px; color: #0f172a;">Adverse Action Notice</h1>
+                <p style="margin: 5px 0 0; color: #64748b; font-size: 12pt;">Statement of Denial of Tenancy</p>
             </div>
-            <p>Decision based on a report provided by: <strong>RentPrep (TransUnion)</strong></p>
+
+            <div style="margin-bottom: 30px;">
+                <p style="margin: 0;"><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+                <p style="margin: 5px 0 0;"><strong>Applicant:</strong> ${app.name}</p>
+                <p style="margin: 5px 0 0;"><strong>Property:</strong> ${propAddress}</p>
+            </div>
+
+            <p>Dear ${app.name},</p>
+
+            <p>Thank you for your application to rent the property listed above. We regret to inform you that we are unable to approve your application at this time.</p>
+
+            <div style="background-color: #f1f5f9; border-left: 5px solid #e11d48; padding: 15px; margin: 25px 0;">
+                <h3 style="margin-top: 0; font-size: 12pt; text-transform: uppercase; color: #e11d48;">Reason for Denial</h3>
+                <p style="margin-bottom: 0; font-weight: bold; color: #334155;">${reason}</p>
+            </div>
+
+            <h3 style="border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 30px; font-size: 12pt;">Consumer Report Information</h3>
+            <p>This decision was based in whole or in part on information obtained in a consumer report (background check, credit report, or eviction record) from the following Consumer Reporting Agency:</p>
+
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 8px; font-size: 10pt;">
+                <strong>RentPrep / TransUnion Rental Screening Solutions</strong><br>
+                P.O. Box 2000<br>
+                Chester, PA 19016<br>
+                Phone: (800) 888-4213<br>
+                Website: www.transunion.com/myoptions
+            </div>
+
+            <p style="font-size: 10pt; color: #475569; margin-top: 15px; font-style: italic;">
+                The consumer reporting agency listed above did not make the decision to take the adverse action and is unable to provide you with the specific reasons why the adverse action was taken.
+            </p>
+
+            <h3 style="border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; margin-top: 30px; font-size: 12pt;">Your Rights Under the FCRA</h3>
+            <ul style="font-size: 10pt; color: #334155; padding-left: 20px;">
+                <li style="margin-bottom: 8px;">You have the right to obtain a free copy of your consumer report from the reporting agency, if you request it no later than 60 days after you receive this notice.</li>
+                <li>You have the right to dispute the accuracy or completeness of any information contained in the report by contacting the reporting agency directly.</li>
+            </ul>
+
+            <div style="margin-top: 50px;">
+                <p>Sincerely,</p>
+                <p style="margin-top: 30px; border-top: 1px solid #000; width: 200px; padding-top: 5px;"><strong>${ownerName}</strong><br>Property Owner / Manager</p>
+            </div>
         </div>
     `;
-    return html2pdf().from(element).set({ margin: 0.5 }).output('blob');
+
+    // 4. Generate High-Quality PDF
+    return html2pdf().from(element).set({ 
+        margin: 0.75,
+        filename: `Adverse_Action_${app.name.replace(/\s+/g,'_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    }).output('blob');
 }
 
 async function sendEmail(to, subject, type, data) {
@@ -3993,6 +4048,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
