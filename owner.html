@@ -1222,17 +1222,29 @@ const KOZEYY_PLANS = {
         await loadUserProfile(); // 2. Then load profile (Usage will calculate correctly)
         renderAll();
             
-            // Check for upload redirect param (from lease.html)
             const urlParams = new URLSearchParams(window.location.search);
-            if(urlParams.get('action') === 'lease_uploaded') {
-                navTo('screening');
-                showToast("Lease document saved successfully");
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
 
-            setInterval(async () => { await fetchData(); renderAll(); }, 4000);
-        } catch (err) { console.error("Initialization failed:", err); renderAll(); }
-    }
+// This detects when you return from lease.html
+if(urlParams.get('action') === 'lease_uploaded') {
+    navTo('screening');
+    showToast("Lease document saved successfully");
+    
+    // NOW we ask to send the lease
+    setTimeout(() => {
+        // Find the app that just got the lease uploaded
+        const recentApp = state.apps.find(a => a.status === 'Lease Uploaded');
+        if (recentApp) {
+            openPlatformConfirm(
+                "Send Lease for Signature?", 
+                `The lease for ${recentApp.name} is ready. Send it now for digital signature?`, 
+                () => act_initiateSendLease(recentApp.id)
+            );
+        }
+    }, 1500); // 1.5s delay to ensure data is loaded and UI is stable
+
+    // Clean the URL so it doesn't loop on refresh
+    window.history.replaceState({}, document.title, window.location.pathname);
+}
 
    // --- UPDATED FETCH DATA (Safety Check Added) ---
    async function fetchData() {
@@ -4098,6 +4110,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
