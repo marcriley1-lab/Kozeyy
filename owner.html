@@ -1215,36 +1215,37 @@ const KOZEYY_PLANS = {
     return { isOverdue, daysLate, fee };
 }
     // --- 1. INIT & POLLING ---
-  async function initSystem() {
+ async function initSystem() {
     try {
         if(!supabaseClient) throw new Error("Supabase library not loaded.");
-        await fetchData();       // 1. Get Tenants/Listings first
-        await loadUserProfile(); // 2. Then load profile
+        
+        // 1. Data Load
+        await fetchData();       
+        await loadUserProfile(); 
         renderAll();
             
-        // --- NEW LEASE RETURN LOGIC ---
+        // 2. Handle Return from Lease Tool
         const urlParams = new URLSearchParams(window.location.search);
-
         if(urlParams.get('action') === 'lease_uploaded') {
             navTo('screening');
             showToast("Lease document saved successfully");
             
-            // Automatically ask to send the lease upon return
+            // CLEANER FLOW: Open the detail modal instead of auto-confirming
             setTimeout(() => {
+                // Find the specific app that was just modified
+                // We prioritize 'Lease Uploaded', sorted by most recent if needed
                 const recentApp = state.apps.find(a => a.status === 'Lease Uploaded');
+                
                 if (recentApp) {
-                    openPlatformConfirm(
-                        "Send Lease for Signature?", 
-                        `The lease for ${recentApp.name} is ready. Send it now for digital signature?`, 
-                        () => act_initiateSendLease(recentApp.id)
-                    );
+                    act_viewApp(recentApp.id); // <--- This opens the specific UI with Edit/Send buttons
                 }
-            }, 1500);
+            }, 1000);
 
+            // Clean URL
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // Start Auto-Refresh
+        // 3. Polling
         setInterval(async () => { await fetchData(); renderAll(); }, 4000);
 
     } catch (err) { 
@@ -2439,7 +2440,7 @@ function act_viewApp(id) {
     const app = state.apps.find(a => a.id === id);
     if(!app) return;
 
-    // 1. Populate Text Data
+    // 1. Populate Basic Data
     setText('sd-name', app.name);
     setText('sd-income', `$${(app.income||0).toLocaleString()}`);
     
@@ -2448,52 +2449,117 @@ function act_viewApp(id) {
     setText('sd-ratio', ratio);
     setText('sd-score', app.score || '---'); 
 
-    // 2. Setup Report Link visibility (UPDATED LOGIC)
+    // 2. Report Link
     const reportBtn = document.getElementById('sd-report-link');
-    
-    // We treat 'notes' as the URL because Admin.html saves the URL there
-    if(app.notes && app.notes.length > 3) {
-        let url = app.notes;
-        // Ensure it's a valid clickable link
-        if(!url.startsWith('http')) url = 'https://' + url;
-
+    if(app.notes && app.notes.length > 3 && (app.notes.startsWith('http') || app.notes.startsWith('www'))) {
+        let url = app.notes.startsWith('http') ? app.notes : 'https://' + app.notes;
         reportBtn.href = url;
         reportBtn.classList.remove('hidden-section');
-        reportBtn.innerHTML = `<i class="fas fa-external-link-alt mr-2"></i> View Background Report`;
     } else {
         reportBtn.classList.add('hidden-section');
     }
 
-    // 3. Reset Modal View: Hide all conditional sections first
-    const idsToHide = ['sd-banner', 'sd-pending-msg', 'sd-api-start', 'sd-data-display', 'sd-actions', 'sd-email-option', 'sd-admin-panel'];
-    idsToHide.forEach(eid => {
+    // 3. Reset UI Sections
+    ['sd-banner', 'sd-pending-msg', 'sd-api-start', 'sd-data-display', 'sd-actions', 'sd-email-option', 'sd-admin-panel', 'sd-denial-box'].forEach(eid => {
         const el = document.getElementById(eid);
         if (el) el.classList.add('hidden-section'); 
     });
 
-    // 4. Status Logic
-    const isReadyForReview = app.status === 'Ready for Review' || (app.status === 'Pending' && app.score > 0);
+    // 4. --- STATUS LOGIC ---
 
-    // Decisions & Background Data
-    if (isReadyForReview) {
+    // A. LEASE UPLOADED (The "Clean Up" you requested)
+    if (app.status === 'Lease Uploaded') {
+        const banner = document.getElementById('sd-banner');
+        banner.classList.remove('hidden-section');
+        banner.className = "bg-white p-0 border-0 mb-4"; // Reset banner styles for custom content
+        
+        // Construct URL for editing
+        const editUrl = `lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent || 0}`;
+
+        banner.innerHTML = `
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-left">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-file-pdf text-emerald-600 text-xl"></i>
+                        <span class="font-bold text-emerald-900 text-sm">Lease Document Ready</span>
+                    </div>
+                    <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Draft Saved</span>
+                </div>
+                
+                <div class="flex gap-2 mb-3">
+                    <a href="${app.lease_url}" target="_blank" class="flex-1 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg text-xs font-bold text-center hover:bg-emerald-50 transition">
+                        <i class="fas fa-eye mr-1"></i> View PDF
+                    </a>
+                    <a href="${editUrl}" class="flex-1 bg-white border border-emerald-200 text-slate-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-slate-50 transition">
+                        <i class="fas fa-pen mr-1"></i> Edit / Replace
+                    </a>
+                </div>
+
+                <button onclick="act_initiateSendLease('${app.id}')" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-emerald-700 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-paper-plane"></i> Send to Tenant for Signature
+                </button>
+            </div>
+            
+            <div class="mt-2 text-center">
+               <span class="text-[10px] text-slate-400"><i class="fas fa-check-circle text-emerald-500 mr-1"></i> Tenant record created</span>
+            </div>
+        `;
+        
+        // Show data display underneath
         document.getElementById('sd-data-display').classList.remove('hidden-section');
-        document.getElementById('sd-actions').classList.remove('hidden-section');
-    } 
-    // Approved / Final Stages
-    else if (['Approved', 'Lease Uploaded', 'Lease Sent', 'Lease Signed', 'Active', 'Completed'].includes(app.status)) {
-        document.getElementById('sd-banner').classList.remove('hidden-section');
-        document.getElementById('sd-banner').innerText = `Current Status: ${app.status}`;
-        document.getElementById('sd-banner').className = "p-4 rounded-xl border font-bold text-center bg-indigo-50 text-indigo-700 border-indigo-100";
-        document.getElementById('sd-email-option').classList.remove('hidden-section');
     }
-    // Denied
-    else if (app.status === 'Deny') {
-        document.getElementById('sd-banner').classList.remove('hidden-section');
-        document.getElementById('sd-banner').innerText = "Application Denied";
-        document.getElementById('sd-banner').className = "p-4 rounded-xl border font-bold text-center bg-rose-50 text-rose-700 border-rose-100";
+    
+    // B. LEASE SENT
+    else if (app.status === 'Lease Sent') {
+        const banner = document.getElementById('sd-banner');
+        banner.classList.remove('hidden-section');
+        banner.className = "bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center mb-4";
+        banner.innerHTML = `
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-2 text-indigo-600 animate-pulse">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <h4 class="font-bold text-indigo-900">Awaiting Signature</h4>
+            <p class="text-xs text-indigo-600 mb-3">Lease sent to ${app.email}</p>
+            <button onclick="act_markAsSigned('${app.id}')" class="text-[10px] font-bold text-slate-400 hover:text-indigo-600 underline">
+                Mark as Signed Manually
+            </button>
+        `;
+        document.getElementById('sd-data-display').classList.remove('hidden-section');
     }
+
+    // C. NEW / PENDING SCREENING
+    else if (app.status === 'Pending' || app.status === 'Ready for Review') {
+        if(app.score > 0 || app.status === 'Ready for Review') {
+            document.getElementById('sd-data-display').classList.remove('hidden-section');
+            document.getElementById('sd-actions').classList.remove('hidden-section');
+        } else {
+            document.getElementById('sd-pending-msg').classList.remove('hidden-section');
+        }
+    }
+    
+    // D. DENIED / APPROVED / COMPLETED
     else {
-        document.getElementById('sd-pending-msg').classList.remove('hidden-section');
+        const banner = document.getElementById('sd-banner');
+        banner.classList.remove('hidden-section');
+        
+        let color = "bg-slate-50 text-slate-700 border-slate-200";
+        if(app.status === 'Approved') color = "bg-emerald-50 text-emerald-700 border-emerald-100";
+        if(app.status === 'Deny') color = "bg-rose-50 text-rose-700 border-rose-100";
+        
+        banner.className = `p-4 rounded-xl border font-bold text-center mb-4 ${color}`;
+        banner.innerText = `Status: ${app.status}`;
+        
+        document.getElementById('sd-data-display').classList.remove('hidden-section');
+        
+        // Specific Approved Logic (Recover functionality if they closed the modal)
+        if (app.status === 'Approved') {
+             banner.innerHTML = `
+                <p class="mb-3">Applicant Approved</p>
+                <button onclick="act_presentLeaseOptions({id:'${app.id}', name:'${app.name}', email:'${app.email}', rent:${app.rent}})" class="bg-white border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
+                    Continue to Lease
+                </button>
+             `;
+        }
     }
 
     openModal('modal-screening-detail');
@@ -4116,6 +4182,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
