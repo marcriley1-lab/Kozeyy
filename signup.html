@@ -122,11 +122,10 @@
     const btn = document.getElementById('btn-signup');
     const originalText = btn.innerHTML;
     
-    // 1. AUTO-DETECT ROLE
-    // If a listing_id is in the URL, they are a resident; otherwise, a landlord.
-    const role = pendingListingId ? 'tenant' : 'owner'; 
-    
-    // Get and normalize form values
+    // 1. Determine if this is an Applicant or an Owner
+    const isApplicant = !!pendingListingId; 
+    const role = isApplicant ? 'tenant' : 'owner'; 
+
     const email = document.getElementById('email').value.trim().toLowerCase();
     const password = document.getElementById('password').value;
     const fname = document.getElementById('fname').value.trim();
@@ -134,11 +133,10 @@
     const phone = document.getElementById('phone').value.trim();
     const agreed = document.getElementById('agree-terms').checked;
     
-    // Validation
-    if(!email || !password || !fname || !lname) return showModal("Error", "Please fill in all fields.");
+    if(!email || !password || !fname || !lname) return showModal("Error", "All fields required.");
     if(!agreed) return showModal("Terms Required", "You must agree to the terms.");
 
-    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Creating...`;
+    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Registering...`;
     btn.disabled = true;
 
     try {
@@ -152,71 +150,60 @@
         if (authError) throw authError;
         const userId = authData.user.id; 
 
-        // 3. FETCH LISTING DATA (Resident Only)
-        let listingAddress = ""; 
-        if (role === 'tenant' && pendingListingId) {
+        // 3. DATABASE INSERTION LOGIC
+        if (isApplicant) {
+            // A. Fetch listing info to populate the application
             const { data: listing } = await supabaseClient
                 .from('listings')
-                .select('address')
+                .select('address, price, owner_id')
                 .eq('id', pendingListingId)
                 .single();
-            if (listing) listingAddress = listing.address;
-        }
 
-        // 4. PREPARE THE DATA PAYLOAD
-        const table = role === 'owner' ? 'owners' : 'tenants';
-        const payload = {
-            id: userId, 
-            name: `${fname} ${lname}`,
-            email: email,
-            phone: phone,
-            tos_agreed_at: new Date().toISOString()
-        };
-
-        // 5. ROLE-SPECIFIC DATABASE LOGIC
-        let dbError;
-
-        if (role === 'owner') {
-            // Landlords use simple status
-            payload.status = 'Active';
+            // B. INSERT TO 'apps' TABLE (Applicant Queue)
+            const { error: appError } = await supabaseClient
+                .from('apps')
+                .insert([{
+                    user_id: userId,
+                    owner_id: listing ? listing.owner_id : null,
+                    listing_id: pendingListingId,
+                    name: `${fname} ${lname}`,
+                    email: email,
+                    phone: phone,
+                    rent: listing ? listing.price : 0,
+                    rent_addr: listing ? listing.address : "Address Pending",
+                    status: 'Pending' // Appears in Owner Dashboard 'Screening'
+                }]);
             
-            // Use .insert() for new owners to avoid recursion on onConflict
-            const { error } = await supabaseClient
+            if (appError) throw appError;
+
+        } else {
+            // C. INSERT TO 'owners' TABLE
+            const { error: ownerError } = await supabaseClient
                 .from('owners')
-                .insert(payload);
-            dbError = error;
-        } else {
-            // Residents include address and potential invite data
-            payload.address = listingAddress || "Address Pending";
-            payload.status = 'Applicant'; // Default status for new residents
+                .insert([{
+                    id: userId,
+                    name: `${fname} ${lname}`,
+                    email: email,
+                    phone: phone,
+                    status: 'Active'
+                }]);
             
-            // Merge into existing row if an owner already invited this email
-            const { error } = await supabaseClient
-                .from('tenants')
-                .upsert(payload, { onConflict: 'email' });
-            dbError = error;
+            if (ownerError) throw ownerError;
         }
 
-        if (dbError) throw dbError;
-
-        // 6. REDIRECT
+        // 4. REDIRECT
         localStorage.setItem('kozeyy_user_id', userId);
-        localStorage.setItem('kozeyy_role', role);
         
-        if(pendingListingId && role === 'tenant') {
-            window.location.href = `applicant.html?listing_id=${pendingListingId}`;
+        if(isApplicant) {
+            // Send to the applicant portal to view their status
+            window.location.href = `applicantportal.html`;
         } else {
-            window.location.href = (role === 'owner') ? 'owner.html' : 'tenant.html';
+            window.location.href = 'owner.html';
         }
 
     } catch(err) {
         console.error("Signup Error:", err);
-        if(err.message.includes("already registered")) {
-            showModal("Account Exists", "This email is already registered. Please log in.");
-            setTimeout(() => window.location.href = 'login.html', 2000);
-        } else {
-            showModal("Signup Failed", err.message);
-        }
+        showModal("Signup Failed", err.message);
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
@@ -252,6 +239,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
