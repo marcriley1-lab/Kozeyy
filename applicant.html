@@ -543,15 +543,16 @@
                 if (error) throw error;
                 const savedAppId = data[0].id;
 
-                const { data, error } = await supabaseClient.functions.invoke("quick-action", {
-  body: {
-    action: "pay-application-fee",
-    appId: savedAppId,
-    applicantEmail: inputEmail,
-    applicantName: inputName
-  }
-});
-
+                 const response = await fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+                    body: JSON.stringify({ 
+                        action: 'pay-application-fee', 
+                        appId: savedAppId,
+                        applicantEmail: inputEmail,
+                        applicantName: inputName
+                    })
+                });
 
                 const session = await response.json();
                 if(session.error) throw new Error(session.error);
