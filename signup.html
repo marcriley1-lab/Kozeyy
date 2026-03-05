@@ -158,19 +158,19 @@
                 .single();
 
             // 4. INSERT TO 'apps' TABLE (Owner's Screening Queue)
-            const { error: appError } = await supabaseClient
-                .from('apps')
-                .insert([{
-                    user_id: userId,
-                    owner_id: listing ? listing.owner_id : null,
-                    listing_id: pendingListingId,
-                    name: `${fname} ${lname}`,
-                    email: email,
-                    phone: phone,
-                    rent: listing ? listing.price : 0,
-                    address: listing ? listing.address : "Address Pending", 
-                    status: 'Pending' 
-                }]);
+           const { error: appError } = await supabaseClient
+        .from('apps')
+        .upsert({
+            user_id: userId, // The unique key used to find the existing row
+            owner_id: listing ? listing.owner_id : null,
+            listing_id: pendingListingId,
+            name: `${fname} ${lname}`,
+            email: email,
+            phone: phone,
+            rent: listing ? listing.price : 0,
+            address: listing ? listing.address : "Address Pending", 
+            status: 'Pending' 
+        }, { onConflict: 'user_id' }); // Ensures it updates instead of duplicates
             
             if (appError) throw appError;
 
@@ -232,6 +232,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
