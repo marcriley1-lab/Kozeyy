@@ -7,266 +7,146 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
     <style>
-        body { font-family: 'Inter', sans-serif; background: #e2e8f0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; } 
+        body { font-family: 'Inter', sans-serif; background: #e2e8f0; } 
         .brand { font-family: 'Outfit', sans-serif; }
         .sig-font { font-family: 'Dancing Script', cursive; }
-        iframe { width: 100%; height: 100%; border: none; background: white; }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body>
+<body class="flex flex-col h-screen">
 
-    <!-- Header -->
-    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-20 flex-none h-20">
+    <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-10">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                <i class="fas fa-file-contract text-lg"></i>
+            <div class="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center text-white">
+                <i class="fas fa-home text-sm"></i>
             </div>
-            <div>
-                <h1 class="text-xl font-bold text-slate-800 brand leading-none">Kozeyy <span class="font-normal text-slate-400">Sign</span></h1>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">Secure Document Viewer</p>
-            </div>
+            <h1 class="text-xl font-bold text-slate-800 brand">Kozeyy <span class="font-normal text-slate-400 ml-1">Sign</span></h1>
         </div>
-        <div id="status-badge" class="bg-slate-100 text-slate-500 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2 border border-slate-200">
-            <span id="status-text">Authenticating...</span>
+        <div id="executed-badge" class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+            Digital Certificate
         </div>
     </nav>
 
-    <div class="flex-1 flex overflow-hidden relative">
-        
-        <!-- Error Banner -->
-        <div id="error-banner" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-rose-600 text-white px-6 py-3 rounded-xl shadow-xl z-50 hidden flex items-center gap-3">
-            <i class="fas fa-exclamation-triangle"></i>
-            <span id="error-text">Error loading document</span>
-        </div>
-
-        <!-- Left: PDF Viewer -->
-        <main class="flex-1 bg-slate-200 flex flex-col p-4 md:p-6 relative">
-            <div class="flex-1 bg-white shadow-2xl rounded-2xl overflow-hidden border border-slate-300 relative">
-                <iframe id="pdf-frame"></iframe>
-                
-                <!-- Loading Overlay -->
-                <div id="loading-overlay" class="absolute inset-0 bg-white flex flex-col items-center justify-center z-10">
-                    <div class="loader mb-4" style="width: 40px; height: 40px;"></div>
-                    <p class="text-slate-500 font-bold text-sm animate-pulse">Retrieving Secure Document...</p>
-                </div>
+    <div class="flex-1 flex overflow-hidden">
+        <main class="flex-1 bg-slate-200 overflow-hidden flex items-center justify-center p-4 md:p-8">
+            <div class="w-full h-full max-w-5xl bg-white shadow-2xl rounded-lg overflow-hidden border border-slate-300">
+                <iframe id="pdf-frame" class="w-full h-full border-none" src=""></iframe>
             </div>
         </main>
 
-        <!-- Right: Sidebar -->
-        <aside class="w-80 bg-white border-l border-slate-200 overflow-y-auto hidden lg:flex flex-col p-6 shadow-xl z-20">
-            
-            <!-- Metadata -->
+        <aside class="w-80 bg-white border-l border-slate-200 overflow-y-auto hidden lg:flex flex-col p-6 shadow-xl">
             <div class="mb-8">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Document Details</h3>
-                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100">
-                    <p class="text-[10px] text-slate-400 font-bold uppercase mb-1">Reference ID</p>
-                    <p class="text-xs font-mono font-bold text-slate-700 break-all select-all cursor-pointer" id="ref-id">...</p>
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Signature Certificate</h3>
+                <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-2">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Ref ID</p>
+                    <p class="text-sm font-mono font-bold text-slate-700" id="ref-id">...</p>
                 </div>
             </div>
 
-            <!-- Signatures -->
-            <div class="space-y-6 flex-1">
-                <!-- Tenant -->
-                <div class="relative pl-6 border-l-2 border-slate-300 transition-all duration-500" id="tenant-sig-block">
-                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-300 rounded-full border-4 border-white transition-colors duration-500" id="tenant-dot"></div>
-                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Tenant Signature</p>
-                    <h4 class="font-bold text-slate-800 sig-font text-2xl leading-none mb-2" id="t-name">Pending...</h4>
-                    <p class="text-[10px] text-slate-500 bg-slate-50 inline-block px-2 py-1 rounded border border-slate-100">
-                        <i class="fas fa-clock mr-1"></i> <span id="t-date">--</span>
+            <div class="space-y-6">
+                <div class="relative pl-6 border-l-2 border-indigo-500">
+                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-indigo-500 rounded-full border-4 border-white"></div>
+                    <p class="text-[10px] font-black text-indigo-500 uppercase tracking-wider mb-1">Tenant Signature</p>
+                    <h4 class="font-bold text-slate-800 sig-font text-xl" id="t-name">...</h4>
+                    <p class="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fas fa-clock"></i> <span id="t-date">...</span>
                     </p>
                 </div>
 
-                <!-- Landlord -->
-                <div class="relative pl-6 border-l-2 border-slate-300 transition-all duration-500" id="landlord-sig-block">
-                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-300 rounded-full border-4 border-white transition-colors duration-500" id="landlord-dot"></div>
+                <div class="relative pl-6 border-l-2 border-slate-300" id="landlord-sig-block">
+                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-300 rounded-full border-4 border-white" id="landlord-dot"></div>
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Landlord Signature</p>
-                    <h4 class="font-bold text-slate-800 sig-font text-2xl leading-none mb-2" id="o-name">Pending...</h4>
-                    <p class="text-[10px] text-slate-500 bg-slate-50 inline-block px-2 py-1 rounded border border-slate-100">
-                        <i class="fas fa-clock mr-1"></i> <span id="o-date">--</span>
+                    <h4 class="font-bold text-slate-800 sig-font text-xl" id="o-name">...</h4>
+                    <p class="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                        <i class="fas fa-clock"></i> <span id="o-date">...</span>
                     </p>
                 </div>
             </div>
 
-            <!-- Footer / Verification -->
-            <div class="mt-auto pt-8 border-t border-slate-100 text-center">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Official Seal</h3>
-                <div id="qrcode" class="mx-auto mb-4 flex justify-center p-2 bg-white border border-slate-200 shadow-sm w-32 h-32 items-center rounded-lg"></div>
-                <p class="text-[9px] text-slate-400 leading-relaxed mb-4 px-2">
-                    Scan to verify authenticity. This document is secured by the Kozeyy Trust Network.
+            <div class="mt-auto pt-8 border-t border-slate-100">
+                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Verification Seal</h3>
+                <div id="qrcode" class="mx-auto mb-3 flex justify-center p-2 bg-white border border-slate-100 shadow-sm w-32 h-32 items-center"></div>
+                <p class="text-[10px] text-slate-400 text-center leading-relaxed mb-6">
+                    Scan to verify document authenticity.<br>This document is digitally secured by Kozeyy.
                 </p>
-                <button onclick="window.print()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-900 transition flex items-center justify-center gap-2 shadow-lg">
-                    <i class="fas fa-print"></i> Download / Print
+                
+                <button onclick="window.print()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-900 transition flex items-center justify-center gap-2">
+                    <i class="fas fa-print"></i> Print Receipt
                 </button>
             </div>
         </aside>
     </div>
 
-    <!-- Script -->
     <script>
         const S_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        
-        let supabase = null;
-        if (window.supabase) supabase = window.supabase.createClient(S_URL, S_KEY);
+        const params = new URLSearchParams(window.location.search);
 
-        // --- HELPERS ---
-        function safeSetText(id, text) {
-            const el = document.getElementById(id);
-            if(el) el.innerText = text;
-        }
-
-        function safeFormatDate(iso) {
-            if (!iso || iso === 'null' || iso === 'undefined' || iso === '') return '--';
+        const formatDate = (iso) => {
+            if (!iso || iso === 'null' || iso === 'undefined') return 'Pending Signature';
             const d = new Date(iso);
-            // Check for valid date
-            if (isNaN(d.getTime())) return '--';
-            
-            // Format nicely
-            return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-        }
+            return isNaN(d.getTime()) ? 'Pending Signature' : d.toLocaleString();
+        };
 
-        function showError(msg) {
-            document.getElementById('loading-overlay').classList.add('hidden');
-            const banner = document.getElementById('error-banner');
-            document.getElementById('error-text').innerText = msg;
-            banner.classList.remove('hidden');
-        }
+        function generateQR() {
+            const qrContainer = document.getElementById("qrcode");
+            if (!qrContainer) return;
+            qrContainer.innerHTML = "";
 
-        function updateSignature(type, name, date) {
-            const block = document.getElementById(`${type}-sig-block`);
-            const dot = document.getElementById(`${type}-dot`);
-            
-            safeSetText(`${type.charAt(0)}-name`, name || 'Pending...');
-            safeSetText(`${type.charAt(0)}-date`, safeFormatDate(date));
+            // Create a minimized verification URL
+            const verifyUrl = new URL(window.location.href);
+            const shortUrl = `${verifyUrl.origin}${verifyUrl.pathname}?id=${params.get('id')}`;
 
-            // Visual Updates if signed (date exists and is not empty)
-            if (date && date !== 'null' && date !== '--' && date !== '') {
-                if (type === 'tenant') {
-                    block.classList.remove('border-slate-300'); block.classList.add('border-indigo-500');
-                    dot.classList.remove('bg-slate-300'); dot.classList.add('bg-indigo-500');
-                } else {
-                    block.classList.remove('border-slate-300'); block.classList.add('border-emerald-500');
-                    dot.classList.remove('bg-slate-300'); dot.classList.add('bg-emerald-500');
-                }
-            }
-        }
-
-        function generateQR(id) {
-            const container = document.getElementById("qrcode");
-            if (!container || typeof QRCode === 'undefined') return;
-            container.innerHTML = "";
-            
             try {
-                // Ensure we have a clean ID
-                const cleanId = id.split('#')[0];
-                const path = window.location.href.split('?')[0]; 
-                const url = `${path}?id=${cleanId}`;
-                
-                new QRCode(container, {
-                    text: url,
+                new QRCode(qrContainer, {
+                    text: shortUrl,
                     width: 110,
                     height: 110,
-                    colorDark : "#1e293b",
+                    colorDark : "#000000",
                     colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.Q
+                    correctLevel : QRCode.CorrectLevel.Q // High reliability level
                 });
-            } catch(e) { console.warn("QR Generation failed", e); }
-        }
-
-        // --- MAIN LOGIC ---
-        async function initViewer() {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                const docId = params.get('id');
-                const manualUrl = params.get('url');
-
-                safeSetText('ref-id', docId ? docId.slice(0,18) : 'LEGACY-DOC');
-
-                // 1. MANUAL MODE (If URL params provided by Owner Dashboard)
-                // This is fast and doesn't rely on DB fetching
-                const tName = params.get('t_name');
-                if (tName && manualUrl) {
-                    document.getElementById('pdf-frame').src = manualUrl;
-                    document.getElementById('loading-overlay').classList.add('hidden');
-                    
-                    updateSignature('tenant', tName, params.get('t_date'));
-                    updateSignature('landlord', params.get('o_name') || 'Property Owner', params.get('o_date'));
-                    
-                    if (docId) generateQR(docId);
-                    
-                    // Mark as executed immediately if dates exist
-                    if(params.get('t_date') && params.get('o_date')) {
-                        const badge = document.getElementById('status-badge');
-                        badge.className = "bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2 border border-emerald-200 shadow-sm";
-                        document.getElementById('status-text').innerHTML = '<i class="fas fa-check-circle text-sm"></i> Legally Executed';
-                    }
-                    return; 
-                }
-
-                // 2. FETCH MODE (If QR Code scanned or manual params missing)
-                if (docId && supabase) {
-                    // Try fetch from Tenants
-                    // We REMOVED the specific join 'owners(name)' because it might be breaking RLS/Schema
-                    let { data: t, error } = await supabase.from('tenants').select('*').eq('id', docId).maybeSingle();
-                    
-                    // Fallback to Apps
-                    if (!t) {
-                        const { data: a } = await supabase.from('apps').select('*').eq('id', docId).maybeSingle();
-                        if (a) t = a; 
-                    }
-
-                    if (t) {
-                        // Load PDF
-                        if (t.lease_url) {
-                            document.getElementById('pdf-frame').src = t.lease_url;
-                            document.getElementById('loading-overlay').classList.add('hidden');
-                        } else {
-                            showError("Document file not found on server.");
-                        }
-
-                        // Dates - Normalize between tables
-                        const tDate = t.lease_signed_at || t.tenant_signed_at;
-                        const oDate = t.owner_signed_at;
-
-                        updateSignature('tenant', t.name, tDate);
-                        
-                        // Default Landlord Name since we aren't joining owners table anymore
-                        // This prevents the page from crashing if the relation is missing
-                        updateSignature('landlord', "Property Owner", oDate);
-
-                        // Update Status Badge
-                        if(tDate && oDate) {
-                            const badge = document.getElementById('status-badge');
-                            badge.className = "bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2 border border-emerald-200 shadow-sm";
-                            document.getElementById('status-text').innerHTML = '<i class="fas fa-check-circle text-sm"></i> Legally Executed';
-                        } else {
-                            document.getElementById('status-text').innerText = "Pending Signature";
-                        }
-
-                        generateQR(docId);
-                    } else {
-                        showError("Document record not found.");
-                    }
-                } else {
-                    showError("Invalid document link.");
-                }
-
             } catch (err) {
-                console.error(err);
-                showError("System Error: " + err.message);
+                console.error("QR Error:", err);
             }
         }
 
-        window.addEventListener('DOMContentLoaded', initViewer);
+        function initialRender() {
+            document.getElementById('pdf-frame').src = params.get('url') || '';
+            document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
+            document.getElementById('t-name').innerText = params.get('t_name') || 'Tenant';
+            document.getElementById('o-name').innerText = params.get('o_name') || 'Landlord';
+            document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
+            document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
+            
+            setTimeout(generateQR, 300);
+        }
 
+        async function fetchFreshData() {
+            const tenantId = params.get('id');
+            if (!tenantId || !window.supabase) return;
+            try {
+                const supabase = window.supabase.createClient(S_URL, S_KEY);
+                const { data, error } = await supabase.from('tenants').select('lease_signed_at, owner_signed_at').eq('id', tenantId).maybeSingle();
+                if (data && !error) {
+                    document.getElementById('t-date').innerText = formatDate(data.lease_signed_at);
+                    document.getElementById('o-date').innerText = formatDate(data.owner_signed_at);
+                    if (data.lease_signed_at && data.owner_signed_at) {
+                        document.getElementById('executed-badge').className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
+                        document.getElementById('executed-badge').innerHTML = '<i class="fas fa-check-circle mr-1"></i> Executed';
+                        document.getElementById('landlord-sig-block').classList.replace('border-slate-300', 'border-indigo-500');
+                        document.getElementById('landlord-dot').classList.replace('bg-slate-300', 'bg-indigo-500');
+                    }
+                }
+            } catch (err) { console.warn("Background fetch failed."); }
+        }
+
+        window.onload = () => {
+            initialRender();
+            fetchFreshData();
+        };
     </script>
 </body>
 </html>
