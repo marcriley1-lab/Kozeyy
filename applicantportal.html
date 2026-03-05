@@ -477,50 +477,80 @@
             }
         }
 
-       async function signLease() {
-            closeSigningModal();
-            if(!currentUserApp) return;
-            
-            const timestamp = new Date().toISOString(); // Capture exact time
+      async function signLease() {
+    // 1. Validate Signature Pad
+    const signatureData = signaturePad.toDataURL();
+    if (signaturePad.isEmpty()) {
+        alert("Please provide a signature first.");
+        return;
+    }
 
-            // 1. Update Database Status AND Timestamp
-            const { error } = await supabaseClient
-                .from('apps')
-                .update({ 
-                    status: 'Lease Signed',
-                    tenant_signed_at: timestamp 
-                })
-                .eq('id', currentUserApp.id);
+    if (!currentUserApp) return;
 
-            if(error) {
-                showModal("Error", "Failed to save signature: " + error.message);
-                return;
+    // 2. UI Loading State
+    const btn = document.querySelector('button[onclick="signLease()"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing...';
+
+    try {
+        const timestamp = new Date().toISOString();
+
+        // 3. Update Database with Signature and Timestamp
+        const { error } = await supabaseClient
+            .from('apps')
+            .update({
+                status: 'Lease Signed',
+                tenant_signed_at: timestamp,
+                tenant_signature: signatureData
+            })
+            .eq('id', currentUserApp.id);
+
+        if (error) throw error;
+
+        // 4. CRITICAL: Force Local UI Update
+        // This prevents the "loop" by manually moving the app state forward
+        currentUserApp.status = 'Lease Signed';
+        currentUserApp.tenant_signed_at = timestamp;
+        
+        // Close modal and refresh dashboard immediately
+        closeSigningModal();
+        renderDashboard(); 
+
+        // 5. Notify Owner via Email
+        if (currentUserApp.owner_id) {
+            const { data: owner } = await supabaseClient
+                .from('owners')
+                .select('email')
+                .eq('id', currentUserApp.owner_id)
+                .single();
+
+            if (owner && owner.email) {
+                await sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
+                    title: `Lease Signed by ${currentUserApp.name}`,
+                    message: `The applicant has signed the lease for the property. Please log in to your dashboard to countersign and finalize the agreement.`,
+                    actionLink: "https://kozeyy.com/owner.html",
+                    actionText: "Review & Countersign"
+                });
             }
-            
-            // 2. Optimistic UI Update
-            currentUserApp.status = 'Lease Signed';
-            renderDashboard();
-
-            // 3. Notify Owner
-            if(currentUserApp.owner_id) {
-                 const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', currentUserApp.owner_id).single();
-                 if(owner && owner.email) {
-                     await sendEmail(
-                         owner.email, 
-                         "Action Required: Lease Signed", 
-                         'alert', 
-                         {
-                            title: `Lease Signed by ${currentUserApp.name}`,
-                            message: `The applicant signed the lease on ${new Date().toLocaleString()}. Please log in to countersign.`,
-                            actionLink: "https://kozeyy.com/owner.html"
-                         }
-                     );
-                 }
-            }
-
-            showModal("Signature Received!", "You have successfully signed the lease. The owner has been notified to finalize the agreement.");
-            setTimeout(fetchApplication, 2000);
         }
+
+        showModal("Success!", "Your signature has been recorded. The owner has been notified to countersign.");
+        
+        // 6. Background refresh to sync full object
+        setTimeout(fetchApplication, 2000);
+
+    } catch (err) {
+        console.error("Signing error:", err);
+        alert("Error saving signature: " + err.message);
+    } finally {
+        // Restore button state
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+}
 
         async function respondToCondition(response) {
             if (!currentUserApp) return;
@@ -600,6 +630,7 @@
     </script>
 </body>
 </html>
+
 
 
 
