@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Essential Libraries -->
+    <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     
@@ -17,17 +17,16 @@
         .brand { font-family: 'Outfit', sans-serif; }
         .sig-font { font-family: 'Dancing Script', cursive; }
         iframe { width: 100%; height: 100%; border: none; background: white; }
-        /* Loading Animation */
         .loader { border: 3px solid #f3f3f3; border-top: 3px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
 
-    <!-- Top Nav -->
+    <!-- Header -->
     <nav class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center shadow-sm z-20 flex-none h-20">
         <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-indigo-200 shadow-lg">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <i class="fas fa-file-contract text-lg"></i>
             </div>
             <div>
@@ -36,18 +35,16 @@
             </div>
         </div>
         <div id="status-badge" class="bg-slate-100 text-slate-500 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2 border border-slate-200">
-            <span id="status-text">Digital Certificate</span>
+            <span id="status-text">Authenticating...</span>
         </div>
     </nav>
 
-    <!-- Main Layout -->
     <div class="flex-1 flex overflow-hidden relative">
         
-        <!-- Error Banner (Hidden by default) -->
+        <!-- Error Banner -->
         <div id="error-banner" class="absolute top-4 left-1/2 transform -translate-x-1/2 bg-rose-600 text-white px-6 py-3 rounded-xl shadow-xl z-50 hidden flex items-center gap-3">
             <i class="fas fa-exclamation-triangle"></i>
             <span id="error-text">Error loading document</span>
-            <button onclick="this.parentElement.classList.add('hidden')" class="ml-4 opacity-50 hover:opacity-100"><i class="fas fa-times"></i></button>
         </div>
 
         <!-- Left: PDF Viewer -->
@@ -112,11 +109,14 @@
         </aside>
     </div>
 
-    <!-- Logic Script -->
+    <!-- Script -->
     <script>
         const S_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
         
+        let supabase = null;
+        if (window.supabase) supabase = window.supabase.createClient(S_URL, S_KEY);
+
         // --- HELPERS ---
         function safeSetText(id, text) {
             const el = document.getElementById(id);
@@ -126,7 +126,11 @@
         function safeFormatDate(iso) {
             if (!iso || iso === 'null' || iso === 'undefined' || iso === '') return '--';
             const d = new Date(iso);
-            return isNaN(d.getTime()) ? '--' : d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            // Check for valid date
+            if (isNaN(d.getTime())) return '--';
+            
+            // Format nicely
+            return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
         }
 
         function showError(msg) {
@@ -143,8 +147,8 @@
             safeSetText(`${type.charAt(0)}-name`, name || 'Pending...');
             safeSetText(`${type.charAt(0)}-date`, safeFormatDate(date));
 
-            // Visual Updates if signed
-            if (date && date !== 'null' && date !== '--') {
+            // Visual Updates if signed (date exists and is not empty)
+            if (date && date !== 'null' && date !== '--' && date !== '') {
                 if (type === 'tenant') {
                     block.classList.remove('border-slate-300'); block.classList.add('border-indigo-500');
                     dot.classList.remove('bg-slate-300'); dot.classList.add('bg-indigo-500');
@@ -161,9 +165,10 @@
             container.innerHTML = "";
             
             try {
-                // Determine current URL path to build verification link
+                // Ensure we have a clean ID
+                const cleanId = id.split('#')[0];
                 const path = window.location.href.split('?')[0]; 
-                const url = `${path}?id=${id}`;
+                const url = `${path}?id=${cleanId}`;
                 
                 new QRCode(container, {
                     text: url,
@@ -176,77 +181,82 @@
             } catch(e) { console.warn("QR Generation failed", e); }
         }
 
-        // --- MAIN ---
+        // --- MAIN LOGIC ---
         async function initViewer() {
             try {
                 const params = new URLSearchParams(window.location.search);
                 const docId = params.get('id');
                 const manualUrl = params.get('url');
 
-                // 1. Set Reference ID
-                safeSetText('ref-id', docId || 'LEGACY-DOC');
+                safeSetText('ref-id', docId ? docId.slice(0,18) : 'LEGACY-DOC');
 
-                // 2. Load PDF Frame (Prioritize manual, then wait for fetch)
-                const frame = document.getElementById('pdf-frame');
-                if(manualUrl && manualUrl !== 'undefined') {
-                    frame.src = manualUrl;
-                    document.getElementById('loading-overlay').classList.add('hidden');
-                }
-
-                // 3. Populate Signatures (Manual Mode)
-                // If URL params provided t_name, use them immediately for speed
+                // 1. MANUAL MODE (If URL params provided by Owner Dashboard)
+                // This is fast and doesn't rely on DB fetching
                 const tName = params.get('t_name');
-                if(tName) {
-                    updateSignature('tenant', tName, params.get('t_date'));
-                    updateSignature('landlord', params.get('o_name'), params.get('o_date'));
-                    generateQR(docId);
+                if (tName && manualUrl) {
+                    document.getElementById('pdf-frame').src = manualUrl;
+                    document.getElementById('loading-overlay').classList.add('hidden');
                     
-                    // If we have manual data, we are done unless there is no PDF
-                    if(manualUrl && manualUrl !== 'undefined') return;
+                    updateSignature('tenant', tName, params.get('t_date'));
+                    updateSignature('landlord', params.get('o_name') || 'Property Owner', params.get('o_date'));
+                    
+                    if (docId) generateQR(docId);
+                    
+                    // Mark as executed immediately if dates exist
+                    if(params.get('t_date') && params.get('o_date')) {
+                        const badge = document.getElementById('status-badge');
+                        badge.className = "bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2 border border-emerald-200 shadow-sm";
+                        document.getElementById('status-text').innerHTML = '<i class="fas fa-check-circle text-sm"></i> Legally Executed';
+                    }
+                    return; 
                 }
 
-                // 4. Fetch Mode (If manual data missing or incomplete)
-                if (docId) {
-                    const supabase = window.supabase.createClient(S_URL, S_KEY);
+                // 2. FETCH MODE (If QR Code scanned or manual params missing)
+                if (docId && supabase) {
+                    // Try fetch from Tenants
+                    // We REMOVED the specific join 'owners(name)' because it might be breaking RLS/Schema
+                    let { data: t, error } = await supabase.from('tenants').select('*').eq('id', docId).maybeSingle();
                     
-                    // Fetch Tenant Data
-                    let { data: t, error } = await supabase.from('tenants').select('*, owners(name)').eq('id', docId).maybeSingle();
-                    
-                    // Fallback to Apps table if not in Tenant yet
+                    // Fallback to Apps
                     if (!t) {
                         const { data: a } = await supabase.from('apps').select('*').eq('id', docId).maybeSingle();
                         if (a) t = a; 
                     }
 
                     if (t) {
-                        // Apply PDF URL if not already set manually
-                        if (!frame.src || frame.src === window.location.href) {
-                            if (t.lease_url) frame.src = t.lease_url;
-                            else showError("Document file not found.");
+                        // Load PDF
+                        if (t.lease_url) {
+                            document.getElementById('pdf-frame').src = t.lease_url;
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                        } else {
+                            showError("Document file not found on server.");
                         }
 
-                        // Apply Signatures
+                        // Dates - Normalize between tables
                         const tDate = t.lease_signed_at || t.tenant_signed_at;
+                        const oDate = t.owner_signed_at;
+
                         updateSignature('tenant', t.name, tDate);
                         
-                        let oName = "Landlord";
-                        if (t.owners && t.owners.name) oName = t.owners.name;
-                        else if (params.get('o_name')) oName = params.get('o_name');
-                        
-                        updateSignature('landlord', oName, t.owner_signed_at);
+                        // Default Landlord Name since we aren't joining owners table anymore
+                        // This prevents the page from crashing if the relation is missing
+                        updateSignature('landlord', "Property Owner", oDate);
 
                         // Update Status Badge
-                        if(tDate && t.owner_signed_at) {
+                        if(tDate && oDate) {
                             const badge = document.getElementById('status-badge');
                             badge.className = "bg-emerald-100 text-emerald-700 px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2 border border-emerald-200 shadow-sm";
                             document.getElementById('status-text').innerHTML = '<i class="fas fa-check-circle text-sm"></i> Legally Executed';
+                        } else {
+                            document.getElementById('status-text').innerText = "Pending Signature";
                         }
 
-                        document.getElementById('loading-overlay').classList.add('hidden');
                         generateQR(docId);
                     } else {
-                        if (!manualUrl) showError("Document record not found.");
+                        showError("Document record not found.");
                     }
+                } else {
+                    showError("Invalid document link.");
                 }
 
             } catch (err) {
@@ -255,7 +265,6 @@
             }
         }
 
-        // Initialize when ready
         window.addEventListener('DOMContentLoaded', initViewer);
 
     </script>
