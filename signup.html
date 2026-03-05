@@ -209,28 +209,13 @@
                 // 3. CREATE PUBLIC RECORD
                const table = role === 'owner' ? 'owners' : 'tenants';
 
-const payload = {
-    id: userId, 
-    name: `${fname} ${lname}`,
-    email: email,
-    phone: phone,
-    status: role === 'owner' ? 'Active' : (inviteData.owner_id ? 'Active' : 'Applicant'),
-    tos_agreed_at: new Date().toISOString(),
-    ...inviteData 
-};
-
-// Perform the Insert
-const { error: dbError } = await supabaseClient.from(table).upsert([payload]);
-                
-                if (dbError) {
-                    // Handle specific "Duplicate Key" error if email constraint exists
-                    if (dbError.code === '23505') { 
-                        console.warn("Email exists, attempting to update instead");
-                        // If insert failed due to duplicate, try updating the EXISTING record 
-                        // to claim it with the new ID? No, ID is PK. 
-                        // We must assume the signup worked and redirect, or show generic error.
-                    } else {
-                        throw dbError;
+const { error: dbError } = await supabaseClient
+    .from('tenants')
+    .upsert({
+        id: authData.user.id, 
+        email: email,
+        status: 'Active'
+    }, { onConflict: 'email' });
                     }
                 }
 
@@ -290,6 +275,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
