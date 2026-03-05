@@ -13,6 +13,8 @@
         body { font-family: 'Inter', sans-serif; background: #e2e8f0; } 
         .brand { font-family: 'Outfit', sans-serif; }
         .sig-font { font-family: 'Dancing Script', cursive; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #6366f1; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -24,49 +26,61 @@
             </div>
             <h1 class="text-xl font-bold text-slate-800 brand">Kozeyy <span class="font-normal text-slate-400 ml-1">Sign</span></h1>
         </div>
-        <div id="executed-badge" class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-            Digital Certificate
+        <div id="status-badge" class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-2">
+            <div class="loader hidden" id="nav-loader"></div>
+            <span id="status-text">Digital Certificate</span>
         </div>
     </nav>
 
     <div class="flex-1 flex overflow-hidden">
+        <!-- PDF Main Area -->
         <main class="flex-1 bg-slate-200 overflow-hidden flex items-center justify-center p-4 md:p-8">
-            <div class="w-full h-full max-w-5xl bg-white shadow-2xl rounded-lg overflow-hidden border border-slate-300">
+            <div class="w-full h-full max-w-5xl bg-white shadow-2xl rounded-lg overflow-hidden border border-slate-300 relative">
                 <iframe id="pdf-frame" class="w-full h-full border-none" src=""></iframe>
+                
+                <!-- Overlay for Loading/Error -->
+                <div id="overlay-msg" class="absolute inset-0 bg-white flex flex-col items-center justify-center z-20 hidden">
+                    <div class="loader mb-4" style="width: 40px; height: 40px;"></div>
+                    <p class="text-slate-500 font-bold" id="overlay-text">Verifying Document...</p>
+                </div>
             </div>
         </main>
 
+        <!-- Sidebar Info -->
         <aside class="w-80 bg-white border-l border-slate-200 overflow-y-auto hidden lg:flex flex-col p-6 shadow-xl">
             <div class="mb-8">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Signature Certificate</h3>
                 <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-2">
                     <p class="text-[10px] text-slate-400 font-bold uppercase">Ref ID</p>
-                    <p class="text-sm font-mono font-bold text-slate-700" id="ref-id">...</p>
+                    <p class="text-sm font-mono font-bold text-slate-700 break-all" id="ref-id">...</p>
                 </div>
             </div>
 
             <div class="space-y-6">
-                <div class="relative pl-6 border-l-2 border-indigo-500">
-                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-indigo-500 rounded-full border-4 border-white"></div>
-                    <p class="text-[10px] font-black text-indigo-500 uppercase tracking-wider mb-1">Tenant Signature</p>
-                    <h4 class="font-bold text-slate-800 sig-font text-xl" id="t-name">...</h4>
+                <!-- Tenant Block -->
+                <div class="relative pl-6 border-l-2 border-slate-300" id="tenant-sig-block">
+                    <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-300 rounded-full border-4 border-white" id="tenant-dot"></div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Tenant Signature</p>
+                    <h4 class="font-bold text-slate-800 sig-font text-xl" id="t-name">Pending...</h4>
                     <p class="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
-                        <i class="fas fa-clock"></i> <span id="t-date">...</span>
+                        <i class="fas fa-clock"></i> <span id="t-date">--</span>
                     </p>
                 </div>
 
+                <!-- Landlord Block -->
                 <div class="relative pl-6 border-l-2 border-slate-300" id="landlord-sig-block">
                     <div class="absolute -left-[9px] top-0 w-4 h-4 bg-slate-300 rounded-full border-4 border-white" id="landlord-dot"></div>
                     <p class="text-[10px] font-black text-slate-400 uppercase tracking-wider mb-1">Landlord Signature</p>
-                    <h4 class="font-bold text-slate-800 sig-font text-xl" id="o-name">...</h4>
+                    <h4 class="font-bold text-slate-800 sig-font text-xl" id="o-name">Pending...</h4>
                     <p class="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
-                        <i class="fas fa-clock"></i> <span id="o-date">...</span>
+                        <i class="fas fa-clock"></i> <span id="o-date">--</span>
                     </p>
                 </div>
             </div>
 
             <div class="mt-auto pt-8 border-t border-slate-100">
                 <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Verification Seal</h3>
+                <!-- QR Code Container -->
                 <div id="qrcode" class="mx-auto mb-3 flex justify-center p-2 bg-white border border-slate-100 shadow-sm w-32 h-32 items-center"></div>
                 <p class="text-[10px] text-slate-400 text-center leading-relaxed mb-6">
                     Scan to verify document authenticity.<br>This document is digitally secured by Kozeyy.
@@ -82,71 +96,110 @@
     <script>
         const S_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co';
         const S_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhodWZ4bnFmZmxuemxxaHpodGF6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM3NTkwMjUsImV4cCI6MjA3OTMzNTAyNX0.YXbjjLf90j6kGIwDVcZcJ8Cp0979acu3-OooNJ4hrmE';
-        const params = new URLSearchParams(window.location.search);
+        
+        let supabase = null;
+        if (window.supabase) supabase = window.supabase.createClient(S_URL, S_KEY);
 
+        const params = new URLSearchParams(window.location.search);
+        
         const formatDate = (iso) => {
-            if (!iso || iso === 'null' || iso === 'undefined') return 'Pending Signature';
+            if (!iso || iso === 'null' || iso === 'undefined') return '--';
             const d = new Date(iso);
-            return isNaN(d.getTime()) ? 'Pending Signature' : d.toLocaleString();
+            return isNaN(d.getTime()) ? '--' : d.toLocaleString();
         };
 
-        function generateQR() {
+        const updateSigUI = (type, name, date) => {
+            const block = document.getElementById(`${type}-sig-block`);
+            const dot = document.getElementById(`${type}-dot`);
+            const nameEl = document.getElementById(`${type.charAt(0)}-name`);
+            const dateEl = document.getElementById(`${type.charAt(0)}-date`);
+
+            nameEl.innerText = name || 'Pending...';
+            dateEl.innerText = formatDate(date);
+
+            if (date && date !== 'null' && date !== '--') {
+                if (type === 'tenant') {
+                    block.classList.replace('border-slate-300', 'border-indigo-500');
+                    dot.classList.replace('bg-slate-300', 'bg-indigo-500');
+                } else {
+                    // Landlord
+                    block.classList.replace('border-slate-300', 'border-emerald-500');
+                    dot.classList.replace('bg-slate-300', 'bg-emerald-500');
+                }
+            }
+        };
+
+        async function init() {
+            const docId = params.get('id');
+            const manualUrl = params.get('url');
+
+            // Generate QR Code immediately based on current URL or constructed short URL
             const qrContainer = document.getElementById("qrcode");
-            if (!qrContainer) return;
-            qrContainer.innerHTML = "";
+            const verifyUrl = `${window.location.origin}${window.location.pathname}?id=${docId}`;
+            new QRCode(qrContainer, {
+                text: verifyUrl,
+                width: 110,
+                height: 110,
+                correctLevel : QRCode.CorrectLevel.Q
+            });
 
-            // Create a minimized verification URL
-            const verifyUrl = new URL(window.location.href);
-            const shortUrl = `${verifyUrl.origin}${verifyUrl.pathname}?id=${params.get('id')}`;
+            // SCENARIO 1: URL Parameters Exist (Owner Dashboard Click)
+            if (manualUrl) {
+                document.getElementById('pdf-frame').src = manualUrl;
+                document.getElementById('ref-id').innerText = docId || 'LEGACY';
+                updateSigUI('tenant', params.get('t_name'), params.get('t_date'));
+                updateSigUI('landlord', params.get('o_name'), params.get('o_date'));
+                return;
+            }
 
-            try {
-                new QRCode(qrContainer, {
-                    text: shortUrl,
-                    width: 110,
-                    height: 110,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.Q // High reliability level
-                });
-            } catch (err) {
-                console.error("QR Error:", err);
+            // SCENARIO 2: Only ID Exists (QR Scan) -> Fetch Data
+            if (docId && supabase) {
+                // Show Loader
+                document.getElementById('overlay-msg').classList.remove('hidden');
+                
+                // Try fetching from Tenants first
+                let { data: t, error } = await supabase
+                    .from('tenants')
+                    .select('*, owners(name)')
+                    .eq('id', docId)
+                    .maybeSingle();
+
+                // Fallback: Try checking 'apps' table if tenant not found yet
+                if (!t) {
+                    const { data: a } = await supabase.from('apps').select('*').eq('id', docId).maybeSingle();
+                    if(a) t = a; // normalize
+                }
+
+                if (t && t.lease_url) {
+                    document.getElementById('pdf-frame').src = t.lease_url;
+                    document.getElementById('ref-id').innerText = t.id.slice(0, 8).toUpperCase();
+                    document.getElementById('overlay-msg').classList.add('hidden');
+
+                    updateSigUI('tenant', t.name, t.lease_signed_at || t.tenant_signed_at);
+                    
+                    // Owner Name logic
+                    let ownerName = "Landlord";
+                    if (t.owners && t.owners.name) ownerName = t.owners.name;
+                    
+                    updateSigUI('landlord', ownerName, t.owner_signed_at);
+                    
+                    // Update Badge
+                    if(t.owner_signed_at && (t.lease_signed_at || t.tenant_signed_at)) {
+                        document.getElementById('status-badge').className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
+                        document.getElementById('status-text').innerHTML = '<i class="fas fa-check-circle mr-1"></i> Verified';
+                    }
+                } else {
+                    document.getElementById('overlay-text').innerText = "Document Not Found or Access Denied";
+                    document.querySelector('.loader').style.display = 'none';
+                }
+            } else {
+                document.getElementById('overlay-msg').classList.remove('hidden');
+                document.getElementById('overlay-text').innerText = "Invalid Document Link";
+                document.querySelector('.loader').style.display = 'none';
             }
         }
 
-        function initialRender() {
-            document.getElementById('pdf-frame').src = params.get('url') || '';
-            document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
-            document.getElementById('t-name').innerText = params.get('t_name') || 'Tenant';
-            document.getElementById('o-name').innerText = params.get('o_name') || 'Landlord';
-            document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
-            document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
-            
-            setTimeout(generateQR, 300);
-        }
-
-        async function fetchFreshData() {
-            const tenantId = params.get('id');
-            if (!tenantId || !window.supabase) return;
-            try {
-                const supabase = window.supabase.createClient(S_URL, S_KEY);
-                const { data, error } = await supabase.from('tenants').select('lease_signed_at, owner_signed_at').eq('id', tenantId).maybeSingle();
-                if (data && !error) {
-                    document.getElementById('t-date').innerText = formatDate(data.lease_signed_at);
-                    document.getElementById('o-date').innerText = formatDate(data.owner_signed_at);
-                    if (data.lease_signed_at && data.owner_signed_at) {
-                        document.getElementById('executed-badge').className = "bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide";
-                        document.getElementById('executed-badge').innerHTML = '<i class="fas fa-check-circle mr-1"></i> Executed';
-                        document.getElementById('landlord-sig-block').classList.replace('border-slate-300', 'border-indigo-500');
-                        document.getElementById('landlord-dot').classList.replace('bg-slate-300', 'bg-indigo-500');
-                    }
-                }
-            } catch (err) { console.warn("Background fetch failed."); }
-        }
-
-        window.onload = () => {
-            initialRender();
-            fetchFreshData();
-        };
+        window.onload = init;
     </script>
 </body>
 </html>
