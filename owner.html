@@ -2165,7 +2165,8 @@ async function act_saveListing(e) {
     btn.disabled = true;
 
     try {
-        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const ownerId = user.id; // This is the gold standard for your UUID
         
         // 1. Capture ALL form fields explicitly
         const listingData = { 
@@ -4136,6 +4137,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
