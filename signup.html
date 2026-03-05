@@ -44,23 +44,6 @@
             </div>
 
             <form onsubmit="handleSignup(event)" class="space-y-5" novalidate>
-                
-                <div class="grid grid-cols-2 gap-4 mb-2" id="role-selector">
-                    <label class="cursor-pointer">
-                        <input type="radio" name="role" value="owner" class="hidden" checked onchange="toggleRole(this)">
-                        <div id="role-owner" class="role-selected border-2 rounded-xl p-3 text-center transition">
-                            <i class="fas fa-building mb-1 text-lg"></i>
-                            <p class="text-xs font-bold uppercase">Landlord</p>
-                        </div>
-                    </label>
-                    <label class="cursor-pointer">
-                        <input type="radio" name="role" value="tenant" class="hidden" onchange="toggleRole(this)">
-                        <div id="role-tenant" class="role-default border-2 rounded-xl p-3 text-center transition">
-                            <i class="fas fa-key mb-1 text-lg"></i>
-                            <p class="text-xs font-bold uppercase">Resident</p>
-                        </div>
-                    </label>
-                </div>
 
                 <div class="space-y-3 pt-2">
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1">Account Info</p>
@@ -135,139 +118,115 @@
         }
 
      async function handleSignup(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-signup');
-            const originalText = btn.innerHTML;
-            
-            // Get form values
-            const role = document.querySelector('input[name="role"]:checked').value;
-            const email = document.getElementById('email').value.trim().toLowerCase(); // Normalize email
-            const password = document.getElementById('password').value;
-            const fname = document.getElementById('fname').value.trim();
-            const lname = document.getElementById('lname').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const agreed = document.getElementById('agree-terms').checked;
-            
-            if(!email || !password || !fname || !lname) return showModal("Error", "Please fill in all fields.");
-            if(!agreed) return showModal("Terms Required", "You must agree to the terms.");
+    e.preventDefault();
+    const btn = document.getElementById('btn-signup');
+    const originalText = btn.innerHTML;
+    
+    // --- AUTO-DETECT ROLE ---
+    // If a listing_id exists in the URL, they are a tenant/resident.
+    // Otherwise, they are signing up as an owner/landlord.
+    const role = pendingListingId ? 'tenant' : 'owner';
+    
+    // Get form values
+    const email = document.getElementById('email').value.trim().toLowerCase();
+    const password = document.getElementById('password').value;
+    const fname = document.getElementById('fname').value.trim();
+    const lname = document.getElementById('lname').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const agreed = document.getElementById('agree-terms').checked;
+    
+    if(!email || !password || !fname || !lname) return showModal("Error", "Please fill in all fields.");
+    if(!agreed) return showModal("Terms Required", "You must agree to the terms.");
 
-            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Creating...`;
-            btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Creating...`;
+    btn.disabled = true;
 
-            try {
-                // 1. CREATE USER IN SUPABASE AUTH
-                // This generates the 'real' UUID for the user
-                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
-                    email: email,
-                    password: password,
-                    options: { data: { role: role, full_name: `${fname} ${lname}` } }
-                });
+    try {
+        // 1. CREATE USER IN SUPABASE AUTH
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+            email: email,
+            password: password,
+            options: { data: { role: role, full_name: `${fname} ${lname}` } }
+        });
 
-                if (authError) throw authError;
-                const userId = authData.user.id; 
+        if (authError) throw authError;
+        const userId = authData.user.id;
 
-                // 2. CHECK FOR EXISTING INVITE (For Tenants Only)
-                // We assume there might be a placeholder created by the Landlord
-                let inviteData = {};
-                
-                if (role === 'tenant') {
-                    try {
-                        // Attempt to find a tenant record with this email
-                        // Note: This relies on RLS allowing read access to your own email, 
-                        // or public read access on tenants table. 
-                        const { data: existing } = await supabaseClient
-                            .from('tenants')
-                            .select('*')
-                            .eq('email', email)
-                            .maybeSingle();
+        // 2. FETCH LISTING ADDRESS (If applicable)
+        // This ensures the property address is pulled from the listings table.
+        let listingAddress = "";
+        if (pendingListingId) {
+            const { data: listing } = await supabaseClient
+                .from('listings')
+                .select('address')
+                .eq('id', pendingListingId)
+                .single();
+            if (listing) listingAddress = listing.address;
+        }
 
-                        if (existing) {
-                            console.log("Found invite:", existing);
-                            // We found an invite! Copy the crucial data to the new profile
-                            inviteData = {
-                                owner_id: existing.owner_id,
-                                rent_amount: existing.rent_amount,
-                                unit: existing.unit,
-                                address: existing.address,
-                                city: existing.city,
-                                state: existing.state,
-                                zip: existing.zip,
-                                lease_start: existing.lease_start,
-                                lease_end: existing.lease_end,
-                                status: 'Active' // Activate them immediately
-                            };
-                            
-                            // OPTIONAL: If your database has a UNIQUE constraint on email,
-                            // you might need to delete the old placeholder here.
-                            // await supabaseClient.from('tenants').delete().eq('id', existing.id);
-                        }
-                    } catch (inviteErr) {
-                        console.log("No invite found or RLS blocked read", inviteErr);
-                    }
-                }
+        // 3. CHECK FOR EXISTING INVITE (For Residents)
+        let inviteData = {};
+        if (role === 'tenant') {
+            const { data: existing } = await supabaseClient
+                .from('tenants')
+                .select('*')
+                .eq('email', email)
+                .maybeSingle();
 
-                // 3. CREATE PUBLIC RECORD
-               const table = role === 'owner' ? 'owners' : 'tenants';
-
-// 1. Find the listing address if they applied via a specific link
-let listingAddress = "";
-if (pendingListingId) {
-    const { data: listing } = await supabaseClient
-        .from('listings')
-        .select('address')
-        .eq('id', pendingListingId)
-        .single();
-    if (listing) listingAddress = listing.address;
-}
-
-// 2. Build the full data package (The Payload)
-const payload = {
-    id: userId,           // The new Real Auth ID
-    name: `${fname} ${lname}`,
-    email: email,
-    phone: phone,
-    tos_agreed_at: new Date().toISOString(),
-    // Merge existing owner data (rent, etc.) if found
-    ...inviteData, 
-    // Prioritize owner address, then listing address, then fallback
-    address: inviteData.address || listingAddress || "Address Pending",
-    status: inviteData.owner_id ? 'Active' : 'Applicant'
-};
-
-// 3. Save everything to the database
-const { error: dbError } = await supabaseClient
-    .from('tenants')
-    .upsert(payload, { onConflict: 'email' });
-
-if (dbError) throw dbError;
-                    }
-                }
-
-                // 4. SET SESSION & REDIRECT
-                localStorage.setItem('kozeyy_user_id', userId);
-                localStorage.setItem('kozeyy_role', role);
-                
-                // If there was a specific listing application pending
-                if(pendingListingId && role === 'tenant') {
-                    window.location.href = `applicant.html?listing_id=${pendingListingId}`;
-                } else {
-                    window.location.href = (role === 'owner') ? 'owner.html' : 'tenant.html';
-                }
-
-            } catch(err) {
-                console.error(err);
-                // If the error says "User already registered", send them to login
-                if(err.message.includes("already registered")) {
-                    showModal("Account Exists", "This email is already registered. Please log in.");
-                    setTimeout(() => window.location.href = 'login.html', 2000);
-                } else {
-                    showModal("Signup Failed", err.message);
-                }
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+            if (existing) {
+                inviteData = {
+                    owner_id: existing.owner_id,
+                    rent_amount: existing.rent_amount,
+                    unit: existing.unit,
+                    address: existing.address || listingAddress,
+                    status: 'Active'
+                };
             }
         }
 
+        // 4. CONSOLIDATED UPSERT (The Merge)
+        // This uses 'onConflict: email' to prevent duplicate rows for the same person.
+        const table = role === 'owner' ? 'owners' : 'tenants';
+        
+        const payload = {
+            id: userId, 
+            name: `${fname} ${lname}`,
+            email: email,
+            phone: phone,
+            address: inviteData.address || listingAddress || "Address Pending",
+            status: role === 'owner' ? 'Active' : (inviteData.owner_id ? 'Active' : 'Applicant'),
+            tos_agreed_at: new Date().toISOString(),
+            ...inviteData 
+        };
+
+        const { error: dbError } = await supabaseClient
+            .from(table)
+            .upsert(payload, { onConflict: 'email' });
+        
+        if (dbError) throw dbError;
+
+        // 5. SESSION & REDIRECT
+        localStorage.setItem('kozeyy_user_id', userId);
+        localStorage.setItem('kozeyy_role', role);
+        
+        if(pendingListingId && role === 'tenant') {
+            window.location.href = `applicant.html?listing_id=${pendingListingId}`;
+        } else {
+            window.location.href = (role === 'owner') ? 'owner.html' : 'tenant.html';
+        }
+
+    } catch(err) {
+        console.error(err);
+        if(err.message.includes("already registered")) {
+            showModal("Account Exists", "This email is already registered. Please log in.");
+            setTimeout(() => window.location.href = 'login.html', 2000);
+        } else {
+            showModal("Signup Failed", err.message);
+        }
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
 // Replace the checkRole function in signup (6).html
 function checkRole() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -299,6 +258,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
