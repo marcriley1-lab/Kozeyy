@@ -3667,23 +3667,19 @@ async function processLeaseFinalization() {
             if (matchedListing) finalAddress = matchedListing.address;
         }
 
-        // 2. Prepare Data
-        // We prioritize the existing tenant signature timestamp if available
-        const tenantSignedDate = app.tenant_signed_at || app.lease_signed_at || now;
-        
+        // 2. Prepare Tenant Data
         const tenantUpdates = {
             name: app.name,
             rent_amount: parseFloat(app.rent || 0),
-            status: 'Active', // This unlocks the tenant portal
+            status: 'Active',
             owner_id: ownerId,
             address: finalAddress,
             lease_url: app.lease_url,
-            lease_signed_at: tenantSignedDate,
+            lease_signed_at: app.tenant_signed_at || now,
             owner_signed_at: now
         };
 
-        // 3. ROBUST SAVE STRATEGY (Find existing -> Update, OR Insert)
-        // This avoids "duplicate key" errors or creating duplicate tenants
+        // 3. SAFER SAVE STRATEGY (Find -> Update OR Insert)
         const { data: existingTenant } = await supabaseClient
             .from('tenants')
             .select('id')
@@ -3691,25 +3687,22 @@ async function processLeaseFinalization() {
             .maybeSingle();
 
         if (existingTenant) {
-            // Update existing tenant record (created by applicant portal)
+            // Update existing record
             const { error: updateError } = await supabaseClient
                 .from('tenants')
                 .update(tenantUpdates)
                 .eq('id', existingTenant.id);
-            
             if (updateError) throw updateError;
         } else {
-            // Create new tenant record (if one doesn't exist yet)
-            tenantUpdates.email = app.email; // Add email for insert
+            // Insert new record
+            tenantUpdates.email = app.email; // Ensure email is included for new insert
             const { error: insertError } = await supabaseClient
                 .from('tenants')
                 .insert([tenantUpdates]);
-            
             if (insertError) throw insertError;
         }
 
-        // 4. Update Application Status
-        // This marks the screening process as totally finished
+        // 4. Update Application to Completed
         const { error: appError } = await supabaseClient
             .from('apps')
             .update({ 
@@ -3720,25 +3713,15 @@ async function processLeaseFinalization() {
 
         if (appError) throw appError;
 
-        // 5. Send Notification
-        if (app.email) {
-            sendEmail(app.email, "Welcome Home! Lease Finalized", 'success', {
-                title: "Lease Countersigned",
-                message: `Congratulations! Your lease has been finalized and countersigned by the property owner. You can now access your tenant portal.`,
-                actionLink: "https://kozeyy.com/tenant.html",
-                actionText: "Enter Tenant Portal"
-            }).catch(e => console.error("Email failed:", e));
-        }
-
         showToast("Lease finalized & Tenant activated!");
 
-        // 6. Cleanup UI
+        // 5. Cleanup UI
         document.getElementById('modal-platform-confirm').classList.add('hidden-section');
         document.getElementById('modal-platform-confirm').classList.remove('flex');
         
         await fetchData();
         renderAll();
-        navTo('tenants');
+        navTo('tenants'); // Send owner to tenant list to see the new active tenant
 
     } catch (err) {
         console.error("Finalization Error:", err);
@@ -4182,6 +4165,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
