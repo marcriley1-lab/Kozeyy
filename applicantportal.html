@@ -282,10 +282,9 @@
         let currentUserApp = null;
         const userId = localStorage.getItem('kozeyy_user_id');
 
-        window.onload = async function() {
+       window.onload = async function() {
             if(!userId) { window.location.href = 'login.html'; return; }
             await fetchApplication();
-            setInterval(fetchApplication, 5000);
         };
 
         async function fetchApplication() {
@@ -477,72 +476,71 @@
             }
         }
 
-     async function signLease() {
-    if (!currentUserApp) return;
+    async function signLease() {
+            if (!currentUserApp) return;
 
-    // 1. UI Loading State
-    const btn = document.querySelector('button[onclick="signLease()"]');
-    const originalText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            const btn = document.querySelector('button[onclick="signLease()"]');
+            const originalText = btn ? btn.innerHTML : 'I Agree & Sign';
+            
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            }
 
-    try {
-        const timestamp = new Date().toISOString();
+            try {
+                const timestamp = new Date().toISOString();
 
-        // 2. Update Database
-        // We update the status and the timestamp confirmed in your schema
-        const { error } = await supabaseClient
-            .from('apps')
-            .update({
-                status: 'Lease Signed',
-                tenant_signed_at: timestamp
-            })
-            .eq('id', currentUserApp.id);
+                // 1. Update Database Status
+                const { error } = await supabaseClient
+                    .from('apps')
+                    .update({
+                        status: 'Lease Signed',
+                        tenant_signed_at: timestamp
+                    })
+                    .eq('id', currentUserApp.id);
 
-        if (error) throw error;
+                if (error) throw error;
 
-        // 3. Immediate UI Update
-        // This stops the "loop" by manually pushing the portal to the next state
-        currentUserApp.status = 'Lease Signed';
-        currentUserApp.tenant_signed_at = timestamp;
-        
-        closeSigningModal();
-        renderDashboard(); 
+                // 2. Update Local Data Immediately
+                // This prevents the UI from "flickering" back to the old status
+                currentUserApp.status = 'Lease Signed';
+                currentUserApp.tenant_signed_at = timestamp;
 
-        // 4. Notify Owner (Marcus Riley)
-        if (currentUserApp.owner_id) {
-            const { data: owner } = await supabaseClient
-                .from('owners')
-                .select('email')
-                .eq('id', currentUserApp.owner_id)
-                .single();
+                // 3. Close Modal and Re-render Dashboard with new status
+                closeSigningModal();
+                renderDashboard(); 
 
-            if (owner && owner.email) {
-                await sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
-                    title: `Lease Signed by ${currentUserApp.name}`,
-                    message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign and finalize the agreement.`,
-                    actionLink: "https://kozeyy.com/owner.html",
-                    actionText: "Countersign Lease"
-                });
+                // 4. Notify Owner
+                if (currentUserApp.owner_id) {
+                    const { data: owner } = await supabaseClient
+                        .from('owners')
+                        .select('email')
+                        .eq('id', currentUserApp.owner_id)
+                        .maybeSingle();
+
+                    if (owner && owner.email) {
+                        await sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
+                            title: `Lease Signed by ${currentUserApp.name}`,
+                            message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign and finalize the agreement.`,
+                            actionLink: "https://kozeyy.com/owner.html",
+                            actionText: "Countersign Lease"
+                        });
+                    }
+                }
+
+                showModal("Success!", "You have successfully signed the lease. The owner has been notified to finalize the agreement.");
+
+            } catch (err) {
+                console.error("Signing error:", err);
+                alert("Error saving signature: " + err.message);
+                
+                // Restore button state only on error
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
             }
         }
-
-        showModal("Success!", "You have successfully signed the lease. The owner has been notified to finalize the agreement.");
-        
-        // Refresh data in background
-        setTimeout(fetchApplication, 3000);
-
-    } catch (err) {
-        console.error("Signing error:", err);
-        alert("Error saving signature: " + err.message);
-    } finally {
-        // Restore button
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = originalText;
-        }
-    }
-}
         async function respondToCondition(response) {
             if (!currentUserApp) return;
 
@@ -621,6 +619,7 @@
     </script>
 </body>
 </html>
+
 
 
 
