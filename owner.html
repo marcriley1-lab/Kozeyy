@@ -2440,10 +2440,9 @@ function act_viewApp(id) {
     const app = state.apps.find(a => a.id === id);
     if(!app) return;
 
-    // 1. Populate Basic Data
+    // 1. Basic Data
     setText('sd-name', app.name);
     setText('sd-income', `$${(app.income||0).toLocaleString()}`);
-    
     const rent = app.rent || 0;
     const ratio = rent > 0 ? (app.income / rent).toFixed(1) : 0;
     setText('sd-ratio', ratio);
@@ -2452,28 +2451,25 @@ function act_viewApp(id) {
     // 2. Report Link
     const reportBtn = document.getElementById('sd-report-link');
     if(app.notes && app.notes.length > 3 && (app.notes.startsWith('http') || app.notes.startsWith('www'))) {
-        let url = app.notes.startsWith('http') ? app.notes : 'https://' + app.notes;
-        reportBtn.href = url;
+        reportBtn.href = app.notes.startsWith('http') ? app.notes : 'https://' + app.notes;
         reportBtn.classList.remove('hidden-section');
     } else {
         reportBtn.classList.add('hidden-section');
     }
 
-    // 3. Reset UI Sections
+    // 3. Reset UI
     ['sd-banner', 'sd-pending-msg', 'sd-api-start', 'sd-data-display', 'sd-actions', 'sd-email-option', 'sd-admin-panel', 'sd-denial-box'].forEach(eid => {
         const el = document.getElementById(eid);
         if (el) el.classList.add('hidden-section'); 
     });
 
-    // 4. --- STATUS LOGIC ---
+    // --- STATUS LOGIC ---
 
-    // A. LEASE UPLOADED (The "Clean Up" you requested)
+    // A. LEASE UPLOADED (Ready to Send)
     if (app.status === 'Lease Uploaded') {
         const banner = document.getElementById('sd-banner');
         banner.classList.remove('hidden-section');
-        banner.className = "bg-white p-0 border-0 mb-4"; // Reset banner styles for custom content
-        
-        // Construct URL for editing
+        banner.className = "bg-white p-0 border-0 mb-4"; 
         const editUrl = `lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent || 0}`;
 
         banner.innerHTML = `
@@ -2481,53 +2477,61 @@ function act_viewApp(id) {
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-2">
                         <i class="fas fa-file-pdf text-emerald-600 text-xl"></i>
-                        <span class="font-bold text-emerald-900 text-sm">Lease Document Ready</span>
+                        <span class="font-bold text-emerald-900 text-sm">Lease Draft Ready</span>
                     </div>
-                    <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Draft Saved</span>
+                    <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase">Draft</span>
                 </div>
-                
                 <div class="flex gap-2 mb-3">
-                    <a href="${app.lease_url}" target="_blank" class="flex-1 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg text-xs font-bold text-center hover:bg-emerald-50 transition">
-                        <i class="fas fa-eye mr-1"></i> View PDF
-                    </a>
-                    <a href="${editUrl}" class="flex-1 bg-white border border-emerald-200 text-slate-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-slate-50 transition">
-                        <i class="fas fa-pen mr-1"></i> Edit / Replace
-                    </a>
+                    <a href="${app.lease_url}" target="_blank" class="flex-1 bg-white border border-emerald-200 text-emerald-700 py-2 rounded-lg text-xs font-bold text-center hover:bg-emerald-50">View PDF</a>
+                    <a href="${editUrl}" class="flex-1 bg-white border border-emerald-200 text-slate-600 py-2 rounded-lg text-xs font-bold text-center hover:bg-slate-50">Edit / Replace</a>
                 </div>
-
-                <button onclick="act_initiateSendLease('${app.id}')" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-emerald-700 transition flex items-center justify-center gap-2">
-                    <i class="fas fa-paper-plane"></i> Send to Tenant for Signature
+                <button onclick="act_initiateSendLease('${app.id}')" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-emerald-700 flex items-center justify-center gap-2">
+                    <i class="fas fa-paper-plane"></i> Send to Tenant
                 </button>
-            </div>
-            
-            <div class="mt-2 text-center">
-               <span class="text-[10px] text-slate-400"><i class="fas fa-check-circle text-emerald-500 mr-1"></i> Tenant record created</span>
-            </div>
-        `;
-        
-        // Show data display underneath
+            </div>`;
         document.getElementById('sd-data-display').classList.remove('hidden-section');
     }
     
-    // B. LEASE SENT
+    // B. LEASE SENT (Waiting for Tenant)
     else if (app.status === 'Lease Sent') {
         const banner = document.getElementById('sd-banner');
         banner.classList.remove('hidden-section');
         banner.className = "bg-indigo-50 border border-indigo-100 rounded-xl p-4 text-center mb-4";
         banner.innerHTML = `
-            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-2 text-indigo-600 animate-pulse">
-                <i class="fas fa-hourglass-half"></i>
-            </div>
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-2 text-indigo-600 animate-pulse"><i class="fas fa-hourglass-half"></i></div>
             <h4 class="font-bold text-indigo-900">Awaiting Signature</h4>
             <p class="text-xs text-indigo-600 mb-3">Lease sent to ${app.email}</p>
-            <button onclick="act_markAsSigned('${app.id}')" class="text-[10px] font-bold text-slate-400 hover:text-indigo-600 underline">
-                Mark as Signed Manually
+            <button onclick="act_markAsSigned('${app.id}')" class="text-[10px] font-bold text-slate-400 hover:text-indigo-600 underline">Mark as Signed Manually</button>
+        `;
+        document.getElementById('sd-data-display').classList.remove('hidden-section');
+    }
+
+    // C. LEASE SIGNED (Tenant Signed -> Needs Countersign)
+    // --- THIS IS THE NEW BLOCK YOU WERE MISSING ---
+    else if (app.status === 'Lease Signed' || app.status === 'Tenant Signed') {
+        const banner = document.getElementById('sd-banner');
+        banner.classList.remove('hidden-section');
+        banner.className = "bg-blue-50 border border-blue-200 rounded-xl p-4 text-left mb-4";
+        
+        banner.innerHTML = `
+            <div class="flex items-center gap-3 mb-3">
+                <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-blue-600 shadow-sm border border-blue-100">
+                    <i class="fas fa-file-signature text-xl"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-blue-900">Action Required</h4>
+                    <p class="text-xs text-blue-700">Tenant has signed the lease.</p>
+                </div>
+            </div>
+            
+            <button onclick="act_openCountersign('${app.id}')" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm shadow-md hover:bg-blue-700 transition flex items-center justify-center gap-2">
+                <i class="fas fa-pen-nib"></i> Review & Countersign
             </button>
         `;
         document.getElementById('sd-data-display').classList.remove('hidden-section');
     }
 
-    // C. NEW / PENDING SCREENING
+    // D. NEW / PENDING
     else if (app.status === 'Pending' || app.status === 'Ready for Review') {
         if(app.score > 0 || app.status === 'Ready for Review') {
             document.getElementById('sd-data-display').classList.remove('hidden-section');
@@ -2537,29 +2541,31 @@ function act_viewApp(id) {
         }
     }
     
-    // D. DENIED / APPROVED / COMPLETED
+    // E. OTHER (Approved, Completed, Denied)
     else {
         const banner = document.getElementById('sd-banner');
         banner.classList.remove('hidden-section');
         
         let color = "bg-slate-50 text-slate-700 border-slate-200";
-        if(app.status === 'Approved') color = "bg-emerald-50 text-emerald-700 border-emerald-100";
-        if(app.status === 'Deny') color = "bg-rose-50 text-rose-700 border-rose-100";
-        
-        banner.className = `p-4 rounded-xl border font-bold text-center mb-4 ${color}`;
-        banner.innerText = `Status: ${app.status}`;
-        
-        document.getElementById('sd-data-display').classList.remove('hidden-section');
-        
-        // Specific Approved Logic (Recover functionality if they closed the modal)
-        if (app.status === 'Approved') {
-             banner.innerHTML = `
-                <p class="mb-3">Applicant Approved</p>
+        let content = `Status: ${app.status}`;
+
+        if(app.status === 'Approved') {
+            color = "bg-emerald-50 text-emerald-700 border-emerald-100";
+            content = `
+                <p class="mb-3 font-bold">Applicant Approved</p>
                 <button onclick="act_presentLeaseOptions({id:'${app.id}', name:'${app.name}', email:'${app.email}', rent:${app.rent}})" class="bg-white border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
                     Continue to Lease
-                </button>
-             `;
+                </button>`;
         }
+        if(app.status === 'Deny') {
+            color = "bg-rose-50 text-rose-700 border-rose-100";
+            content = "Application Denied";
+        }
+        
+        banner.className = `p-4 rounded-xl border text-center mb-4 ${color}`;
+        banner.innerHTML = content;
+        
+        document.getElementById('sd-data-display').classList.remove('hidden-section');
     }
 
     openModal('modal-screening-detail');
@@ -4182,6 +4188,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
