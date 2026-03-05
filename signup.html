@@ -122,7 +122,7 @@
     const btn = document.getElementById('btn-signup');
     const originalText = btn.innerHTML;
     
-    // 1. Determine if this is an Applicant or an Owner
+    // 1. Determine Role
     const isApplicant = !!pendingListingId; 
     const role = isApplicant ? 'tenant' : 'owner'; 
 
@@ -134,7 +134,6 @@
     const agreed = document.getElementById('agree-terms').checked;
     
     if(!email || !password || !fname || !lname) return showModal("Error", "All fields required.");
-    if(!agreed) return showModal("Terms Required", "You must agree to the terms.");
 
     btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Registering...`;
     btn.disabled = true;
@@ -150,16 +149,15 @@
         if (authError) throw authError;
         const userId = authData.user.id; 
 
-        // 3. DATABASE INSERTION LOGIC
         if (isApplicant) {
-            // A. Fetch listing info to populate the application
+            // 3. FETCH LISTING DATA
             const { data: listing } = await supabaseClient
                 .from('listings')
                 .select('address, price, owner_id')
                 .eq('id', pendingListingId)
                 .single();
 
-            // B. INSERT TO 'apps' TABLE (Applicant Queue)
+            // 4. INSERT TO 'apps' TABLE (Owner's Screening Queue)
             const { error: appError } = await supabaseClient
                 .from('apps')
                 .insert([{
@@ -170,14 +168,18 @@
                     email: email,
                     phone: phone,
                     rent: listing ? listing.price : 0,
-                    address: listing ? listing.address : "Address Pending",
-                    status: 'Pending' // Appears in Owner Dashboard 'Screening'
+                    address: listing ? listing.address : "Address Pending", 
+                    status: 'Pending' 
                 }]);
             
             if (appError) throw appError;
 
+            // 5. REDIRECT TO APPLICANT INFO PAGE
+            localStorage.setItem('kozeyy_user_id', userId);
+            window.location.href = `applicant.html?listing_id=${pendingListingId}`;
+
         } else {
-            // C. INSERT TO 'owners' TABLE
+            // 6. OWNER SIGNUP
             const { error: ownerError } = await supabaseClient
                 .from('owners')
                 .insert([{
@@ -189,20 +191,11 @@
                 }]);
             
             if (ownerError) throw ownerError;
-        }
-
-        // 4. REDIRECT
-        localStorage.setItem('kozeyy_user_id', userId);
-        
-        if(isApplicant) {
-            // Send to the applicant portal to view their status
-            window.location.href = `applicantportal.html`;
-        } else {
+            localStorage.setItem('kozeyy_user_id', userId);
             window.location.href = 'owner.html';
         }
 
     } catch(err) {
-        console.error("Signup Error:", err);
         showModal("Signup Failed", err.message);
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -239,6 +232,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
