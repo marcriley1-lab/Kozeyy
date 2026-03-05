@@ -494,7 +494,7 @@
                 // 1. Update Database Status
                 // Changed 'tenant_signed_at' to 'lease_signed_at' to match your database column
                 const { data, error } = await supabaseClient
-                    .from('apps')
+                    .from('tenants')
                     .update({
                         status: 'Lease Signed',
                         lease_signed_at: timestamp 
@@ -625,6 +625,7 @@
     </script>
 </body>
 </html>
+
 
 
 
