@@ -3655,10 +3655,12 @@ async function processLeaseFinalization() {
     
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error("Owner session not found. Please log in.");
+        
         const ownerId = user.id;
         const now = new Date().toISOString();
 
-        // 1. Get the real address from the Listings table
+        // 1. Correctly find the physical address from the Listings table
         let finalAddress = "Address Pending";
         if (app.listing_id) {
             const matchedListing = state.listings.find(l => l.id === app.listing_id);
@@ -3667,7 +3669,8 @@ async function processLeaseFinalization() {
             }
         }
 
-        // 2. Prepare the tenant data
+        // 2. Prepare the tenant data payload
+        // We use .trim().toLowerCase() on the email to ensure the match is perfect.
         const tenantData = {
             name: app.name,
             email: app.email.trim().toLowerCase(),
@@ -3680,26 +3683,37 @@ async function processLeaseFinalization() {
             owner_signed_at: now
         };
 
-        // 3. THE FIX: Upsert targeting ONLY email
+        // 3. THE MERGE: Upsert targeting ONLY email
+        // This allows the Landlord to update the record even if the Tenant 'claimed' it during signup.
         const { error: upsertError } = await supabaseClient
             .from('tenants')
             .upsert(tenantData, { onConflict: 'email' }); 
         
         if (upsertError) throw upsertError;
 
-        // 4. Update the original application to 'Completed'
+        // 4. Update the original application record status to 'Completed'
         await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', currentAppId);
 
         showToast("Tenant activated successfully!");
         
+        // 5. Refresh and Clean Up UI
         await fetchData();
-        document.getElementById('modal-platform-confirm').classList.add('hidden-section');
+        
+        // Close the countersign/confirmation modal
+        const confirmModal = document.getElementById('modal-platform-confirm');
+        if (confirmModal) {
+            confirmModal.classList.add('hidden-section');
+            confirmModal.classList.remove('flex');
+        }
+
         navTo('tenants');
         renderAll();
 
     } catch(err) {
         console.error("Finalization Error:", err);
         showToast("Error: " + err.message, 'error');
+        
+        // Reset button so the user can try again after fixing the issue
         btn.innerText = "Complete & Activate Tenant";
         btn.disabled = false;
     }
@@ -4139,6 +4153,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
