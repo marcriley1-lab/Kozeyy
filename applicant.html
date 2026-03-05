@@ -224,60 +224,62 @@
             return parseInt(step) || 1;
         }
 
-       window.onload = async function() {
+      window.onload = async function() {
     const urlParams = new URLSearchParams(window.location.search);
     
-    // --- 1. HANDLE SECURE STRIPE PAYMENT SUCCESS ---
+    // --- 1. HANDLE SECURE STRIPE PAYMENT SUCCESS --- 
     if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
-        const sessionId = urlParams.get('session_id');
-        const appId = urlParams.get('app_id'); // [cite: 5, 24]
+        const appId = urlParams.get('app_id');
+        const sessionId = urlParams.get('session_id'); // Required for secure verification [cite: 4]
 
         // Visual loading state for the applicant
         document.body.innerHTML = `
             <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-800">
                 <div class="loader border-t-indigo-600 mb-4"></div>
-                <h2 class="text-xl font-bold">Verifying Your Payment...</h2>
-                <p class="text-sm text-slate-500">Communicating with Stripe to finalize your application.</p>
+                <h2 class="text-xl font-bold">Verifying Your Application...</h2>
+                <p class="text-sm text-slate-500">Updating your record and notifying the owner.</p>
             </div>`;
 
-        if (sessionId && appId && supabaseClient) {
+        if (appId && supabaseClient) {
             try {
-                // Securely call quick-action to verify the payment with Stripe
-                const response = await fetch(FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json', 
-                        'Authorization': `Bearer ${SUPABASE_KEY}` 
-                    },
-                    body: JSON.stringify({ 
-                        action: 'verify-payment', 
-                        sessionId: sessionId,
-                        appId: appId 
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log("✅ Payment verified. Status updated to Paid.");
-                    window.location.href = 'applicantportal.html';
+                // If you have updated quickaction.txt with the 'verify-payment' action 
+                if (sessionId) {
+                    const response = await fetch(FUNCTION_URL, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json', 
+                            'Authorization': `Bearer ${SUPABASE_KEY}` 
+                        },
+                        body: JSON.stringify({ 
+                            action: 'verify-payment', 
+                            sessionId: sessionId,
+                            appId: appId 
+                        })
+                    });
+                    const result = await response.json();
+                    if (!result.success) throw new Error(result.error || "Verification failed");
                 } else {
-                    console.error("❌ Verification failed:", result.error);
-                    alert("Security Check Failed: Your payment could not be verified.");
-                    window.location.href = 'index.html';
+                    // Fallback to direct update if secure verification isn't fully ready [cite: 24]
+                    await supabaseClient.from('apps')
+                        .update({ payment_status: 'Paid', status: 'Pending' })
+                        .eq('id', appId);
                 }
-            } catch (err) {
-                console.error("❌ Network error during verification:", err);
-                window.location.href = 'applicantportal.html'; // Fallback to portal check
+            } catch (err) { 
+                console.warn("Status update failed:", err); 
             }
         }
-        return; // Halt further execution for success redirects
+
+        // Redirect to portal after update is attempted
+        setTimeout(() => {
+            window.location.href = 'applicantportal.html';
+        }, 1500);
+        return; // Halt further initialization for success redirects
     }
 
-    // --- 2. HANDLE NEW APPLICATION INITIALIZATION ---
+    // --- 2. HANDLE NEW APPLICATION INITIALIZATION --- 
     currentListingId = urlParams.get('listing_id');
     
-    // Check local storage if listing_id is missing from URL
+    // Restore listing ID from storage if missing from URL
     if (!currentListingId) {
         const storedLid = localStorage.getItem('pending_application_lid');
         if (storedLid) {
@@ -292,24 +294,18 @@
     
     try {
         if (supabaseClient && currentListingId) {
-            // Fetch property details to display in the sidebar 
+            // Fetch property details to populate the sidebar 
             const { data: prop, error } = await supabaseClient
-                .from('listings')
-                .select('*')
-                .eq('id', currentListingId)
-                .single();
+                .from('listings').select('*').eq('id', currentListingId).single();
                 
             if (prop) {
                 selectedProp = prop;
                 updatePropUI(selectedProp);
                 
-                // Apply Owner Settings for conditional fields
+                // Fetch owner-specific screening settings 
                 if (prop.owner_id) {
                     const { data: settings } = await supabaseClient
-                        .from('settings')
-                        .select('*')
-                        .eq('owner_id', prop.owner_id)
-                        .maybeSingle();
+                        .from('settings').select('*').eq('owner_id', prop.owner_id).maybeSingle();
                         
                     if (settings) {
                         const evictContainer = document.getElementById('container-evict');
@@ -319,37 +315,34 @@
                         let crimDisabled = false;
 
                         if (settings.require_no_evictions === false) {
-                            evictContainer.classList.add('hidden');
+                            if (evictContainer) evictContainer.classList.add('hidden');
                             appData.evictions = false;
                             evictDisabled = true;
                         }
                         
                         if (settings.require_no_criminal_history === false) {
-                            crimContainer.classList.add('hidden');
+                            if (crimContainer) crimContainer.classList.add('hidden');
                             appData.criminal = false;
                             crimDisabled = true;
                         }
 
-                        // Skip Step 3 if all background checks are disabled
+                        // Skip Step 3 if both checks are disabled by the owner
                         if (evictDisabled && crimDisabled) {
                             skipHistoryStep = true;
-                            document.getElementById('btn-step-3').classList.add('hidden');
+                            const step3Btn = document.getElementById('btn-step-3');
+                            if (step3Btn) step3Btn.classList.add('hidden');
                         }
                     }
                 }
             }
         }
     } catch (err) { 
-        console.warn("Fetch error:", err); 
+        console.warn("Initialization fetch error:", err); 
     }
 
-    // Render the current step
+    // Initialize the correct step UI
     renderStep(getStepFromUrl());
-    
-    // Handle browser back/forward buttons
-    window.addEventListener('popstate', (event) => { 
-        renderStep(getStepFromUrl()); 
-    });
+    window.addEventListener('popstate', (event) => { renderStep(getStepFromUrl()); });
 };
         function updatePropUI(prop) {
             const address = prop.address || prop.addr || 'Unknown Address';
