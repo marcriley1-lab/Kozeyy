@@ -477,85 +477,85 @@
         }
 
    async function signLease() {
-            if (!currentUserApp) return;
+    if (!currentUserApp) return;
 
-            const btn = document.querySelector('button[onclick="signLease()"]');
-            const originalText = btn ? btn.innerHTML : 'I Agree & Sign';
-            
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-            }
+    const btn = document.querySelector('button[onclick="signLease()"]');
+    const originalText = btn ? btn.innerHTML : 'I Agree & Sign';
+    
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+    }
 
-            try {
-                const timestamp = new Date().toISOString();
+    try {
+        const timestamp = new Date().toISOString();
 
-                // 1. UPDATE THE 'APPS' TABLE
-                // This guarantees the portal dashboard won't revert back to the old screen
-                const { error: appError } = await supabaseClient
-                    .from('apps')
-                    .update({ status: 'Lease Signed' })
-                    .eq('id', currentUserApp.id);
+        // 1. UPDATE THE 'APPS' TABLE (Crucial for Owner Communication)
+        // This tells the Owner Portal to show the "Countersign" button
+        const { error: appError } = await supabaseClient
+            .from('apps')
+            .update({ 
+                status: 'Lease Signed',
+                tenant_signed_at: timestamp
+            })
+            .eq('id', currentUserApp.id);
 
-                if (appError) throw new Error("App update failed: " + appError.message);
+        if (appError) throw new Error("App update failed: " + appError.message);
 
-                // 2. UPDATE THE 'TENANTS' TABLE
-                // Since the tenants table has no user_id, we match by email or name
-                let tenantQuery = supabaseClient
-                    .from('tenants')
-                    .update({
-                        status: 'Lease Signed',
-                        lease_signed_at: timestamp
-                    });
-
-                if (currentUserApp.email) {
-                    tenantQuery = tenantQuery.eq('email', currentUserApp.email);
-                } else {
-                    tenantQuery = tenantQuery.eq('name', currentUserApp.name);
-                }
-
-                const { data: tenantData, error: tenantError } = await tenantQuery.select();
-
-                if (tenantError) throw new Error("Tenant update failed: " + tenantError.message);
-
-                // 3. Update Local Data Immediately
-                currentUserApp.status = 'Lease Signed';
-                currentUserApp.lease_signed_at = timestamp;
-
-                // 4. Update UI
-                closeSigningModal();
-                renderDashboard(); 
-
-                // 5. Notify Owner
-                if (currentUserApp.owner_id) {
-                    const { data: owner } = await supabaseClient
-                        .from('owners')
-                        .select('email')
-                        .eq('id', currentUserApp.owner_id)
-                        .maybeSingle();
-
-                    if (owner && owner.email) {
-                        sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
-                            title: `Lease Signed by ${currentUserApp.name}`,
-                            message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign.`,
-                            actionLink: "https://kozeyy.com/owner.html",
-                            actionText: "Countersign Lease"
-                        }).catch(e => console.error("Email failed:", e));
-                    }
-                }
-
-                showModal("Success!", "You have successfully signed the lease.");
-
-            } catch (err) {
-                console.error("Signing error:", err);
-                showModal("Error", "Error saving signature: " + err.message);
+        // 2. UPDATE THE 'TENANTS' TABLE
+        // We match by EMAIL because the Tenant ID is different from the User ID
+        if (currentUserApp.email) {
+            const { error: tenantError } = await supabaseClient
+                .from('tenants')
+                .update({
+                    status: 'Lease Signed',
+                    lease_signed_at: timestamp
+                })
+                .eq('email', currentUserApp.email); // Match by email, not ID
                 
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                }
+            // Note: We don't throw an error here if no rows update, 
+            // because the tenant row might not exist yet (which is fine).
+            if (tenantError) console.warn("Tenant table update warning:", tenantError);
+        }
+
+        // 3. Update Local Data Immediately
+        currentUserApp.status = 'Lease Signed';
+        currentUserApp.tenant_signed_at = timestamp;
+
+        // 4. Update UI
+        closeSigningModal();
+        renderDashboard(); 
+
+        // 5. Notify Owner
+        if (currentUserApp.owner_id) {
+            const { data: owner } = await supabaseClient
+                .from('owners')
+                .select('email')
+                .eq('id', currentUserApp.owner_id)
+                .maybeSingle();
+
+            if (owner && owner.email) {
+                sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
+                    title: `Lease Signed by ${currentUserApp.name}`,
+                    message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign.`,
+                    actionLink: "https://kozeyy.com/owner.html",
+                    actionText: "Countersign Lease"
+                }).catch(e => console.error("Email failed:", e));
             }
         }
+
+        showModal("Success!", "You have successfully signed the lease.");
+
+    } catch (err) {
+        console.error("Signing error:", err);
+        showModal("Error", "Error saving signature: " + err.message);
+        
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+}
         async function respondToCondition(response) {
             if (!currentUserApp) return;
 
@@ -634,6 +634,7 @@
     </script>
 </body>
 </html>
+
 
 
 
