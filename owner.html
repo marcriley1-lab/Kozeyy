@@ -3654,52 +3654,51 @@ async function processLeaseFinalization() {
     btn.disabled = true;
     
     try {
-        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const ownerId = user.id;
         const now = new Date().toISOString();
-        // 1. Find the physical address from the Listings table using the ID
-let finalAddress = "Address Pending";
-if (app.listing_id) {
-    const matchedListing = state.listings.find(l => l.id === app.listing_id);
-    if (matchedListing) {
-        finalAddress = matchedListing.address;
-    }
-}
 
-// 2. Prepare the tenant data with the REAL address
-const tenantData = {
-    name: app.name,
-    email: app.email,
-    rent_amount: parseFloat(app.rent || 0),
-    status: 'Active',
-    owner_id: ownerId, 
-    lease_url: app.lease_url,
-    lease_signed_at: app.tenant_signed_at || now,
-    owner_signed_at: now,
-    address: finalAddress // This is now pulled from your Listing
-};
+        // 1. Get the real address from the Listings table
+        let finalAddress = "Address Pending";
+        if (app.listing_id) {
+            const matchedListing = state.listings.find(l => l.id === app.listing_id);
+            if (matchedListing) {
+                finalAddress = matchedListing.address;
+            }
+        }
 
+        // 2. Prepare the tenant data
+        const tenantData = {
+            name: app.name,
+            email: app.email.trim().toLowerCase(),
+            rent_amount: parseFloat(app.rent || 0),
+            status: 'Active',
+            owner_id: ownerId,
+            address: finalAddress,
+            lease_url: app.lease_url,
+            lease_signed_at: app.tenant_signed_at || now,
+            owner_signed_at: now
+        };
+
+        // 3. THE FIX: Upsert targeting ONLY email
         const { error: upsertError } = await supabaseClient
             .from('tenants')
-            .upsert(tenantData, { onConflict: 'email, owner_id' });
+            .upsert(tenantData, { onConflict: 'email' }); 
         
         if (upsertError) throw upsertError;
 
+        // 4. Update the original application to 'Completed'
         await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', currentAppId);
 
         showToast("Tenant activated successfully!");
         
-        // 1. Refresh global state data
         await fetchData();
-        
-        // 2. Clear the confirmation modal/overlay
         document.getElementById('modal-platform-confirm').classList.add('hidden-section');
-        document.getElementById('modal-platform-confirm').classList.remove('flex');
-
-        // 3. PROGRESS TO NEXT STEPS: Switch to the Tenants Directory
         navTo('tenants');
         renderAll();
 
     } catch(err) {
+        console.error("Finalization Error:", err);
         showToast("Error: " + err.message, 'error');
         btn.innerText = "Complete & Activate Tenant";
         btn.disabled = false;
@@ -4140,6 +4139,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
