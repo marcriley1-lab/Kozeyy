@@ -240,46 +240,13 @@
             </div>`;
 
         if (appId && supabaseClient) {
-            try { 
-                // Update database status to 'Paid'
-                await supabaseClient.from('apps').update({ 
-                    payment_status: 'Paid', 
-                    status: 'Pending' 
-                }).eq('id', appId);
-                
-                // Fetch the app data to trigger notifications
-                const { data: appData } = await supabaseClient.from('apps').select('*').eq('id', appId).single();
-                
-                if (appData) {
-                    // Send Spruced Receipt to Applicant
-                    await sendEmail(appData.email, "Payment Receipt - Kozeyy", "receipt", {
-                        title: "Payment Received",
-                        message: `Your screening fee of **$49.99** has been successfully processed. We have notified the property owner and will begin your background check immediately.`,
-                        actionLink: "https://kozeyy.com/applicantportal.html",
-                        actionText: "Check My Status"
-                    });
-
-                    // Send Spruced Alert to Property Owner
-                    if (appData.owner_id) {
-                        const { data: ownerData } = await supabaseClient.from('owners').select('email').eq('id', appData.owner_id).single();
-                        if (ownerData && ownerData.email) {
-                            await sendEmail(ownerData.email, "Action Required: New Application", "alert", {
-                                title: "New Paid Application",
-                                message: `**Applicant:** ${appData.name}<br><strong>Monthly Income:</strong> $${appData.income.toLocaleString()}<br><br>The applicant has paid the screening fee. Please log in to review the report and make a decision.`,
-                                actionLink: "https://kozeyy.com/owner.html",
-                                actionText: "Review Application"
-                            });
-                        }
-                    }
-                }
-            } catch (e) { 
-                console.error("Success handling error:", e); 
-            }
-        }
-        // Redirect to the portal once processing is complete
+          if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
+    // Simply wait 1 second for the webhook to finish, then go to the portal
+    setTimeout(() => {
         window.location.href = 'applicantportal.html';
-        return;
-    }
+    }, 1500);
+    return;
+}
 
     // --- 2. HANDLE NEW APPLICATION INITIALIZATION ---
     currentListingId = urlParams.get('listing_id');
