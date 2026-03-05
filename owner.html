@@ -3656,19 +3656,27 @@ async function processLeaseFinalization() {
     try {
         const ownerId = localStorage.getItem('kozeyy_user_id');
         const now = new Date().toISOString();
-        const finalAddress = app.rent_addr || app.address || "Address Pending";
+        // 1. Find the physical address from the Listings table using the ID
+let finalAddress = "Address Pending";
+if (app.listing_id) {
+    const matchedListing = state.listings.find(l => l.id === app.listing_id);
+    if (matchedListing) {
+        finalAddress = matchedListing.address;
+    }
+}
 
-        const tenantData = {
-            owner_id: ownerId,
-            name: app.name,
-            email: app.email.trim().toLowerCase(),
-            rent_amount: parseFloat(app.rent || 0),
-            status: 'Active',
-            address: finalAddress,
-            lease_url: app.lease_url,
-            lease_signed_at: app.tenant_signed_at || now,
-            owner_signed_at: now
-        };
+// 2. Prepare the tenant data with the REAL address
+const tenantData = {
+    name: app.name,
+    email: cleanEmail,
+    rent_amount: parseFloat(app.rent || 0),
+    status: 'Active',
+    owner_id: ownerId, 
+    lease_url: app.lease_url,
+    lease_signed_at: app.tenant_signed_at || now,
+    owner_signed_at: now,
+    address: finalAddress // This is now pulled from your Listing
+};
 
         const { error: upsertError } = await supabaseClient
             .from('tenants')
@@ -4132,6 +4140,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
