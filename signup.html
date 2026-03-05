@@ -209,13 +209,37 @@
                 // 3. CREATE PUBLIC RECORD
                const table = role === 'owner' ? 'owners' : 'tenants';
 
+// 1. Find the listing address if they applied via a specific link
+let listingAddress = "";
+if (pendingListingId) {
+    const { data: listing } = await supabaseClient
+        .from('listings')
+        .select('address')
+        .eq('id', pendingListingId)
+        .single();
+    if (listing) listingAddress = listing.address;
+}
+
+// 2. Build the full data package (The Payload)
+const payload = {
+    id: userId,           // The new Real Auth ID
+    name: `${fname} ${lname}`,
+    email: email,
+    phone: phone,
+    tos_agreed_at: new Date().toISOString(),
+    // Merge existing owner data (rent, etc.) if found
+    ...inviteData, 
+    // Prioritize owner address, then listing address, then fallback
+    address: inviteData.address || listingAddress || "Address Pending",
+    status: inviteData.owner_id ? 'Active' : 'Applicant'
+};
+
+// 3. Save everything to the database
 const { error: dbError } = await supabaseClient
     .from('tenants')
-    .upsert({
-        id: authData.user.id, 
-        email: email,
-        status: 'Active'
-    }, { onConflict: 'email' });
+    .upsert(payload, { onConflict: 'email' });
+
+if (dbError) throw dbError;
                     }
                 }
 
@@ -275,6 +299,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
