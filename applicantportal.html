@@ -476,7 +476,7 @@
             }
         }
 
-    async function signLease() {
+   async function signLease() {
             if (!currentUserApp) return;
 
             const btn = document.querySelector('button[onclick="signLease()"]');
@@ -490,34 +490,43 @@
             try {
                 const timestamp = new Date().toISOString();
 
-                // 1. Update Database (Tenants Table)
-                // We use .eq('user_id', userId) because currentUserApp.id comes from the 'apps' table
-                // and likely does not match the Primary Key of the 'tenants' table.
-                const { data, error } = await supabaseClient
+                // 1. UPDATE THE 'APPS' TABLE
+                // This guarantees the portal dashboard won't revert back to the old screen
+                const { error: appError } = await supabaseClient
+                    .from('apps')
+                    .update({ status: 'Lease Signed' })
+                    .eq('id', currentUserApp.id);
+
+                if (appError) throw new Error("App update failed: " + appError.message);
+
+                // 2. UPDATE THE 'TENANTS' TABLE
+                // Since the tenants table has no user_id, we match by email or name
+                let tenantQuery = supabaseClient
                     .from('tenants')
                     .update({
                         status: 'Lease Signed',
                         lease_signed_at: timestamp
-                    })
-                    .eq('id', userId) 
-                    .select();
+                    });
 
-                if (error) throw error;
-                
-                // Check if a row was actually updated
-                if (!data || data.length === 0) {
-                   console.warn("No tenant row found for this user. Trying fallback update on 'apps' table or check schema.");
+                if (currentUserApp.email) {
+                    tenantQuery = tenantQuery.eq('email', currentUserApp.email);
+                } else {
+                    tenantQuery = tenantQuery.eq('name', currentUserApp.name);
                 }
 
-                // 2. Update Local Data Immediately
+                const { data: tenantData, error: tenantError } = await tenantQuery.select();
+
+                if (tenantError) throw new Error("Tenant update failed: " + tenantError.message);
+
+                // 3. Update Local Data Immediately
                 currentUserApp.status = 'Lease Signed';
                 currentUserApp.lease_signed_at = timestamp;
 
-                // 3. UI Updates
+                // 4. Update UI
                 closeSigningModal();
                 renderDashboard(); 
 
-                // 4. Notify Owner
+                // 5. Notify Owner
                 if (currentUserApp.owner_id) {
                     const { data: owner } = await supabaseClient
                         .from('owners')
@@ -625,6 +634,7 @@
     </script>
 </body>
 </html>
+
 
 
 
