@@ -486,7 +486,8 @@
             }
         }
 
-   async function signLease() {
+   // Replace the signLease function in applicantportal.html with this version
+async function signLease() {
     if (!currentUserApp) return;
 
     const btn = document.querySelector('button[onclick="signLease()"]');
@@ -500,43 +501,27 @@
     try {
         const timestamp = new Date().toISOString();
 
-        // 1. UPDATE THE 'APPS' TABLE (Crucial for Owner Communication)
-        // This tells the Owner Portal to show the "Countersign" button
-        const { error: appError } = await supabaseClient
-            .from('apps')
-            .update({ 
+        // FIX: Update the 'apps' table so the Owner Dashboard sees the status change
+        // We use currentUserApp.id to target the specific application record
+        const { data, error } = await supabaseClient
+            .from('apps') 
+            .update({
                 status: 'Lease Signed',
                 tenant_signed_at: timestamp
             })
-            .eq('id', currentUserApp.id);
+            .eq('id', currentUserApp.id) 
+            .select();
 
-        if (appError) throw new Error("App update failed: " + appError.message);
+        if (error) throw error;
 
-        // 2. UPDATE THE 'TENANTS' TABLE
-        // We match by EMAIL because the Tenant ID is different from the User ID
-        if (currentUserApp.email) {
-            const { error: tenantError } = await supabaseClient
-                .from('tenants')
-                .update({
-                    status: 'Lease Signed',
-                    lease_signed_at: timestamp
-                })
-                .eq('email', currentUserApp.email); // Match by email, not ID
-                
-            // Note: We don't throw an error here if no rows update, 
-            // because the tenant row might not exist yet (which is fine).
-            if (tenantError) console.warn("Tenant table update warning:", tenantError);
-        }
-
-        // 3. Update Local Data Immediately
+        // Update local state and UI immediately
         currentUserApp.status = 'Lease Signed';
         currentUserApp.tenant_signed_at = timestamp;
 
-        // 4. Update UI
         closeSigningModal();
         renderDashboard(); 
 
-        // 5. Notify Owner
+        // Notify Owner via Email
         if (currentUserApp.owner_id) {
             const { data: owner } = await supabaseClient
                 .from('owners')
@@ -545,16 +530,16 @@
                 .maybeSingle();
 
             if (owner && owner.email) {
-                sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
+                await sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
                     title: `Lease Signed by ${currentUserApp.name}`,
                     message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign.`,
                     actionLink: "https://kozeyy.com/owner.html",
                     actionText: "Countersign Lease"
-                }).catch(e => console.error("Email failed:", e));
+                });
             }
         }
 
-        showModal("Success!", "You have successfully signed the lease.");
+        showModal("Success!", "You have successfully signed the lease. The owner has been notified to countersign.");
 
     } catch (err) {
         console.error("Signing error:", err);
@@ -644,6 +629,7 @@
     </script>
 </body>
 </html>
+
 
 
 
