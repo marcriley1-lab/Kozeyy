@@ -170,7 +170,7 @@
                     email: email,
                     phone: phone,
                     rent: listing ? listing.price : 0,
-                    rent_addr: listing ? listing.address : "Address Pending",
+                    address: listing ? listing.address : "Address Pending",
                     status: 'Pending' // Appears in Owner Dashboard 'Screening'
                 }]);
             
@@ -239,6 +239,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
