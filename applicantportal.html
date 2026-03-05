@@ -488,25 +488,30 @@
             }
 
             try {
+                // Generate the timestamp
                 const timestamp = new Date().toISOString();
 
                 // 1. Update Database Status
-                const { error } = await supabaseClient
+                // Changed 'tenant_signed_at' to 'lease_signed_at' to match your database column
+                const { data, error } = await supabaseClient
                     .from('apps')
                     .update({
                         status: 'Lease Signed',
-                        tenant_signed_at: timestamp
+                        lease_signed_at: timestamp 
                     })
-                    .eq('id', currentUserApp.id);
+                    .eq('id', currentUserApp.id)
+                    .select(); // .select() ensures we get the returned data to confirm save
 
-                if (error) throw error;
+                if (error) {
+                    throw new Error(error.message);
+                }
 
                 // 2. Update Local Data Immediately
-                // This prevents the UI from "flickering" back to the old status
+                // We update the local object so the UI reflects the change without a page reload
                 currentUserApp.status = 'Lease Signed';
-                currentUserApp.tenant_signed_at = timestamp;
+                currentUserApp.lease_signed_at = timestamp;
 
-                // 3. Close Modal and Re-render Dashboard with new status
+                // 3. Close Modal and Re-render Dashboard
                 closeSigningModal();
                 renderDashboard(); 
 
@@ -519,12 +524,13 @@
                         .maybeSingle();
 
                     if (owner && owner.email) {
-                        await sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
+                        // Send email without awaiting to prevent UI blocking
+                        sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
                             title: `Lease Signed by ${currentUserApp.name}`,
                             message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign and finalize the agreement.`,
                             actionLink: "https://kozeyy.com/owner.html",
                             actionText: "Countersign Lease"
-                        });
+                        }).catch(e => console.error("Email send failed:", e));
                     }
                 }
 
@@ -532,7 +538,7 @@
 
             } catch (err) {
                 console.error("Signing error:", err);
-                alert("Error saving signature: " + err.message);
+                showModal("Error", "Error saving signature: " + err.message);
                 
                 // Restore button state only on error
                 if (btn) {
@@ -619,6 +625,7 @@
     </script>
 </body>
 </html>
+
 
 
 
