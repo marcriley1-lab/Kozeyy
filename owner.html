@@ -3668,7 +3668,7 @@ if (app.listing_id) {
 // 2. Prepare the tenant data with the REAL address
 const tenantData = {
     name: app.name,
-    email: cleanEmail,
+    email: app.email,
     rent_amount: parseFloat(app.rent || 0),
     status: 'Active',
     owner_id: ownerId, 
@@ -4140,6 +4140,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
