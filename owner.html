@@ -3649,44 +3649,52 @@ async function processLeaseFinalization() {
     const app = state.apps.find(a => a.id === currentAppId);
     if(!app) return;
     
+    const btn = document.getElementById('btn-finalize-lease');
+    btn.innerText = "Processing...";
+    btn.disabled = true;
+    
     try {
-        const ownerId = localStorage.getItem('kozeyy_user_id'); //
-        const now = new Date().toISOString(); 
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const now = new Date().toISOString();
+        const finalAddress = app.rent_addr || app.address || "Address Pending";
 
-        // 1. Prepare the unified data
         const tenantData = {
+            owner_id: ownerId,
             name: app.name,
             email: app.email.trim().toLowerCase(),
             rent_amount: parseFloat(app.rent || 0),
             status: 'Active',
-            owner_id: ownerId, 
+            address: finalAddress,
             lease_url: app.lease_url,
             lease_signed_at: app.tenant_signed_at || now,
-            owner_signed_at: now,
-            address: app.rent_addr || "Address Pending"
+            owner_signed_at: now
         };
 
-        // 2. The "Single Row" Logic: 
-        // We UPSERT based on the 'email' and 'owner_id' constraint 
-        // to prevent duplicate rows for the same person.
         const { error: upsertError } = await supabaseClient
             .from('tenants')
-            .upsert(tenantData, { onConflict: 'email, owner_id' }); //
+            .upsert(tenantData, { onConflict: 'email, owner_id' });
         
         if (upsertError) throw upsertError;
 
-        // 3. Close out the application
-        await supabaseClient.from('apps').update({ 
-            status: 'Completed',
-            owner_signed_at: now 
-        }).eq('id', currentAppId); //
+        await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', currentAppId);
 
-        showToast("Tenant activated! Duplicates prevented.");
+        showToast("Tenant activated successfully!");
+        
+        // 1. Refresh global state data
         await fetchData();
+        
+        // 2. Clear the confirmation modal/overlay
+        document.getElementById('modal-platform-confirm').classList.add('hidden-section');
+        document.getElementById('modal-platform-confirm').classList.remove('flex');
+
+        // 3. PROGRESS TO NEXT STEPS: Switch to the Tenants Directory
+        navTo('tenants');
         renderAll();
 
     } catch(err) {
-        showToast("RLS/Update Error: " + err.message, 'error');
+        showToast("Error: " + err.message, 'error');
+        btn.innerText = "Complete & Activate Tenant";
+        btn.disabled = false;
     }
 }
     
@@ -4124,6 +4132,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
