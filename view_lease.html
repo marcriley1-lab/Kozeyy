@@ -64,13 +64,6 @@
                     </p>
                 </div>
             </div>
-
-            <div class="mt-auto pt-8 border-t border-slate-100">
-                <h3 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">Verification Seal</h3>
-                <div id="qrcode" class="mx-auto mb-3 flex justify-center p-2 bg-white border border-slate-100 shadow-sm w-32 h-32 items-center"></div>
-                <p class="text-[10px] text-slate-400 text-center leading-relaxed mb-6">
-                    Scan to verify document authenticity.<br>This document is digitally secured by Kozeyy.
-                </p>
                 
                 <button onclick="window.print()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold text-sm hover:bg-slate-900 transition flex items-center justify-center gap-2">
                     <i class="fas fa-print"></i> Print Receipt
@@ -90,29 +83,6 @@
             return isNaN(d.getTime()) ? 'Pending Signature' : d.toLocaleString();
         };
 
-        function generateQR() {
-            const qrContainer = document.getElementById("qrcode");
-            if (!qrContainer) return;
-            qrContainer.innerHTML = "";
-
-            // Create a minimized verification URL
-            const verifyUrl = new URL(window.location.href);
-            const shortUrl = `${verifyUrl.origin}${verifyUrl.pathname}?id=${params.get('id')}`;
-
-            try {
-                new QRCode(qrContainer, {
-                    text: shortUrl,
-                    width: 110,
-                    height: 110,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.Q // High reliability level
-                });
-            } catch (err) {
-                console.error("QR Error:", err);
-            }
-        }
-
         function initialRender() {
             document.getElementById('pdf-frame').src = params.get('url') || '';
             document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
@@ -121,7 +91,6 @@
             document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
             document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
             
-            setTimeout(generateQR, 300);
         }
 
         async function fetchFreshData() {
