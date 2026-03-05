@@ -282,10 +282,20 @@
         let currentUserApp = null;
         const userId = localStorage.getItem('kozeyy_user_id');
 
-       window.onload = async function() {
-            if(!userId) { window.location.href = 'login.html'; return; }
-            await fetchApplication();
-        };
+      window.onload = async function() {
+    if(!userId) { 
+        window.location.href = 'login.html'; 
+        return; 
+    }
+    
+    // Initial fetch
+    await fetchApplication();
+    
+    // Add this polling interval to catch updates (like Lease Sent) without refreshing
+    setInterval(async () => {
+        await fetchApplication();
+    }, 5000); 
+};
 
         async function fetchApplication() {
             if(!supabaseClient) return;
@@ -634,6 +644,7 @@
     </script>
 </body>
 </html>
+
 
 
 
