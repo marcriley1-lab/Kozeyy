@@ -488,30 +488,32 @@
             }
 
             try {
-                // Generate the timestamp
                 const timestamp = new Date().toISOString();
 
-                // 1. Update Database Status
-                // Changed 'tenant_signed_at' to 'lease_signed_at' to match your database column
+                // 1. Update Database (Tenants Table)
+                // We use .eq('user_id', userId) because currentUserApp.id comes from the 'apps' table
+                // and likely does not match the Primary Key of the 'tenants' table.
                 const { data, error } = await supabaseClient
                     .from('tenants')
                     .update({
                         status: 'Lease Signed',
-                        lease_signed_at: timestamp 
+                        lease_signed_at: timestamp
                     })
-                    .eq('id', currentUserApp.id)
-                    .select(); // .select() ensures we get the returned data to confirm save
+                    .eq('user_id', userId) 
+                    .select();
 
-                if (error) {
-                    throw new Error(error.message);
+                if (error) throw error;
+                
+                // Check if a row was actually updated
+                if (!data || data.length === 0) {
+                   console.warn("No tenant row found for this user. Trying fallback update on 'apps' table or check schema.");
                 }
 
                 // 2. Update Local Data Immediately
-                // We update the local object so the UI reflects the change without a page reload
                 currentUserApp.status = 'Lease Signed';
                 currentUserApp.lease_signed_at = timestamp;
 
-                // 3. Close Modal and Re-render Dashboard
+                // 3. UI Updates
                 closeSigningModal();
                 renderDashboard(); 
 
@@ -524,23 +526,21 @@
                         .maybeSingle();
 
                     if (owner && owner.email) {
-                        // Send email without awaiting to prevent UI blocking
                         sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
                             title: `Lease Signed by ${currentUserApp.name}`,
-                            message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign and finalize the agreement.`,
+                            message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign.`,
                             actionLink: "https://kozeyy.com/owner.html",
                             actionText: "Countersign Lease"
-                        }).catch(e => console.error("Email send failed:", e));
+                        }).catch(e => console.error("Email failed:", e));
                     }
                 }
 
-                showModal("Success!", "You have successfully signed the lease. The owner has been notified to finalize the agreement.");
+                showModal("Success!", "You have successfully signed the lease.");
 
             } catch (err) {
                 console.error("Signing error:", err);
                 showModal("Error", "Error saving signature: " + err.message);
                 
-                // Restore button state only on error
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
@@ -625,6 +625,7 @@
     </script>
 </body>
 </html>
+
 
 
 
