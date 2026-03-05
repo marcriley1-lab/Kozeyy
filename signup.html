@@ -117,17 +117,16 @@
             document.getElementById('role-tenant').className = !isOwner ? 'role-selected border-2 rounded-xl p-3 text-center transition' : 'role-default border-2 rounded-xl p-3 text-center transition';
         }
 
-     async function handleSignup(e) {
+    async function handleSignup(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-signup');
     const originalText = btn.innerHTML;
     
-    // --- AUTO-DETECT ROLE ---
-    // If a listing_id exists in the URL, they are a tenant/resident.
-    // Otherwise, they are signing up as an owner/landlord.
-    const role = pendingListingId ? 'tenant' : 'owner';
+    // 1. AUTO-DETECT ROLE
+    // If a listing_id is in the URL, they are a resident; otherwise, a landlord.
+    const role = pendingListingId ? 'tenant' : 'owner'; 
     
-    // Get form values
+    // Get and normalize form values
     const email = document.getElementById('email').value.trim().toLowerCase();
     const password = document.getElementById('password').value;
     const fname = document.getElementById('fname').value.trim();
@@ -135,6 +134,7 @@
     const phone = document.getElementById('phone').value.trim();
     const agreed = document.getElementById('agree-terms').checked;
     
+    // Validation
     if(!email || !password || !fname || !lname) return showModal("Error", "Please fill in all fields.");
     if(!agreed) return showModal("Terms Required", "You must agree to the terms.");
 
@@ -142,7 +142,7 @@
     btn.disabled = true;
 
     try {
-        // 1. CREATE USER IN SUPABASE AUTH
+        // 2. CREATE AUTH ACCOUNT
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
             email: email,
             password: password,
@@ -150,12 +150,11 @@
         });
 
         if (authError) throw authError;
-        const userId = authData.user.id;
+        const userId = authData.user.id; 
 
-        // 2. FETCH LISTING ADDRESS (If applicable)
-        // This ensures the property address is pulled from the listings table.
-        let listingAddress = "";
-        if (pendingListingId) {
+        // 3. FETCH LISTING DATA (Resident Only)
+        let listingAddress = ""; 
+        if (role === 'tenant' && pendingListingId) {
             const { data: listing } = await supabaseClient
                 .from('listings')
                 .select('address')
@@ -164,57 +163,43 @@
             if (listing) listingAddress = listing.address;
         }
 
-        // 3. CHECK FOR EXISTING INVITE (For Residents)
-        let inviteData = {};
-        if (role === 'tenant') {
-            const { data: existing } = await supabaseClient
-                .from('tenants')
-                .select('*')
-                .eq('email', email)
-                .maybeSingle();
+        // 4. PREPARE THE DATA PAYLOAD
+        const table = role === 'owner' ? 'owners' : 'tenants';
+        const payload = {
+            id: userId, 
+            name: `${fname} ${lname}`,
+            email: email,
+            phone: phone,
+            tos_agreed_at: new Date().toISOString()
+        };
 
-            if (existing) {
-                inviteData = {
-                    owner_id: existing.owner_id,
-                    rent_amount: existing.rent_amount,
-                    unit: existing.unit,
-                    address: existing.address || listingAddress,
-                    status: 'Active'
-                };
-            }
+        // 5. ROLE-SPECIFIC DATABASE LOGIC
+        let dbError;
+
+        if (role === 'owner') {
+            // Landlords use simple status
+            payload.status = 'Active';
+            
+            // Use .insert() for new owners to avoid recursion on onConflict
+            const { error } = await supabaseClient
+                .from('owners')
+                .insert(payload);
+            dbError = error;
+        } else {
+            // Residents include address and potential invite data
+            payload.address = listingAddress || "Address Pending";
+            payload.status = 'Applicant'; // Default status for new residents
+            
+            // Merge into existing row if an owner already invited this email
+            const { error } = await supabaseClient
+                .from('tenants')
+                .upsert(payload, { onConflict: 'email' });
+            dbError = error;
         }
 
-       // 3. CONSOLIDATED UPSERT (The Merge)
-const table = role === 'owner' ? 'owners' : 'tenants';
-
-// Build the data package
-const payload = {
-    id: userId, 
-    name: `${fname} ${lname}`,
-    email: email,
-    phone: phone,
-    tos_agreed_at: new Date().toISOString()
-};
-
-// ONLY add address and invite data if they are a resident
-if (role === 'tenant') {
-    payload.address = inviteData.address || listingAddress || "Address Pending";
-    payload.status = inviteData.owner_id ? 'Active' : 'Applicant';
-    // Merge existing rent/unit data from owner's invite
-    Object.assign(payload, inviteData); 
-} else {
-    // If Landlord, just set them to Active
-    payload.status = 'Active';
-}
-
-// Perform the save to the correct table
-const { error: dbError } = await supabaseClient
-    .from(table)
-    .upsert(payload, { onConflict: 'email' });
-        
         if (dbError) throw dbError;
 
-        // 5. SESSION & REDIRECT
+        // 6. REDIRECT
         localStorage.setItem('kozeyy_user_id', userId);
         localStorage.setItem('kozeyy_role', role);
         
@@ -225,7 +210,7 @@ const { error: dbError } = await supabaseClient
         }
 
     } catch(err) {
-        console.error(err);
+        console.error("Signup Error:", err);
         if(err.message.includes("already registered")) {
             showModal("Account Exists", "This email is already registered. Please log in.");
             setTimeout(() => window.location.href = 'login.html', 2000);
@@ -267,6 +252,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
