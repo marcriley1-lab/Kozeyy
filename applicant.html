@@ -539,7 +539,7 @@
             try {
                 if(!supabaseClient) throw new Error("Database connection not ready.");
                 
-                const { data, error } = await supabaseClient.from('apps').insert([newApp]).select();
+                const { data, error } = await supabaseClient.from('apps').upsert([newApp]).select();
                 if (error) throw error;
                 const savedAppId = data[0].id;
 
