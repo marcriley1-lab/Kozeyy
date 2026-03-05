@@ -228,20 +228,30 @@
     const urlParams = new URLSearchParams(window.location.search);
     
     // --- 1. HANDLE STRIPE PAYMENT SUCCESS ---
-    if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
-        // Simply wait 1.5 seconds for the webhook to finish, then go to the portal
-        document.body.innerHTML = `
-            <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-800">
-                <div class="loader border-t-indigo-600 mb-4"></div>
-                <h2 class="text-xl font-bold">Finalizing Application...</h2>
-                <p class="text-sm text-slate-500">Redirecting to your portal...</p>
-            </div>`;
-            
-        setTimeout(() => {
+if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
+    const appId = urlParams.get('app_id');
+    
+    if (appId) {
+        try {
+            // 1. Force the update to 'Paid' right here on the frontend
+            const { error } = await supabaseClient
+                .from('apps')
+                .update({ payment_status: 'Paid', status: 'Pending' })
+                .eq('id', appId);
+
+            if (error) throw error;
+
+            // 2. Success! Redirect to the portal
+            console.log("Status updated to Paid successfully.");
+            setTimeout(() => { window.location.href = 'applicantportal.html'; }, 1000);
+        } catch (err) {
+            console.error("Update failed:", err.message);
+            // If it fails, still try to show the portal
             window.location.href = 'applicantportal.html';
-        }, 1500);
-        return;
+        }
     }
+    return;
+}
 
     // --- 2. HANDLE NEW APPLICATION INITIALIZATION ---
     currentListingId = urlParams.get('listing_id');
