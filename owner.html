@@ -3648,57 +3648,102 @@ function renderLeases() {
 
 async function processLeaseFinalization() {
     const app = state.apps.find(a => a.id === currentAppId);
-    if(!app) return;
-    
+    if (!app) return;
+
     const btn = document.getElementById('btn-finalize-lease');
-    btn.innerText = "Processing...";
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
     btn.disabled = true;
-    
+
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         const ownerId = user.id;
         const now = new Date().toISOString();
 
-        // 1. Get the address from the Listings
-        let finalAddress = "Address Pending";
+        // 1. Determine Address
+        let finalAddress = app.address || "Address Pending";
         if (app.listing_id) {
             const matchedListing = state.listings.find(l => l.id === app.listing_id);
             if (matchedListing) finalAddress = matchedListing.address;
         }
 
-        // 2. Prepare the data
-        const tenantData = {
+        // 2. Prepare Data
+        // We prioritize the existing tenant signature timestamp if available
+        const tenantSignedDate = app.tenant_signed_at || app.lease_signed_at || now;
+        
+        const tenantUpdates = {
             name: app.name,
-            email: app.email.trim().toLowerCase(),
             rent_amount: parseFloat(app.rent || 0),
-            status: 'Active',
+            status: 'Active', // This unlocks the tenant portal
             owner_id: ownerId,
             address: finalAddress,
             lease_url: app.lease_url,
-            lease_signed_at: app.tenant_signed_at || now,
+            lease_signed_at: tenantSignedDate,
             owner_signed_at: now
         };
 
-        // 3. THE MERGE FIX: Use ONLY email for onConflict
-        const { error: upsertError } = await supabaseClient
+        // 3. ROBUST SAVE STRATEGY (Find existing -> Update, OR Insert)
+        // This avoids "duplicate key" errors or creating duplicate tenants
+        const { data: existingTenant } = await supabaseClient
             .from('tenants')
-            .upsert(tenantData, { onConflict: 'email' }); 
-        
-        if (upsertError) throw upsertError;
+            .select('id')
+            .eq('email', app.email)
+            .maybeSingle();
 
-        // 4. Clean up
-        await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', currentAppId);
-        showToast("Tenant activated successfully!");
-        await fetchData();
-        
+        if (existingTenant) {
+            // Update existing tenant record (created by applicant portal)
+            const { error: updateError } = await supabaseClient
+                .from('tenants')
+                .update(tenantUpdates)
+                .eq('id', existingTenant.id);
+            
+            if (updateError) throw updateError;
+        } else {
+            // Create new tenant record (if one doesn't exist yet)
+            tenantUpdates.email = app.email; // Add email for insert
+            const { error: insertError } = await supabaseClient
+                .from('tenants')
+                .insert([tenantUpdates]);
+            
+            if (insertError) throw insertError;
+        }
+
+        // 4. Update Application Status
+        // This marks the screening process as totally finished
+        const { error: appError } = await supabaseClient
+            .from('apps')
+            .update({ 
+                status: 'Completed',
+                owner_signed_at: now
+            })
+            .eq('id', currentAppId);
+
+        if (appError) throw appError;
+
+        // 5. Send Notification
+        if (app.email) {
+            sendEmail(app.email, "Welcome Home! Lease Finalized", 'success', {
+                title: "Lease Countersigned",
+                message: `Congratulations! Your lease has been finalized and countersigned by the property owner. You can now access your tenant portal.`,
+                actionLink: "https://kozeyy.com/tenant.html",
+                actionText: "Enter Tenant Portal"
+            }).catch(e => console.error("Email failed:", e));
+        }
+
+        showToast("Lease finalized & Tenant activated!");
+
+        // 6. Cleanup UI
         document.getElementById('modal-platform-confirm').classList.add('hidden-section');
-        navTo('tenants');
+        document.getElementById('modal-platform-confirm').classList.remove('flex');
+        
+        await fetchData();
         renderAll();
+        navTo('tenants');
 
-    } catch(err) {
+    } catch (err) {
         console.error("Finalization Error:", err);
         showToast("Error: " + err.message, 'error');
-        btn.innerText = "Complete & Activate Tenant";
+        btn.innerHTML = originalText;
         btn.disabled = false;
     }
 }
@@ -4137,6 +4182,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
