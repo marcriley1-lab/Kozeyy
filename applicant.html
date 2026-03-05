@@ -227,35 +227,57 @@
        window.onload = async function() {
     const urlParams = new URLSearchParams(window.location.search);
     
-    // --- 1. HANDLE STRIPE PAYMENT SUCCESS ---
-if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
-    const appId = urlParams.get('app_id');
-    
-    if (appId) {
-        try {
-            // 1. Force the update to 'Paid' right here on the frontend
-            const { error } = await supabaseClient
-                .from('apps')
-                .update({ payment_status: 'Paid', status: 'Pending' })
-                .eq('id', appId);
+    // --- 1. HANDLE SECURE STRIPE PAYMENT SUCCESS ---
+    if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
+        const sessionId = urlParams.get('session_id');
+        const appId = urlParams.get('app_id'); // [cite: 5, 24]
 
-            if (error) throw error;
+        // Visual loading state for the applicant
+        document.body.innerHTML = `
+            <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-800">
+                <div class="loader border-t-indigo-600 mb-4"></div>
+                <h2 class="text-xl font-bold">Verifying Your Payment...</h2>
+                <p class="text-sm text-slate-500">Communicating with Stripe to finalize your application.</p>
+            </div>`;
 
-            // 2. Success! Redirect to the portal
-            console.log("Status updated to Paid successfully.");
-            setTimeout(() => { window.location.href = 'applicantportal.html'; }, 1000);
-        } catch (err) {
-            console.error("Update failed:", err.message);
-            // If it fails, still try to show the portal
-            window.location.href = 'applicantportal.html';
+        if (sessionId && appId && supabaseClient) {
+            try {
+                // Securely call quick-action to verify the payment with Stripe
+                const response = await fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${SUPABASE_KEY}` 
+                    },
+                    body: JSON.stringify({ 
+                        action: 'verify-payment', 
+                        sessionId: sessionId,
+                        appId: appId 
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    console.log("✅ Payment verified. Status updated to Paid.");
+                    window.location.href = 'applicantportal.html';
+                } else {
+                    console.error("❌ Verification failed:", result.error);
+                    alert("Security Check Failed: Your payment could not be verified.");
+                    window.location.href = 'index.html';
+                }
+            } catch (err) {
+                console.error("❌ Network error during verification:", err);
+                window.location.href = 'applicantportal.html'; // Fallback to portal check
+            }
         }
+        return; // Halt further execution for success redirects
     }
-    return;
-}
 
     // --- 2. HANDLE NEW APPLICATION INITIALIZATION ---
     currentListingId = urlParams.get('listing_id');
     
+    // Check local storage if listing_id is missing from URL
     if (!currentListingId) {
         const storedLid = localStorage.getItem('pending_application_lid');
         if (storedLid) {
@@ -270,13 +292,25 @@ if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'succes
     
     try {
         if (supabaseClient && currentListingId) {
-            const { data: prop, error } = await supabaseClient.from('listings').select('*').eq('id', currentListingId).single();
+            // Fetch property details to display in the sidebar 
+            const { data: prop, error } = await supabaseClient
+                .from('listings')
+                .select('*')
+                .eq('id', currentListingId)
+                .single();
+                
             if (prop) {
                 selectedProp = prop;
                 updatePropUI(selectedProp);
                 
+                // Apply Owner Settings for conditional fields
                 if (prop.owner_id) {
-                    const { data: settings } = await supabaseClient.from('settings').select('*').eq('owner_id', prop.owner_id).maybeSingle();
+                    const { data: settings } = await supabaseClient
+                        .from('settings')
+                        .select('*')
+                        .eq('owner_id', prop.owner_id)
+                        .maybeSingle();
+                        
                     if (settings) {
                         const evictContainer = document.getElementById('container-evict');
                         const crimContainer = document.getElementById('container-crim');
@@ -296,6 +330,7 @@ if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'succes
                             crimDisabled = true;
                         }
 
+                        // Skip Step 3 if all background checks are disabled
                         if (evictDisabled && crimDisabled) {
                             skipHistoryStep = true;
                             document.getElementById('btn-step-3').classList.add('hidden');
@@ -308,8 +343,13 @@ if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'succes
         console.warn("Fetch error:", err); 
     }
 
+    // Render the current step
     renderStep(getStepFromUrl());
-    window.addEventListener('popstate', (event) => { renderStep(getStepFromUrl()); });
+    
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', (event) => { 
+        renderStep(getStepFromUrl()); 
+    });
 };
         function updatePropUI(prop) {
             const address = prop.address || prop.addr || 'Unknown Address';
