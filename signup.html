@@ -184,24 +184,33 @@
             }
         }
 
-        // 4. CONSOLIDATED UPSERT (The Merge)
-        // This uses 'onConflict: email' to prevent duplicate rows for the same person.
-        const table = role === 'owner' ? 'owners' : 'tenants';
-        
-        const payload = {
-            id: userId, 
-            name: `${fname} ${lname}`,
-            email: email,
-            phone: phone,
-            address: inviteData.address || listingAddress || "Address Pending",
-            status: role === 'owner' ? 'Active' : (inviteData.owner_id ? 'Active' : 'Applicant'),
-            tos_agreed_at: new Date().toISOString(),
-            ...inviteData 
-        };
+       // 3. CONSOLIDATED UPSERT (The Merge)
+const table = role === 'owner' ? 'owners' : 'tenants';
 
-        const { error: dbError } = await supabaseClient
-            .from(table)
-            .upsert(payload, { onConflict: 'email' });
+// Build the data package
+const payload = {
+    id: userId, 
+    name: `${fname} ${lname}`,
+    email: email,
+    phone: phone,
+    tos_agreed_at: new Date().toISOString()
+};
+
+// ONLY add address and invite data if they are a resident
+if (role === 'tenant') {
+    payload.address = inviteData.address || listingAddress || "Address Pending";
+    payload.status = inviteData.owner_id ? 'Active' : 'Applicant';
+    // Merge existing rent/unit data from owner's invite
+    Object.assign(payload, inviteData); 
+} else {
+    // If Landlord, just set them to Active
+    payload.status = 'Active';
+}
+
+// Perform the save to the correct table
+const { error: dbError } = await supabaseClient
+    .from(table)
+    .upsert(payload, { onConflict: 'email' });
         
         if (dbError) throw dbError;
 
@@ -258,6 +267,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
