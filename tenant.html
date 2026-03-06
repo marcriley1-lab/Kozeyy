@@ -544,25 +544,22 @@
 };
 
           // --- TENANT MASTER CALCULATOR (Consistent with Owner Dashboard) ---
-  function calculateOverdueDetails(inv) {
-    const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : 5;
+  function calculateOverdueDetails(inv, globalSettings = {}) {
+    const grace = inv.grace_period !== undefined ? 
+                  parseInt(inv.grace_period) : 
+                  (parseInt(globalSettings.grace_period || 0));
     
-    // Use tenant profile state as fallback if not on invoice
-    const propertyState = inv.state || (globalData && globalData.user ? globalData.user.state : 'GA');
+    const propertyState = inv.state || (inv.tenant_state) || 'GA';
     const tz = stateTimezones[propertyState] || 'America/New_York';
-    
     const tzString = new Date().toLocaleString("en-US", {timeZone: tz});
     const now = new Date(tzString);
     now.setHours(0,0,0,0);
     
-    // SAFETY CHECK: If there is no date, return early to prevent a crash
     if (!inv.date) return { isOverdue: false, daysLate: 0, fee: 0 };
     
     const parts = inv.date.split('-');
-    
-    // Force the due date to the very end of the day (23:59:59)
     const dueDate = new Date(parts[0], parts[1]-1, parts[2]);
-    dueDate.setHours(23, 59, 59, 999);
+    dueDate.setHours(0,0,0,0);
     dueDate.setDate(dueDate.getDate() + grace);
     
     const isOverdue = now > dueDate && inv.status !== 'Paid';
@@ -574,11 +571,19 @@
         daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
         if (inv.fee_enabled !== false) {
-            const fType = inv.fee_type || 'Fixed';
-            const fVal = parseFloat(inv.fee_value || 0);
-            if (fType === 'Daily') fee = fVal * daysLate;
-            else if (fType === 'Percentage') fee = inv.total * (fVal / 100);
-            else fee = fVal;
+            const fType = inv.fee_type || globalSettings.late_fee_method || 'Fixed';
+            const fVal = parseFloat(inv.fee_value !== undefined ? inv.fee_value : (globalSettings.late_fee_amount || 0));
+            
+            if (fType === 'Daily') {
+                fee = fVal * daysLate;
+                // --- HARD CAP: Daily fees cannot exceed 10% of total invoice ---
+                const maxCap = inv.total * 0.10;
+                if (fee > maxCap) fee = maxCap;
+            } else if (fType === 'Percentage') {
+                fee = inv.total * (fVal / 100);
+            } else {
+                fee = fVal;
+            }
         }
     }
     return { isOverdue, daysLate, fee };
@@ -1582,6 +1587,7 @@ async function confirmPay() {
     </script>
 </body>
 </html>
+
 
 
 
