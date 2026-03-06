@@ -498,74 +498,79 @@
             saveSessionData();
         }
 
-        async function submitApplication() {
-            clearErrors();
-            const btn = document.getElementById('btn-submit');
-            const originalText = btn.innerHTML;
-            
-            let userId = localStorage.getItem('kozeyy_user_id');
-            if (!userId) { 
-                const urlParams = new URLSearchParams(window.location.search);
-                if(urlParams.get('user_id')) userId = urlParams.get('user_id');
-                else { alert("Please sign up or log in first."); return; }
-            }
+       async function submitApplication() {
+    clearErrors();
+    const btn = document.getElementById('btn-submit');
+    const originalText = btn.innerHTML;
+    
+    let userId = localStorage.getItem('kozeyy_user_id');
+    if (!userId) { 
+        const urlParams = new URLSearchParams(window.location.search);
+        if(urlParams.get('user_id')) userId = urlParams.get('user_id');
+        else { alert("Please sign up or log in first."); return; }
+    }
 
-            const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
-            const inputEmail = document.getElementById('inp-email').value;
-            const inputPhone = document.getElementById('inp-phone').value;
-            const inputIncome = parseFloat(document.getElementById('inp-income').value);
-            
-            const score = null;
+    const inputName = `${document.getElementById('inp-fname').value} ${document.getElementById('inp-lname').value}`;
+    const inputEmail = document.getElementById('inp-email').value;
+    const inputPhone = document.getElementById('inp-phone').value;
+    const inputIncome = parseFloat(document.getElementById('inp-income').value);
+    
+    // Preparation of the application data object
+    const appUpdate = {
+        user_id: userId, // This matches the unique constraint to identify the existing row
+        name: inputName,
+        email: inputEmail,
+        phone: inputPhone,
+        score: null, 
+        income: inputIncome,
+        listing_id: currentListingId,
+        rent: selectedProp ? parseInt(selectedProp.price) : 0,
+        status: 'Pending', 
+        payment_status: 'Unpaid',
+        evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
+        criminal: document.querySelector('input[name="crim"]:checked').value === 'yes',
+        owner_id: selectedProp ? selectedProp.owner_id : null
+    };
 
-            const newApp = {
-                user_id: userId,
-                name: inputName,
-                email: inputEmail,
-                phone: inputPhone,
-                score: score, 
-                income: inputIncome,
-                listing_id: currentListingId,
-                rent: selectedProp ? parseInt(selectedProp.price) : 0,
-                status: 'Pending', 
-                payment_status: 'Unpaid',
-                evictions: document.querySelector('input[name="evict"]:checked').value === 'yes',
-                criminal: document.querySelector('input[name="crim"]:checked').value === 'yes',
-                owner_id: selectedProp ? selectedProp.owner_id : null
-            };
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    try {
+        if(!supabaseClient) throw new Error("Database connection not ready.");
+        
+        // --- CHANGED FROM .insert() TO .upsert() ---
+        const { data, error } = await supabaseClient
+            .from('apps')
+            .upsert(appUpdate, { onConflict: 'user_id' })
+            .select();
 
-            try {
-                if(!supabaseClient) throw new Error("Database connection not ready.");
-                
-                const { data, error } = await supabaseClient.from('apps').upsert([newApp]).select();
-                if (error) throw error;
-                const savedAppId = data[0].id;
+        if (error) throw error;
+        const savedAppId = data[0].id;
 
-                 const response = await fetch(FUNCTION_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-                    body: JSON.stringify({ 
-                        action: 'pay-application-fee', 
-                        appId: savedAppId,
-                        applicantEmail: inputEmail,
-                        applicantName: inputName
-                    })
-                });
+        // Proceed to Stripe Checkout logic
+        const response = await fetch(FUNCTION_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
+            body: JSON.stringify({ 
+                action: 'pay-application-fee', 
+                appId: savedAppId,
+                applicantEmail: inputEmail,
+                applicantName: inputName
+            })
+        });
 
-                const session = await response.json();
-                if(session.error) throw new Error(session.error);
-                if(session.url) window.location.href = session.url;
-                else throw new Error("Payment redirect failed.");
-                
-            } catch (err) {
-                console.error(err);
-                showError("Error: " + err.message);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        }
+        const session = await response.json();
+        if(session.error) throw new Error(session.error);
+        if(session.url) window.location.href = session.url;
+        else throw new Error("Payment redirect failed.");
+        
+    } catch (err) {
+        console.error(err);
+        showError("Error: " + err.message);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
         
        async function sendEmail(to, subject, type, data) {
     if (!to || !to.includes('@')) return;
