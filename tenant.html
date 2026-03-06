@@ -1,4 +1,5 @@
 
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -603,29 +604,28 @@
                // Optimized lookup to fetch whatever name is in the database
 if (globalData.user && globalData.user.owner_id) {
     if (!cachedOwnerName) {
+        // We only select 'name' because selecting missing columns causes the query to fail
         const { data: owner, error } = await supabaseClient
             .from('owners')
-            .select('name, stripe_connect_id') 
+            .select('name') 
             .eq('id', globalData.user.owner_id)
             .maybeSingle();
             
-        if (error) {
-            console.error("Database Error:", error.message); // This will tell you if it's an RLS issue
-        }
-
-        if (owner) {
+        if (owner && owner.name) {
+            // Success: cachedOwnerName is now set to your DB value (Marcus Riley)
             cachedOwnerName = owner.name; 
-            cachedOwnerStripeId = owner.stripe_connect_id;
         } else {
-            // If no owner found, default to a generic name so the UI doesn't look broken
+            // If the query fails or name is empty, it stays as Property Manager
+            console.error("Owner name not found in DB:", error);
             cachedOwnerName = "Property Manager"; 
-            console.warn("No owner record matched the ID:", globalData.user.owner_id);
         }
     }
     
+    // Update the UI
     const headerName = document.getElementById('msg-header-name');
-    if (headerName) headerName.innerText = cachedOwnerName;
-}
+    if (headerName && cachedOwnerName) {
+        headerName.innerText = cachedOwnerName;
+    }
 }
                 
                 // Message Merge
@@ -1589,7 +1589,6 @@ async function confirmPay() {
     </script>
 </body>
 </html>
-
 
 
 
