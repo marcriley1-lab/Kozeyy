@@ -3844,27 +3844,15 @@ function logic_resetInvoice() {
     
     const tenant = state.tenants.find(t => t.id == tidSelect); 
     const dateStr = document.getElementById('inv-date').value; 
-    if(!dateStr) return showToast("Please select a date", 'error');
-
     const baseTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); 
     const s = state.settings || {};
-    const mockInvForCalc = {
-        fee_type: s.late_fee_method || 'Fixed',
-        fee_value: parseFloat(s.late_fee_amount) || 0
-    };
-    
-    const lateFee = calculateLateFee(baseTotal, mockInvForCalc);
-    const grace = parseInt(s.grace_period || 0);
-    
-    const now = new Date();
-    now.setHours(0,0,0,0);
-    
+
+    // DYNAMIC CALCULATION:
+    // We calculate the due date based on the 'Send' date + grace period
     const draftDate = parseDateStr(dateStr);
+    const grace = parseInt(s.grace_period || 0);
     const dueDate = new Date(draftDate);
     dueDate.setDate(dueDate.getDate() + grace);
-    
-    const isOverdue = now > dueDate;
-    const displayTotal = baseTotal + (isOverdue ? lateFee : 0);
 
     draftInvoice = { 
         tenantId: tidSelect, 
@@ -3873,28 +3861,33 @@ function logic_resetInvoice() {
         total: baseTotal, 
         date: dateStr 
     }; 
-    
+
     setText('prev-name', tenant.name); 
-    // Format specifically for local display
-    const displayDate = parseDateStr(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    setText('prev-date', displayDate); 
-    setText('prev-total-due', `$${displayTotal.toLocaleString()}`);
+    setText('prev-date', draftDate.toLocaleDateString()); 
+    
+    // In the preview, we show the base total, but add a notice about the potential late fee
+    setText('prev-total-due', `$${baseTotal.toLocaleString()}`);
     
     const tbody = document.getElementById('prev-items-body'); 
     tbody.innerHTML = ''; 
-    
     invItems.forEach(i => { 
         tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; 
     }); 
     
-    if(isOverdue) {
-        const feeLabel = mockInvForCalc.fee_type === 'Percentage' ? `Late Fee (${mockInvForCalc.fee_value}%)` : `Late Fee`;
-        tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel} <span class="text-xs font-normal text-rose-400 ml-1">(Est.)</span></td><td class="py-2 text-right">+$${lateFee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+    // Add a dynamic information row about when the fee kicks in
+    if (s.late_fee_enabled !== false) {
+        const feeVal = parseFloat(s.late_fee_amount || 0);
+        const feeType = s.late_fee_method === 'Percentage' ? `${feeVal}%` : `$${feeVal}`;
+        tbody.innerHTML += `
+            <tr class="text-[10px] text-slate-400 italic">
+                <td colspan="2" class="pt-4 text-center">
+                    A late fee of ${feeType} will be applied automatically if unpaid by ${dueDate.toLocaleDateString()}.
+                </td>
+            </tr>`;
     }
     
     document.getElementById('inv-step-input').classList.add('hidden-section'); 
     document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
-    setText('inv-modal-title',"Review Invoice"); 
 }
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
     
@@ -4165,6 +4158,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
