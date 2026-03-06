@@ -545,7 +545,7 @@
 };
 
           // --- TENANT MASTER CALCULATOR (Consistent with Owner Dashboard) ---
-   function calculateOverdueDetails(inv) {
+  function calculateOverdueDetails(inv) {
     const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : 5;
     
     // Use tenant profile state as fallback if not on invoice
@@ -556,12 +556,14 @@
     const now = new Date(tzString);
     now.setHours(0,0,0,0);
     
-    const parts = (inv.date || '').split('-');
-    const parts = (inv.date || '').split('-');
-// Force the due date to the very end of the day (23:59:59) 
-// to ensure a 11pm upload doesn't trigger an "overdue" flag.
-const dueDate = new Date(parts[0], parts[1]-1, parts[2]);
-dueDate.setHours(23, 59, 59, 999);
+    // SAFETY CHECK: If there is no date, return early to prevent a crash
+    if (!inv.date) return { isOverdue: false, daysLate: 0, fee: 0 };
+    
+    const parts = inv.date.split('-');
+    
+    // Force the due date to the very end of the day (23:59:59)
+    const dueDate = new Date(parts[0], parts[1]-1, parts[2]);
+    dueDate.setHours(23, 59, 59, 999);
     dueDate.setDate(dueDate.getDate() + grace);
     
     const isOverdue = now > dueDate && inv.status !== 'Paid';
@@ -1586,6 +1588,7 @@ async function confirmPay() {
     </script>
 </body>
 </html>
+
 
 
 
