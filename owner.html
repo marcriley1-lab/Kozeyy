@@ -3005,11 +3005,11 @@ async function act_saveSettings(e) {
     // --- GUARDRAILS ---
     if (document.getElementById('set-fee-active').checked) {
         if (method === 'Percentage' && amount > 10) {
-            showToast("Safety Error: Percentage cannot exceed 10%", 'error');
+            showToast("Percentage can't exceed 10%", 'error');
             return;
         }
         if (method === 'Daily' && amount > 20) {
-            showToast("Safety Error: Daily fee cannot exceed $20", 'error');
+            showToast("Daily fee can't exceed $20", 'error');
             return;
         }
     }
@@ -4167,6 +4167,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
