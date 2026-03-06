@@ -3031,7 +3031,7 @@ async function act_saveSettings(e) {
     if (error) { 
         showToast("Save Failed: " + error.message, 'error'); 
     } else { 
-        showToast("Configuration Saved with Guardrails"); 
+        showToast("Configuration Saved"); 
         await fetchData(); 
     }
 }
@@ -4167,6 +4167,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
