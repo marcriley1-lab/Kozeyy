@@ -487,6 +487,7 @@
         }
 
    // Replace the signLease function in applicantportal.html with this version
+// Replace your existing signLease function with this version
 async function signLease() {
     if (!currentUserApp) return;
 
@@ -500,51 +501,49 @@ async function signLease() {
 
     try {
         const timestamp = new Date().toISOString();
+        const authUserId = localStorage.getItem('kozeyy_user_id'); // This is the Auth UID
 
-        // FIX: Update the 'apps' table so the Owner Dashboard sees the status change
-        // We use currentUserApp.id to target the specific application record
-        const { data, error } = await supabaseClient
+        // 1. Update the 'apps' table status
+        const { error: appError } = await supabaseClient
             .from('apps') 
             .update({
                 status: 'Lease Signed',
                 tenant_signed_at: timestamp
             })
-            .eq('id', currentUserApp.id) 
-            .select();
+            .eq('id', currentUserApp.id);
 
-        if (error) throw error;
+        if (appError) throw appError;
 
-        // Update local state and UI immediately
-        currentUserApp.status = 'Lease Signed';
-        currentUserApp.tenant_signed_at = timestamp;
+        // 2. CREATE TENANT RECORD: Use Auth UID as the Primary Key
+        // This ensures the ID in the tenant table matches the ID in your browser storage.
+        const { error: tenantError } = await supabaseClient
+            .from('tenants')
+            .upsert([{ 
+                id: authUserId, // Force matching Auth UID
+                name: currentUserApp.name,
+                email: currentUserApp.email,
+                owner_id: currentUserApp.owner_id,
+                unit: currentUserApp.unit_num || 'TBD',
+                rent_amount: currentUserApp.rent || 0,
+                lease_url: currentUserApp.lease_url,
+                lease_signed_at: timestamp
+            }]);
 
-        closeSigningModal();
-        renderDashboard(); 
+        if (tenantError) throw tenantError;
 
-        // Notify Owner via Email
-        if (currentUserApp.owner_id) {
-            const { data: owner } = await supabaseClient
-                .from('owners')
-                .select('email')
-                .eq('id', currentUserApp.owner_id)
-                .maybeSingle();
+        // 3. Update local session so tenant.html doesn't redirect you
+        localStorage.setItem('kozeyy_role', 'tenant');
 
-            if (owner && owner.email) {
-                await sendEmail(owner.email, "Action Required: Lease Signed", 'alert', {
-                    title: `Lease Signed by ${currentUserApp.name}`,
-                    message: `The applicant has signed the lease. Please log in to your owner dashboard to countersign.`,
-                    actionLink: "https://kozeyy.com/owner.html",
-                    actionText: "Countersign Lease"
-                });
-            }
-        }
-
-        showModal("Success!", "You have successfully signed the lease. The owner has been notified to countersign.");
+        showModal("Success!", "Lease signed! You are now being redirected to your Resident Portal.");
+        
+        // Redirect to the now-functional tenant portal
+        setTimeout(() => {
+            window.location.href = 'tenant.html';
+        }, 2000);
 
     } catch (err) {
         console.error("Signing error:", err);
         showModal("Error", "Error saving signature: " + err.message);
-        
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalText;
@@ -629,6 +628,7 @@ async function signLease() {
     </script>
 </body>
 </html>
+
 
 
 
