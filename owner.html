@@ -1181,16 +1181,15 @@ const KOZEYY_PLANS = {
                   parseInt(inv.grace_period) : 
                   (parseInt(globalSettings.grace_period || 0));
     
-    // Fallback: Use invoice state -> then tenant state -> then default to GA
     const propertyState = inv.state || (inv.tenant_state) || 'GA';
     const tz = stateTimezones[propertyState] || 'America/New_York';
-
-    // Get "Now" specifically for the property's timezone
     const tzString = new Date().toLocaleString("en-US", {timeZone: tz});
     const now = new Date(tzString);
     now.setHours(0,0,0,0);
     
-    const parts = (inv.date || '').split('-');
+    if (!inv.date) return { isOverdue: false, daysLate: 0, fee: 0 };
+    
+    const parts = inv.date.split('-');
     const dueDate = new Date(parts[0], parts[1]-1, parts[2]);
     dueDate.setHours(0,0,0,0);
     dueDate.setDate(dueDate.getDate() + grace);
@@ -1203,13 +1202,20 @@ const KOZEYY_PLANS = {
         const diffTime = now - dueDate;
         daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         
-        const fEnabled = inv.fee_enabled !== undefined ? inv.fee_enabled : (globalSettings.late_fee_enabled !== false);
-        if (fEnabled) {
+        if (inv.fee_enabled !== false) {
             const fType = inv.fee_type || globalSettings.late_fee_method || 'Fixed';
             const fVal = parseFloat(inv.fee_value !== undefined ? inv.fee_value : (globalSettings.late_fee_amount || 0));
-            if (fType === 'Daily') fee = fVal * daysLate;
-            else if (fType === 'Percentage') fee = inv.total * (fVal / 100);
-            else fee = fVal;
+            
+            if (fType === 'Daily') {
+                fee = fVal * daysLate;
+                // --- HARD CAP: Daily fees cannot exceed 10% of total invoice ---
+                const maxCap = inv.total * 0.10;
+                if (fee > maxCap) fee = maxCap;
+            } else if (fType === 'Percentage') {
+                fee = inv.total * (fVal / 100);
+            } else {
+                fee = fVal;
+            }
         }
     }
     return { isOverdue, daysLate, fee };
@@ -2990,21 +2996,33 @@ async function sendEmail(to, subject, type, data) {
         });
     }
     
-  async function act_saveSettings(e) { 
+async function act_saveSettings(e) { 
     e.preventDefault(); 
     const ownerId = localStorage.getItem('kozeyy_user_id');
-    const stripeId = document.getElementById('set-stripe-id').value;
-    
+    const method = document.getElementById('fee-method').value;
+    const amount = parseFloat(document.getElementById('fee-amount').value) || 0;
+
+    // --- GUARDRAILS ---
+    if (document.getElementById('set-fee-active').checked) {
+        if (method === 'Percentage' && amount > 10) {
+            showToast("Safety Error: Percentage cannot exceed 10%", 'error');
+            return;
+        }
+        if (method === 'Daily' && amount > 20) {
+            showToast("Safety Error: Daily fee cannot exceed $20", 'error');
+            return;
+        }
+    }
+
     const { error } = await supabaseClient.from('settings').upsert({ 
         owner_id: ownerId, 
-        stripe_connect_id: stripeId, 
+        stripe_connect_id: document.getElementById('set-stripe-id').value, 
         late_fee_enabled: document.getElementById('set-fee-active').checked,
-        late_fee_method: document.getElementById('fee-method').value, 
-        late_fee_amount: parseFloat(document.getElementById('fee-amount').value) || 0, 
-        // Force positive integer for grace period
+        late_fee_method: method, 
+        late_fee_amount: amount, 
         grace_period: Math.max(0, parseInt(document.getElementById('fee-grace').value) || 0),     
-        min_credit_score: parseInt(document.getElementById('set-min-score').value) || 600,
-        min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 2.5,
+        min_credit_score: parseInt(document.getElementById('set-min-score').value) || 650,
+        min_income_ratio: parseFloat(document.getElementById('set-min-income').value) || 3.0,
         require_no_evictions: document.getElementById('set-no-evict').checked,
         require_no_criminal_history: document.getElementById('set-no-crim').checked,
         require_insurance: document.getElementById('set-require-insurance').checked
@@ -3013,19 +3031,10 @@ async function sendEmail(to, subject, type, data) {
     if (error) { 
         showToast("Save Failed: " + error.message, 'error'); 
     } else { 
-        if(stripeId && stripeId.trim() !== '') {
-            await supabaseClient
-                .from('invoices')
-                .update({ landlord_stripe_id: stripeId })
-                .eq('owner_id', ownerId)
-                .eq('status', 'Unpaid')
-                .is('landlord_stripe_id', null);
-        }
-        showToast("Configuration Saved"); 
+        showToast("Configuration Saved with Guardrails"); 
         await fetchData(); 
     }
 }
-
   function backToChatList() { 
     const viewPanel = document.getElementById('msg-view-panel');
     if (viewPanel) {
@@ -4158,6 +4167,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
