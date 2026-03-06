@@ -517,17 +517,19 @@ async function signLease() {
         // 2. CREATE TENANT RECORD: Use Auth UID as the Primary Key
         // This ensures the ID in the tenant table matches the ID in your browser storage.
         const { error: tenantError } = await supabaseClient
-            .from('tenants')
-            .upsert([{ 
-                id: authUserId, // Force matching Auth UID
-                name: currentUserApp.name,
-                email: currentUserApp.email,
-                owner_id: currentUserApp.owner_id,
-                unit: currentUserApp.unit_num || 'TBD',
-                rent_amount: currentUserApp.rent || 0,
-                lease_url: currentUserApp.lease_url,
-                lease_signed_at: timestamp
-            }]);
+    .from('tenants')
+    .upsert([{ 
+        id: authUserId, 
+        name: currentUserApp.name,
+        email: currentUserApp.email,
+        owner_id: currentUserApp.owner_id,
+        unit: currentUserApp.unit_num || 'TBD',
+        rent_amount: currentUserApp.rent || 0,
+        lease_url: currentUserApp.lease_url,
+        lease_signed_at: timestamp
+    }], { 
+        onConflict: 'email' // Tell the DB to update the existing row if the email already exists
+    });
 
         if (tenantError) throw tenantError;
 
@@ -628,6 +630,7 @@ async function signLease() {
     </script>
 </body>
 </html>
+
 
 
 
