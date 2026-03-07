@@ -142,12 +142,14 @@
     btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Registering...`;
     btn.disabled = true;
 
+    const tosTimestamp = new Date().toISOString();
+        
     try {
         // 2. CREATE AUTH ACCOUNT
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
             email: email,
             password: password,
-            options: { data: { role: role, full_name: `${fname} ${lname}` } }
+            options: { data: { role: role, full_name: `${fname} ${lname}`, tos_agreed_at: tosTimestamp } }
         });
 
         if (authError) throw authError;
@@ -241,6 +243,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
