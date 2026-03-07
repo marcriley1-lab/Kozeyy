@@ -501,9 +501,14 @@ async function signLease() {
 
     try {
         const timestamp = new Date().toISOString();
-        const authUserId = localStorage.getItem('kozeyy_user_id'); // This is the Auth UID
+        const authUserId = localStorage.getItem('kozeyy_user_id');
 
-        // 1. Update the 'apps' table status
+        // 1. Retrieve the original TOS timestamp from Auth Metadata
+        // This avoids a schema mismatch since 'apps' doesn't have the column
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const originalTosAgreedAt = user.user_metadata.tos_agreed_at || timestamp;
+
+        // 2. Update the 'apps' table status
         const { error: appError } = await supabaseClient
             .from('apps') 
             .update({
@@ -514,31 +519,31 @@ async function signLease() {
 
         if (appError) throw appError;
 
-        // 2. CREATE TENANT RECORD: Use Auth UID as the Primary Key
-        // This ensures the ID in the tenant table matches the ID in your browser storage.
+        // 3. CREATE/UPDATE TENANT RECORD
+        // Use 'onConflict: email' to prevent duplicate key violations
         const { error: tenantError } = await supabaseClient
-    .from('tenants')
-    .upsert([{ 
-        id: authUserId, 
-        name: currentUserApp.name,
-        email: currentUserApp.email,
-        owner_id: currentUserApp.owner_id,
-        unit: currentUserApp.unit_num || 'TBD',
-        rent_amount: currentUserApp.rent || 0,
-        lease_url: currentUserApp.lease_url,
-        lease_signed_at: timestamp
-    }], { 
-        onConflict: 'email' // Tell the DB to update the existing row if the email already exists
-    });
+            .from('tenants')
+            .upsert([{ 
+                id: authUserId,
+                name: currentUserApp.name,
+                email: currentUserApp.email,
+                owner_id: currentUserApp.owner_id,
+                unit: currentUserApp.unit_num || 'TBD',
+                rent_amount: currentUserApp.rent || 0,
+                lease_url: currentUserApp.lease_url,
+                lease_signed_at: timestamp,
+                tos_agreed_at: originalTosAgreedAt // Officially recorded in tenant schema
+            }], { 
+                onConflict: 'email' 
+            });
 
         if (tenantError) throw tenantError;
 
-        // 3. Update local session so tenant.html doesn't redirect you
+        // 4. Update local session roles
         localStorage.setItem('kozeyy_role', 'tenant');
 
         showModal("Success!", "Lease signed! You are now being redirected to your Resident Portal.");
         
-        // Redirect to the now-functional tenant portal
         setTimeout(() => {
             window.location.href = 'tenant.html';
         }, 2000);
@@ -630,6 +635,7 @@ async function signLease() {
     </script>
 </body>
 </html>
+
 
 
 
