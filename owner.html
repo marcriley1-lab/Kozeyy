@@ -2700,25 +2700,16 @@ function act_markAsSigned(appId) {
     }
     
     function act_initiateApproval() {
-        openPlatformConfirm("Approve Applicant?", "This will mark the applicant as approved.", async () => {
-             await act_screenDecision('Approved');
-             
-             // SEND EMAIL (UPDATED)
-             const app = state.apps.find(a => a.id === currentAppId);
-             if(app && app.email) {
-                 await sendEmail(
-                     app.email, 
-                     "Application Approved! - Next Steps", 
-                     'alert',
-                     {
-                         title: `Congratulations, ${app.name}!`,
-                         message: `Your application for the property at $${app.rent}/mo has been approved. Please log in to view the next steps.`,
-                         actionLink: "https://kozeyy.com/applicantportal.html"
-                     }
-                 );
-             }
-        });
-    }
+    // 1. Explicitly confirm the approval action FIRST
+    openPlatformConfirm(
+        "Confirm Approval?", 
+        "Are you sure you want to mark this applicant as Approved? This will notify them to proceed with the next steps.", 
+        async () => {
+             // 2. Only if they click 'Confirm' do we call the DB update logic
+             await saveDecisionToDB('Approved', null);
+        }
+    );
+}
 
  function act_screenDecision(decision) {
     if (!currentAppId) return;
@@ -2771,7 +2762,7 @@ async function saveDecisionToDB(status, reasonKey) {
 
     let finalNote = reasonKey || status;
 
-    // Handle Note Generation
+    // Handle Note Generation (Denials/Conditionals)
     if (status === 'Deny') {
         const wording = {
             score: `Credit/RentScore below requirement. Score: ${app.score || 'N/A'}.`,
@@ -2785,7 +2776,7 @@ async function saveDecisionToDB(status, reasonKey) {
         finalNote = `Conditional Approval: ${reasonKey}`;
     }
 
-    // 1. Update Backend
+    // 1. Update Backend Status
     const { error } = await supabaseClient.from('apps').update({ 
         status: status, 
         notes: finalNote 
@@ -2796,16 +2787,15 @@ async function saveDecisionToDB(status, reasonKey) {
         return;
     }
 
-    // 2. Routing Logic based on Status
+    // 2. Status-Based Routing and Notifications
     if (status === 'Deny') {
-        // Denial Logic
         const pdfBlob = await generateAdverseActionPDF(app, finalNote);
         const reader = new FileReader();
         reader.readAsDataURL(pdfBlob);
         reader.onloadend = async () => {
             await sendEmail(app.email, "Status of your rental application", 'alert', {
                 title: "Application Status Update",
-                message: `Thank you for your interest in the property. Please be advised that the application for tenancy will not be moving forward at this time.\n\nA formal notice is attached to this email.`,
+                message: `Thank you for your interest. Please find the formal notice attached regarding your application status.`,
                 attachment: reader.result.split(',')[1],
                 fileName: "Adverse_Action_Notice.pdf"
             });
@@ -2813,32 +2803,26 @@ async function saveDecisionToDB(status, reasonKey) {
         closeModal('modal-screening-detail'); 
     } 
     else if (status === 'Conditional') {
-        // Conditional Logic
         await sendEmail(app.email, "Update regarding your rental application", 'action', {
             title: "Conditional Approval",
-            message: `Your application has been approved contingent on the following condition:\n\n"${reasonKey}"\n\nPlease log in to review.`,
+            message: `Your application has been approved contingent on: "${reasonKey}". Please log in to respond.`,
             actionLink: "https://kozeyy.com/applicantportal.html",
             actionText: "Review & Respond"
         });
         closeModal('modal-screening-detail');
     }
     else if (status === 'Approved') {
-        // --- THIS IS THE FIX ---
+        // SUCCESS: Show toast and notify tenant
         showToast("Application Approved!");
 
-        // A. Send Email
+        // --- EMAIL LOGIC INCLUDED HERE ---
         await sendEmail(app.email, "You're Approved!", 'alert', {
             title: "Application Approved",
             message: "Congratulations! Your application was successful. We are now preparing your lease agreement."
         });
 
-        // B. Close the Screening Modal
+        // Simply close the modal. The queue will now show "Create Lease" for this applicant.
         closeModal('modal-screening-detail');
-
-        // C. OPEN THE WORKSPACE MENU (Do NOT call act_initiateSendLease here)
-        setTimeout(() => {
-            act_presentLeaseOptions(app);
-        }, 500); 
     } 
     else {
         closeModal('modal-screening-detail');
@@ -4167,6 +4151,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
