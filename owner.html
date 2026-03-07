@@ -2471,9 +2471,9 @@ function act_viewApp(id) {
 
     // 2. Report Link
     const reportBtn = document.getElementById('sd-report-link');
-    if(app.notes && app.notes.length > 3 && (app.notes.startsWith('http') || app.notes.startsWith('www'))) {
+    if(app.notes && (app.notes.startsWith('http') || app.notes.startsWith('www'))) {
         reportBtn.href = app.notes.startsWith('http') ? app.notes : 'https://' + app.notes;
-        reportBtn.classList.remove('hidden-section');
+        reportBtn.classList.remove('hidden-section'); // This makes the button appear
     } else {
         reportBtn.classList.add('hidden-section');
     }
@@ -4149,6 +4149,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
