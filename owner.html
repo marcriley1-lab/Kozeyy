@@ -2571,13 +2571,11 @@ function act_viewApp(id) {
         let content = `Status: ${app.status}`;
 
         if(app.status === 'Approved') {
-            color = "bg-emerald-50 text-emerald-700 border-emerald-100";
-            content = `
-                <p class="mb-3 font-bold">Applicant Approved</p>
-                <button onclick="act_presentLeaseOptions({id:'${app.id}', name:'${app.name}', email:'${app.email}', rent:${app.rent}})" class="bg-white border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg text-xs font-bold shadow-sm">
-                    Continue to Lease
-                </button>`;
-        }
+    // Skip the modal and jump straight to the Lease Workspace
+    const leaseUrl = `lease.html?id=${app.id}&name=${encodeURIComponent(app.name)}&email=${encodeURIComponent(app.email)}&rent=${app.rent || 0}`;
+    window.location.href = leaseUrl;
+    return; // Stop execution so the modal doesn't even flicker open
+}
         if(app.status === 'Deny') {
             color = "bg-rose-50 text-rose-700 border-rose-100";
             content = "Application Denied";
@@ -4151,6 +4149,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
