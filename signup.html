@@ -97,19 +97,25 @@
         let pendingListingId = null;
 
         window.onload = function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            pendingListingId = urlParams.get('listing_id');
-            
-            if(pendingListingId) {
-                document.getElementById('role-selector').classList.add('hidden-option');
-                document.getElementById('subtitle-text').innerText = "Create a resident account to continue application";
-                const tenantRadio = document.querySelector('input[value="tenant"]');
-                if(tenantRadio) {
-                    tenantRadio.checked = true;
-                    toggleRole(tenantRadio);
-                }
-            }
-        };
+    const urlParams = new URLSearchParams(window.location.search);
+    pendingListingId = urlParams.get('listing_id');
+    
+    if(pendingListingId) {
+        // Safe check for role-selector
+        const roleSelector = document.getElementById('role-selector');
+        if (roleSelector) roleSelector.classList.add('hidden-option');
+
+        // Safe check for subtitle-text
+        const subtitle = document.getElementById('subtitle-text');
+        if (subtitle) subtitle.innerText = "Create a resident account to continue application";
+        
+        const tenantRadio = document.querySelector('input[value="tenant"]');
+        if(tenantRadio) {
+            tenantRadio.checked = true;
+            toggleRole(tenantRadio);
+        }
+    }
+};
 
         function toggleRole(radio) {
             const isOwner = radio.value === 'owner';
@@ -221,6 +227,7 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
+
 
 
 
