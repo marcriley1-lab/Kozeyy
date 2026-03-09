@@ -2668,68 +2668,105 @@ function act_viewApp(id) {
 }
 
 function act_markAsSigned(appId) {
-        const app = state.apps.find(a => a.id === appId);
-        if(!app) return;
+    const app = state.apps.find(a => a.id === appId);
+    if(!app) return;
 
-        openPlatformConfirm(
-            "Confirm Offline Signing", 
-            "You are bypassing the digital signature process.\n\nThis assumes the document you uploaded is ALREADY signed by both parties.",
-            async () => {
-                try {
-                    const ownerId = localStorage.getItem('kozeyy_user_id');
-                    const now = new Date().toISOString();
+    openPlatformConfirm(
+        "Confirm Offline Signing", 
+        "You are bypassing the digital signature process.\n\nThis assumes the document you uploaded is ALREADY signed by both parties.",
+        async () => {
+            try {
+                const ownerId = localStorage.getItem('kozeyy_user_id');
+                const now = new Date().toISOString();
 
-                    // 1. Update Application (Completed)
-                    await supabaseClient.from('apps').update({ 
-                        status: 'Completed',
-                        tenant_signed_at: now, 
-                        owner_signed_at: now 
-                    }).eq('id', appId);
-
-                    // 2. Create/Update Active Tenant Record
-                    const tenantData = {
-                        name: app.name,
-                        email: app.email,
-                        rent_amount: app.rent,
-                        status: 'Active',
-                        owner_id: ownerId,
-                        lease_url: app.lease_url, // Saves the uploaded PDF as the official lease
-                        lease_signed_at: now
-                    };
-
-                    const { data: existing } = await supabaseClient.from('tenants').select('id').eq('email', app.email).maybeSingle();
-                    
-                    if(existing) {
-                        await supabaseClient.from('tenants').update(tenantData).eq('id', existing.id);
-                    } else {
-                        await supabaseClient.from('tenants').insert([tenantData]);
-                    }
-
-                    // 3. Send Welcome Email
-                    if(app.email) {
-                        await sendEmail(
-                            app.email, 
-                            "Welcome Home! (Lease Active)", 
-                            'welcome',
-                            {
-                                name: app.name,
-                                link: "https://kozeyy.com/tenant.html"
-                            }
-                        );
-                    }
-
-                    closeModal('modal-screening-detail');
-                    await fetchData();
-                    renderAll();
-                    showToast("Lease marked as signed & Tenant activated!");
-
-                } catch(err) {
-                    console.error(err);
-                    showToast("Error: " + err.message, 'error');
+                // Determine Property Address
+                let finalAddress = app.rent_addr || app.address || "";
+                if (app.listing_id) {
+                    const matchedListing = state.listings.find(l => l.id === app.listing_id);
+                    if (matchedListing) finalAddress = matchedListing.address;
                 }
+
+                // 1. Update Application (Completed)
+                await supabaseClient.from('apps').update({ 
+                    status: 'Completed',
+                    tenant_signed_at: now, 
+                    owner_signed_at: now 
+                }).eq('id', appId);
+
+                // 2. Create/Update Active Tenant Record
+                const tenantData = {
+                    name: app.name,
+                    email: app.email,
+                    rent_amount: app.rent,
+                    status: 'Active',
+                    owner_id: ownerId,
+                    address: finalAddress,
+                    lease_url: app.lease_url, // Saves the uploaded PDF as the official lease
+                    lease_signed_at: now
+                };
+
+                const { data: existing } = await supabaseClient.from('tenants').select('id').eq('email', app.email).maybeSingle();
+                
+                if(existing) {
+                    await supabaseClient.from('tenants').update(tenantData).eq('id', existing.id);
+                } else {
+                    await supabaseClient.from('tenants').insert([tenantData]);
+                }
+
+                // 3. Send Welcome Email
+                if(app.email) {
+                    await sendEmail(
+                        app.email, 
+                        "Welcome Home! (Lease Active)", 
+                        'welcome',
+                        {
+                            name: app.name,
+                            link: "https://kozeyy.com/tenant.html"
+                        }
+                    );
+                }
+
+                closeModal('modal-screening-detail');
+                await fetchData();
+                renderAll();
+                showToast("Lease marked as signed & Tenant activated!");
+
+                // 4. Listing Cleanup Prompt
+                if (finalAddress) {
+                    const matchingListing = state.listings.find(l => 
+                        l.address && l.address.toLowerCase().trim() === finalAddress.toLowerCase().trim()
+                    );
+
+                    if (matchingListing) {
+                        setTimeout(() => {
+                            openPlatformConfirm(
+                                "Remove Active Listing?", 
+                                `The lease is signed. Would you like to remove the public listing for ${finalAddress}?`,
+                                async () => {
+                                    const { error } = await supabaseClient
+                                        .from('listings')
+                                        .delete()
+                                        .eq('id', matchingListing.id);
+                                    
+                                    if (!error) {
+                                        showToast("Listing removed. Portfolio synced.");
+                                        await fetchData();
+                                        renderAll();
+                                    }
+                                }
+                            );
+                        }, 500);
+                    }
+                }
+
+            } catch(err) {
+                console.error(err);
+                showToast("Error: " + err.message, 'error');
             }
-        );
-    }
+        }
+    );
+}
+
     
     // Placeholder for when you get the API key
     function runAutoScreening() { 
@@ -2978,44 +3015,79 @@ async function sendEmail(to, subject, type, data) {
     });
 }
     function act_initiateFinalize(appId) {
-        openPlatformConfirm("Finalize Tenant?", "Confirm lease signed. Converts applicant to Active tenant.", async () => {
-            const app = state.apps.find(a => a.id === appId);
-            if(!app) return;
-            
-            await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', appId);
-            const ownerId = localStorage.getItem('kozeyy_user_id');
+    openPlatformConfirm("Finalize Tenant?", "Confirm lease signed. Converts applicant to Active tenant.", async () => {
+        const app = state.apps.find(a => a.id === appId);
+        if(!app) return;
+        
+        await supabaseClient.from('apps').update({ status: 'Completed' }).eq('id', appId);
+        const ownerId = localStorage.getItem('kozeyy_user_id');
 
-            const existing = state.tenants.find(t => t.email === app.email);
-            if(existing) {
-                await supabaseClient.from('tenants').update({ status: 'Active', owner_id: ownerId }).eq('id', existing.id);
-            } else {
-                await supabaseClient.from('tenants').insert([{
+        let finalAddress = app.rent_addr || app.address || "";
+        if (app.listing_id) {
+            const matchedListing = state.listings.find(l => l.id === app.listing_id);
+            if (matchedListing) finalAddress = matchedListing.address;
+        }
+
+        const existing = state.tenants.find(t => t.email === app.email);
+        if(existing) {
+            await supabaseClient.from('tenants').update({ status: 'Active', owner_id: ownerId }).eq('id', existing.id);
+        } else {
+            await supabaseClient.from('tenants').insert([{
+                name: app.name,
+                email: app.email,
+                rent_amount: app.rent,
+                status: 'Active',
+                address: finalAddress,
+                owner_id: ownerId
+            }]);
+        }
+        
+        // SEND EMAIL
+        if(app.email) {
+            await sendEmail(
+                app.email, 
+                "Welcome to Kozeyy!", 
+                'welcome',
+                {
                     name: app.name,
-                    email: app.email,
-                    rent_amount: app.rent,
-                    status: 'Active',
-                    owner_id: ownerId
-                }]);
+                    link: "https://kozeyy.com/tenant.html"
+                }
+            );
+        }
+        
+        await fetchData();
+        renderAll();
+        showToast("Tenant finalized and Welcome email sent!");
+
+        // Cleanup Prompt
+        if (finalAddress) {
+            const matchingListing = state.listings.find(l => 
+                l.address && l.address.toLowerCase().trim() === finalAddress.toLowerCase().trim()
+            );
+
+            if (matchingListing) {
+                setTimeout(() => {
+                    openPlatformConfirm(
+                        "Remove Active Listing?", 
+                        `The lease is signed. Would you like to remove the public listing for ${finalAddress}?`,
+                        async () => {
+                            const { error } = await supabaseClient
+                                .from('listings')
+                                .delete()
+                                .eq('id', matchingListing.id);
+                            if (!error) {
+                                showToast("Listing removed. Portfolio synced.");
+                                await fetchData();
+                                renderAll();
+                            }
+                        }
+                    );
+                }, 500);
             }
-            
-            // SEND EMAIL (UPDATED - Uses 'welcome' template)
-            if(app.email) {
-                await sendEmail(
-                    app.email, 
-                    "Welcome to Kozeyy!", 
-                    'welcome',
-                    {
-                        name: app.name,
-                        link: "https://kozeyy.com/tenant.html"
-                    }
-                );
-            }
-            
-            await fetchData();
-            renderAll();
-            showToast("Tenant finalized and Welcome email sent!");
-        });
-    }
+        }
+    });
+}
+
     
 async function act_saveSettings(e) { 
     e.preventDefault(); 
@@ -3693,7 +3765,7 @@ async function processLeaseFinalization() {
         const now = new Date().toISOString();
 
         // 2. Determine Property Address
-        let finalAddress = app.address || "";
+        let finalAddress = app.rent_addr || app.address || "";
         if (app.listing_id) {
             const matchedListing = state.listings.find(l => l.id === app.listing_id);
             if (matchedListing) finalAddress = matchedListing.address;
@@ -3736,8 +3808,21 @@ async function processLeaseFinalization() {
         const contentDiv = modal.querySelector('div');
         
         // Remove ALL possible layout-breaking classes from countersigning
-        contentDiv.classList.remove('max-w-4xl', 'w-full', 'h-[85vh]', 'flex', 'flex-col');
+        contentDiv.classList.remove('max-w-4xl', 'h-[85vh]', 'flex', 'flex-col');
         contentDiv.classList.add('max-w-sm'); // Restore standard prompt width
+        
+        // RESTORE ORIGINAL HTML CONTENT SO SUBSEQUENT PROMPTS WORK
+        contentDiv.innerHTML = `
+            <div class="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 mx-auto mb-4 text-xl">
+                <i class="fas fa-question"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2 text-slate-900" id="plat-conf-title">Confirm Action</h3>
+            <p class="text-sm text-slate-500 mb-6" id="plat-conf-msg">Are you sure you want to proceed?</p>
+            <div class="flex gap-3">
+                <button onclick="closePlatformConfirm(false)" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition">Cancel</button>
+                <button onclick="closePlatformConfirm(true)" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition">Confirm</button>
+            </div>
+        `;
         
         modal.classList.add('hidden-section');
         modal.classList.remove('flex');
@@ -3769,6 +3854,8 @@ async function processLeaseFinalization() {
                                 showToast("Listing removed. Portfolio synced.");
                                 await fetchData();
                                 renderAll();
+                            } else {
+                                showToast("Error removing listing.", "error");
                             }
                         }
                     );
@@ -4229,6 +4316,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
