@@ -184,7 +184,7 @@
         }
 
         // --- AUTH LOGIC ---
-    async function handleLogin(e) {
+   async function handleLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-login');
     const email = document.getElementById('email').value.trim().toLowerCase();
@@ -203,75 +203,52 @@
         });
 
         if (authError) throw authError;
-        
         const userId = authData.user.id;
-        localStorage.setItem('kozeyy_user_id', userId);
+        
+        // 2. WAIT FOR SESSION PROPAGATION
+        // We wait 1 full second to ensure the database "sees" the new login
+        await new Promise(r => setTimeout(r, 1000));
 
-        // 2. SESSION SYNC & RETRY LOGIC (The Fix for Role Detection)
-        // We give the database up to 3 attempts to recognize the new session
-        let ownerRecord = null;
-        let attempts = 0;
+        // 3. ATTEMPT OWNER CHECK
+        const { data: owner, error: ownerError } = await supabaseClient
+            .from('owners')
+            .select('id, is_admin')
+            .eq('id', userId)
+            .maybeSingle();
 
-        while (attempts < 3 && !ownerRecord) {
-            // Force a session sync to ensure the JWT is active for RLS
-            await supabaseClient.auth.getSession();
-            
-            const { data, error } = await supabaseClient
-                .from('owners')
-                .select('id, is_admin')
-                .eq('id', userId)
-                .maybeSingle();
-
-            if (data) {
-                ownerRecord = data;
-                break;
-            }
-            
-            attempts++;
-            if (!ownerRecord) await new Promise(r => setTimeout(r, 400)); // Wait 400ms before retrying
+        if (ownerError) {
+            console.error("DATABASE REJECTED OWNER CHECK:", ownerError.message);
         }
 
-        // 3. REDIRECT BASED ON VERIFIED ROLE
-        if (ownerRecord) {
-            console.log("Owner role verified successfully.");
+        if (owner) {
+            console.log("OWNER VERIFIED. Redirecting to owner.html...");
+            localStorage.setItem('kozeyy_user_id', userId);
             localStorage.setItem('kozeyy_role', 'owner');
-            localStorage.setItem('kozeyy_is_admin', ownerRecord.is_admin ? 'true' : 'false');
+            localStorage.setItem('kozeyy_is_admin', owner.is_admin ? 'true' : 'false');
             window.location.href = 'owner.html';
             return;
         }
 
-        // 4. FALLBACK TO TENANT/APPLICANT
-        console.log("No owner record found, defaulting to tenant path.");
+        // 4. TENANT FALLBACK (Only if the above fails)
+        console.warn("NO OWNER RECORD FOUND. Defaulting to tenant path.");
+        localStorage.setItem('kozeyy_user_id', userId);
         localStorage.setItem('kozeyy_role', 'tenant');
 
-        // Check if they were in the middle of an application
-        const { data: existingApp } = await supabaseClient
+        const { data: app } = await supabaseClient
             .from('apps')
             .select('status')
             .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(1)
             .maybeSingle();
 
-        if (existingApp) {
-            if (existingApp.status === 'Active' || existingApp.status === 'Completed') {
-                window.location.href = 'tenant.html';
-            } else {
-                window.location.href = 'applicantportal.html';
-            }
+        if (app && (app.status === 'Active' || app.status === 'Completed')) {
+            window.location.href = 'tenant.html';
         } else {
-            // Check for a pending listing ID in local storage
-            const pendingListing = localStorage.getItem('pending_application_lid');
-            if (pendingListing) {
-                window.location.href = `applicant.html?listing_id=${pendingListing}`;
-            } else {
-                window.location.href = 'tenant.html';
-            }
+            window.location.href = 'applicantportal.html';
         }
 
     } catch (err) {
-        console.error("Login process error:", err);
-        showError("Login Failed", "Invalid email or password.");
+        console.error("AUTH ERROR:", err.message);
+        showError("Login Failed", err.message);
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -295,6 +272,7 @@
     </script>
 </body>
 </html>
+
 
 
 
