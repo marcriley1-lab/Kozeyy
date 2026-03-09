@@ -1583,6 +1583,13 @@ function renderAll() {
         setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3000);
     }
 
+function getInitials(name) {
+    if (!name) return "LL";
+    const parts = name.trim().split(' ');
+    if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
+    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+}
+    
     // Generic Platform Modal Functions
     function openPlatformConfirm(title, message, callback) {
         setText('plat-conf-title', title);
@@ -4008,29 +4015,44 @@ function logic_resetInvoice() {
 
         if (data) {
             state.owner_data = data;
-            setText('owner-name-display', data.name);
             
-            // Toggle UI based on Founder status
+            // 1. Update Name and Initials in Header
+            setText('owner-name-display', data.name);
+            const initialsEl = document.getElementById('owner-initials-display');
+            if (initialsEl) {
+                initialsEl.innerText = getInitials(data.name);
+            }
+            
+            // 2. Toggle UI based on Founder status
             if (data.is_founder) {
-                // Show Founder elements
-                document.getElementById('founder-view').classList.remove('hidden');
-                document.getElementById('founder-badge').classList.remove('hidden');
-                document.getElementById('founder-tag-sidebar').classList.remove('hidden');
+                // Show Founder elements (Crowned elements and Amber badges)
+                const founderView = document.getElementById('founder-view');
+                const founderBadge = document.getElementById('founder-badge');
+                const founderTag = document.getElementById('founder-tag-sidebar');
                 
-                // Hide Billing for Founders
-                document.getElementById('standard-view').classList.add('hidden');
+                if (founderView) founderView.classList.remove('hidden');
+                if (founderBadge) founderBadge.classList.remove('hidden');
+                if (founderTag) founderTag.classList.remove('hidden');
+                
+                // Hide Standard Billing/Subscription view for Founders
+                const standardView = document.getElementById('standard-view');
+                if (standardView) standardView.classList.add('hidden');
             } else {
                 // Show Subscription UI for Non-Founders
-                document.getElementById('standard-view').classList.remove('hidden');
-                document.getElementById('founder-view').classList.add('hidden');
+                const standardView = document.getElementById('standard-view');
+                const founderView = document.getElementById('founder-view');
                 
-                // Update Usage Data
+                if (standardView) standardView.classList.remove('hidden');
+                if (founderView) founderView.classList.add('hidden');
+                
+                // Update Usage Data and Progress Bars
                 renderSubscriptionUsage(data);
             }
         }
-    } catch(e) { console.error(e); }
+    } catch(e) { 
+        console.error("Error loading profile:", e); 
+    }
 }
-
 function renderSubscriptionUsage(owner) {
     // This counts your current tenants and listings
     const usage = state.tenants.length + state.listings.length; 
@@ -4149,6 +4171,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
