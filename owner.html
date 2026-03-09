@@ -3681,17 +3681,20 @@ async function processLeaseFinalization() {
     if (!app) return;
 
     const btn = document.getElementById('btn-finalize-lease');
+    if (!btn) return;
+    
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
     btn.disabled = true;
 
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        const ownerId = user.id;
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        if (!ownerId) throw new Error("No owner session found.");
+        
         const now = new Date().toISOString();
 
         // 1. Determine Address
-        let finalAddress = app.address || "Address Pending";
+        let finalAddress = app.address || "";
         if (app.listing_id) {
             const matchedListing = state.listings.find(l => l.id === app.listing_id);
             if (matchedListing) finalAddress = matchedListing.address;
@@ -3709,7 +3712,7 @@ async function processLeaseFinalization() {
             owner_signed_at: now
         };
 
-        // 3. Find -> Update OR Insert Tenant Record
+        // 3. Save Tenant Record
         const { data: existingTenant } = await supabaseClient
             .from('tenants')
             .select('id')
@@ -3729,40 +3732,50 @@ async function processLeaseFinalization() {
             owner_signed_at: now
         }).eq('id', currentAppId);
 
+        // --- THE FIX: RESET MODAL CLASSES BEFORE CLOSING ---
+        const modal = document.getElementById('modal-platform-confirm');
+        const contentDiv = modal.querySelector('div');
+        
+        // Remove the Wide-View classes used for countersigning
+        contentDiv.classList.remove('max-w-4xl', 'h-[85vh]', 'flex', 'flex-col');
+        // Restore the standard modal width for the next prompt
+        contentDiv.classList.add('max-w-sm');
+        
+        modal.classList.add('hidden-section');
+        modal.classList.remove('flex');
+        
         showToast("Lease finalized & Tenant activated!");
-
-        // 5. Cleanup UI
-        document.getElementById('modal-platform-confirm').classList.add('hidden-section');
-        document.getElementById('modal-platform-confirm').classList.remove('flex');
         
         await fetchData();
         renderAll();
 
-        // --- NEW: SYNDICATION CLEANUP DURING SCREENING ---
-        // Check if there is an active listing for this specific property
-        const matchingListing = state.listings.find(l => 
-            l.address.toLowerCase().trim() === finalAddress.toLowerCase().trim()
-        );
+        // 5. Syndication Cleanup Check
+        if (finalAddress) {
+            const matchingListing = state.listings.find(l => 
+                l.address && l.address.toLowerCase().trim() === finalAddress.toLowerCase().trim()
+            );
 
-        if (matchingListing) {
-            setTimeout(() => {
-                openPlatformConfirm(
-                    "Remove Active Listing?", 
-                    `The lease is signed and ${app.name} is now a tenant. Would you like to remove the public listing for ${finalAddress}?`,
-                    async () => {
-                        const { error } = await supabaseClient
-                            .from('listings')
-                            .delete()
-                            .eq('id', matchingListing.id);
-                        
-                        if (!error) {
-                            showToast("Listing removed. Your portfolio is synced.");
-                            await fetchData();
-                            renderAll();
+            if (matchingListing) {
+                // Short delay ensures the UI has cleared the previous view
+                setTimeout(() => {
+                    openPlatformConfirm(
+                        "Remove Active Listing?", 
+                        `The lease is signed and ${app.name} is moved in. Remove the listing for ${finalAddress}?`,
+                        async () => {
+                            const { error } = await supabaseClient
+                                .from('listings')
+                                .delete()
+                                .eq('id', matchingListing.id);
+                            
+                            if (!error) {
+                                showToast("Listing removed. Portfolio synced.");
+                                await fetchData();
+                                renderAll();
+                            }
                         }
-                    }
-                );
-            }, 800);
+                    );
+                }, 800);
+            }
         }
 
         navTo('tenants'); 
@@ -3770,6 +3783,7 @@ async function processLeaseFinalization() {
     } catch (err) {
         console.error("Finalization Error:", err);
         showToast("Error: " + err.message, 'error');
+        // Reset button if error occurs to stop the "Non-stop processing circle"
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
@@ -4217,6 +4231,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
