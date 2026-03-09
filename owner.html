@@ -3676,32 +3676,37 @@ function renderLeases() {
     return true;
 }
 
-async function processLeaseFinalization() {
+asyncasync function processLeaseFinalization() {
     const app = state.apps.find(a => a.id === currentAppId);
-    if (!app) return;
-
     const btn = document.getElementById('btn-finalize-lease');
-    if (!btn) return;
     
+    if (!app || !btn) return;
+
+    // 1. Start UI feedback
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Finalizing...';
     btn.disabled = true;
 
     try {
-        const ownerId = localStorage.getItem('kozeyy_user_id');
-        if (!ownerId) throw new Error("No owner session found.");
-        
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        const ownerId = user.id;
         const now = new Date().toISOString();
 
-        // 1. Determine Address
+        // 2. Determine Property Address
         let finalAddress = app.address || "";
         if (app.listing_id) {
             const matchedListing = state.listings.find(l => l.id === app.listing_id);
             if (matchedListing) finalAddress = matchedListing.address;
         }
 
-        // 2. Prepare Tenant Data
-        const tenantUpdates = {
+        // 3. Update or Create Tenant Record
+        const { data: existingTenant } = await supabaseClient
+            .from('tenants')
+            .select('id')
+            .eq('email', app.email)
+            .maybeSingle();
+
+        const tenantData = {
             name: app.name,
             rent_amount: parseFloat(app.rent || 0),
             status: 'Active',
@@ -3712,34 +3717,27 @@ async function processLeaseFinalization() {
             owner_signed_at: now
         };
 
-        // 3. Save Tenant Record
-        const { data: existingTenant } = await supabaseClient
-            .from('tenants')
-            .select('id')
-            .eq('email', app.email)
-            .maybeSingle();
-
         if (existingTenant) {
-            await supabaseClient.from('tenants').update(tenantUpdates).eq('id', existingTenant.id);
+            await supabaseClient.from('tenants').update(tenantData).eq('id', existingTenant.id);
         } else {
-            tenantUpdates.email = app.email;
-            await supabaseClient.from('tenants').insert([tenantUpdates]);
+            tenantData.email = app.email;
+            await supabaseClient.from('tenants').insert([tenantData]);
         }
 
-        // 4. Update Application to Completed
+        // 4. Update Application Status
         await supabaseClient.from('apps').update({ 
             status: 'Completed',
             owner_signed_at: now
         }).eq('id', currentAppId);
 
-        // --- THE FIX: RESET MODAL CLASSES BEFORE CLOSING ---
+        // --- THE UI RESET FIX ---
+        // Forcefully reset the modal classes before closing it
         const modal = document.getElementById('modal-platform-confirm');
         const contentDiv = modal.querySelector('div');
         
-        // Remove the Wide-View classes used for countersigning
-        contentDiv.classList.remove('max-w-4xl', 'h-[85vh]', 'flex', 'flex-col');
-        // Restore the standard modal width for the next prompt
-        contentDiv.classList.add('max-w-sm');
+        // Remove ALL possible layout-breaking classes from countersigning
+        contentDiv.classList.remove('max-w-4xl', 'w-full', 'h-[85vh]', 'flex', 'flex-col');
+        contentDiv.classList.add('max-w-sm'); // Restore standard prompt width
         
         modal.classList.add('hidden-section');
         modal.classList.remove('flex');
@@ -3749,18 +3747,18 @@ async function processLeaseFinalization() {
         await fetchData();
         renderAll();
 
-        // 5. Syndication Cleanup Check
+        // 5. Trigger Listing Cleanup Prompt
         if (finalAddress) {
             const matchingListing = state.listings.find(l => 
                 l.address && l.address.toLowerCase().trim() === finalAddress.toLowerCase().trim()
             );
 
             if (matchingListing) {
-                // Short delay ensures the UI has cleared the previous view
+                // Delay allows the previous modal to fully "vanish" from the DOM
                 setTimeout(() => {
                     openPlatformConfirm(
                         "Remove Active Listing?", 
-                        `The lease is signed and ${app.name} is moved in. Remove the listing for ${finalAddress}?`,
+                        `The lease is signed. Would you like to remove the public listing for ${finalAddress}?`,
                         async () => {
                             const { error } = await supabaseClient
                                 .from('listings')
@@ -3774,7 +3772,7 @@ async function processLeaseFinalization() {
                             }
                         }
                     );
-                }, 800);
+                }, 500);
             }
         }
 
@@ -3783,7 +3781,7 @@ async function processLeaseFinalization() {
     } catch (err) {
         console.error("Finalization Error:", err);
         showToast("Error: " + err.message, 'error');
-        // Reset button if error occurs to stop the "Non-stop processing circle"
+        // Reset the button so it's not stuck on "Processing" if it fails
         btn.innerHTML = originalText;
         btn.disabled = false;
     }
@@ -4231,6 +4229,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
