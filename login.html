@@ -184,88 +184,99 @@
         }
 
         // --- AUTH LOGIC ---
-     async function handleLogin(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-login');
-            const email = document.getElementById('email').value.trim().toLowerCase();
-            const password = document.getElementById('password').value.trim();
+    async function handleLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-login');
+    const email = document.getElementById('email').value.trim().toLowerCase();
+    const password = document.getElementById('password').value.trim();
 
-            hideError(); 
-            const originalText = btn.innerHTML;
-            btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Authenticating...`;
-            btn.disabled = true;
+    hideError(); 
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Authenticating...`;
+    btn.disabled = true;
 
-            try {
-                // 1. AUTHENTICATE
-                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
+    try {
+        // 1. AUTHENTICATE
+        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+            email: email,
+            password: password
+        });
 
-                if (authError) throw authError;
-                const userId = authData.user.id;
-                localStorage.setItem('kozeyy_user_id', userId);
+        if (authError) throw authError;
+        
+        const userId = authData.user.id;
+        localStorage.setItem('kozeyy_user_id', userId);
 
-                // 2. CLAIM INVITES (Merge placeholder accounts)
-                await supabaseClient.rpc('claim_invite');
+        // 2. SESSION SYNC & RETRY LOGIC (The Fix for Role Detection)
+        // We give the database up to 3 attempts to recognize the new session
+        let ownerRecord = null;
+        let attempts = 0;
 
-                // 3. CHECK IF OWNER
-                const { data: owner } = await supabaseClient
-                    .from('owners')
-                    .select('id')
-                    .eq('id', userId)
-                    .maybeSingle();
+        while (attempts < 3 && !ownerRecord) {
+            // Force a session sync to ensure the JWT is active for RLS
+            await supabaseClient.auth.getSession();
+            
+            const { data, error } = await supabaseClient
+                .from('owners')
+                .select('id, is_admin')
+                .eq('id', userId)
+                .maybeSingle();
 
-                if (owner) {
-                    localStorage.setItem('kozeyy_role', 'owner');
-                    window.location.href = 'owner.html';
-                    return;
-                }
+            if (data) {
+                ownerRecord = data;
+                break;
+            }
+            
+            attempts++;
+            if (!ownerRecord) await new Promise(r => setTimeout(r, 400)); // Wait 400ms before retrying
+        }
 
-                localStorage.setItem('kozeyy_role', 'tenant');
+        // 3. REDIRECT BASED ON VERIFIED ROLE
+        if (ownerRecord) {
+            console.log("Owner role verified successfully.");
+            localStorage.setItem('kozeyy_role', 'owner');
+            localStorage.setItem('kozeyy_is_admin', ownerRecord.is_admin ? 'true' : 'false');
+            window.location.href = 'owner.html';
+            return;
+        }
 
-                // 4. CHECK APP STATUS (The Fix)
-                // Check if this user has ANY existing application
-                const { data: existingApp } = await supabaseClient
-                    .from('apps')
-                    .select('status')
-                    .eq('user_id', userId)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
+        // 4. FALLBACK TO TENANT/APPLICANT
+        console.log("No owner record found, defaulting to tenant path.");
+        localStorage.setItem('kozeyy_role', 'tenant');
 
-                if (existingApp) {
-                    // If they are already fully active/completed, go to Tenant Dashboard
-                    if (existingApp.status === 'Active' || existingApp.status === 'Completed') {
-                        window.location.href = 'tenant.html';
-                    } 
-                    // If they are Withdrawn/Denied, let them apply again (or go to portal to see denial)
-                    // Here we send to portal so they can see the status message/adverse action
-                    else {
-                        window.location.href = 'applicantportal.html';
-                    }
-                    return;
-                }
+        // Check if they were in the middle of an application
+        const { data: existingApp } = await supabaseClient
+            .from('apps')
+            .select('status')
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-                // 5. IF NO APP EXISTS, CHECK FOR NEW APPLICATION START
-                const pendingListing = localStorage.getItem('pending_application_lid');
-                
-                if (pendingListing) {
-                    // New user, clicked "Apply", hasn't submitted yet
-                    window.location.href = `applicant.html?listing_id=${pendingListing}`;
-                } else {
-                    // Default fallback (e.g. manually invited tenant with no app history)
-                    window.location.href = 'tenant.html';
-                }
-
-            } catch (err) {
-                console.error(err);
-                showError("Login Failed", "Invalid email or password.");
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+        if (existingApp) {
+            if (existingApp.status === 'Active' || existingApp.status === 'Completed') {
+                window.location.href = 'tenant.html';
+            } else {
+                window.location.href = 'applicantportal.html';
+            }
+        } else {
+            // Check for a pending listing ID in local storage
+            const pendingListing = localStorage.getItem('pending_application_lid');
+            if (pendingListing) {
+                window.location.href = `applicant.html?listing_id=${pendingListing}`;
+            } else {
+                window.location.href = 'tenant.html';
             }
         }
+
+    } catch (err) {
+        console.error("Login process error:", err);
+        showError("Login Failed", "Invalid email or password.");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
         async function handleForgot(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-forgot');
@@ -284,6 +295,7 @@
     </script>
 </body>
 </html>
+
 
 
 
