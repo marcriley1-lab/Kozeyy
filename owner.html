@@ -3709,7 +3709,7 @@ async function processLeaseFinalization() {
             owner_signed_at: now
         };
 
-        // 3. SAFER SAVE STRATEGY (Find -> Update OR Insert)
+        // 3. Find -> Update OR Insert Tenant Record
         const { data: existingTenant } = await supabaseClient
             .from('tenants')
             .select('id')
@@ -3717,31 +3717,17 @@ async function processLeaseFinalization() {
             .maybeSingle();
 
         if (existingTenant) {
-            // Update existing record
-            const { error: updateError } = await supabaseClient
-                .from('tenants')
-                .update(tenantUpdates)
-                .eq('id', existingTenant.id);
-            if (updateError) throw updateError;
+            await supabaseClient.from('tenants').update(tenantUpdates).eq('id', existingTenant.id);
         } else {
-            // Insert new record
-            tenantUpdates.email = app.email; // Ensure email is included for new insert
-            const { error: insertError } = await supabaseClient
-                .from('tenants')
-                .insert([tenantUpdates]);
-            if (insertError) throw insertError;
+            tenantUpdates.email = app.email;
+            await supabaseClient.from('tenants').insert([tenantUpdates]);
         }
 
         // 4. Update Application to Completed
-        const { error: appError } = await supabaseClient
-            .from('apps')
-            .update({ 
-                status: 'Completed',
-                owner_signed_at: now
-            })
-            .eq('id', currentAppId);
-
-        if (appError) throw appError;
+        await supabaseClient.from('apps').update({ 
+            status: 'Completed',
+            owner_signed_at: now
+        }).eq('id', currentAppId);
 
         showToast("Lease finalized & Tenant activated!");
 
@@ -3751,7 +3737,35 @@ async function processLeaseFinalization() {
         
         await fetchData();
         renderAll();
-        navTo('tenants'); // Send owner to tenant list to see the new active tenant
+
+        // --- NEW: SYNDICATION CLEANUP DURING SCREENING ---
+        // Check if there is an active listing for this specific property
+        const matchingListing = state.listings.find(l => 
+            l.address.toLowerCase().trim() === finalAddress.toLowerCase().trim()
+        );
+
+        if (matchingListing) {
+            setTimeout(() => {
+                openPlatformConfirm(
+                    "Remove Active Listing?", 
+                    `The lease is signed and ${app.name} is now a tenant. Would you like to remove the public listing for ${finalAddress}?`,
+                    async () => {
+                        const { error } = await supabaseClient
+                            .from('listings')
+                            .delete()
+                            .eq('id', matchingListing.id);
+                        
+                        if (!error) {
+                            showToast("Listing removed. Your portfolio is synced.");
+                            await fetchData();
+                            renderAll();
+                        }
+                    }
+                );
+            }, 800);
+        }
+
+        navTo('tenants'); 
 
     } catch (err) {
         console.error("Finalization Error:", err);
@@ -4203,6 +4217,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
