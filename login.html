@@ -184,7 +184,7 @@
         }
 
         // --- AUTH LOGIC ---
-   async function handleLogin(e) {
+  async function handleLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-login');
     const email = document.getElementById('email').value.trim().toLowerCase();
@@ -204,51 +204,34 @@
 
         if (authError) throw authError;
         const userId = authData.user.id;
-        
-        // 2. WAIT FOR SESSION PROPAGATION
-        // We wait 1 full second to ensure the database "sees" the new login
-        await new Promise(r => setTimeout(r, 1000));
+        localStorage.setItem('kozeyy_user_id', userId);
 
-        // 3. ATTEMPT OWNER CHECK
-        const { data: owner, error: ownerError } = await supabaseClient
-            .from('owners')
-            .select('id, is_admin')
-            .eq('id', userId)
-            .maybeSingle();
+        // 2. BYPASS RLS CHECK (Calling the RPC)
+        // This function doesn't care about RLS policies; it checks the table directly
+        const { data: isOwner, error: rpcError } = await supabaseClient.rpc('check_is_owner', { 
+            target_uid: userId 
+        });
 
-        if (ownerError) {
-            console.error("DATABASE REJECTED OWNER CHECK:", ownerError.message);
+        if (rpcError) {
+            console.error("RPC Security Bypass Failed:", rpcError.message);
         }
 
-        if (owner) {
-            console.log("OWNER VERIFIED. Redirecting to owner.html...");
-            localStorage.setItem('kozeyy_user_id', userId);
+        // 3. REDIRECT
+        if (isOwner === true) {
+            console.log("Owner status confirmed via Security Bypass.");
             localStorage.setItem('kozeyy_role', 'owner');
-            localStorage.setItem('kozeyy_is_admin', owner.is_admin ? 'true' : 'false');
             window.location.href = 'owner.html';
             return;
         }
 
-        // 4. TENANT FALLBACK (Only if the above fails)
-        console.warn("NO OWNER RECORD FOUND. Defaulting to tenant path.");
-        localStorage.setItem('kozeyy_user_id', userId);
+        // 4. TENANT FALLBACK
+        console.warn("User is not an owner. Defaulting to tenant.");
         localStorage.setItem('kozeyy_role', 'tenant');
-
-        const { data: app } = await supabaseClient
-            .from('apps')
-            .select('status')
-            .eq('user_id', userId)
-            .maybeSingle();
-
-        if (app && (app.status === 'Active' || app.status === 'Completed')) {
-            window.location.href = 'tenant.html';
-        } else {
-            window.location.href = 'applicantportal.html';
-        }
+        window.location.href = 'applicantportal.html';
 
     } catch (err) {
-        console.error("AUTH ERROR:", err.message);
-        showError("Login Failed", err.message);
+        console.error("Login Error:", err.message);
+        showError("Login Failed", "Invalid email or password.");
     } finally {
         btn.innerHTML = originalText;
         btn.disabled = false;
@@ -272,6 +255,7 @@
     </script>
 </body>
 </html>
+
 
 
 
