@@ -2088,7 +2088,7 @@ function toggleFeeVisibility() {
     
     // CRUD Functions
     
- async function act_saveTenant(e) { 
+async function act_saveTenant(e) { 
     e.preventDefault(); 
     
     // 1. Check subscription limits (only for new tenants)
@@ -2133,7 +2133,7 @@ function toggleFeeVisibility() {
             return;
         }
 
-        // 2. Trigger Invitation Email
+        // Trigger Invitation Email
         await sendEmail(
             email, 
             "Welcome to Kozeyy Resident Portal", 
@@ -2152,6 +2152,38 @@ function toggleFeeVisibility() {
     closeModal('modal-tenant');
     await fetchData();
     renderAll();
+
+    // --- NEW: SYNDICATION CLEANUP ---
+    // If this was a NEW tenant, check if there's an active listing for this address
+    if (!editTenantId) {
+        const matchingListing = state.listings.find(l => 
+            l.address.toLowerCase().trim() === address.toLowerCase().trim()
+        );
+
+        if (matchingListing) {
+            // Delay the prompt slightly so it doesn't overlap with the "Tenant Added" success toast
+            setTimeout(() => {
+                openPlatformConfirm(
+                    "Remove Active Listing?", 
+                    `You just added a tenant to ${address}. Would you like to remove the public listing for this property?`,
+                    async () => {
+                        const { error } = await supabaseClient
+                            .from('listings')
+                            .delete()
+                            .eq('id', matchingListing.id);
+                        
+                        if (!error) {
+                            showToast("Listing removed and unit synced.");
+                            await fetchData();
+                            renderAll();
+                        } else {
+                            showToast("Error removing listing: " + error.message, "error");
+                        }
+                    }
+                );
+            }, 600);
+        }
+    }
 }
     
     async function act_moveOut(id) {
@@ -4171,6 +4203,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
