@@ -161,47 +161,40 @@
         let appsData = [];
 
         // --- 2. INITIALIZATION ---
-        window.init = async function() {
-            if (!supabaseClient) {
-                alert("Database connection failed. Please check your internet or disable ad-blockers for this site.");
-                return;
-            }
+       window.init = async function() {
+    if (!supabaseClient) {
+        alert("Database connection failed.");
+        return;
+    }
 
-            // Check Auth
-            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-            
-            if (authError || !user) {
-                console.warn("No user found, redirecting to login. Error:", authError);
-                window.location.href = 'login.html';
-                return;
-            }
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
+        window.location.href = 'login.html';
+        return;
+    }
 
-            console.log("Logged in as:", user.email);
+    // --- UPDATED ADMIN CHECK ---
+    // Instead of querying the table directly, we call the secure RPC function
+    const { data: isAdmin, error: rpcError } = await supabaseClient.rpc('check_is_admin', { 
+        target_uid: user.id 
+    });
 
-            // Security Check: Verify Admin Status
-            const { data: owner, error } = await supabaseClient
-                .from('owners')
-                .select('is_admin')
-                .eq('id', user.id)
-                .single();
+    if (rpcError) {
+        console.error("Admin verification failed:", rpcError.message);
+        alert("Error verifying admin status.");
+        return;
+    }
 
-            if (error) {
-                console.error("Error fetching owner profile:", error);
-                alert("Error verifying admin status.");
-                return;
-            }
-
-            if(!owner || !owner.is_admin) {
-                alert("Access Denied: Admins Only. Redirecting to Owner Portal.");
-                window.location.href = 'owner.html';
-                return;
-            }
-            
-            // If we are here, we are admin.
-            console.log("Admin Verified. Fetching queue...");
-            window.fetchQueue();
-        };
-
+    if (!isAdmin) {
+        alert("Access Denied: Admins Only.");
+        window.location.href = 'owner.html';
+        return;
+    }
+    
+    console.log("Admin Verified. Fetching queue...");
+    window.fetchQueue();
+};
         // --- 3. CORE FUNCTIONS (Attached to Window) ---
         window.fetchQueue = async function() {
             const tbody = document.getElementById('queue-body');
