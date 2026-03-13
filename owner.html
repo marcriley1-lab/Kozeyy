@@ -2629,7 +2629,7 @@ function act_viewApp(id) {
     openModal('modal-screening-detail');
 }
     // --- 3. Save Manual Results (Concierge Action) ---
-  async function act_saveScreeningResults() {
+ async function act_saveScreeningResults() {
     const score = document.getElementById('input-manual-score').value;
     const income = document.getElementById('input-manual-income').value;
     const evictVal = document.getElementById('input-manual-evict').value === 'true';
@@ -2648,17 +2648,18 @@ function act_viewApp(id) {
     if(error) {
         showToast("Error saving: " + error.message, 'error');
     } else {
-        // --- ADDED: NOTIFY OWNER ---
+        // --- SECURE FIX APPLIED HERE ---
         const app = state.apps.find(a => a.id === currentAppId);
+        
         if(app && app.owner_id) {
-            const { data: owner } = await supabaseClient.from('owners').select('email').eq('id', app.owner_id).single();
-            if(owner && owner.email) {
-                await sendEmail(owner.email, "Background Report Ready", 'alert', {
-                    title: "Screening Completed",
-                    message: `The background report for ${app.name} has been verified and is ready for your review.`,
-                    actionLink: "https://kozeyy.com/owner.html"
-                });
-            }
+            // We no longer try to query the 'owners' table here because RLS blocks it.
+            // Instead, we pass the owner_id directly into the 'to' parameter of sendEmail.
+            // The Edge Function will use the Service Role Key to securely look up the email.
+            await sendEmail(app.owner_id, "Background Report Ready", 'alert', {
+                title: "Screening Completed",
+                message: `The background report for ${app.name} has been verified and is ready for your review.`,
+                actionLink: "https://kozeyy.com/owner.html"
+            });
         }
 
         showToast("Report Verified & Owner Notified");
@@ -4316,6 +4317,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
