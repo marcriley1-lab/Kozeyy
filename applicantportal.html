@@ -486,9 +486,7 @@
             }
         }
 
-   // Replace the signLease function in applicantportal.html with this version
-// Replace your existing signLease function with this version
-async function signLease() {
+   async function signLease() {
     if (!currentUserApp) return;
 
     const btn = document.querySelector('button[onclick="signLease()"]');
@@ -503,12 +501,9 @@ async function signLease() {
         const timestamp = new Date().toISOString();
         const authUserId = localStorage.getItem('kozeyy_user_id');
 
-        // 1. Retrieve the original TOS timestamp from Auth Metadata
-        // This avoids a schema mismatch since 'apps' doesn't have the column
         const { data: { user } } = await supabaseClient.auth.getUser();
         const originalTosAgreedAt = user.user_metadata.tos_agreed_at || timestamp;
 
-        // 2. Update the 'apps' table status
         const { error: appError } = await supabaseClient
             .from('apps') 
             .update({
@@ -519,8 +514,6 @@ async function signLease() {
 
         if (appError) throw appError;
 
-        // 3. CREATE/UPDATE TENANT RECORD
-        // Use 'onConflict: email' to prevent duplicate key violations
         const { error: tenantError } = await supabaseClient
             .from('tenants')
             .upsert([{ 
@@ -532,14 +525,22 @@ async function signLease() {
                 rent_amount: currentUserApp.rent || 0,
                 lease_url: currentUserApp.lease_url,
                 lease_signed_at: timestamp,
-                tos_agreed_at: originalTosAgreedAt // Officially recorded in tenant schema
+                tos_agreed_at: originalTosAgreedAt 
             }], { 
                 onConflict: 'email' 
             });
 
         if (tenantError) throw tenantError;
 
-        // 4. Update local session roles
+        if (currentUserApp.owner_id) {
+            await sendEmail(currentUserApp.owner_id, "Lease Signed by Applicant", 'alert', {
+                title: "Lease Signed",
+                message: `${currentUserApp.name} has signed the lease agreement. It is now ready for your countersignature.`,
+                actionLink: "https://kozeyy.com/owner.html",
+                actionText: "Review & Countersign"
+            });
+        }
+
         localStorage.setItem('kozeyy_role', 'tenant');
 
         showModal("Success!", "Lease signed! You are now being redirected to your Resident Portal.");
@@ -558,50 +559,58 @@ async function signLease() {
     }
 }
         async function respondToCondition(response) {
-            if (!currentUserApp) return;
+    if (!currentUserApp) return;
 
-            let newStatus, title, msg;
+    let newStatus, title, msg;
 
-            if (response === 'Accept') {
-                newStatus = 'Approved';
-                title = "Condition Accepted";
-                msg = "Great! We have notified the property owner. You will receive a lease agreement shortly.";
-            } else {
-                newStatus = 'Withdrawn';
-                title = "Application Withdrawn";
-                msg = "Your application has been withdrawn. Best of luck in your search.";
-            }
+    if (response === 'Accept') {
+        newStatus = 'Approved';
+        title = "Condition Accepted";
+        msg = "Great! We have notified the property owner. You will receive a lease agreement shortly.";
+    } else {
+        newStatus = 'Withdrawn';
+        title = "Application Withdrawn";
+        msg = "Your application has been withdrawn. Best of luck in your search.";
+    }
 
-            openConfirm(
-                `Confirm ${response}?`, 
-                `Are you sure you want to ${response.toLowerCase()} this condition?`, 
-                async () => {
-                    document.getElementById('condition-card').classList.add('hidden-section');
-                    document.getElementById('view-loading').classList.remove('hidden-section');
-                    document.getElementById('view-dashboard').classList.add('hidden-section');
+    openConfirm(
+        `Confirm ${response}?`, 
+        `Are you sure you want to ${response.toLowerCase()} this condition?`, 
+        async () => {
+            document.getElementById('condition-card').classList.add('hidden-section');
+            document.getElementById('view-loading').classList.remove('hidden-section');
+            document.getElementById('view-dashboard').classList.add('hidden-section');
 
-                    try {
-                        const { error } = await supabaseClient
-                            .from('apps')
-                            .update({ status: newStatus })
-                            .eq('id', currentUserApp.id);
+            try {
+                const { error } = await supabaseClient
+                    .from('apps')
+                    .update({ status: newStatus })
+                    .eq('id', currentUserApp.id);
 
-                        if (error) throw error;
+                if (error) throw error;
 
-                        setTimeout(() => {
-                            showModal(title, msg);
-                            fetchApplication(); 
-                        }, 1000);
-
-                    } catch (err) {
-                        console.error(err);
-                        showModal("Error", "Error updating status: " + err.message);
-                        fetchApplication(); 
-                    }
+                if (currentUserApp.owner_id) {
+                    await sendEmail(currentUserApp.owner_id, "Applicant Update", 'alert', {
+                        title: response === 'Accept' ? "Condition Accepted" : "Application Withdrawn",
+                        message: `${currentUserApp.name} has ${response === 'Accept' ? 'accepted the conditional approval terms' : 'withdrawn their application'}.`,
+                        actionLink: "https://kozeyy.com/owner.html",
+                        actionText: "View Dashboard"
+                    });
                 }
-            );
-        }
 
+                setTimeout(() => {
+                    showModal(title, msg);
+                    fetchApplication(); 
+                }, 1000);
+
+            } catch (err) {
+                console.error(err);
+                showModal("Error", "Error updating status: " + err.message);
+                fetchApplication(); 
+            }
+        }
+    );
+}
         // --- UI HELPERS ---
         function showModal(title, msg) {
             document.getElementById('modal-title').innerText = title;
@@ -635,6 +644,7 @@ async function signLease() {
     </script>
 </body>
 </html>
+
 
 
 
