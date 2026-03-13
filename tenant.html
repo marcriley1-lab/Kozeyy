@@ -1021,9 +1021,9 @@ if (globalData.user && globalData.user.owner_id) {
             }
         }
 
-    // --- EMAIL HELPER (Edge Function) ---
-   async function sendEmail(to, subject, type, data) {
-    if (!to || !to.includes('@')) return;
+    async function sendEmail(to, subject, type, data) {
+    // FIXED: Removed the .includes('@') check so the owner_id UUID can pass through
+    if (!to) return; 
 
     // Define the Spruce Theme
     const emailHtml = `
@@ -1578,6 +1578,7 @@ async function confirmPay() {
     </script>
 </body>
 </html>
+
 
 
 
