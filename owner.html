@@ -1223,6 +1223,10 @@ function startSystemTour() {
     const driverObj = driver({
         showProgress: true,
         animate: true,
+        // CRITICAL: This saves the "completed" flag when the user finishes or closes the tour
+        onDestroyed: () => {
+            localStorage.setItem('kozeyy_tour_completed', 'true');
+        },
         steps: [
             { 
                 element: '#qa-tenant', 
@@ -1238,18 +1242,21 @@ function startSystemTour() {
                     title: 'System Settings', 
                     description: 'Click here to configure your platform rules.',
                     onNextClick: () => {
-                        navTo('settings'); // Switches view
-                        driverObj.moveNext();
+                        navTo('settings'); 
+                        setTimeout(() => {
+                            driverObj.moveNext();
+                        }, 400); 
                     }
                 } 
             },
             { 
-                // FIXED: Using the specific fee container and adding a slight delay
-                element: '#fee-inputs-container', 
+                // FIXED: Now highlighting the specific Toggle Button
+                element: '#set-fee-active', 
                 popover: { 
-                    title: 'Late Fee Rules', 
-                    description: 'Set your grace periods and automated fee amounts here.',
-                    position: 'top' 
+                    title: 'Enable Late Fees', 
+                    description: 'Toggle this switch to turn on automated late fee calculations.',
+                    side: "top",
+                    align: 'start'
                 }
             }
         ]
