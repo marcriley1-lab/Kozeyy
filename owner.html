@@ -2468,17 +2468,24 @@ async function act_saveListing(e) {
         }
     });
 }
-    // Update the helper to accept the 5th argument (Owner Date)
     function openLeaseViewer(url, id, tName, tDate, oDate) {
-        const oName = document.getElementById('owner-name-display').innerText || "Landlord";
-        
-        // Handle nulls gracefully
-        const tenantSign = tDate && tDate !== 'null' ? tDate : '';
-        const ownerSign = oDate && oDate !== 'null' ? oDate : '';
+    const oNameDisplay = document.getElementById('owner-name-display');
+    const oName = oNameDisplay ? oNameDisplay.innerText : "Landlord";
+    
+    // Ensure we handle nulls/undefined and encode everything strictly
+    const tenantSign = (tDate && tDate !== 'null') ? encodeURIComponent(tDate) : '';
+    const ownerSign = (oDate && oDate !== 'null') ? encodeURIComponent(oDate) : '';
+    const tenantName = tName ? encodeURIComponent(tName) : 'Tenant';
+    const landlordName = encodeURIComponent(oName);
 
-        const viewerUrl = `view_lease.html?url=${encodeURIComponent(url)}&id=${id}&t_name=${encodeURIComponent(tName)}&t_date=${tenantSign}&o_name=${encodeURIComponent(oName)}&o_date=${ownerSign}`;
-        window.open(viewerUrl, '_blank');
-    }
+    // Clean the URL: Remove any existing fragments before adding our own
+    const cleanUrl = url.split('#')[0];
+    const optimizedUrl = encodeURIComponent(cleanUrl);
+
+    const viewerUrl = `view_lease.html?url=${optimizedUrl}&id=${id}&t_name=${tenantName}&t_date=${tenantSign}&o_name=${landlordName}&o_date=${ownerSign}`;
+    
+    window.open(viewerUrl, '_blank');
+}
     // Helper to create the container if it doesn't exist in your HTML yet
     function createBtnContainer() {
         const modalBody = document.querySelector('#modal-view-tenant .space-y-4');
@@ -3658,12 +3665,13 @@ function renderLeases() {
     closeModal('modal-screening-detail');
     
     const confirmModal = document.getElementById('modal-platform-confirm');
-    const contentDiv = confirmModal.querySelector('div'); // The white inner box
+    const contentDiv = confirmModal.querySelector('div'); 
     
-    // 1. EXPAND MODAL WIDTH for PDF viewing
-    // We remove the small width class and add a wider one specifically for this view
     contentDiv.classList.remove('max-w-sm');
-    contentDiv.classList.add('max-w-4xl', 'w-full', 'h-[85vh]', 'flex', 'flex-col'); // Full height/width feel
+    contentDiv.classList.add('max-w-4xl', 'w-full', 'h-[85vh]', 'flex', 'flex-col');
+
+    // Force PDF inline view by appending parameters to the source URL
+    const pdfUrl = app.lease_url ? `${app.lease_url}#toolbar=1&view=FitH` : null;
 
     contentDiv.innerHTML = `
         <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-3">
@@ -3676,15 +3684,15 @@ function renderLeases() {
             </span>
         </div>
         
-        <!-- PDF PREVIEW -->
+        <!-- PDF PREVIEW - Forced via <embed> and URL parameters -->
         <div class="flex-1 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden relative mb-4">
-            ${app.lease_url 
-                ? `<iframe src="${app.lease_url}" class="w-full h-full" style="min-height: 400px;"></iframe>`
+            ${pdfUrl 
+                ? `<embed src="${pdfUrl}" type="application/pdf" width="100%" height="100%" style="border-radius: 8px;" />`
                 : `<div class="flex items-center justify-center h-full text-slate-400">Preview Unavailable</div>`
             }
             
             <!-- Floating Signature Prompt -->
-            <div class="absolute bottom-4 right-6 bg-white/90 backdrop-blur p-4 rounded-xl shadow-2xl border border-indigo-100 max-w-xs text-right">
+            <div class="absolute bottom-4 right-6 bg-white/90 backdrop-blur p-4 rounded-xl shadow-2xl border border-indigo-100 max-w-xs text-right z-20">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tenant</p>
                 <p class="font-dancing text-xl text-slate-800 mb-3">${app.name}</p>
                 
@@ -4317,6 +4325,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
