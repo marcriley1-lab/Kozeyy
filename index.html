@@ -611,23 +611,23 @@ async function fetchListings(cityFilter = '', stateFilter = '', radiusFilter = '
                 ? `<div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-lg text-[10px] font-bold text-white shadow">${l.distance.toFixed(1)} miles away</div>` 
                 : '';
 
-            container.innerHTML += `
-            <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition group cursor-pointer" onclick="openListingDetail('${l.id}')">
-                <div class="h-48 bg-slate-200 relative overflow-hidden">
-                    <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
-                    <div class="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase shadow">${l.state || 'Unit'}</div>
-                    ${distanceTag}
-                </div>
-                <div class="p-6">
-                    <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">${l.city || ''}${l.state ? ', ' + l.state : ''}</p>
-                    <h3 class="font-bold text-lg text-slate-900 mb-4 truncate">${l.address}</h3>
-                    <div class="flex items-center justify-between border-t border-slate-100 pt-4">
-                        <div><span class="text-2xl font-extrabold text-indigo-600">$${parseFloat(l.price).toLocaleString()}</span><span class="text-xs text-slate-400 font-bold">/mo</span></div>
-                        <span class="text-indigo-600 font-bold text-sm">View &rarr;</span>
-                    </div>
-                </div>
-            </div>`;
-        });
+    container.innerHTML += `
+    <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition group cursor-pointer" onclick="openListingDetail('${l.id}')">
+        <div class="h-48 bg-slate-200 relative overflow-hidden">
+            <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+            <div class="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase shadow">${l.state || 'Unit'}</div>
+            ${distanceTag}
+        </div>
+        <div class="p-6">
+            <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">${l.city || ''}${l.state ? ', ' + l.state : ''}</p>
+            <h3 class="font-bold text-lg text-slate-900 mb-4 truncate">${l.address}</h3>
+            <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+                <div><span class="text-2xl font-extrabold text-indigo-600">$${parseFloat(l.price).toLocaleString()}</span><span class="text-xs text-slate-400 font-bold">/mo</span></div>
+                <span class="text-indigo-600 font-bold text-sm">View &rarr;</span>
+            </div>
+        </div>
+    </div>`;
+});
     } catch (err) {
         console.error(err);
         container.innerHTML = `<div class="col-span-full text-center py-12 text-red-400">Error loading rentals.</div>`;
