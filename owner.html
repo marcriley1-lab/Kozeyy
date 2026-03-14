@@ -1223,9 +1223,13 @@ function startSystemTour() {
     const driverObj = driver({
         showProgress: true,
         animate: true,
-        // CRITICAL: This saves the "completed" flag when the user finishes or closes the tour
-        onDestroyed: () => {
-            localStorage.setItem('kozeyy_tour_completed', 'true');
+        // SAVES TO DATABASE: Ensures the tour won't run on phone if finished on PC
+        onDestroyed: async () => {
+            const ownerId = localStorage.getItem('kozeyy_user_id');
+            if (ownerId) {
+                localStorage.setItem('kozeyy_tour_completed', 'true');
+                await supabaseClient.from('owners').update({ tour_completed: true }).eq('id', ownerId);
+            }
         },
         steps: [
             { 
@@ -1243,14 +1247,12 @@ function startSystemTour() {
                     description: 'Click here to configure your platform rules.',
                     onNextClick: () => {
                         navTo('settings'); 
-                        setTimeout(() => {
-                            driverObj.moveNext();
-                        }, 400); 
+                        setTimeout(() => { driverObj.moveNext(); }, 500); 
                     }
                 } 
             },
             { 
-                // FIXED: Now highlighting the specific Toggle Button
+                // FIXED: Now highlights the toggle specifically
                 element: '#set-fee-active', 
                 popover: { 
                     title: 'Enable Late Fees', 
@@ -1315,42 +1317,31 @@ async function initSystem() {
     try {
         if(!supabaseClient) throw new Error("Supabase library not loaded.");
         
-        // 1. Initial Data Load
         await fetchData();       
-        await loadUserProfile(); 
+        await loadUserProfile(); // This fetches your 'owners' table data
         renderAll();
-
-        // 2. TRIGGER SYSTEM TOUR
-        // Checks if the 'kozeyy_tour_completed' flag exists in the browser
-        const tourDone = localStorage.getItem('kozeyy_tour_completed');
-        if (!tourDone) {
-            // 2-second delay ensures charts and tables are fully visible
+            
+        // --- CROSS-DEVICE CHECK ---
+        // If tour_completed is false in the DB, run the tour
+        const hasFinishedTour = state.owner_data?.tour_completed;
+        if (!hasFinishedTour) {
             setTimeout(() => {
                 startSystemTour();
             }, 2000);
         }
-            
-        // 3. Handle Return from Lease Tool
+
         const urlParams = new URLSearchParams(window.location.search);
         if(urlParams.get('action') === 'lease_uploaded') {
             navTo('screening');
             showToast("Lease document saved successfully");
-            
             setTimeout(() => {
                 const recentApp = state.apps.find(a => a.status === 'Lease Uploaded');
-                if (recentApp) {
-                    act_viewApp(recentApp.id);
-                }
+                if (recentApp) act_viewApp(recentApp.id);
             }, 1000);
-
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
-        // 4. Background Refresh Polling (Every 4 seconds)
-        setInterval(async () => { 
-            await fetchData(); 
-            renderAll(); 
-        }, 4000);
+        setInterval(async () => { await fetchData(); renderAll(); }, 4000);
 
     } catch (err) { 
         console.error("Initialization failed:", err); 
@@ -4301,7 +4292,7 @@ function logic_resetInvoice() {
     try {
         const { data, error } = await supabaseClient
             .from('owners')
-            .select('name, is_founder, subscription_tier')
+            .select('name, is_founder, subscription_tier, tour_completed')
             .eq('id', ownerId)
             .maybeSingle();
 
