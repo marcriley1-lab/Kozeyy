@@ -2284,22 +2284,22 @@ async function act_saveListing(e) {
         const { data: { user } } = await supabaseClient.auth.getUser();
         const ownerId = user.id;
         
-        // 1. Capture Form Inputs
+        // Capture standard and new location fields
         const addr = document.getElementById('l-addr').value;
         const city = document.getElementById('l-city').value;
         const stateName = document.getElementById('l-state').value;
 
-        // 2. NEW: Fetch Coordinates Automatically
+        // NEW: Fetch Coordinates Automatically
         showToast("Fetching property coordinates...", "info");
         const coords = await getPropertyCoordinates(addr, city, stateName);
 
         const listingData = { 
             owner_id: ownerId, 
             address: addr, 
-            city: city,           // Using your new SQL columns
-            state: stateName,     // Using your new SQL columns
-            latitude: coords.lat,  // NEW: Populating SQL column
-            longitude: coords.lon, // NEW: Populating SQL column
+            city: city,           // NEW Column
+            state: stateName,     // NEW Column
+            latitude: coords.lat,  // NEW Column
+            longitude: coords.lon, // NEW Column
             price: parseFloat(document.getElementById('l-price').value) || 0,
             sqft: parseInt(document.getElementById('l-sqft').value) || 0,
             beds: parseInt(document.getElementById('l-beds').value) || 0,
@@ -2310,7 +2310,7 @@ async function act_saveListing(e) {
             date_available: document.getElementById('l-date').value
         }; 
 
-        // 3. Handle Images (Keep your existing logic here)
+        // Handle Images
         const fileInput = document.getElementById('l-img-file');
         if (fileInput.files && fileInput.files.length > 0) {
             const uploadPromises = Array.from(fileInput.files).map(file => uploadFile(file, 'listings'));
@@ -2322,7 +2322,6 @@ async function act_saveListing(e) {
             }
         }
 
-        // 4. Save to Supabase
         if (editListingId) {
             const { error } = await supabaseClient.from('listings').update(listingData).eq('id', String(editListingId));
             if (error) throw error;
@@ -3059,9 +3058,9 @@ async function generateAdverseActionPDF(app, reason) {
     }).output('blob');
 }
 
+// Helper to turn text address into lat/lon coordinates
 async function getPropertyCoordinates(address, city, state) {
     try {
-        // Construct a clean query for the API
         const query = `${address}, ${city}, ${state}, USA`;
         const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
         const data = await response.json();
@@ -3073,9 +3072,9 @@ async function getPropertyCoordinates(address, city, state) {
             };
         }
     } catch (e) {
-        console.error("Geocoding error:", e);
+        console.error("Geocoding failed:", e);
     }
-    return { lat: null, lon: null }; // Fallback if lookup fails
+    return { lat: null, lon: null };
 }
     
 async function sendEmail(to, subject, type, data) {
