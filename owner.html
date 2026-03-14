@@ -1233,36 +1233,31 @@ function startSystemTour() {
         steps: [
             { 
                 element: '#qa-tenant', 
-                popover: { title: 'Add a Tenant', description: 'Start here to add a new resident to your portfolio.' } 
+                popover: { title: 'Add a Tenant', description: 'Start here to add a new resident.' } 
             },
             { 
                 element: '#qa-invoice', 
                 popover: { title: 'Create an Invoice', description: 'Generate rent invoices for your tenants.' } 
             },
             { 
-                element: '#link-settings', 
+                // STEP 3: Handle the transition carefully
+                element: window.innerWidth < 768 ? '#desktop-page-title' : '#link-settings', 
                 popover: { 
                     title: 'System Settings', 
-                    description: 'Click here to configure your platform rules.',
+                    description: 'Configure your late fees and screening rules here.',
                     onNextClick: () => {
-                        // MOBILE FIX: If sidebar is hidden, open it so the link is visible
-                        if (window.innerWidth < 768) {
-                            const sidebar = document.getElementById('sidebar');
-                            if (sidebar.classList.contains('-translate-x-full')) {
-                                toggleSidebar(); 
-                            }
-                        }
+                        // 1. Switch to Settings view immediately
+                        navTo('settings'); 
                         
-                        // Small delay to ensure the sidebar is open before switching views
+                        // 2. Wait for the tab to fully render
                         setTimeout(() => {
-                            navTo('settings'); 
-                            // Longer delay for mobile rendering
-                            setTimeout(() => { driverObj.moveNext(); }, 600); 
-                        }, 300);
+                            driverObj.moveNext();
+                        }, 500); 
                     }
                 } 
             },
             { 
+                // STEP 4: Highlighting the Toggle specifically
                 element: '#set-fee-active', 
                 popover: { 
                     title: 'Enable Late Fees', 
