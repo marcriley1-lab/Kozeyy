@@ -1744,17 +1744,23 @@ function getInitials(name) {
     }
     
     async function uploadFile(file, bucket) {
-        if (!file) return null;
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-        const { error: uploadError } = await supabaseClient.storage.from(bucket).upload(fileName, file);
-        if (uploadError) {
-            showToast(`Upload failed: ${uploadError.message}`, 'error');
-            return null;
-        }
-        const { data: { publicUrl } } = supabaseClient.storage.from(bucket).getPublicUrl(fileName);
-        return publicUrl;
+    if (!file) return null;
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+    
+    // Explicitly set the contentType so browsers know how to preview it
+    const { error: uploadError } = await supabaseClient.storage.from(bucket).upload(fileName, file, {
+        contentType: file.type || 'application/pdf',
+        upsert: false
+    });
+
+    if (uploadError) {
+        showToast(`Upload failed: ${uploadError.message}`, 'error');
+        return null;
     }
+    const { data: { publicUrl } } = supabaseClient.storage.from(bucket).getPublicUrl(fileName);
+    return publicUrl;
+}
 
    async function act_completeMaint(id) { 
         // 1. Prompt for notes
@@ -4325,6 +4331,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
