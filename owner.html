@@ -3710,8 +3710,8 @@ function renderLeases() {
         const viewport = document.getElementById('pdf-modal-viewport');
         if (!viewport) return;
 
-        // Append #view=FitH to the end of the URL to force the browser to render it visually
-        const pdfUrl = app.lease_url ? `${app.lease_url}#toolbar=1&view=FitH` : null;
+        // Encode the Supabase URL and pass it to the Google Docs Viewer
+const pdfUrl = app.lease_url ? `https://docs.google.com/viewer?url=${encodeURIComponent(app.lease_url)}&embedded=true` : null;
         
         if (pdfUrl) {
     viewport.innerHTML = `
@@ -4340,6 +4340,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
