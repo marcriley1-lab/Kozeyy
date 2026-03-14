@@ -781,9 +781,14 @@
             <form onsubmit="act_saveListing(event)" class="space-y-4">
                 <input id="l-addr" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Property Address" required>
                 <div class="grid grid-cols-2 gap-4">
-                    <input id="l-price" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Price" required>
-                    <input id="l-sqft" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Sq Ft">
-                </div>
+    <input id="l-city" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="City" required>
+    <input id="l-state" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="State (e.g. GA)" maxlength="2" required>
+</div>
+
+<div class="grid grid-cols-2 gap-4">
+    <input id="l-price" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Monthly Price" required>
+    <input id="l-sqft" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Sq Ft">
+</div>
                 <div class="grid grid-cols-2 gap-4">
                     <input id="l-beds" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Beds">
                     <input id="l-baths" type="number" class="w-full border p-3 rounded-xl bg-slate-50" placeholder="Baths">
@@ -2224,6 +2229,8 @@ async function act_saveListing(e) {
         const listingData = { 
             owner_id: ownerId, 
             address: document.getElementById('l-addr').value, 
+            city: document.getElementById('l-city').value,
+            state: document.getElementById('l-state').value,
             price: parseFloat(document.getElementById('l-price').value) || 0,
             sqft: parseInt(document.getElementById('l-sqft').value) || 0,
             beds: parseInt(document.getElementById('l-beds').value) || 0,
@@ -2281,7 +2288,9 @@ async function act_saveListing(e) {
     if(!l) return;
 
     // 1. Load all data back into form fields
-    document.getElementById('l-addr').value = l.address || ''; 
+    document.getElementById('l-addr').value = l.address || '';
+       document.getElementById('l-city').value = l.city || '';   
+    document.getElementById('l-state').value = l.state || '';
     document.getElementById('l-price').value = l.price || ''; 
     document.getElementById('l-sqft').value = l.sqft || ''; 
     document.getElementById('l-beds').value = l.beds || ''; 
@@ -4340,6 +4349,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
