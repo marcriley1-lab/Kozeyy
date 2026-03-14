@@ -1237,19 +1237,12 @@ function startSystemTour() {
             },
             { 
                 element: '#qa-invoice', 
-                popover: { title: 'Create an Invoice', description: 'Generate rent invoices for your tenants.' } 
-            },
-            { 
-                // STEP 3: Targeting the Stripe ID Section
-                element: window.innerWidth < 768 ? '#desktop-page-title' : '#link-settings', 
                 popover: { 
-                    title: 'Rent Collection Setup', 
-                    description: 'Configure your payments and system rules here.',
+                    title: 'Create an Invoice', 
+                    description: 'Generate rent invoices for your tenants.',
                     onNextClick: () => {
-                        // Switch to Settings view
+                        // Switch view and jump directly to Stripe highlight
                         navTo('settings'); 
-                        
-                        // Wait for the view to render, then highlight the Stripe ID input
                         setTimeout(() => {
                             driverObj.moveNext();
                         }, 500); 
@@ -1257,20 +1250,17 @@ function startSystemTour() {
                 } 
             },
             { 
-                // HIGHLIGHT: Stripe Account ID Input
+                // STEP 3: Connect Stripe (Targeted immediately after Invoice step)
                 element: '#set-stripe-id', 
                 popover: { 
                     title: 'Connect Stripe', 
-                    description: 'Enter your Stripe Connected Account ID here to start receiving rent payments directly to your bank account.',
+                    description: 'Enter your Stripe Connected Account ID here to receive rent payments directly to your bank account.',
                     side: "top",
                     align: 'start'
-                },
-                onNextClick: () => {
-                    driverObj.moveNext();
                 }
             },
             { 
-                // STEP 5: Late Fees (The final highlight)
+                // STEP 4: Late Fees
                 element: '#set-fee-active', 
                 popover: { 
                     title: 'Enable Late Fees', 
