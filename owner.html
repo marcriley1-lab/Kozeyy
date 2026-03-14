@@ -13,6 +13,8 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.css"/>
     <script type="text/javascript">
    (function(){
       // Replace with your actual Public Key from EmailJS dashboard
@@ -1180,6 +1182,62 @@ const KOZEYY_PLANS = {
     'WI': 'America/Chicago', 'WY': 'America/Denver', 'DC': 'America/New_York'
 };
 
+function startSystemTour() {
+    const driver = window.driver.js.driver;
+
+    const driverObj = driver({
+        showProgress: true,
+        steps: [
+            { 
+                element: '#qa-tenant', 
+                popover: { 
+                    title: 'Add a Tenant', 
+                    description: 'Start here to add a new resident to your portfolio.', 
+                    position: 'left' 
+                } 
+            },
+            { 
+                element: '#qa-invoice', 
+                popover: { 
+                    title: 'Create an Invoice', 
+                    description: 'Click here to generate a one-time or recurring rent invoice.', 
+                    position: 'left' 
+                } 
+            },
+            { 
+                element: '#link-settings', 
+                popover: { 
+                    title: 'System Settings', 
+                    description: 'Navigate here to set up your Stripe ID and late fee rules.', 
+                    position: 'right' 
+                } 
+            },
+            { 
+                element: '#fee-inputs-container', 
+                popover: { 
+                    title: 'Late Fees', 
+                    description: 'Toggle fees on/off and set your grace periods here.', 
+                    position: 'top' 
+                },
+                onHighlighted: () => navTo('settings') // Auto-switches view for the user
+            }
+        ]
+    });
+
+    driverObj.drive();
+}
+
+    window.addEventListener('load', () => {
+    const hasSeenTour = localStorage.getItem('kozeyy_tour_completed');
+    
+    if (!hasSeenTour) {
+        setTimeout(() => {
+            startSystemTour();
+            localStorage.setItem('kozeyy_tour_completed', 'true');
+        }, 1000); // 1-second delay for a smooth entrance
+    }
+});
+    
     // --- MASTER CALCULATOR (Fixes Time-of-Day Bugs) ---
    function calculateOverdueDetails(inv, globalSettings = {}) {
     const grace = inv.grace_period !== undefined ? 
@@ -2217,20 +2275,31 @@ async function act_saveTenant(e) {
     
 async function act_saveListing(e) { 
     e.preventDefault(); 
-   if (!editListingId && !canAddProperty()) return; 
+    if (!editListingId && !canAddProperty()) return; 
+    
     const btn = document.getElementById('btn-save-listing');
     btn.disabled = true;
 
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
-        const ownerId = user.id; // This is the gold standard for your UUID
+        const ownerId = user.id;
         
-        // 1. Capture ALL form fields explicitly
+        // 1. Capture Form Inputs
+        const addr = document.getElementById('l-addr').value;
+        const city = document.getElementById('l-city').value;
+        const stateName = document.getElementById('l-state').value;
+
+        // 2. NEW: Fetch Coordinates Automatically
+        showToast("Fetching property coordinates...", "info");
+        const coords = await getPropertyCoordinates(addr, city, stateName);
+
         const listingData = { 
             owner_id: ownerId, 
-            address: document.getElementById('l-addr').value, 
-            city: document.getElementById('l-city').value,
-            state: document.getElementById('l-state').value,
+            address: addr, 
+            city: city,           // Using your new SQL columns
+            state: stateName,     // Using your new SQL columns
+            latitude: coords.lat,  // NEW: Populating SQL column
+            longitude: coords.lon, // NEW: Populating SQL column
             price: parseFloat(document.getElementById('l-price').value) || 0,
             sqft: parseInt(document.getElementById('l-sqft').value) || 0,
             beds: parseInt(document.getElementById('l-beds').value) || 0,
@@ -2241,34 +2310,27 @@ async function act_saveListing(e) {
             date_available: document.getElementById('l-date').value
         }; 
 
-        // 2. Handle Multiple Image Uploads
+        // 3. Handle Images (Keep your existing logic here)
         const fileInput = document.getElementById('l-img-file');
         if (fileInput.files && fileInput.files.length > 0) {
-            // Upload all selected files simultaneously
             const uploadPromises = Array.from(fileInput.files).map(file => uploadFile(file, 'listings'));
             const photoUrls = await Promise.all(uploadPromises);
-            
-            // Filter out any failed uploads
             const validUrls = photoUrls.filter(url => url !== null);
             if (validUrls.length > 0) {
-                listingData.image_url = validUrls[0]; // Set first as main thumbnail
-                listingData.images = validUrls;       // Store all in the array column
+                listingData.image_url = validUrls[0];
+                listingData.images = validUrls;
             }
         }
 
+        // 4. Save to Supabase
         if (editListingId) {
-            // UPDATE existing listing
-            const { error } = await supabaseClient
-                .from('listings')
-                .update(listingData)
-                .eq('id', String(editListingId));
+            const { error } = await supabaseClient.from('listings').update(listingData).eq('id', String(editListingId));
             if (error) throw error;
-            showToast("Listing updated!");
+            showToast("Listing updated with coordinates!");
         } else {
-            // INSERT new listing
             const { error } = await supabaseClient.from('listings').insert([listingData]); 
             if (error) throw error;
-            showToast("Listing posted!");
+            showToast("Listing posted with coordinates!");
         }
         
         closeModal('modal-listing'); 
@@ -2997,6 +3059,25 @@ async function generateAdverseActionPDF(app, reason) {
     }).output('blob');
 }
 
+async function getPropertyCoordinates(address, city, state) {
+    try {
+        // Construct a clean query for the API
+        const query = `${address}, ${city}, ${state}, USA`;
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            return {
+                lat: parseFloat(data[0].lat),
+                lon: parseFloat(data[0].lon)
+            };
+        }
+    } catch (e) {
+        console.error("Geocoding error:", e);
+    }
+    return { lat: null, lon: null }; // Fallback if lookup fails
+}
+    
 async function sendEmail(to, subject, type, data) {
     await supabaseClient.functions.invoke('send-email', {
         body: { 
