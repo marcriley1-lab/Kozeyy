@@ -581,6 +581,7 @@ async function fetchListings(cityFilter = '', stateFilter = '', radiusFilter = '
         const { data, error } = await query.order('created_at', { ascending: false });
         if (error) throw error;
 
+        state.listings = data || [];
         let processedListings = data || [];
 
         // --- DISTANCE LOGIC ---
@@ -603,25 +604,25 @@ async function fetchListings(cityFilter = '', stateFilter = '', radiusFilter = '
             return;
         }
 
-        processedListings.forEach(l => {
-            const img = (l.images && l.images[0]) || l.image_url || 'https://via.placeholder.com/400x300';
-            
-            // Generate the "Miles Away" tag if a distance was calculated
-            const distanceTag = (l.distance !== undefined && l.distance !== Infinity) 
-                ? `<div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-lg text-[10px] font-bold text-white shadow">${l.distance.toFixed(1)} miles away</div>` 
-                : '';
+        // Around line 437 in index (5).html
+processedListings.forEach(l => {
+    const img = (l.images && l.images[0]) || l.image_url || 'https://via.placeholder.com/400x300';
+    
+    const distanceTag = (l.distance !== undefined && l.distance !== Infinity) 
+        ? `<div class="absolute bottom-4 left-4 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-lg text-[10px] font-bold text-white shadow">${l.distance.toFixed(1)} miles away</div>` 
+        : '';
 
     container.innerHTML += `
-    <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition group cursor-pointer" onclick="openListingDetail('${l.id}')">
-        <div class="h-48 bg-slate-200 relative overflow-hidden">
+    <div class="bg-white rounded-3xl overflow-hidden shadow-lg border border-slate-100 hover:shadow-xl transition group cursor-pointer flex flex-col h-full" onclick="openListingDetail('${l.id}')">
+        <div class="h-48 bg-slate-200 relative overflow-hidden flex-shrink-0">
             <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
             <div class="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase shadow">${l.state || 'Unit'}</div>
             ${distanceTag}
         </div>
-        <div class="p-6">
+        <div class="p-6 flex flex-col flex-grow">
             <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">${l.city || ''}${l.state ? ', ' + l.state : ''}</p>
             <h3 class="font-bold text-lg text-slate-900 mb-4 truncate">${l.address}</h3>
-            <div class="flex items-center justify-between border-t border-slate-100 pt-4">
+            <div class="flex items-center justify-between border-t border-slate-100 pt-4 mt-auto">
                 <div><span class="text-2xl font-extrabold text-indigo-600">$${parseFloat(l.price).toLocaleString()}</span><span class="text-xs text-slate-400 font-bold">/mo</span></div>
                 <span class="text-indigo-600 font-bold text-sm">View &rarr;</span>
             </div>
