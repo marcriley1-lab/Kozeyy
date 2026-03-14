@@ -1223,7 +1223,6 @@ function startSystemTour() {
     const driverObj = driver({
         showProgress: true,
         animate: true,
-        // SAVES TO DATABASE: Ensures the tour won't run on phone if finished on PC
         onDestroyed: async () => {
             const ownerId = localStorage.getItem('kozeyy_user_id');
             if (ownerId) {
@@ -1246,13 +1245,24 @@ function startSystemTour() {
                     title: 'System Settings', 
                     description: 'Click here to configure your platform rules.',
                     onNextClick: () => {
-                        navTo('settings'); 
-                        setTimeout(() => { driverObj.moveNext(); }, 500); 
+                        // MOBILE FIX: If sidebar is hidden, open it so the link is visible
+                        if (window.innerWidth < 768) {
+                            const sidebar = document.getElementById('sidebar');
+                            if (sidebar.classList.contains('-translate-x-full')) {
+                                toggleSidebar(); 
+                            }
+                        }
+                        
+                        // Small delay to ensure the sidebar is open before switching views
+                        setTimeout(() => {
+                            navTo('settings'); 
+                            // Longer delay for mobile rendering
+                            setTimeout(() => { driverObj.moveNext(); }, 600); 
+                        }, 300);
                     }
                 } 
             },
             { 
-                // FIXED: Now highlights the toggle specifically
                 element: '#set-fee-active', 
                 popover: { 
                     title: 'Enable Late Fees', 
