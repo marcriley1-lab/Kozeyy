@@ -1748,9 +1748,10 @@ function getInitials(name) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
     
-    // Explicitly set the contentType so browsers know how to preview it
+    // THE FIX: We explicitly tell Supabase this is a PDF. 
+    // Without this, Chrome will always show the "Open" button.
     const { error: uploadError } = await supabaseClient.storage.from(bucket).upload(fileName, file, {
-        contentType: file.type || 'application/pdf',
+        contentType: 'application/pdf',
         upsert: false
     });
 
@@ -2475,22 +2476,18 @@ async function act_saveListing(e) {
     });
 }
     function openLeaseViewer(url, id, tName, tDate, oDate) {
-    const oNameDisplay = document.getElementById('owner-name-display');
-    const oName = oNameDisplay ? oNameDisplay.innerText : "Landlord";
+    const oName = document.getElementById('owner-name-display')?.innerText || "Landlord";
     
-    // Hand-sanitize dates to ensure no 'null' strings pass through
-    const tenantDate = (tDate && tDate !== 'null' && tDate !== 'undefined') ? tDate : '';
-    const ownerDate = (oDate && oDate !== 'null' && oDate !== 'undefined') ? oDate : '';
+    // We create a clean SearchParams object. This automatically encodes spaces/special chars.
+    const query = new URLSearchParams();
+    query.append('url', url); 
+    query.append('id', id);
+    query.append('t_name', tName || 'Tenant');
+    query.append('t_date', tDate || '');
+    query.append('o_name', oName);
+    query.append('o_date', oDate || '');
 
-    // We MUST encode the components exactly like the working tenant.html version
-    const viewerUrl = `view_lease.html?url=${encodeURIComponent(url)}` +
-                      `&id=${encodeURIComponent(id)}` +
-                      `&t_name=${encodeURIComponent(tName || 'Tenant')}` +
-                      `&t_date=${encodeURIComponent(tenantDate)}` +
-                      `&o_name=${encodeURIComponent(oName)}` +
-                      `&o_date=${encodeURIComponent(ownerDate)}`;
-    
-    window.open(viewerUrl, '_blank');
+    window.open(`view_lease.html?${query.toString()}`, '_blank');
 }
     // Helper to create the container if it doesn't exist in your HTML yet
     function createBtnContainer() {
@@ -4343,6 +4340,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
