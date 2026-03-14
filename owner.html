@@ -2290,7 +2290,6 @@ async function act_saveListing(e) {
         const stateName = document.getElementById('l-state').value;
 
         // NEW: Fetch Coordinates Automatically
-        showToast("Fetching property coordinates...", "info");
         const coords = await getPropertyCoordinates(addr, city, stateName);
 
         const listingData = { 
