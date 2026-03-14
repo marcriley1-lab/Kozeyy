@@ -1233,23 +1233,23 @@ function startSystemTour() {
         steps: [
             { 
                 element: '#qa-tenant', 
-                popover: { title: 'Add a Tenant', description: 'Start here to add a new resident.' } 
+                popover: { title: 'Add a Tenant', description: 'Start here to add a new resident to your portfolio.' } 
             },
             { 
                 element: '#qa-invoice', 
                 popover: { title: 'Create an Invoice', description: 'Generate rent invoices for your tenants.' } 
             },
             { 
-                // STEP 3: Handle the transition carefully
+                // STEP 3: Targeting the Stripe ID Section
                 element: window.innerWidth < 768 ? '#desktop-page-title' : '#link-settings', 
                 popover: { 
-                    title: 'System Settings', 
-                    description: 'Configure your late fees and screening rules here.',
+                    title: 'Rent Collection Setup', 
+                    description: 'Configure your payments and system rules here.',
                     onNextClick: () => {
-                        // 1. Switch to Settings view immediately
+                        // Switch to Settings view
                         navTo('settings'); 
                         
-                        // 2. Wait for the tab to fully render
+                        // Wait for the view to render, then highlight the Stripe ID input
                         setTimeout(() => {
                             driverObj.moveNext();
                         }, 500); 
@@ -1257,7 +1257,20 @@ function startSystemTour() {
                 } 
             },
             { 
-                // STEP 4: Highlighting the Toggle specifically
+                // HIGHLIGHT: Stripe Account ID Input
+                element: '#set-stripe-id', 
+                popover: { 
+                    title: 'Connect Stripe', 
+                    description: 'Enter your Stripe Connected Account ID here to start receiving rent payments directly to your bank account.',
+                    side: "top",
+                    align: 'start'
+                },
+                onNextClick: () => {
+                    driverObj.moveNext();
+                }
+            },
+            { 
+                // STEP 5: Late Fees (The final highlight)
                 element: '#set-fee-active', 
                 popover: { 
                     title: 'Enable Late Fees', 
