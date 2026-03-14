@@ -2478,17 +2478,20 @@ async function act_saveListing(e) {
     const oNameDisplay = document.getElementById('owner-name-display');
     const oName = oNameDisplay ? oNameDisplay.innerText : "Landlord";
     
-    // Ensure we handle nulls/undefined and encode everything strictly
-    const tenantSign = (tDate && tDate !== 'null') ? encodeURIComponent(tDate) : '';
-    const ownerSign = (oDate && oDate !== 'null') ? encodeURIComponent(oDate) : '';
-    const tenantName = tName ? encodeURIComponent(tName) : 'Tenant';
-    const landlordName = encodeURIComponent(oName);
+    // 1. Clean the PDF URL (Remove fragments)
+    const cleanPdfUrl = url.split('#')[0];
 
-    // Clean the URL: Remove any existing fragments before adding our own
-    const cleanUrl = url.split('#')[0];
-    const optimizedUrl = encodeURIComponent(cleanUrl);
+    // 2. Build Search Parameters using the built-in API (Auto-handles spaces/special chars)
+    const viewerParams = new URLSearchParams();
+    viewerParams.append('url', cleanPdfUrl);
+    viewerParams.append('id', id);
+    viewerParams.append('t_name', tName || 'Tenant');
+    viewerParams.append('t_date', (tDate && tDate !== 'null') ? tDate : '');
+    viewerParams.append('o_name', oName);
+    viewerParams.append('o_date', (oDate && oDate !== 'null') ? oDate : '');
 
-    const viewerUrl = `view_lease.html?url=${optimizedUrl}&id=${id}&t_name=${tenantName}&t_date=${tenantSign}&o_name=${landlordName}&o_date=${ownerSign}`;
+    // 3. Combine into the final URL
+    const viewerUrl = `view_lease.html?${viewerParams.toString()}`;
     
     window.open(viewerUrl, '_blank');
 }
@@ -3664,21 +3667,21 @@ function renderLeases() {
         }
     }
 // FIX #4: Visual Countersigning Flow
-   function act_openCountersign(appId) {
+  function act_openCountersign(appId) {
     currentAppId = appId;
     const app = state.apps.find(a => a.id === appId);
+    if (!app) return;
     
     closeModal('modal-screening-detail');
     
     const confirmModal = document.getElementById('modal-platform-confirm');
     const contentDiv = confirmModal.querySelector('div'); 
     
+    // 1. Prepare Modal Layout
     contentDiv.classList.remove('max-w-sm');
     contentDiv.classList.add('max-w-4xl', 'w-full', 'h-[85vh]', 'flex', 'flex-col');
 
-    // Force PDF inline view by appending parameters to the source URL
-    const pdfUrl = app.lease_url ? `${app.lease_url}#toolbar=1&view=FitH` : null;
-
+    // 2. Insert the HTML structure with a "Loading" placeholder
     contentDiv.innerHTML = `
         <div class="flex justify-between items-center mb-3 border-b border-slate-100 pb-3">
             <div>
@@ -3690,31 +3693,11 @@ function renderLeases() {
             </span>
         </div>
         
-        <!-- PDF PREVIEW - Forced via <embed> and URL parameters -->
-        <div class="flex-1 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden relative mb-4">
-            ${pdfUrl 
-                ? `<embed src="${pdfUrl}" type="application/pdf" width="100%" height="100%" style="border-radius: 8px;" />`
-                : `<div class="flex items-center justify-center h-full text-slate-400">Preview Unavailable</div>`
-            }
-            
-            <!-- Floating Signature Prompt -->
-            <div class="absolute bottom-4 right-6 bg-white/90 backdrop-blur p-4 rounded-xl shadow-2xl border border-indigo-100 max-w-xs text-right z-20">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tenant</p>
-                <p class="font-dancing text-xl text-slate-800 mb-3">${app.name}</p>
-                
-                <div id="landlord-sig-area" class="border-t border-slate-200 pt-2 cursor-pointer hover:bg-indigo-50 rounded transition p-2 -mr-2" onclick="applyLandlordSig()">
-                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Landlord</p>
-                    <p class="text-indigo-600 font-bold text-sm flex items-center justify-end gap-2" id="click-sign-prompt">
-                        <span>Click to Sign Here</span> <i class="fas fa-pen-nib bg-indigo-100 p-1.5 rounded-full"></i>
-                    </p>
-                    <div id="real-sig" class="hidden-section">
-                        <p class="font-dancing text-xl text-indigo-700 font-bold">${document.getElementById('owner-name-display')?.innerText || 'Landlord'}</p>
-                        <p class="text-[9px] text-emerald-600 font-bold mt-1">
-                            <i class="fas fa-certificate"></i> Verified ${new Date().toLocaleDateString()}
-                        </p>
-                    </div>
-                </div>
-            </div>
+        <div class="flex-1 bg-slate-100 rounded-xl border border-slate-200 overflow-hidden relative mb-4 flex items-center justify-center" id="pdf-modal-container">
+             <div class="text-slate-400 text-center">
+                <i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i>
+                <p class="text-[10px] font-bold uppercase tracking-widest">Rendering PDF...</p>
+             </div>
         </div>
 
         <div class="flex gap-3 mt-auto pt-2">
@@ -3725,8 +3708,42 @@ function renderLeases() {
         </div>
     `;
     
+    // 3. Show the modal
     confirmModal.classList.remove('hidden-section');
     confirmModal.classList.add('flex');
+
+    // 4. THE FIX: Wait 300ms for the modal to be "Stable" before injecting the PDF
+    setTimeout(() => {
+        const container = document.getElementById('pdf-modal-container');
+        if (!container) return;
+
+        const pdfUrl = app.lease_url ? `${app.lease_url}#toolbar=1&view=FitH` : null;
+        
+        if (pdfUrl) {
+            container.innerHTML = `
+                <iframe src="${pdfUrl}" class="w-full h-full border-none" style="display:block;"></iframe>
+                <!-- Signature Overlay -->
+                <div class="absolute bottom-4 right-6 bg-white/95 backdrop-blur p-4 rounded-xl shadow-2xl border border-indigo-100 max-w-xs text-right z-20">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Tenant</p>
+                    <p class="font-dancing text-xl text-slate-800 mb-3">${app.name}</p>
+                    <div id="landlord-sig-area" class="border-t border-slate-200 pt-2 cursor-pointer hover:bg-indigo-50 rounded transition p-2 -mr-2" onclick="applyLandlordSig()">
+                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Landlord</p>
+                        <p class="text-indigo-600 font-bold text-sm flex items-center justify-end gap-2" id="click-sign-prompt">
+                            <span>Click to Sign Here</span> <i class="fas fa-pen-nib bg-indigo-100 p-1.5 rounded-full"></i>
+                        </p>
+                        <div id="real-sig" class="hidden-section">
+                            <p class="font-dancing text-xl text-indigo-700 font-bold">${document.getElementById('owner-name-display')?.innerText || 'Landlord'}</p>
+                            <p class="text-[9px] text-emerald-600 font-bold mt-1">
+                                <i class="fas fa-certificate"></i> Verified ${new Date().toLocaleDateString()}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `<div class="text-slate-400">PDF URL Missing</div>`;
+        }
+    }, 400); // 400ms is the sweet spot for browser stability
 }
     function applyLandlordSig() {
     document.getElementById('click-sign-prompt').classList.add('hidden-section');
@@ -4331,6 +4348,7 @@ function signOut() {
 </script>
 </body>
 </html>
+
 
 
 
