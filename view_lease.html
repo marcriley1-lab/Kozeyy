@@ -8,7 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background: #e2e8f0; } 
         .brand { font-family: 'Outfit', sans-serif; }
@@ -31,8 +30,11 @@
 
     <div class="flex-1 flex overflow-hidden">
         <main class="flex-1 bg-slate-200 overflow-hidden flex items-center justify-center p-4 md:p-8">
-            <div class="w-full h-full max-w-5xl bg-white shadow-2xl rounded-lg overflow-hidden border border-slate-300">
-                <iframe id="pdf-frame" class="w-full h-full border-none" src=""></iframe>
+            <!-- UPDATED: Replaced iframe with a container for dynamic <embed> injection -->
+            <div id="pdf-container" class="w-full h-full max-w-5xl bg-white shadow-2xl rounded-lg overflow-hidden border border-slate-300">
+                <div class="flex items-center justify-center h-full text-slate-400">
+                    <i class="fas fa-circle-notch fa-spin mr-2"></i> Loading Document...
+                </div>
             </div>
         </main>
 
@@ -79,19 +81,31 @@
         const params = new URLSearchParams(window.location.search);
 
         const formatDate = (iso) => {
-            if (!iso || iso === 'null' || iso === 'undefined') return 'Pending Signature';
+            if (!iso || iso === 'null' || iso === 'undefined' || iso === '') return 'Pending Signature';
             const d = new Date(iso);
             return isNaN(d.getTime()) ? 'Pending Signature' : d.toLocaleString();
         };
 
         function initialRender() {
-            document.getElementById('pdf-frame').src = params.get('url') || '';
+            const rawUrl = params.get('url') || '';
+            if (rawUrl) {
+                // FORCE INLINE VIEW: 
+                // 1. Remove any existing fragments
+                // 2. Append #toolbar=1&view=FitH (Forces PDF viewer and fitting)
+                const cleanUrl = rawUrl.split('#')[0];
+                const finalUrl = `${cleanUrl}#toolbar=1&view=FitH`;
+                
+                // Inject as <embed> tag which handles PDF plugins better than <iframe>
+                document.getElementById('pdf-container').innerHTML = `
+                    <embed src="${finalUrl}" type="application/pdf" width="100%" height="100%" />
+                `;
+            }
+
             document.getElementById('ref-id').innerText = params.get('id') ? params.get('id').slice(0,8).toUpperCase() : 'UNKNOWN';
             document.getElementById('t-name').innerText = params.get('t_name') || 'Tenant';
             document.getElementById('o-name').innerText = params.get('o_name') || 'Landlord';
             document.getElementById('t-date').innerText = formatDate(params.get('t_date'));
             document.getElementById('o-date').innerText = formatDate(params.get('o_date'));
-            
         }
 
         async function fetchFreshData() {
