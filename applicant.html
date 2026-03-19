@@ -226,57 +226,61 @@
 
       window.onload = async function() {
     const urlParams = new URLSearchParams(window.location.search);
+    const step = urlParams.get('step');
+    const appIdFromUrl = urlParams.get('app_id');
     
-    // --- 1. HANDLE SECURE STRIPE PAYMENT SUCCESS --- 
-    if (urlParams.get('payment') === 'verified' && urlParams.get('step') === 'success') {
-        const appId = urlParams.get('app_id');
-        const sessionId = urlParams.get('session_id'); // Required for secure verification [cite: 4]
-
-        // Visual loading state for the applicant
+    // --- 1. POLLING LOGIC: WAITING FOR WEBHOOK ---
+    // If we just returned from Stripe, we show a verification screen and poll the DB
+    if (step === 'success' && appIdFromUrl) {
+        // Show "Verifying" UI
         document.body.innerHTML = `
-            <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-800">
-                <div class="loader border-t-indigo-600 mb-4"></div>
-                <h2 class="text-xl font-bold">Verifying Your Application...</h2>
-                <p class="text-sm text-slate-500">Updating your record and notifying the owner.</p>
+            <div class="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white font-sans">
+                <div class="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+                <h2 class="text-2xl font-bold mb-2 tracking-tight" style="font-family: 'Outfit', sans-serif;">Verifying Payment...</h2>
+                <p class="text-indigo-200 opacity-80">We are waiting for confirmation from Stripe to finalize your application.</p>
+                <div class="mt-8 px-4 py-2 bg-white/5 rounded-lg border border-white/10">
+                    <p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Application ID: ${appIdFromUrl}</p>
+                </div>
+                <p class="text-xs text-slate-500 mt-12">This screen will update automatically. Do not close this window.</p>
             </div>`;
 
-        if (appId && supabaseClient) {
-            try {
-                // If you have updated quickaction.txt with the 'verify-payment' action 
-                if (sessionId) {
-                    const response = await fetch(FUNCTION_URL, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json', 
-                            'Authorization': `Bearer ${SUPABASE_KEY}` 
-                        },
-                        body: JSON.stringify({ 
-                            action: 'verify-payment', 
-                            sessionId: sessionId,
-                            appId: appId 
-                        })
-                    });
-                    const result = await response.json();
-                    if (!result.success) throw new Error(result.error || "Verification failed");
-                } else {
-                    // Fallback to direct update if secure verification isn't fully ready [cite: 24]
-                    await supabaseClient.from('apps')
-                        .update({ payment_status: 'Paid', status: 'Pending' })
-                        .eq('id', appId);
-                }
-            } catch (err) { 
-                console.warn("Status update failed:", err); 
-            }
-        }
+        // Start polling the database every 2 seconds
+        const pollInterval = setInterval(async () => {
+            const { data, error } = await supabaseClient
+                .from('apps')
+                .select('payment_status')
+                .eq('id', appIdFromUrl)
+                .single();
 
-        // Redirect to portal after update is attempted
-        setTimeout(() => {
-            window.location.href = 'applicantportal.html';
-        }, 1500);
-        return; // Halt further initialization for success redirects
+            if (error) {
+                console.error("Polling database error:", error.message);
+                return;
+            }
+
+            // Webhook received! The database is updated.
+            if (data && data.payment_status === 'Paid') {
+                clearInterval(pollInterval); // Stop the loop
+                
+                // Show final success state
+                document.body.innerHTML = `
+                    <div class="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white font-sans text-center px-6">
+                        <div class="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+                            <i class="fas fa-check text-2xl"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold mb-2 tracking-tight" style="font-family: 'Outfit', sans-serif;">Payment Received!</h2>
+                        <p class="text-indigo-100 mb-8 max-w-sm">Your application has been submitted successfully. Redirecting you to your portal...</p>
+                    </div>`;
+
+                setTimeout(() => {
+                    window.location.href = 'applicantportal.html';
+                }, 2000);
+            }
+        }, 2000);
+
+        return; // Halt further execution of listing initialization
     }
 
-    // --- 2. HANDLE NEW APPLICATION INITIALIZATION --- 
+    // --- 2. INITIALIZATION LOGIC: NEW APPLICATION ---
     currentListingId = urlParams.get('listing_id');
     
     // Restore listing ID from storage if missing from URL
@@ -294,15 +298,15 @@
     
     try {
         if (supabaseClient && currentListingId) {
-            // Fetch property details to populate the sidebar 
-            const { data: prop, error } = await supabaseClient
+            // Fetch property details for sidebar
+            const { data: prop, error: propError } = await supabaseClient
                 .from('listings').select('*').eq('id', currentListingId).single();
                 
             if (prop) {
                 selectedProp = prop;
                 updatePropUI(selectedProp);
                 
-                // Fetch owner-specific screening settings 
+                // Fetch owner settings to determine if Step 3 (History) is needed
                 if (prop.owner_id) {
                     const { data: settings } = await supabaseClient
                         .from('settings').select('*').eq('owner_id', prop.owner_id).maybeSingle();
@@ -326,7 +330,7 @@
                             crimDisabled = true;
                         }
 
-                        // Skip Step 3 if both checks are disabled by the owner
+                        // Skip Step 3 if both screening checks are disabled
                         if (evictDisabled && crimDisabled) {
                             skipHistoryStep = true;
                             const step3Btn = document.getElementById('btn-step-3');
@@ -337,12 +341,16 @@
             }
         }
     } catch (err) { 
-        console.warn("Initialization fetch error:", err); 
+        console.warn("Listing initialization error:", err); 
     }
 
-    // Initialize the correct step UI
+    // Render the initial step UI
     renderStep(getStepFromUrl());
-    window.addEventListener('popstate', (event) => { renderStep(getStepFromUrl()); });
+    
+    // Listen for back/forward navigation
+    window.addEventListener('popstate', (event) => { 
+        renderStep(getStepFromUrl()); 
+    });
 };
         function updatePropUI(prop) {
             const address = prop.address || prop.addr || 'Unknown Address';
