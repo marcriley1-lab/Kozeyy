@@ -4364,23 +4364,21 @@ function logic_resetInvoice() {
     try {
         const { data, error } = await supabaseClient
             .from('owners')
-            .select('name, is_founder, subscription_tier, tour_completed')
+            // ADDED stripe_id HERE
+            .select('name, is_founder, subscription_tier, tour_completed, stripe_id') 
             .eq('id', ownerId)
             .maybeSingle();
 
         if (data) {
             state.owner_data = data;
             
-            // 1. Update Name and Initials in Header
             setText('owner-name-display', data.name);
             const initialsEl = document.getElementById('owner-initials-display');
             if (initialsEl) {
                 initialsEl.innerText = getInitials(data.name);
             }
             
-            // 2. Toggle UI based on Founder status
             if (data.is_founder) {
-                // Show Founder elements (Crowned elements and Amber badges)
                 const founderView = document.getElementById('founder-view');
                 const founderBadge = document.getElementById('founder-badge');
                 const founderTag = document.getElementById('founder-tag-sidebar');
@@ -4389,20 +4387,20 @@ function logic_resetInvoice() {
                 if (founderBadge) founderBadge.classList.remove('hidden');
                 if (founderTag) founderTag.classList.remove('hidden');
                 
-                // Hide Standard Billing/Subscription view for Founders
                 const standardView = document.getElementById('standard-view');
                 if (standardView) standardView.classList.add('hidden');
             } else {
-                // Show Subscription UI for Non-Founders
                 const standardView = document.getElementById('standard-view');
                 const founderView = document.getElementById('founder-view');
                 
                 if (standardView) standardView.classList.remove('hidden');
                 if (founderView) founderView.classList.add('hidden');
                 
-                // Update Usage Data and Progress Bars
                 renderSubscriptionUsage(data);
             }
+
+            // TRIGGER THE UI UPDATE FOR STRIPE
+            if(activeTab === 'settings') renderSettings();
         }
     } catch(e) { 
         console.error("Error loading profile:", e); 
