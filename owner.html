@@ -508,15 +508,15 @@
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
                     <form onsubmit="act_saveSettings(event)" class="space-y-6">
     
-    <div class="mt-2">
-    <button type="button" onclick="handleStripeConnect()" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg flex items-center justify-center gap-3">
-        <i class="fab fa-stripe text-xl"></i>
-        <span>Connect Stripe Account</span>
-    </button>
-    <p class="text-[10px] text-indigo-400 mt-3 text-center">
-        <i class="fas fa-lock mr-1"></i> Securely link your bank via Stripe Connect
-    </p>
-</div>
+    <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+        <h4 class="font-bold text-indigo-900 mb-2 brand-font flex items-center gap-2">
+            <i class="fab fa-stripe text-xl"></i> Payments Integration
+        </h4>
+        <p class="text-xs text-indigo-700 mb-4">Enter your Stripe Connected Account ID to receive payments automatically from tenants.</p>
+        <div>
+            <label class="block text-xs font-bold text-indigo-800 uppercase mb-1">Stripe Account ID</label>
+            <input type="text" id="set-stripe-id" class="w-full border border-indigo-200 p-3 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-sm" placeholder="acct_..." value="">
+        </div>
 
         <div class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
     <div class="flex items-start gap-3">
@@ -2080,22 +2080,6 @@ function toggleFeeVisibility() {
     }); 
 }
 
-async function handleStripeConnect() {
-    const ownerId = localStorage.getItem('kozeyy_user_id');
-    
-    // Call your Edge Function to create an onboarding link
-    const { data, error } = await supabaseClient.functions.invoke('connect-landlord', {
-        body: { ownerId: ownerId }
-    });
-
-    if (data?.url) {
-        // Redirect the owner to the Stripe onboarding wizard
-        window.location.href = data.url;
-    } else {
-        showToast("Stripe Connection Error: " + (error?.message || "Check your Edge Function"), "error");
-    }
-}
-    
     async function openChat(id) { 
     currentChatId = id; 
     const tenant = state.tenants.find(x => x.id == id);
