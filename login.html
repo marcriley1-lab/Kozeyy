@@ -206,28 +206,34 @@
         const userId = authData.user.id;
         localStorage.setItem('kozeyy_user_id', userId);
 
-        // 2. BYPASS RLS CHECK (Calling the RPC)
-        // This function doesn't care about RLS policies; it checks the table directly
-        const { data: isOwner, error: rpcError } = await supabaseClient.rpc('check_is_owner', { 
+        // 2. CHECK IF OWNER (Security Bypass RPC)
+        const { data: isOwner } = await supabaseClient.rpc('check_is_owner', { 
             target_uid: userId 
         });
 
-        if (rpcError) {
-            console.error("RPC Security Bypass Failed:", rpcError.message);
-        }
-
-        // 3. REDIRECT
         if (isOwner === true) {
-            console.log("Owner status confirmed via Security Bypass.");
             localStorage.setItem('kozeyy_role', 'owner');
             window.location.href = 'owner.html';
             return;
         }
 
-        // 4. TENANT FALLBACK
-        console.warn("User is not an owner. Defaulting to tenant.");
+        // 3. NEW STEP: CHECK IF ALREADY AN ESTABLISHED TENANT
+        // We look for the user's ID in the 'tenants' table
+        const { data: tenantRecord, error: tenantError } = await supabaseClient
+            .from('tenants')
+            .select('id')
+            .eq('id', userId)
+            .maybeSingle();
+
         localStorage.setItem('kozeyy_role', 'tenant');
-        window.location.href = 'applicantportal.html';
+
+        if (tenantRecord) {
+            // User has a tenant record (Lease is signed/active)
+            window.location.href = 'tenant.html';
+        } else {
+            // No tenant record found, they are still an applicant
+            window.location.href = 'applicantportal.html';
+        }
 
     } catch (err) {
         console.error("Login Error:", err.message);
