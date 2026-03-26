@@ -2023,14 +2023,16 @@ function toggleFeeVisibility() {
     }
 }
 
-    async function handleStripeConnect() {
+   async function handleStripeConnect() {
     const modal = document.getElementById('processingModal');
     if (modal) {
-        modal.classList.remove('hidden-section');
+        modal.classList.remove('hidden');
         modal.classList.add('flex');
     }
 
     const ownerId = localStorage.getItem('kozeyy_user_id');
+    // Ensure this URL points to your actual Supabase Edge Function URL
+    const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quickaction';
 
     try {
         const response = await fetch(FUNCTION_URL, {
@@ -2047,14 +2049,13 @@ function toggleFeeVisibility() {
 
         const data = await response.json();
         if (data.url) {
-            window.location.href = data.url;
+            window.location.href = data.url; // This redirects to Stripe Onboarding
         } else {
             throw new Error(data.error || "Failed to create Stripe link");
         }
     } catch (err) {
-        // Hide the loading screen if it fails
         if (modal) {
-            modal.classList.add('hidden-section');
+            modal.classList.add('hidden');
             modal.classList.remove('flex');
         }
         showToast("Stripe Error: " + err.message, 'error');
@@ -4548,16 +4549,14 @@ function signOut() {
 
     initSystem();
 </script>
-<!-- ADD THIS AT THE BOTTOM OF OWNER.HTML -->
-<div id="processingModal" class="hidden-section fixed inset-0 bg-slate-900/80 z-[100] flex flex-col items-center justify-center backdrop-blur-sm text-white">
+<div id="processingModal" class="hidden fixed inset-0 bg-slate-900/80 z-[100] flex flex-col items-center justify-center backdrop-blur-sm text-white">
     <div class="loader mb-4 border-t-white"></div>
     <h2 class="text-xl font-bold mb-2">Connecting to Stripe</h2>
     <p class="text-sm opacity-80">Do not close this window...</p>
 </div>
 
 <style>
-    /* Ensure the spinner animation exists in your file */
-    .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #6366f1; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+    .loader { border: 3px solid #f3f3f3; border-radius: 50%; border-top: 3px solid #6366f1; width: 40px; height: 40px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
                         
