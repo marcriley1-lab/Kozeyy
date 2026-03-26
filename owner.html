@@ -2063,7 +2063,7 @@ function toggleFeeVisibility() {
     // This updates the dynamic container we added to the HTML
     const stripeContainer = document.getElementById('stripe-status-container');
     if (stripeContainer) {
-        if (ownerData.stripe_account_id) {
+        if (ownerData.stripe_customer_id) {
             // STATE: Connected (Show Badge)
             stripeContainer.innerHTML = `
                 <div class="bg-white p-4 rounded-xl border border-emerald-200 flex items-center justify-between shadow-sm">
@@ -2073,7 +2073,7 @@ function toggleFeeVisibility() {
                         </div>
                         <div>
                             <p class="text-xs font-bold text-slate-800">Bank Account Connected</p>
-                            <p class="text-[10px] font-mono text-slate-400">${ownerData.stripe_account_id}</p>
+                            <p class="text-[10px] font-mono text-slate-400">${ownerData.stripe_customer_id}</p>
                         </div>
                     </div>
                     <button onclick="handleStripeConnect()" class="text-[10px] font-bold text-indigo-600 hover:underline">Update Bank</button>
@@ -3316,15 +3316,12 @@ async function act_saveSettings(e) {
             showToast("Percentage can't exceed 10%", 'error');
             return;
         }
-        if (method === 'Daily' && amount > 20) {
-            showToast("Daily fee can't exceed $20", 'error');
-            return;
-        }
     }
 
+    // REMOVED the line reading 'set-stripe-id' to fix your error
     const { error } = await supabaseClient.from('settings').upsert({ 
         owner_id: ownerId, 
-        stripe_connect_id: document.getElementById('set-stripe-id').value, 
+        // stripe_connect_id is no longer managed here via input
         late_fee_enabled: document.getElementById('set-fee-active').checked,
         late_fee_method: method, 
         late_fee_amount: amount, 
@@ -4382,7 +4379,7 @@ function logic_resetInvoice() {
     try {
         const { data, error } = await supabaseClient
             .from('owners')
-            .select('name, is_founder, subscription_tier, tour_completed')
+            .select('name, is_founder, subscription_tier, tour_completed, stripe_customer_id')
             .eq('id', ownerId)
             .maybeSingle();
 
