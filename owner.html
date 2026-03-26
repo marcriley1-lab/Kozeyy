@@ -3318,10 +3318,10 @@ async function act_saveSettings(e) {
         }
     }
 
-    // REMOVED the line reading 'set-stripe-id' to fix your error
+    // UPDATED: Removed the line reading 'set-stripe-id' to fix the Null pointer error.
+    // The Stripe ID is now handled automatically via the Connect flow.
     const { error } = await supabaseClient.from('settings').upsert({ 
         owner_id: ownerId, 
-        // stripe_connect_id is no longer managed here via input
         late_fee_enabled: document.getElementById('set-fee-active').checked,
         late_fee_method: method, 
         late_fee_amount: amount, 
