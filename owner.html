@@ -2023,43 +2023,16 @@ function toggleFeeVisibility() {
     }
 }
 
-   async function handleStripeConnect() {
-    const modal = document.getElementById('processingModal');
-    if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
+   function handleStripeConnect() {
+    // Replace CLIENT_ID with your "Connect Client ID" from Stripe Settings > Settings > Connect
+    const CLIENT_ID = 'ca_your_stripe_connect_client_id'; 
+    const REDIRECT_URI = encodeURIComponent('https://kozeyy.com/owner.html?stripe_setup=callback');
+    const userEmail = encodeURIComponent(state.owner_data.email);
 
-    const ownerId = localStorage.getItem('kozeyy_user_id');
-    // Ensure this URL points to your actual Supabase Edge Function URL
-    const FUNCTION_URL = 'https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action';
-
-    try {
-        const response = await fetch(FUNCTION_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${SUPABASE_KEY}`
-            },
-            body: JSON.stringify({
-                action: 'create-connect-account',
-                ownerId: ownerId
-            })
-        });
-
-        const data = await response.json();
-        if (data.url) {
-            window.location.href = data.url; // This redirects to Stripe Onboarding
-        } else {
-            throw new Error(data.error || "Failed to create Stripe link");
-        }
-    } catch (err) {
-        if (modal) {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-        showToast("Stripe Error: " + err.message, 'error');
-    }
+    // This URL lets Stripe handle the "Smart" logic from scratch
+    const stripeUrl = `https://connect.stripe.com/oauth/authorize?response_type=code&client_id=${CLIENT_ID}&scope=read_write&redirect_uri=${REDIRECT_URI}&stripe_user[email]=${userEmail}`;
+    
+    window.location.href = stripeUrl;
 }
     
   function renderSettings() {
