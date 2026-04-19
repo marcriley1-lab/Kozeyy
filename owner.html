@@ -2023,16 +2023,33 @@ function toggleFeeVisibility() {
     }
 }
 
-   function handleStripeConnect() {
-    // Replace CLIENT_ID with your "Connect Client ID" from Stripe Settings > Settings > Connect
-    const CLIENT_ID = 'ca_your_stripe_connect_client_id'; 
-    const REDIRECT_URI = encodeURIComponent('https://kozeyy.com/owner.html?stripe_setup=callback');
-    const userEmail = encodeURIComponent(state.owner_data.email);
+   async function handleStripeConnect() {
+    const ownerId = localStorage.getItem('kozeyy_user_id');
+    const ownerEmail = state.owner_data.email;
 
-    // This URL lets Stripe handle the "Smart" logic from scratch
-    const stripeUrl = `https://connect.stripe.com/oauth/authorize?response_type=code&client_id=${CLIENT_ID}&scope=read_write&redirect_uri=${REDIRECT_URI}&stripe_user[email]=${userEmail}`;
-    
-    window.location.href = stripeUrl;
+    // Optional: show a loading spinner
+    showToast("Opening Stripe Secure Setup...");
+
+    try {
+        const response = await fetch('https://your-edge-function-url.supabase.co/functions/v1/quickaction', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'create-connected-account',
+                ownerId: ownerId,
+                email: ownerEmail
+            })
+        });
+
+        const { url, error } = await response.json();
+        if (url) {
+            window.location.href = url; // Redirect to Stripe-hosted onboarding
+        } else {
+            throw new Error(error);
+        }
+    } catch (err) {
+        showToast("Setup failed: " + err.message, "error");
+    }
 }
     
   function renderSettings() {
