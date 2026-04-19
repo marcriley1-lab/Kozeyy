@@ -2027,13 +2027,16 @@ function toggleFeeVisibility() {
     const ownerId = localStorage.getItem('kozeyy_user_id');
     const ownerEmail = state.owner_data.email;
 
-    // Optional: show a loading spinner
     showToast("Opening Stripe Secure Setup...");
 
     try {
-        const response = await fetch('https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quick-action', {
+        // Use the SUPABASE_KEY variable defined at the top of your script
+        const response = await fetch('https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quickaction', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${SUPABASE_KEY}` 
+            },
             body: JSON.stringify({
                 action: 'create-connected-account',
                 ownerId: ownerId,
@@ -2041,13 +2044,15 @@ function toggleFeeVisibility() {
             })
         });
 
-        const { url, error } = await response.json();
-        if (url) {
-            window.location.href = url; // Redirect to Stripe-hosted onboarding
+        const result = await response.json();
+        
+        if (result.url) {
+            window.location.href = result.url; 
         } else {
-            throw new Error(error);
+            throw new Error(result.error || "Unknown error occurred");
         }
     } catch (err) {
+        console.error("Stripe Onboarding Error:", err);
         showToast("Setup failed: " + err.message, "error");
     }
 }
