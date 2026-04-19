@@ -4267,7 +4267,7 @@ function logic_resetInvoice() {
    // Track the ID if we are editing an existing one
     let editingRecurringId = null; 
 
-    async function logic_confirmInvoice() { 
+   async function logic_confirmInvoice() { 
     if(!draftInvoice) return; 
     
     const btn = document.getElementById('btn-confirm-inv');
@@ -4284,6 +4284,20 @@ function logic_resetInvoice() {
         if (tenantUuid === "NaN") {
             throw new Error("Invalid Tenant ID (NaN). Please re-select the tenant.");
         }
+
+        // --- THE FIX: Fetch your LATEST Stripe ID from the owners table ---
+        const { data: ownerProfile, error: ownerErr } = await supabaseClient
+            .from('owners')
+            .select('stripe_customer_id')
+            .eq('id', ownerId)
+            .single();
+
+        if (ownerErr || !ownerProfile?.stripe_customer_id) {
+            throw new Error("Stripe ID not found. Please go to Settings and click 'Connect Bank' again to sync your profile.");
+        }
+
+        const currentStripeId = ownerProfile.stripe_customer_id;
+        console.log("Creating invoice with Stripe ID:", currentStripeId);
 
         const file = document.getElementById('inv-doc').files[0]; 
         let docUrl = null; 
@@ -4315,8 +4329,7 @@ function logic_resetInvoice() {
             showToast("Recurring Invoice Scheduled");
 
         } else {
-            // THE FIX: We no longer pass landlord_stripe_id here. 
-            // The backend will join with the 'owners' table to get the LATEST ID.
+            // Updated to use the FRESH Stripe ID
             const { error } = await supabaseClient.from('invoices').insert([{ 
                 owner_id: ownerId, 
                 tenant_id: tenantUuid, 
@@ -4325,6 +4338,7 @@ function logic_resetInvoice() {
                 total: draftInvoice.total, 
                 date: draftInvoice.date, 
                 status: 'Unpaid', 
+                landlord_stripe_id: currentStripeId, 
                 doc_url: docUrl,                         
                 fee_type: settings.late_fee_method || 'Fixed',
                 fee_value: parseFloat(settings.late_fee_amount) || 0,
@@ -4356,7 +4370,7 @@ function logic_resetInvoice() {
         renderAll();
         
     } catch(err) {
-        console.error(err);
+        console.error("Invoice Error:", err);
         showToast("Error: " + err.message, 'error');
     } finally {
         btn.disabled = false;
