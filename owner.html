@@ -4268,102 +4268,101 @@ function logic_resetInvoice() {
     let editingRecurringId = null; 
 
     async function logic_confirmInvoice() { 
-        if(!draftInvoice) return; 
-        
-        const btn = document.getElementById('btn-confirm-inv');
-        const originalText = btn.innerText; 
-        btn.disabled = true; 
-        btn.innerText = "Processing...";
+    if(!draftInvoice) return; 
+    
+    const btn = document.getElementById('btn-confirm-inv');
+    const originalText = btn.innerText; 
+    btn.disabled = true; 
+    btn.innerText = "Processing...";
 
-        try {
-            const ownerId = localStorage.getItem('kozeyy_user_id');
-            const settings = state.settings || {};
-            const isRecurring = document.getElementById('inv-recurring').checked;
+    try {
+        const ownerId = localStorage.getItem('kozeyy_user_id');
+        const settings = state.settings || {};
+        const isRecurring = document.getElementById('inv-recurring').checked;
 
-            // Ensure the ID is a string and handle the NaN case
-            const tenantUuid = String(draftInvoice.tenantId);
-            if (tenantUuid === "NaN") {
-                throw new Error("Invalid Tenant ID (NaN). Please re-select the tenant.");
-            }
-
-            const file = document.getElementById('inv-doc').files[0]; 
-            let docUrl = null; 
-            if (file) docUrl = await uploadFile(file, 'invoices'); 
-
-            if (isRecurring) {
-                const recurDay = parseInt(document.getElementById('inv-recur-day').value) || 1;
-                const recurEnd = document.getElementById('inv-recur-end').value || null;
-
-                const recurData = {
-                    owner_id: ownerId,
-                    tenant_id: tenantUuid,
-                    amount: draftInvoice.total,
-                    day: recurDay,
-                    end_date: recurEnd,
-                    doc_url: docUrl,
-                    active: true
-                };
-
-                let error;
-                if(editingRecurringId) {
-                    const res = await supabaseClient.from('recurring_invoices').update(recurData).eq('id', editingRecurringId);
-                    error = res.error;
-                } else {
-                    const res = await supabaseClient.from('recurring_invoices').insert([recurData]);
-                    error = res.error;
-                }
-                if(error) throw error;
-                showToast("Recurring Invoice Scheduled");
-
-            } else {
-                const { error } = await supabaseClient.from('invoices').insert([{ 
-                    owner_id: ownerId, 
-                    tenant_id: tenantUuid, 
-                    tenant_name: draftInvoice.tenantName, 
-                    items: draftInvoice.items, 
-                    total: draftInvoice.total, 
-                    date: draftInvoice.date, 
-                    status: 'Unpaid', 
-                    landlord_stripe_id: settings.stripe_connect_id || null, 
-                    doc_url: docUrl,                         
-                    fee_type: settings.late_fee_method || 'Fixed',
-                    fee_value: parseFloat(settings.late_fee_amount) || 0,
-                    grace_period: parseInt(settings.grace_period) || 0,
-                    fee_enabled: settings.late_fee_enabled !== false
-                }]); 
-
-                if(error) throw error;
-
-                // Send Notification Email
-                const tenant = state.tenants.find(t => String(t.id) === tenantUuid);
-                if(tenant && tenant.email) {
-                    await sendEmail(
-                        tenant.email,
-                        "New Invoice Available",
-                        "alert",
-                        {
-                            title: "New Invoice Received",
-                            message: `A new invoice for $${draftInvoice.total.toLocaleString()} is available in your portal. Due date: ${new Date(draftInvoice.date).toLocaleDateString()}`,
-                            actionLink: "https://kozeyy.com/tenant.html"
-                        }
-                    );
-                }
-
-                showToast("Invoice Sent Successfully"); 
-            }
-
-            closeModal('modal-invoice'); 
-            await fetchData(); 
-            renderAll();
-            
-        } catch(err) {
-            console.error(err);
-            showToast("Error: " + err.message, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerText = originalText;
+        const tenantUuid = String(draftInvoice.tenantId);
+        if (tenantUuid === "NaN") {
+            throw new Error("Invalid Tenant ID (NaN). Please re-select the tenant.");
         }
+
+        const file = document.getElementById('inv-doc').files[0]; 
+        let docUrl = null; 
+        if (file) docUrl = await uploadFile(file, 'invoices'); 
+
+        if (isRecurring) {
+            const recurDay = parseInt(document.getElementById('inv-recur-day').value) || 1;
+            const recurEnd = document.getElementById('inv-recur-end').value || null;
+
+            const recurData = {
+                owner_id: ownerId,
+                tenant_id: tenantUuid,
+                amount: draftInvoice.total,
+                day: recurDay,
+                end_date: recurEnd,
+                doc_url: docUrl,
+                active: true
+            };
+
+            let error;
+            if(editingRecurringId) {
+                const res = await supabaseClient.from('recurring_invoices').update(recurData).eq('id', editingRecurringId);
+                error = res.error;
+            } else {
+                const res = await supabaseClient.from('recurring_invoices').insert([recurData]);
+                error = res.error;
+            }
+            if(error) throw error;
+            showToast("Recurring Invoice Scheduled");
+
+        } else {
+            // THE FIX: We no longer pass landlord_stripe_id here. 
+            // The backend will join with the 'owners' table to get the LATEST ID.
+            const { error } = await supabaseClient.from('invoices').insert([{ 
+                owner_id: ownerId, 
+                tenant_id: tenantUuid, 
+                tenant_name: draftInvoice.tenantName, 
+                items: draftInvoice.items, 
+                total: draftInvoice.total, 
+                date: draftInvoice.date, 
+                status: 'Unpaid', 
+                doc_url: docUrl,                         
+                fee_type: settings.late_fee_method || 'Fixed',
+                fee_value: parseFloat(settings.late_fee_amount) || 0,
+                grace_period: parseInt(settings.grace_period) || 0,
+                fee_enabled: settings.late_fee_enabled !== false
+            }]); 
+
+            if(error) throw error;
+
+            const tenant = state.tenants.find(t => String(t.id) === tenantUuid);
+            if(tenant && tenant.email) {
+                await sendEmail(
+                    tenant.email,
+                    "New Invoice Available",
+                    "alert",
+                    {
+                        title: "New Invoice Received",
+                        message: `A new invoice for $${draftInvoice.total.toLocaleString()} is available in your portal. Due date: ${new Date(draftInvoice.date).toLocaleDateString()}`,
+                        actionLink: "https://kozeyy.com/tenant.html"
+                    }
+                );
+            }
+
+            showToast("Invoice Sent Successfully"); 
+        }
+
+        closeModal('modal-invoice'); 
+        await fetchData(); 
+        renderAll();
+        
+    } catch(err) {
+        console.error(err);
+        showToast("Error: " + err.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
     }
+}
     
     function updateFileName(inputId, labelId) { const input = document.getElementById(inputId); const label = document.getElementById(labelId); if(input.files && input.files[0]) { label.innerText = input.files[0].name; label.parentElement.classList.add('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } else { label.innerText = inputId.includes('ex') ? 'Upload' : 'Choose File'; label.parentElement.classList.remove('bg-indigo-50', 'text-indigo-700', 'border-indigo-200'); } }
     
