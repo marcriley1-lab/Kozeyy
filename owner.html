@@ -2030,19 +2030,19 @@ function toggleFeeVisibility() {
     showToast("Opening Stripe Secure Setup...");
 
     try {
-        // Use the SUPABASE_KEY variable defined at the top of your script
-        const response = await fetch('https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quickaction', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${SUPABASE_KEY}` 
-            },
-            body: JSON.stringify({
-                action: 'create-connected-account',
-                ownerId: ownerId,
-                email: ownerEmail
-            })
-        });
+const response = await fetch('https://xhufxnqfflnzlqhzhtaz.supabase.co/functions/v1/quickaction', {
+    method: 'POST',
+    headers: { 
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY, // Add this line
+        'Authorization': `Bearer ${SUPABASE_KEY}` 
+    },
+    body: JSON.stringify({
+        action: 'create-connected-account',
+        ownerId: ownerId,
+        email: ownerEmail
+    })
+});
 
         const result = await response.json();
         
