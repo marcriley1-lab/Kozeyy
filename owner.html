@@ -505,6 +505,32 @@
 </div>
 <!-- END OF NEW SUBSCRIPTION BLOCK -->
                 <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
+                    <!-- START OF ACCOUNT CREDENTIALS BLOCK -->
+<h3 class="text-2xl font-bold mb-6 brand-font">Account Credentials</h3>
+<div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 mb-8">
+    <form onsubmit="act_updateAccount(event)" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-indigo-900 mb-1">Update Email</label>
+                <input type="email" id="acc-email" class="w-full border p-3 rounded-xl bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="New email address">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-indigo-900 mb-1">Change Password</label>
+                <input type="password" id="acc-pass" class="w-full border p-3 rounded-xl bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="New password">
+            </div>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+            <p class="text-[10px] text-indigo-600 leading-tight flex-1">
+                <i class="fas fa-info-circle mr-1"></i> Note: Email changes require confirmation via a link sent to your <strong>new</strong> address.
+            </p>
+            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-md">
+                Update Account
+            </button>
+        </div>
+    </form>
+</div>
+<hr class="border-slate-100 mb-8">
+<!-- END OF ACCOUNT CREDENTIALS BLOCK -->
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
                     <form onsubmit="act_saveSettings(event)" class="space-y-6">
     
@@ -1423,7 +1449,12 @@ async function initSystem() {
         // Update Notification Counts
         state.notifications.messages = state.msgs.filter(x => x.from === 'Tenant' && !x.read_at).length;
         state.notifications.maintenance = state.maint.filter(x => x.status === 'Active' && !viewedMaintIds.has(String(x.id))).length;
-        state.notifications.screening = state.apps.filter(x => x.status === 'Pending' && !viewedAppIds.has(String(x.id))).length;
+        // Only count as "new notification" if the applicant has paid
+state.notifications.screening = state.apps.filter(x => 
+    x.status === 'Pending' && 
+    x.payment_status === 'Paid' && 
+    !viewedAppIds.has(String(x.id))
+).length;
     }
 function renderAll() {
     // --- New Occupancy Calculation (Status-Based) ---
@@ -1513,10 +1544,13 @@ function renderAll() {
         }
     }
 
-   // --- 3. Empty State for Screening Queue ---
+  // --- 3. Screening Queue (Filtered for Paid Applicants) ---
     const tableScreening = document.getElementById('table-screening');
     if (tableScreening) {
-        if (state.apps.length === 0) {
+        // Filter: Only show applicants who have successfully paid their application fee
+        const paidApplicants = state.apps.filter(a => a.payment_status === 'Paid');
+
+        if (paidApplicants.length === 0) {
             tableScreening.innerHTML = `
                 <tr>
                     <td colspan="4" class="p-12 text-center">
@@ -1524,12 +1558,12 @@ function renderAll() {
                             <i class="fas fa-user-check"></i>
                         </div>
                         <p class="text-slate-500 font-medium text-sm">Queue is empty</p>
-                        <p class="text-[10px] text-slate-400 uppercase tracking-widest">New applicants will appear here for vetting</p>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-widest">Only applicants with paid fees appear here</p>
                     </td>
                 </tr>`;
         } else {
             tableScreening.innerHTML = '';
-            state.apps.forEach(a => {
+            paidApplicants.forEach(a => {
                 const evalResult = evalApplicant(a);
                 
                 // Logic to determine what button to show in the Action column
@@ -3955,6 +3989,30 @@ const pdfUrl = app.lease_url ? `https://docs.google.com/viewer?url=${encodeURICo
     btn.innerHTML = `<i class="fas fa-file-contract"></i> Complete & Activate Tenant`;
 }
 
+    async function act_updateAccount(e) {
+    e.preventDefault();
+    const email = document.getElementById('acc-email').value;
+    const password = document.getElementById('acc-pass').value;
+    
+    const updates = {};
+    if (email) updates.email = email;
+    if (password) updates.password = password;
+
+    if (Object.keys(updates).length === 0) {
+        showToast("Please enter a new email or password to update.", "error");
+        return;
+    }
+
+    const { data, error } = await supabaseClient.auth.updateUser(updates);
+
+    if (error) {
+        showToast(error.message, 'error');
+    } else {
+        showToast("Account update initiated! Check your email to confirm.");
+        document.getElementById('acc-pass').value = ''; 
+        document.getElementById('acc-email').value = '';
+    }
+}
     function canAddProperty() {
     const owner = state.owner_data;
     if (!owner) return false;
