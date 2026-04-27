@@ -3989,7 +3989,7 @@ const pdfUrl = app.lease_url ? `https://docs.google.com/viewer?url=${encodeURICo
     btn.innerHTML = `<i class="fas fa-file-contract"></i> Complete & Activate Tenant`;
 }
 
-    async function act_updateAccount(e) {
+   async function act_updateAccount(e) {
     e.preventDefault();
     const email = document.getElementById('acc-email').value;
     const password = document.getElementById('acc-pass').value;
@@ -4008,7 +4008,16 @@ const pdfUrl = app.lease_url ? `https://docs.google.com/viewer?url=${encodeURICo
     if (error) {
         showToast(error.message, 'error');
     } else {
-        showToast("Account update initiated! Check your email to confirm.");
+        // Provide specific feedback based on what was updated
+        if (email && password) {
+            showToast("Password updated! Now check your new email to confirm the address change.");
+        } else if (email) {
+            showToast("Check your new email to confirm the address change.");
+        } else if (password) {
+            showToast("Password updated successfully!");
+        }
+
+        // Clear the fields
         document.getElementById('acc-pass').value = ''; 
         document.getElementById('acc-email').value = '';
     }
