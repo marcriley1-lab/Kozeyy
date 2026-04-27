@@ -63,7 +63,7 @@
                     </div>
                 </div>
 
-                <form onsubmit="handleLogin(event)" class="space-y-5">
+                <form onsubmit="(event)" class="space-y-5">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">Email Address</label>
                         <div class="relative">
@@ -184,7 +184,7 @@
         }
 
         // --- AUTH LOGIC ---
-  async function handleLogin(e) {
+ async function handleLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('btn-login');
     const email = document.getElementById('email').value.trim().toLowerCase();
@@ -204,36 +204,60 @@
 
         if (authError) throw authError;
         const userId = authData.user.id;
+        const userEmail = authData.user.email.toLowerCase();
+        
         localStorage.setItem('kozeyy_user_id', userId);
 
-        // 2. CHECK IF OWNER (Security Bypass RPC)
-        const { data: isOwner } = await supabaseClient.rpc('check_is_owner', { 
-            target_uid: userId 
-        });
+        // 2. ROLE HIERARCHY CHECK
+        
+        // Priority 1: Check if the user exists in the 'owners' table
+        const { data: ownerRecord } = await supabaseClient
+            .from('owners')
+            .select('id')
+            .eq('id', userId)
+            .maybeSingle();
 
-        if (isOwner === true) {
+        if (ownerRecord) {
             localStorage.setItem('kozeyy_role', 'owner');
             window.location.href = 'owner.html';
             return;
         }
 
-        // 3. NEW STEP: CHECK IF ALREADY AN ESTABLISHED TENANT
-        // We look for the user's ID in the 'tenants' table
-        const { data: tenantRecord, error: tenantError } = await supabaseClient
+        // Priority 2: Check if the user exists in the 'tenants' table (BY EMAIL)
+        // We check by email because the landlord creates the record before the user has a UUID
+        const { data: tenantRecord } = await supabaseClient
             .from('tenants')
-            .select('id')
-            .eq('id', userId)
+            .select('id, owner_id')
+            .eq('email', userEmail)
             .maybeSingle();
 
-        localStorage.setItem('kozeyy_role', 'tenant');
-
         if (tenantRecord) {
-            // User has a tenant record (Lease is signed/active)
+            localStorage.setItem('kozeyy_role', 'tenant');
+            
+            // OPTIONAL: Link the Auth ID to the tenant record if not already done
+            if (!tenantRecord.id || tenantRecord.id.length < 10) {
+                await supabaseClient.from('tenants').update({ id: userId }).eq('email', userEmail);
+            }
+            
             window.location.href = 'tenant.html';
-        } else {
-            // No tenant record found, they are still an applicant
-            window.location.href = 'applicantportal.html';
+            return;
         }
+
+        // Priority 3: Check if they are an applicant
+        const { data: appRecord } = await supabaseClient
+            .from('apps')
+            .select('id')
+            .eq('email', userEmail)
+            .maybeSingle();
+
+        if (appRecord) {
+            localStorage.setItem('kozeyy_role', 'tenant');
+            window.location.href = 'applicantportal.html';
+            return;
+        }
+
+        // Default Fallback: If no record found, treat as a new applicant
+        window.location.href = 'applicantportal.html';
 
     } catch (err) {
         console.error("Login Error:", err.message);
