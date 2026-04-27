@@ -137,7 +137,7 @@
     const phone = document.getElementById('phone').value.trim();
     const agreed = document.getElementById('agree-terms').checked;
     
-    // 2. Detect Role
+    // 2. Detect Role based on URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const roleParam = urlParams.get('role');
     const lid = urlParams.get('listing_id');
@@ -158,7 +158,7 @@
             options: { 
                 data: { 
                     role: role, 
-                    username: username, // Stored in metadata only
+                    username: username, 
                     full_name: `${fname} ${lname}`,
                     phone: phone,
                     listing_id: lid || null
@@ -168,11 +168,21 @@
 
         if (authError) throw authError;
 
-        // 5. Redirect based on role
+        // 5. Establish Session locally so portals don't redirect back to login
+        localStorage.setItem('kozeyy_user_id', authData.user.id);
+        localStorage.setItem('kozeyy_role', role);
+
+        // 6. Direct Redirects
         if (role === 'tenant') {
-            // Send to applicant portal if they have a listing, else to login
-            window.location.href = lid ? `applicantportal.html?listing_id=${lid}` : 'login.html?msg=account_created';
+            if (lid) {
+                // If they are applying for a specific property via a listing
+                window.location.href = `applicantportal.html?listing_id=${lid}`;
+            } else {
+                // If they were manually added/invited by a landlord
+                window.location.href = 'tenant.html';
+            }
         } else {
+            // New Landlord signups
             window.location.href = 'owner.html';
         }
 
