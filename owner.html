@@ -2325,7 +2325,7 @@ async function act_saveTenant(e) {
         return; 
     }
 
-    const email = document.getElementById('t-email').value;
+    const email = document.getElementById('t-email').value.trim().toLowerCase();
     const name = document.getElementById('t-name').value;
     const address = document.getElementById('t-addr').value;
 
