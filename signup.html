@@ -131,33 +131,33 @@
     // 1. Capture Inputs
     const email = document.getElementById('email').value.trim().toLowerCase();
     const password = document.getElementById('password').value;
+    const username = document.getElementById('username').value.trim(); // Captured
     const fname = document.getElementById('fname').value.trim();
     const lname = document.getElementById('lname').value.trim();
     const phone = document.getElementById('phone').value.trim();
     const agreed = document.getElementById('agree-terms').checked;
     
-    // 2. DETECT ROLE (The Fix)
+    // 2. Detect Role
     const urlParams = new URLSearchParams(window.location.search);
     const lid = urlParams.get('listing_id') || localStorage.getItem('pending_application_lid');
-    const roleParam = urlParams.get('role'); // Check if ?role=tenant is in URL
-
-    // Logic: If there is a listing_id OR the role param is explicitly 'tenant', they are a tenant.
+    const roleParam = urlParams.get('role');
     const role = (lid || roleParam === 'tenant') ? 'tenant' : 'owner';
 
-    if(!email || !password || !fname || !lname) return showModal("Error", "All fields required.");
+    if(!email || !password || !fname || !lname || !username) return showModal("Error", "All fields required.");
     if(!agreed) return showModal("Error", "You must agree to terms.");
 
     btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Registering...`;
     btn.disabled = true;
 
     try {
-        // 3. Send to Supabase
+        // 3. Send to Supabase (Added username to metadata)
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
             email: email,
             password: password,
             options: { 
                 data: { 
                     role: role, 
+                    username: username, // ADDED THIS
                     full_name: `${fname} ${lname}`,
                     phone: phone,
                     listing_id: (lid && lid !== 'null') ? lid : null
@@ -167,24 +167,16 @@
 
         if (authError) throw authError;
 
-        // 4. Local Storage & Correct Redirect
         localStorage.setItem('kozeyy_user_id', authData.user.id);
         
         if (role === 'tenant') {
-            if (lid) {
-                // If they came from a specific listing, they are an APPLICANT
-                window.location.href = `applicant.html?listing_id=${lid}`;
-            } else {
-                // If they were invited by a Landlord directly, they are already a TENANT
-                // Redirect to login.html to ensure the Role Check we just fixed triggers correctly
-                window.location.href = 'login.html?msg=account_created';
-            }
+            window.location.href = lid ? `applicant.html?listing_id=${lid}` : 'login.html?msg=account_created';
         } else {
-            // Otherwise, they are an OWNER
             window.location.href = 'owner.html';
         }
 
     } catch(err) {
+        console.error("Signup Detail Error:", err);
         showModal("Signup Failed", err.message);
         btn.innerHTML = originalText;
         btn.disabled = false;
