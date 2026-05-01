@@ -1965,35 +1965,47 @@ function getInitials(name) {
     }
 
    function calculateGlobalStats() {
-        let revenue = 0, overdue = 0, outstanding = 0;
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
+    let revenue = 0, overdue = 0, outstanding = 0;
+    
+    // Get current Month and Year in local time
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-        // 1. Calculate Revenue
-        state.payments.forEach(p => { 
-            const pDate = parseDateStr(p.date); 
-            if(pDate.getMonth() === currentMonth && pDate.getFullYear() === currentYear) {
-                revenue += p.amount; 
+    // 1. Calculate Revenue (This Month)
+    state.payments.forEach(p => { 
+        // Use parseDateStr or direct date handling
+        const pDate = new Date(p.date);
+        
+        // If the date string is YYYY-MM-DD, parsing it as a Date object 
+        // can shift it to the previous day due to UTC. 
+        // We use getUTC methods if it's a simple date string to ensure accuracy.
+        const isISO = p.date.includes('T');
+        const pMonth = isISO ? pDate.getMonth() : pDate.getUTCMonth();
+        const pYear = isISO ? pDate.getFullYear() : pDate.getUTCFullYear();
+
+        if(pMonth === currentMonth && pYear === currentYear) {
+            revenue += parseFloat(p.amount || 0); 
+        }
+    });
+
+    // 2. Calculate Outstanding vs Overdue
+    state.invoices.forEach(inv => { 
+        if(inv.status !== 'Paid') { 
+            const calc = calculateOverdueDetails(inv, state.settings);
+            let bal = parseFloat(inv.total || 0) - parseFloat(inv.amount_paid || 0);
+            
+            if (calc.isOverdue) {
+                bal += parseFloat(calc.fee || 0);
+                overdue += bal;
+            } else {
+                outstanding += bal;
             }
-        });
+        } 
+    });
 
-        // 2. Calculate Outstanding vs Overdue using Master Function
-        state.invoices.forEach(inv => { 
-            if(inv.status !== 'Paid') { 
-                const calc = calculateOverdueDetails(inv, state.settings);
-                let bal = inv.total - (inv.amount_paid || 0);
-                
-                if (calc.isOverdue) {
-                    bal += calc.fee;
-                    overdue += bal;
-                } else {
-                    outstanding += bal;
-                }
-            } 
-        });
-        return { revenue, overdue, outstanding };
-    }
+    return { revenue, overdue, outstanding };
+}
    function navTo(view) {
     activeTab = view;
     document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden-section'));
