@@ -1232,7 +1232,12 @@ const KOZEYY_PLANS = {
     };
 
     // Helper Functions
-    function parseDateStr(str) { if(!str) return new Date(); const parts = str.split('-'); return new Date(parts[0], parts[1]-1, parts[2]); }
+   function parseDateStr(str) { 
+    if(!str) return new Date(); 
+    // This version handles both "2023-10-24" and "2023-10-24T12:00:00Z"
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? new Date() : d;
+}
     function getLastName(fullName) { if(!fullName) return ''; const parts = fullName.trim().split(' '); return parts.length > 1 ? parts[parts.length - 1] : parts[0]; }
     function setText(id, text) { const el = document.getElementById(id); if(el && el.innerText !== text) el.innerText = text; }
 
