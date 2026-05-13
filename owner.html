@@ -2662,7 +2662,7 @@ async function act_saveListing(e) {
             <div class="p-4 bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl">
                 <p class="text-[10px] font-bold text-slate-400 uppercase text-center mb-2">No digital lease on file</p>
                 <label class="cursor-pointer bg-white border border-slate-300 text-slate-600 w-full py-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 hover:bg-slate-50">
-                    <i class="fas fa-file-upload"></i> Upload Signed PDF
+                    <i class="fas fa-file-upload"></i> Upload Lease
                     <input type="file" class="hidden" accept=".pdf" onchange="act_manualLeaseUpload(this, '${t.id}')">
                 </label>
             </div>`;
@@ -3786,36 +3786,38 @@ function renderLeases() {
     if(!tbody) return;
     tbody.innerHTML = '';
 
-    // Filter all active tenants who aren't vacant placeholders
     const activeTenants = state.tenants.filter(t => t.name !== '(Vacant)' && t.status === 'Active');
     
     if(activeTenants.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="p-12 text-center text-slate-400 italic">No active tenants found. Add a tenant first to attach a lease.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="p-12 text-center text-slate-400 italic">No active tenants found.</td></tr>';
         return;
     }
 
     activeTenants.forEach(t => {
         let actionHtml = '';
-        let dateHtml = '';
+        
+        // Use the signing date if it exists, otherwise leave blank
+        const rawDate = t.lease_signed_at || t.owner_signed_at || "";
+        const formattedDate = rawDate ? rawDate.split('T')[0] : "";
 
-        // Unified Signed Date Logic: Show Owner Signature Date, then Tenant Signature Date, else 'Active'
-        const rawDate = t.owner_signed_at || t.lease_signed_at;
+        // The Calendar Input:
+        const dateHtml = `
+            <input type="date" 
+                value="${formattedDate}" 
+                onchange="act_updateLeaseDate(this.value, '${t.id}')"
+                class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer hover:bg-white transition"
+            >`;
 
         if (t.lease_url) {
-            // Document exists: Show formatted date and View button
-            const dateStr = rawDate ? new Date(rawDate).toLocaleDateString() : '<span class="text-slate-400 italic">Active</span>';
-            dateHtml = `<span class="font-medium text-slate-700">${dateStr}</span>`;
             actionHtml = `
                 <button onclick="openLeaseViewer('${t.lease_url}', '${t.id}', '${t.name}', '${t.lease_signed_at}', '${t.owner_signed_at}')" 
                 class="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-100 transition">
-                    <i class="fas fa-file-pdf mr-1"></i> View Signed Lease
+                    <i class="fas fa-file-pdf mr-1"></i> View Lease
                 </button>`;
         } else {
-            // Document missing: Show Upload button
-            dateHtml = `<span class="text-rose-400 font-bold text-[10px] uppercase tracking-wider">No Document</span>`;
             actionHtml = `
                 <label class="cursor-pointer bg-white border border-slate-300 text-slate-600 px-4 py-2 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-2 hover:bg-slate-50 w-fit ml-auto shadow-sm">
-                    <i class="fas fa-file-upload"></i> Upload Signed PDF
+                    <i class="fas fa-file-upload"></i> Upload PDF
                     <input type="file" class="hidden" accept=".pdf" onchange="act_manualLeaseUpload(this, '${t.id}')">
                 </label>`;
         }
@@ -3824,10 +3826,36 @@ function renderLeases() {
         <tr class="hover:bg-slate-50 transition border-b border-slate-100">
             <td class="p-5 font-bold text-slate-700">${t.name}</td>
             <td class="p-5 text-slate-500 text-sm">${t.address || 'N/A'}</td>
-            <td class="p-5 text-sm">${dateHtml}</td>
+            <td class="p-5">${dateHtml}</td>
             <td class="p-5 text-right">${actionHtml}</td>
         </tr>`;
     });
+}
+
+    async function act_updateLeaseDate(newDate, tenantId) {
+    if (!newDate) return;
+
+    // Convert local date picker value to ISO string for the database
+    const isoDate = new Date(newDate + 'T12:00:00').toISOString();
+
+    try {
+        const { error } = await supabaseClient
+            .from('tenants')
+            .update({ lease_signed_at: isoDate })
+            .eq('id', tenantId);
+
+        if (error) throw error;
+
+        showToast("Signature date updated");
+        
+        // Update local state so the UI stays in sync without a full refresh
+        const tenant = state.tenants.find(x => x.id === tenantId);
+        if (tenant) tenant.lease_signed_at = isoDate;
+        
+    } catch (err) {
+        console.error("Error updating date:", err);
+        showToast("Update failed: " + err.message, "error");
+    }
 }
     
     function toggleRecurringOptions() {
