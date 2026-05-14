@@ -447,9 +447,10 @@
                 <span class="font-extrabold text-2xl text-slate-700" id="inv-total">$0.00</span>
             </div>
             
-            <button onclick="downloadInvoicePDF()" class="w-full mt-3 border border-slate-300 text-slate-600 py-3 rounded-xl font-bold hover:bg-slate-50 flex items-center justify-center gap-2">
-                <i class="fas fa-download"></i> Download PDF
-            </button>
+           <button onclick="downloadInvoicePDF()" class="w-full mt-4 text-slate-400 py-2 rounded-xl text-xs font-bold hover:text-slate-600 hover:bg-slate-50 transition flex items-center justify-center gap-2">
+    <i class="fas fa-download"></i> 
+    <span>Download PDF Receipt</span>
+</button>
 
             <div id="inv-pay-btn-container" class="mt-2"></div>
         </div>
@@ -681,9 +682,11 @@ if (globalData.user && globalData.user.owner_id) {
 
             if(user.name && user.name !== document.getElementById('user-name').innerText) {
                 document.getElementById('user-name').innerText = user.name;
-                document.querySelectorAll('.display-name').forEach(el => el.innerText = user.name);
-                document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name.charAt(0));
-            }
+                const firstName = user.name.trim().split(' ')[0] || 'Resident';
+    document.querySelectorAll('.display-name').forEach(el => el.innerText = firstName);
+    
+    document.querySelectorAll('.display-initials').forEach(el => el.innerText = user.name.charAt(0));
+}
             if(user.email) document.getElementById('set-email').innerText = user.email;
             if(user.phone) document.getElementById('set-phone').innerText = user.phone;
             
@@ -1259,17 +1262,20 @@ function viewInvoice(id) {
                     <div class="flex justify-between"><span>Credit/Debit Card</span> <span>+$${cardFee.toFixed(2)}</span></div>
                 </div>`;
             
-            payBtnContainer.innerHTML = pendingNotice + `
-                <div class="space-y-3 mt-4">
-                    <button onclick="initStripePayment('${inv.id}', ${totalDueWithFees}, 'us_bank_account', ${achFee})" class="w-full bg-indigo-50 border-2 border-indigo-100 text-indigo-700 py-3.5 rounded-xl font-bold hover:bg-indigo-100 transition flex items-center justify-between px-4">
-                        <div class="flex items-center gap-2"><i class="fas fa-university"></i> ACH (Remaining)</div>
-                        <span>$${achTotal.toFixed(2)}</span>
-                    </button>
-                    <button onclick="initStripePayment('${inv.id}', ${totalDueWithFees}, 'card', ${cardFee})" class="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 shadow-lg transition flex items-center justify-between px-4">
-                        <div class="flex items-center gap-2"><i class="far fa-credit-card"></i> Card (Remaining)</div>
-                        <span>$${cardTotal.toFixed(2)}</span>
-                    </button>
-                </div>`;
+           payBtnContainer.innerHTML = pendingNotice + `
+    <div class="grid grid-cols-2 gap-3 mt-6">
+        <button onclick="initStripePayment('${inv.id}', ${totalDueWithFees}, 'us_bank_account', ${achFee})" class="flex flex-col items-center justify-center bg-indigo-50 border border-indigo-100 text-indigo-700 py-4 rounded-2xl hover:bg-indigo-100 transition">
+            <i class="fas fa-university text-xs mb-1 opacity-60"></i>
+            <span class="text-[10px] font-bold uppercase tracking-tight">Bank (ACH)</span>
+            <span class="text-sm font-black">$${achTotal.toFixed(2)}</span>
+        </button>
+        
+        <button onclick="initStripePayment('${inv.id}', ${totalDueWithFees}, 'card', ${cardFee})" class="flex flex-col items-center justify-center bg-indigo-600 text-white py-4 rounded-2xl hover:bg-indigo-700 shadow-md transition">
+            <i class="far fa-credit-card text-xs mb-1 opacity-80"></i>
+            <span class="text-[10px] font-bold uppercase tracking-tight">Credit Card</span>
+            <span class="text-sm font-black">$${cardTotal.toFixed(2)}</span>
+        </button>
+    </div>`;
         }
     }
     toggleModal('invoiceModal');
