@@ -188,23 +188,92 @@
 
         // 6. CONNECT TO THE INVOICE (Database-safe merge using captured old ID)
         if (role === 'tenant') {
-            const { error: rpcError } = await supabaseClient.rpc('merge_tenant_on_signup', {
-                new_user_id: newUserId,
-                new_name: `${fname} ${lname}`,
-                new_email: email,
-                new_phone: phone
-            });
+            // Find the complete placeholder row the landlord created for this specific email
+            const { data: existingPlaceholder, error: placeholderErr } = await supabaseClient
+                .from('tenants')
+                .select('*')
+                .eq('email', email)
+                .maybeSingle();
 
-            if (rpcError) {
-                console.error("Database merge RPC failed:", rpcError);
-                // Fallback: If RPC execution fails, write a basic tenant profile
-                await supabaseClient.from('tenants').upsert([{
-                    id: newUserId,
+            if (existingPlaceholder) {
+                const oldId = existingPlaceholder.id;
+
+                // Construct a fully merged profile, copying landlord-entered lease and property details
+                const mergedTenantData = {
+                    id: newUserId, // Set PK to the newly registered Auth User ID
                     name: `${fname} ${lname}`,
                     email: email,
-                    phone: phone,
-                    status: 'Active'
-                }]);
+                    phone: phone || existingPlaceholder.phone,
+                    status: existingPlaceholder.status || 'Active',
+                    owner_id: existingPlaceholder.owner_id,
+                    address: existingPlaceholder.address,
+                    unit: existingPlaceholder.unit,
+                    rent_amount: existingPlaceholder.rent_amount,
+                    lease_start: existingPlaceholder.lease_start,
+                    lease_end: existingPlaceholder.lease_end,
+                    lease_url: existingPlaceholder.lease_url,
+                    lease_signed_at: existingPlaceholder.lease_signed_at,
+                    owner_signed_at: existingPlaceholder.owner_signed_at,
+                    city: existingPlaceholder.city,
+                    state: existingPlaceholder.state,
+                    zip: existingPlaceholder.zip,
+                    credit_reporting: existingPlaceholder.credit_reporting || false,
+                    insurance: existingPlaceholder.insurance || false
+                };
+
+                // Insert the merged profile under the permanent Auth ID
+                const { error: upsertErr } = await supabaseClient
+                    .from('tenants')
+                    .upsert([mergedTenantData]);
+
+                if (upsertErr) {
+                    console.error("Error upserting merged tenant:", upsertErr);
+                    throw upsertErr;
+                }
+
+                // Update dependent records to reference the permanent ID
+                await Promise.all([
+                    // Route all existing invoices to the permanent Auth ID
+                    supabaseClient
+                        .from('invoices')
+                        .update({ tenant_id: newUserId })
+                        .eq('tenant_id', oldId),
+
+                    // Route all existing payments to the permanent Auth ID
+                    supabaseClient
+                        .from('payments')
+                        .update({ tenant_id: newUserId })
+                        .eq('tenant_id', oldId),
+
+                    // Route all existing chat messages to the permanent Auth ID
+                    supabaseClient
+                        .from('msgs')
+                        .update({ tenant_id: newUserId })
+                        .eq('tenant_id', oldId),
+
+                    // Route all existing maintenance tickets to the permanent Auth ID
+                    supabaseClient
+                        .from('maintenance')
+                        .update({ tenant_id: newUserId })
+                        .eq('tenant_id', oldId)
+                ]);
+
+                // Delete the old temporary placeholder profile now that migration is complete
+                await supabaseClient
+                    .from('tenants')
+                    .delete()
+                    .eq('id', oldId);
+            } else {
+                // If no placeholder profile exists, proceed with a standard sign-up entry
+                await supabaseClient
+                    .from('tenants')
+                    .upsert([{
+                        id: newUserId,
+                        name: `${fname} ${lname}`,
+                        email: email,
+                        phone: phone,
+                        status: 'Active'
+                    }]);
             }
         }
         // 7. Establish Session locally so portals don't redirect back to login
@@ -260,7 +329,6 @@ window.addEventListener('DOMContentLoaded', checkRole);
     </script>
 </body>
 </html>
-
 
 
 
