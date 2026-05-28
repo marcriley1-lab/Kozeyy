@@ -151,7 +151,7 @@
     btn.disabled = true;
 
     try {
-        // 1. Auth Signup
+        // 1. Auth Signup (Creates the user in Supabase Auth system)
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
             email: email,
             password: password,
@@ -170,9 +170,9 @@
 
         const newUserId = authData.user.id;
 
-        // 2. CONNECT TO THE INVOICE: Merge placeholder record if it exists
+        // 2. CONNECT TO THE INVOICE (Database-safe merge)
         if (role === 'tenant') {
-            // Look for the landlord-created record matching this email
+            // Find the placeholder row the landlord created for this specific email
             const { data: existingPlaceholder } = await supabaseClient
                 .from('tenants')
                 .select('id')
@@ -180,18 +180,37 @@
                 .maybeSingle();
 
             if (existingPlaceholder) {
-                // Update the tenant record row to use the real Auth ID 
-                await supabaseClient
-                    .from('tenants')
-                    .update({ id: newUserId })
-                    .eq('id', existingPlaceholder.id);
-
-                // Update any open invoices tied to the old placeholder ID
+                // UPDATE: Instead of changing the Primary Key ID of the row,
+                // we leave the row's ID alone and update its data, or map invoices to it.
+                // However, tenant.html relies strictly on USER_ID matching tenants.id.
+                
+                // Because Supabase Auth IDs cannot be swapped into an existing row's PK easily,
+                // the safest approach is to delete the unlinked placeholder and map its invoices 
+                // to the fresh Auth ID record.
+                
+                // Route all existing invoices from the old placeholder ID to the new real Auth ID
                 await supabaseClient
                     .from('invoices')
                     .update({ tenant_id: newUserId })
                     .eq('tenant_id', existingPlaceholder.id);
+
+                // Delete the old placeholder row so it doesn't create a duplicate profile constraint
+                await supabaseClient
+                    .from('tenants')
+                    .delete()
+                    .eq('id', existingPlaceholder.id);
             }
+
+            // Create or fully upsert the finalized tenant profile row under the new real Auth ID
+            await supabaseClient
+                .from('tenants')
+                .upsert([{
+                    id: newUserId,
+                    name: `${fname} ${lname}`,
+                    email: email,
+                    phone: phone,
+                    status: 'Active'
+                }]);
         }
 
         // 3. Establish Session locally so portals don't redirect back to login
