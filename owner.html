@@ -540,6 +540,26 @@
     </form>
 </div>
 <hr class="border-slate-100 mb-8">
+                    <h3 class="text-2xl font-bold mb-6 brand-font">Subscription & Billing</h3>
+<div class="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-sm">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl border border-indigo-100">
+                <i class="fas fa-credit-card"></i>
+            </div>
+            <div>
+                <h4 class="font-bold text-slate-800 text-sm">Update Subscriptions or Cancel</h4>
+                <p class="text-xs text-slate-500 mt-1">
+                    Launch your secure Stripe customer dashboard to update your card on file, download past receipt invoices, or cancel your auto-renewal subscription instantly.
+                </p>
+            </div>
+        </div>
+        <button type="button" onclick="launchOwnerBillingPortal()" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-xs hover:bg-slate-800 transition shadow-sm whitespace-nowrap">
+            <i class="fas fa-external-link-alt mr-1.5 opacity-80"></i> Manage Billing
+        </button>
+    </div>
+</div>
+<hr class="border-slate-100 mb-8">
 <!-- END OF ACCOUNT CREDENTIALS BLOCK -->
                     <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
                     <form onsubmit="act_saveSettings(event)" class="space-y-6">
@@ -4060,17 +4080,53 @@ const pdfUrl = app.lease_url ? `https://docs.google.com/viewer?url=${encodeURICo
         document.getElementById('acc-email').value = '';
     }
 }
+async function launchOwnerBillingPortal() {
+    const ownerId = localStorage.getItem('kozeyy_user_id');
+    if (!ownerId) return showToast("Session expired, please log back in.", "error");
+
+    showToast("Opening secure billing engine...");
+
+    try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/quick-action`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`
+            },
+            body: JSON.stringify({
+                action: 'create-portal-session',
+                userId: ownerId,
+                role: 'owner'
+            })
+        });
+
+        const result = await response.json();
+        
+        if (result.url) {
+            // Redirect smoothly into Stripe's hosted self-service screen
+            window.location.href = result.url; 
+        } else {
+            throw new Error(result.error || "Could not retrieve portal access link.");
+        }
+    } catch (err) {
+        console.error("Billing Portal Redirect Error:", err);
+        showToast(err.message, "error");
+    }
+}
+    
     function canAddProperty() {
+    // FIX: Map the local pointer directly to your global state container
     const owner = state.owner_data;
     if (!owner) return false;
 
-    // 1. Founders have no limits
-    if (owner.is_founder) return true;
+    // 1. Founders have absolute bypass capabilities and zero software caps
+    if (owner.is_founder === true) return true;
 
-    // 2. Calculate current usage (Active Tenants + Active Listings)
+    // 2. Calculate standard tier accumulation for post-launch owners
     const usage = state.tenants.length + state.listings.length;
     
-    // 3. Get limit based on their tier
+    // 3. Get limit parameters based on tier selection matrix
     const tier = owner.subscription_tier || 'free';
     const limit = KOZEYY_PLANS[tier].limit;
 
