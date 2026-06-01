@@ -457,189 +457,215 @@
     </div>
 </div>
 
-            <div id="view-settings" class="view-section hidden-section fade-in-up">
-                <!-- NEW SUBSCRIPTION BLOCK -->
-<div class="max-w-3xl mx-auto mb-6">
-    <!-- 1. Shown ONLY to Founders (User 1-100) -->
-    <div id="founder-view" class="hidden bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-3xl shadow-lg text-white mb-6 relative overflow-hidden">
-        <div class="absolute -right-4 -top-4 opacity-20"><i class="fas fa-crown text-8xl"></i></div>
-        <div class="relative z-10 flex items-center gap-4">
-            <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-2xl border border-white/30">
-                <i class="fas fa-gem"></i>
-            </div>
-            <div>
-                <h3 class="text-xl font-bold brand-font">Founder Edition Account</h3>
-                <p class="text-sm opacity-90">Unlimited property slots and zero monthly fees for life. Thank you for being one of our first 100 owners.</p>
-            </div>
-        </div>
-    </div>
+ <div id="view-settings" class="view-section hidden-section fade-in-up">
+                <div class="max-w-3xl mx-auto space-y-6">
+                    
+                    <!-- CARD 1: SUBSCRIPTION LIMITS & PREVIEWS -->
+                    <div class="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                <i class="fas fa-crown text-base"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 brand-font">Subscription Plan</h3>
+                                <p class="text-xs text-slate-500">Monitor usage and upgrade tier boundaries</p>
+                            </div>
+                        </div>
 
-    <!-- 2. Shown ONLY to Regular Owners (User 101+) -->
-    <div id="standard-view" class="hidden bg-white rounded-3xl shadow-sm border border-slate-200 p-6 mb-6">
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Your Current Plan</p>
-                <h4 id="sub-tier-display" class="text-2xl font-bold text-slate-800 brand-font">Basic</h4>
-            </div>
-            <div class="flex-1 w-full md:max-w-xs">
-                <div class="flex justify-between text-[10px] font-black uppercase mb-1">
-                    <span class="text-slate-500">Property Usage</span>
-                    <span id="sub-usage-text" class="text-slate-700">0 / 2 Slots Used</span>
-                </div>
-                <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                    <div id="sub-usage-bar" class="bg-indigo-600 h-full transition-all duration-1000" style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
+                        <!-- 1. Shown ONLY to Founders (User 1-100) -->
+                        <div id="founder-view" class="hidden bg-gradient-to-br from-amber-500 to-amber-600 p-6 rounded-2xl shadow-md text-white mb-6 relative overflow-hidden">
+                            <div class="absolute -right-4 -top-4 opacity-20"><i class="fas fa-crown text-8xl"></i></div>
+                            <div class="relative z-10 flex items-center gap-4">
+                                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-xl border border-white/30">
+                                    <i class="fas fa-gem"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-bold brand-font">Founder Edition Account</h3>
+                                    <p class="text-xs opacity-90">Unlimited property slots and zero monthly fees for life. Thank you for being one of our first 100 owners.</p>
+                                </div>
+                            </div>
+                        </div>
 
-        <!-- Pricing Tiers Preview -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-8">
-            <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                <p class="text-[10px] font-bold text-slate-400 uppercase">Basic</p>
-                <p class="text-lg font-bold text-slate-800">$0<span class="text-xs font-normal">/mo</span></p>
-                <p class="text-[9px] text-slate-500">Limit: 2 Properties</p>
-            </div>
-            <div class="p-4 rounded-2xl border-2 border-indigo-100 bg-indigo-50/30 relative">
-                <div class="absolute -top-2 right-2 bg-indigo-600 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">PRO</div>
-                <p class="text-[10px] font-bold text-indigo-400 uppercase">Growth</p>
-                <p class="text-lg font-bold text-indigo-900">$9.99<span class="text-xs font-normal">/mo</span></p>
-                <p class="text-[9px] text-indigo-600">Limit: 10 Properties</p>
-            </div>
-            <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                <p class="text-[10px] font-bold text-slate-400 uppercase">Unlimited</p>
-                <p class="text-lg font-bold text-slate-800">$39.99<span class="text-xs font-normal">/mo</span></p>
-                <p class="text-[9px] text-slate-500">Unlimited Properties</p>
-            </div>
-        </div>
-    </div>
-</div>
-<!-- END OF NEW SUBSCRIPTION BLOCK -->
-                <div class="bg-white rounded-3xl shadow-lg border border-slate-200 p-8 max-w-3xl mx-auto">
-                    <!-- START OF ACCOUNT CREDENTIALS BLOCK -->
-<h3 class="text-2xl font-bold mb-6 brand-font">Account Credentials</h3>
-<div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100 mb-8">
-    <form onsubmit="act_updateAccount(event)" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-xs font-bold text-indigo-900 mb-1">Update Email</label>
-                <input type="email" id="acc-email" class="w-full border p-3 rounded-xl bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="New email address">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-indigo-900 mb-1">Change Password</label>
-                <input type="password" id="acc-pass" class="w-full border p-3 rounded-xl bg-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="New password">
-            </div>
-        </div>
-        <div class="flex items-center justify-between gap-4">
-            <p class="text-[10px] text-indigo-600 leading-tight flex-1">
-                <i class="fas fa-info-circle mr-1"></i> Note: Email changes require confirmation via a link sent to your <strong>new</strong> address.
-            </p>
-            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-indigo-700 transition shadow-md">
-                Update Account
-            </button>
-        </div>
-    </form>
-</div>
-<hr class="border-slate-100 mb-8">
-                    <h3 class="text-2xl font-bold mb-6 brand-font">Subscription & Billing</h3>
-<div class="bg-white p-6 rounded-2xl border border-slate-200 mb-8 shadow-sm">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="flex items-start gap-4">
-            <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-xl border border-indigo-100">
-                <i class="fas fa-credit-card"></i>
-            </div>
-            <div>
-                <h4 class="font-bold text-slate-800 text-sm">Update Subscriptions or Cancel</h4>
-                <p class="text-xs text-slate-500 mt-1">
-                    Launch your secure Stripe customer dashboard to update your card on file, download past receipt invoices, or cancel your auto-renewal subscription instantly.
-                </p>
-            </div>
-        </div>
-        <button type="button" onclick="launchOwnerBillingPortal()" class="bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-xs hover:bg-slate-800 transition shadow-sm whitespace-nowrap">
-            <i class="fas fa-external-link-alt mr-1.5 opacity-80"></i> Manage Billing
-        </button>
-    </div>
-</div>
-<hr class="border-slate-100 mb-8">
-<!-- END OF ACCOUNT CREDENTIALS BLOCK -->
-                    <h3 class="text-2xl font-bold mb-8 brand-font">System Configuration</h3>
-                    <form onsubmit="act_saveSettings(event)" class="space-y-6">
-    
-   <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
-    <div class="flex justify-between items-center mb-4">
-        <h4 class="font-bold text-indigo-900 brand-font flex items-center gap-2">
-            <i class="fab fa-stripe text-2xl"></i> Payouts & Collections
-        </h4>
-        <span class="text-[10px] bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded font-bold uppercase">Stripe Connect</span>
-    </div>
+                        <!-- 2. Shown ONLY to Regular Owners (User 101+) -->
+                        <div id="standard-view" class="hidden space-y-6">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                                <div>
+                                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Your Current Plan</p>
+                                    <h4 id="sub-tier-display" class="text-xl font-bold text-slate-800 brand-font">Basic</h4>
+                                </div>
+                                <div class="flex-1 w-full md:max-w-xs">
+                                    <div class="flex justify-between text-[10px] font-black uppercase mb-1">
+                                        <span class="text-slate-500">Property Usage</span>
+                                        <span id="sub-usage-text" class="text-slate-700">0 / 2 Slots Used</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                                        <div id="sub-usage-bar" class="bg-indigo-600 h-full transition-all duration-1000" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
 
-    <!-- Dynamic Status Container -->
-    <div id="stripe-status-container" class="mb-4">
-        <div class="animate-pulse bg-indigo-100 h-16 rounded-xl"></div>
-    </div>
+                            <!-- Pricing Tiers Preview -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Basic</p>
+                                    <p class="text-base font-bold text-slate-800">$0<span class="text-xs font-normal">/mo</span></p>
+                                    <p class="text-[9px] text-slate-500">Limit: 2 Properties</p>
+                                </div>
+                                <div class="p-4 rounded-2xl border-2 border-indigo-100 bg-indigo-50/30 relative">
+                                    <div class="absolute -top-2 right-2 bg-indigo-600 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">PRO</div>
+                                    <p class="text-[10px] font-bold text-indigo-400 uppercase">Growth</p>
+                                    <p class="text-base font-bold text-indigo-900">$9.99<span class="text-xs font-normal">/mo</span></p>
+                                    <p class="text-[9px] text-indigo-600">Limit: 10 Properties</p>
+                                </div>
+                                <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Unlimited</p>
+                                    <p class="text-base font-bold text-slate-800">$39.99<span class="text-xs font-normal">/mo</span></p>
+                                    <p class="text-[9px] text-slate-500">Unlimited Properties</p>
+                                </div>
+                            </div>
+                        </div>
 
-    <div class="p-4 bg-white/50 rounded-lg border border-indigo-100">
-        <div class="flex items-start gap-3">
-            <i class="fas fa-info-circle text-indigo-500 mt-1"></i>
-            <div>
-                <p class="text-sm text-indigo-800 font-medium">Payment Processing</p>
-                <p class="text-[11px] text-indigo-600 mt-1">
-                    Connect your bank account to accept Card and ACH payments. Funds are deposited directly to your bank. Kozeyy charges a small convenience fee ($2.50) to the tenant for ACH.
-                </p>
-            </div>
-        </div>
-    </div>
-</div>
-
-                        
-    <!-- Centered Late Fee Card -->
-    <div class="max-w-xl mx-auto w-full">
-        <label class="block text-xs font-bold text-slate-500 mb-1 text-center">Fee Type & Value</label>
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h4 class="font-bold text-slate-800 mb-4 brand-font">Late Fee Configuration</h4>
-            
-            <div class="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
-                <label class="text-sm font-bold text-slate-700">Enable Late Fees</label>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="set-fee-active" class="sr-only peer" onchange="toggleFeeVisibility()">
-                    <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                </label>
-            </div>
-
-            <div id="fee-inputs-container" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Fee Structure</label>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <select id="fee-method" class="w-full border p-3 rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
-                            <option value="Fixed">Fixed ($)</option>
-                            <option value="Percentage">Percent (%)</option>
-                            <option value="Daily">Daily ($)</option>
-                        </select>
-                        <input type="number" id="fee-amount" class="w-full border p-3 rounded-xl bg-slate-50 text-sm text-center font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0">
+                        <!-- Subscription & Billing Management Link -->
+                        <div class="mt-6 pt-6 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-credit-card text-slate-400 mt-1"></i>
+                                <div>
+                                    <h4 class="font-bold text-slate-800 text-sm">Update Subscriptions or Cancel</h4>
+                                    <p class="text-xs text-slate-500 mt-0.5">
+                                        Launch your secure Stripe customer dashboard to update your card on file, download past receipt invoices, or cancel your auto-renewal subscription instantly.
+                                    </p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="launchOwnerBillingPortal()" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-slate-800 transition shadow-sm whitespace-nowrap self-start md:self-auto">
+                                <i class="fas fa-external-link-alt mr-1.5 opacity-80"></i> Manage Billing
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
-                    <input type="number" id="fee-grace" min="0" class="w-full border p-3 rounded-xl bg-slate-50 outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 5">
-                </div>
-            </div>
-        </div>
 
-        <!-- NEW: Scaled down and centered button directly under the card -->
-        <button class="w-full mt-6 bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg brand-font text-lg">
-            Save Configuration
-        </button>
-    </div>
+                    <!-- CARD 2: ACCOUNT CREDENTIALS -->
+                    <div class="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                <i class="fas fa-shield-alt text-base"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 brand-font">Account Credentials</h3>
+                                <p class="text-xs text-slate-500">Manage security details and system notification profiles</p>
+                            </div>
+                        </div>
 
-    <!-- Hidden Screening Section (Still exists in code, just not visible) -->
-    <div class="hidden">
-        <input type="number" id="set-min-score">
-        <input type="number" id="set-min-income">
-        <input type="checkbox" id="set-no-evict">
-        <input type="checkbox" id="set-no-crim">
-        <input type="checkbox" id="set-require-insurance">
-    </div>
+                        <form onsubmit="act_updateAccount(event)" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">Update Email</label>
+                                    <input type="email" id="acc-email" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="New email address">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">Change Password</label>
+                                    <input type="password" id="acc-pass" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50/50 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition" placeholder="New password">
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                                <p class="text-[10px] text-slate-500 leading-tight">
+                                    <i class="fas fa-info-circle mr-1"></i> Note: Email changes require confirmation via a link sent to your <strong>new</strong> address.
+                                </p>
+                                <button type="submit" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-indigo-700 transition shadow-sm whitespace-nowrap self-start sm:self-auto">
+                                    Update Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
 
-</form>
+                    <!-- CARD 3: PAYOUTS & BANK CONNECTIONS -->
+                    <div class="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                    <i class="fab fa-stripe text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-900 brand-font">Payouts & Collections</h3>
+                                    <p class="text-xs text-slate-500">Link banking engines to automatically deposit tenant rents</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded font-bold uppercase tracking-wider">Stripe Connect</span>
+                        </div>
+
+                        <!-- Dynamic Status Container -->
+                        <div id="stripe-status-container" class="mb-4">
+                            <div class="animate-pulse bg-slate-100 h-16 rounded-xl"></div>
+                        </div>
+
+                        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-info-circle text-indigo-600 mt-0.5"></i>
+                                <div>
+                                    <p class="text-xs text-slate-700 font-bold">Convenience Fee Management</p>
+                                    <p class="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
+                                        Connect your bank account to accept card and bank payments. Funds deposit directly to your bank account. Kozeyy charges a flat processing convenience fee ($2.50) to the tenant for ACH transactions.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD 4: LATE FEE & CONFIGURATION -->
+                    <div class="bg-white rounded-3xl border border-slate-200 p-6 md:p-8 shadow-sm">
+                        <div class="flex items-center gap-3 mb-6">
+                            <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                <i class="fas fa-balance-scale text-base"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900 brand-font">Late Fee Engine</h3>
+                                <p class="text-xs text-slate-500">Automate penalty collection rules on overdue invoices</p>
+                            </div>
+                        </div>
+
+                        <form onsubmit="act_saveSettings(event)" class="space-y-6">
+                            <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                                <div>
+                                    <label class="text-sm font-bold text-slate-800">Enable Late Fees</label>
+                                    <p class="text-[11px] text-slate-400">Trigger automatic penalty calculations on invoices past grace periods</p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="set-fee-active" class="sr-only peer" onchange="toggleFeeVisibility()">
+                                    <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
+                            </div>
+
+                            <div id="fee-inputs-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 transition-all duration-300">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">Fee Structure & Type</label>
+                                    <div class="flex gap-2">
+                                        <select id="fee-method" class="w-1/2 border border-slate-200 p-3 rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                                            <option value="Fixed">Fixed ($)</option>
+                                            <option value="Percentage">Percent (%)</option>
+                                            <option value="Daily">Daily ($)</option>
+                                        </select>
+                                        <input type="number" id="fee-amount" class="w-1/2 border border-slate-200 p-3 rounded-xl bg-slate-50 text-sm text-center font-bold outline-none focus:ring-2 focus:ring-indigo-500" placeholder="0">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-500 mb-1">Grace Period (Days)</label>
+                                    <input type="number" id="fee-grace" min="0" class="w-full border border-slate-200 p-3 rounded-xl bg-slate-50 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="e.g. 5">
+                                </div>
+                            </div>
+
+                            <!-- Hidden Core Inputs (Retained for JS state compilation references) -->
+                            <div class="hidden">
+                                <input type="number" id="set-min-score">
+                                <input type="number" id="set-min-income">
+                                <input type="checkbox" id="set-no-evict">
+                                <input type="checkbox" id="set-no-crim">
+                                <input type="checkbox" id="set-require-insurance">
+                            </div>
+
+                            <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition shadow-md text-sm">
+                                Save Configuration Rules
+                            </button>
+                        </form>
+                    </div>
+
                 </div>
             </div>
         </div>
