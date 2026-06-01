@@ -1157,22 +1157,17 @@ if (globalData.user && globalData.user.owner_id) {
             } catch(e) { console.error(e); } 
             toggleModal('processingModal'); 
         }
-        if (params.get('success') === 'true') {
-            const paidInvoiceId = params.get('invoice_id');
-            if(paidInvoiceId) {
-                toggleModal('processingModal');
-                try { 
-                    const { data: inv } = await supabaseClient.from('invoices').select('total').eq('id', paidInvoiceId).single(); 
-                    if(inv) { 
-                        await supabaseClient.from('invoices').update({ status: 'Paid', amount_paid: inv.total, paid_date: new Date().toISOString() }).eq('id', paidInvoiceId); 
-                        showToast("Payment Successful! Thank you.");
-                    } 
-                } catch(e) { console.error("Update failed", e); } 
-                toggleModal('processingModal');
-            }
-            window.history.replaceState({}, document.title, window.location.pathname);
-            render(false);
-        }
+ 
+if (params.get('success') === 'true') {
+    // Show a success toast immediately
+    showToast("Payment submitted! Syncing your records...", "success");
+    window.history.replaceState({}, document.title, window.location.pathname);
+    
+    // Refresh the dashboard after a brief delay to fetch the webhook-updated status
+    setTimeout(async () => {
+        await render(false);
+    }, 1800);
+}
     }
         
 function viewInvoice(id) {
