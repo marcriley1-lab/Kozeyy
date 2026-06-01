@@ -504,23 +504,32 @@
                                 </div>
                             </div>
 
-                            <!-- Pricing Tiers Preview -->
+                           <!-- Pricing Tiers Preview -->
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Basic</p>
-                                    <p class="text-base font-bold text-slate-800">$0<span class="text-xs font-normal">/mo</span></p>
-                                    <p class="text-[9px] text-slate-500">Limit: 2 Properties</p>
+                                <div id="card-tier-free" class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50 flex flex-col justify-between min-h-[145px]">
+                                    <div>
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase">Basic</p>
+                                        <p class="text-base font-bold text-slate-800">$0<span class="text-xs font-normal">/mo</span></p>
+                                        <p class="text-[9px] text-slate-500">Limit: 2 Properties</p>
+                                    </div>
+                                    <button id="btn-tier-free" disabled class="w-full mt-3 bg-slate-200 text-slate-500 text-xs font-bold py-2 rounded-xl cursor-default">Current Plan</button>
                                 </div>
-                                <div class="p-4 rounded-2xl border-2 border-indigo-100 bg-indigo-50/30 relative">
+                                <div id="card-tier-pro" class="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between min-h-[145px] hover:border-indigo-500 transition relative">
                                     <div class="absolute -top-2 right-2 bg-indigo-600 text-white text-[8px] px-2 py-0.5 rounded-full font-bold">PRO</div>
-                                    <p class="text-[10px] font-bold text-indigo-400 uppercase">Growth</p>
-                                    <p class="text-base font-bold text-indigo-900">$9.99<span class="text-xs font-normal">/mo</span></p>
-                                    <p class="text-[9px] text-indigo-600">Limit: 10 Properties</p>
+                                    <div>
+                                        <p class="text-[10px] font-bold text-indigo-400 uppercase font-bold">Growth</p>
+                                        <p class="text-base font-bold text-indigo-900">$9.99<span class="text-xs font-normal">/mo</span></p>
+                                        <p class="text-[9px] text-indigo-600 font-medium">Limit: 10 Properties</p>
+                                    </div>
+                                    <button id="btn-tier-pro" onclick="upgradePlan('pro')" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded-xl transition shadow-sm">Upgrade</button>
                                 </div>
-                                <div class="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                                    <p class="text-[10px] font-bold text-slate-400 uppercase">Unlimited</p>
-                                    <p class="text-base font-bold text-slate-800">$39.99<span class="text-xs font-normal">/mo</span></p>
-                                    <p class="text-[9px] text-slate-500">Unlimited Properties</p>
+                                <div id="card-tier-unlimited" class="p-4 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between min-h-[145px] hover:border-slate-400 transition">
+                                    <div>
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase">Unlimited</p>
+                                        <p class="text-base font-bold text-slate-800">$39.99<span class="text-xs font-normal">/mo</span></p>
+                                        <p class="text-[9px] text-slate-500 font-medium">Unlimited Properties</p>
+                                    </div>
+                                    <button id="btn-tier-unlimited" onclick="upgradePlan('unlimited')" class="w-full mt-3 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 rounded-xl transition shadow-sm">Upgrade</button>
                                 </div>
                             </div>
                         </div>
@@ -1418,6 +1427,11 @@ async function initSystem() {
                 const recentApp = state.apps.find(a => a.status === 'Lease Uploaded');
                 if (recentApp) act_viewApp(recentApp.id);
             }, 1000);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
+        if(urlParams.get('session') === 'success') {
+            showToast("Subscription updated successfully!");
             window.history.replaceState({}, document.title, window.location.pathname);
         }
 
@@ -4629,9 +4643,8 @@ function logic_resetInvoice() {
     }
 }
 function renderSubscriptionUsage(owner) {
-    // This counts your current tenants and listings
     const usage = state.tenants.length + state.listings.length; 
-    const tier = owner.subscription_tier || 'free';
+    const tier = owner.subscription_tier || 'free'; // 'free', 'pro', or 'unlimited'
     const plan = KOZEYY_PLANS[tier];
 
     setText('sub-tier-display', plan.name);
@@ -4642,7 +4655,6 @@ function renderSubscriptionUsage(owner) {
         const percent = Math.min((usage / plan.limit) * 100, 100);
         bar.style.width = percent + '%';
         
-        // If at limit, turn bar red. If under, keep indigo.
         if (usage >= plan.limit) {
             bar.classList.remove('bg-indigo-600');
             bar.classList.add('bg-rose-500');
@@ -4651,6 +4663,87 @@ function renderSubscriptionUsage(owner) {
             bar.classList.remove('bg-rose-500');
         }
     }
+
+    // Update active plan card visualization
+    const tiers = ['free', 'pro', 'unlimited'];
+    tiers.forEach(t => {
+        const btn = document.getElementById(`btn-tier-${t}`);
+        const card = document.getElementById(`card-tier-${t}`);
+        if (btn && card) {
+            if (tier === t) {
+                btn.disabled = true;
+                btn.innerText = "Current Plan";
+                btn.className = "w-full mt-3 bg-slate-100 text-slate-500 text-xs font-bold py-2 rounded-xl cursor-default border border-slate-200";
+                card.className = "p-4 rounded-2xl border-2 border-emerald-500 bg-emerald-50/10 flex flex-col justify-between min-h-[145px] relative";
+            } else {
+                btn.disabled = false;
+                btn.innerText = "Upgrade";
+                if (t === 'pro') {
+                    btn.className = "w-full mt-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded-xl transition shadow-sm";
+                    card.className = "p-4 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between min-h-[145px] hover:border-indigo-500 transition relative";
+                } else if (t === 'unlimited') {
+                    btn.className = "w-full mt-3 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold py-2 rounded-xl transition shadow-sm";
+                    card.className = "p-4 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between min-h-[145px] hover:border-slate-400 transition relative";
+                } else {
+                    btn.disabled = true;
+                    btn.innerText = "Downgraded";
+                    btn.className = "w-full mt-3 bg-slate-100 text-slate-400 text-xs font-bold py-2 rounded-xl cursor-default border border-slate-200";
+                    card.className = "p-4 rounded-2xl border border-slate-200 bg-slate-50/50 flex flex-col justify-between min-h-[145px] relative";
+                }
+            }
+        }
+    });
+}
+
+async function upgradePlan(tier) {
+    const ownerId = localStorage.getItem('kozeyy_user_id');
+    if (!ownerId) return showToast("Session expired. Please log in again.", "error");
+
+    openPlatformConfirm(
+        "Confirm Selection", 
+        `Ready to upgrade to the ${tier === 'pro' ? 'Growth ($9.99/mo)' : 'Unlimited ($39.99/mo)'} plan? You will be redirected to secure checkout.`,
+        async () => {
+            showToast("Connecting to secure checkout...");
+            
+            const btn = document.getElementById(`btn-tier-${tier}`);
+            const originalText = btn ? btn.innerText : "Upgrade";
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = "Connecting...";
+            }
+
+            try {
+                const response = await fetch(`${SUPABASE_URL}/functions/v1/quick-action`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    },
+                    body: JSON.stringify({
+                        action: 'upgrade-landlord-plan',
+                        ownerId: ownerId,
+                        tier: tier
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.url) {
+                    window.location.href = result.url; 
+                } else {
+                    throw new Error(result.error || "Could not launch checkout session.");
+                }
+            } catch (err) {
+                console.error("Upgrade error:", err);
+                showToast(err.message, "error");
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = originalText;
+                }
+            }
+        }
+    );
 }
     
 function calculateLateFee(total, invoice, daysOverdue = 1) {
