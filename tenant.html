@@ -1393,10 +1393,9 @@ function viewInvoice(id) {
                                     'Authorization': `Bearer ${SUPABASE_KEY}` 
                                 }, 
                                 body: JSON.stringify({ 
-                                    action: 'create-checkout-session', 
-                                    tenantId: USER_ID,
-                                    priceId: priceId, 
-                                    mode: 'subscription' 
+                                    action: 'create-subscription', // Aligns with quickaction.txt
+                                    type: 'credit-builder',
+                                    tenantId: USER_ID
                                 }) 
                             });
                             
