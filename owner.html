@@ -1253,7 +1253,8 @@ const KOZEYY_PLANS = {
         apps: [], msgs: [], maint: [], settings: {}, 
         notifications: { messages: 0, maintenance: 0, screening: 0 }
     };
-    
+    // Track the ID if we are editing an existing one
+    let editingRecurringId = null; 
     // Persistent View Tracking
     let viewedMaintIds = new Set(JSON.parse(localStorage.getItem('kozeyy_viewed_maint') || '[]').map(String));
     let viewedAppIds = new Set(JSON.parse(localStorage.getItem('kozeyy_viewed_apps') || '[]').map(String));
@@ -1330,16 +1331,16 @@ function startSystemTour() {
                     }
                 } 
             },
-            { 
-                // STEP 3: Connect Stripe (Targeted immediately after Invoice step)
-                element: '#set-stripe-id', 
-                popover: { 
-                    title: 'Connect Stripe', 
-                    description: 'Enter your Stripe Connected Account ID here to receive rent payments directly to your bank account.',
-                    side: "top",
-                    align: 'start'
-                }
-            },
+{ 
+    // STEP 3: Connect Stripe (Targeted immediately after Invoice step)
+    element: '#stripe-status-container', 
+    popover: { 
+        title: 'Connect Stripe', 
+        description: 'Connect your bank account here to receive rent payments directly to your bank account.',
+        side: "top",
+        align: 'start'
+    }
+},
             { 
                 // STEP 4: Late Fees
                 element: '#set-fee-active', 
@@ -3301,18 +3302,6 @@ async function getPropertyCoordinates(address, city, state) {
     return { lat: null, lon: null };
 }
     
-async function sendEmail(to, subject, type, data) {
-    await supabaseClient.functions.invoke('send-email', {
-        body: { 
-            to, 
-            subject, 
-            type, 
-            data,
-            attachment: data.attachment || null,
-            fileName: data.fileName || null     
-        }
-    });
-}
  function act_initiateSendLease(appId) {
     openPlatformConfirm("Send Lease?", "This will email the lease to the applicant for signature.", async () => {
         const { error } = await supabaseClient.from('apps').update({ status: 'Lease Sent' }).eq('id', appId);
@@ -4464,9 +4453,6 @@ function logic_resetInvoice() {
     document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
 }
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
-    
-   // Track the ID if we are editing an existing one
-    let editingRecurringId = null; 
 
    async function logic_confirmInvoice() { 
     if(!draftInvoice) return; 
