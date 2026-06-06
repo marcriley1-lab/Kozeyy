@@ -1003,8 +1003,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-bold text-slate-700" id="prev-date">Oct 24, 2023</p>
-                            <p class="text-xs text-rose-600 font-bold" id="prev-due-date">Due: -</p>
-                            <p class="text-xs text-slate-500 mt-1">Bill To: <span id="prev-name">Tenant Name</span></p>
+                            <p class="text-xs text-slate-500">Bill To: <span id="prev-name">Tenant Name</span></p>
                         </div>
                     </div>
                     
@@ -1206,10 +1205,8 @@
 </div>     
             
             <div id="sd-email-option" class="hidden-section text-center p-4 bg-slate-50 rounded-xl">
-                        <p class="text-sm text-slate-500 mb-2">Decision Saved.</p>
-                        <button onclick="closeModal('modal-screening-detail')" class="text-indigo-600 font-bold text-sm hover:underline">Close</button>
-                    </div>
-                </div>
+                <p class="text-sm text-slate-500 mb-2">Decision Saved.</p>
+                <button onclick="closeModal('modal-screening-detail')" class="text-indigo-600 font-bold text-sm hover:underline">Close</button>
             </div>
                                
 <div id="modal-payment-view" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
@@ -1391,24 +1388,19 @@ function startSystemTour() {
             const fType = inv.fee_type || globalSettings.late_fee_method || 'Fixed';
             const fVal = parseFloat(inv.fee_value !== undefined ? inv.fee_value : (globalSettings.late_fee_amount || 0));
             
-            let isCapped = false;
             if (fType === 'Daily') {
                 fee = fVal * daysLate;
                 // --- HARD CAP: Daily fees cannot exceed 10% of total invoice ---
                 const maxCap = inv.total * 0.10;
-                if (fee >= maxCap) {
-                    fee = maxCap;
-                    isCapped = true;
-                }
+                if (fee > maxCap) fee = maxCap;
             } else if (fType === 'Percentage') {
                 fee = inv.total * (fVal / 100);
             } else {
                 fee = fVal;
             }
-            return { isOverdue, daysLate, fee, isCapped };
         }
     }
-    return { isOverdue, daysLate, fee: 0, isCapped: false };
+    return { isOverdue, daysLate, fee };
 }
     // --- 1. INIT & POLLING ---
 async function initSystem() {
@@ -3761,13 +3753,8 @@ function act_viewInvoice(id) {
 
         const calc = calculateOverdueDetails(inv, state.settings);
 
-        const dueDate = new Date(inv.date);
-        const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : parseInt(state.settings.grace_period || 0);
-        dueDate.setDate(dueDate.getDate() + grace);
-
         setText('prev-name', inv.tenant_name || 'Unknown');
         setText('prev-date', new Date(inv.date).toLocaleDateString());
-        setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`);
         
         const currentBal = inv.total + calc.fee;
         setText('prev-total-due', `$${currentBal.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
@@ -3790,10 +3777,6 @@ function act_viewInvoice(id) {
             if (type === 'Daily') feeLabel = `Late Fee ($${val}/day x ${calc.daysLate} days)`;
 
             tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${calc.fee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
-            
-            if (calc.isCapped) {
-                tbody.innerHTML += `<tr><td colspan="2" class="py-1 text-right text-[10px] text-amber-600 italic font-semibold">* Daily late fee limit reached (capped at 10% of total)</td></tr>`;
-            }
         }
 
         document.getElementById('inv-step-input').classList.add('hidden-section');
@@ -4444,10 +4427,31 @@ function logic_resetInvoice() {
 
     setText('prev-name', tenant.name); 
     setText('prev-date', draftDate.toLocaleDateString()); 
-    setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`);
     
     // In the preview, we show the base total, but add a notice about the potential late fee
     setText('prev-total-due', `$${baseTotal.toLocaleString()}`);
+    
+    const tbody = document.getElementById('prev-items-body'); 
+    tbody.innerHTML = ''; 
+    invItems.forEach(i => { 
+        tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; 
+    }); 
+    
+    // Add a dynamic information row about when the fee kicks in
+    if (s.late_fee_enabled !== false) {
+        const feeVal = parseFloat(s.late_fee_amount || 0);
+        const feeType = s.late_fee_method === 'Percentage' ? `${feeVal}%` : `$${feeVal}`;
+        tbody.innerHTML += `
+            <tr class="text-[10px] text-slate-400 italic">
+                <td colspan="2" class="pt-4 text-center">
+                    A late fee of ${feeType} will be applied automatically if unpaid by ${dueDate.toLocaleDateString()}.
+                </td>
+            </tr>`;
+    }
+    
+    document.getElementById('inv-step-input').classList.add('hidden-section'); 
+    document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
+}
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
 
    async function logic_confirmInvoice() { 
@@ -4832,7 +4836,6 @@ function signOut() {
                         
 </body>
 </html>
-
 
 
 
