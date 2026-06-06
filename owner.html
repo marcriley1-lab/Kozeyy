@@ -1383,8 +1383,9 @@ function startSystemTour() {
 
     let isCapped = false;
     if(isOverdue) {
-        const diffTime = now - dueDate;
-        daysLate = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const utcNow = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+        const utcDue = Date.UTC(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+        daysLate = Math.floor((utcNow - utcDue) / (1000 * 60 * 60 * 24));
         
         if (inv.fee_enabled !== false) {
             const fType = inv.fee_type || globalSettings.late_fee_method || 'Fixed';
