@@ -4440,38 +4440,12 @@ function logic_resetInvoice() {
         date: dateStr 
     }; 
 
-    const grace = parseInt(s.grace_period || 0);
-    const dueDate = new Date(draftDate);
-    dueDate.setDate(dueDate.getDate() + grace);
-
     setText('prev-name', tenant.name); 
     setText('prev-date', draftDate.toLocaleDateString()); 
     setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`);
     
     // In the preview, we show the base total, but add a notice about the potential late fee
     setText('prev-total-due', `$${baseTotal.toLocaleString()}`);
-    
-    const tbody = document.getElementById('prev-items-body'); 
-    tbody.innerHTML = ''; 
-    invItems.forEach(i => { 
-        tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; 
-    }); 
-    
-    // Add a dynamic information row about when the fee kicks in
-    if (s.late_fee_enabled !== false) {
-        const feeVal = parseFloat(s.late_fee_amount || 0);
-        const feeType = s.late_fee_method === 'Percentage' ? `${feeVal}%` : `$${feeVal}`;
-        tbody.innerHTML += `
-            <tr class="text-[10px] text-slate-400 italic">
-                <td colspan="2" class="pt-4 text-center">
-                    A late fee of ${feeType} will be applied automatically if unpaid by ${dueDate.toLocaleDateString()}.
-                </td>
-            </tr>`;
-    }
-    
-    document.getElementById('inv-step-input').classList.add('hidden-section'); 
-    document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
-}
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
 
    async function logic_confirmInvoice() { 
