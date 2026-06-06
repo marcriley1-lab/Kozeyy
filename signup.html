@@ -117,10 +117,17 @@
 };
 
         function toggleRole(radio) {
-            const isOwner = radio.value === 'owner';
-            document.getElementById('role-owner').className = isOwner ? 'role-selected border-2 rounded-xl p-3 text-center transition' : 'role-default border-2 rounded-xl p-3 text-center transition';
-            document.getElementById('role-tenant').className = !isOwner ? 'role-selected border-2 rounded-xl p-3 text-center transition' : 'role-default border-2 rounded-xl p-3 text-center transition';
-        }
+    const isOwner = radio.value === 'owner';
+    const ownerEl = document.getElementById('role-owner');
+    const tenantEl = document.getElementById('role-tenant');
+    
+    if (ownerEl) {
+        ownerEl.className = isOwner ? 'role-selected border-2 rounded-xl p-3 text-center transition' : 'role-default border-2 rounded-xl p-3 text-center transition';
+    }
+    if (tenantEl) {
+        tenantEl.className = !isOwner ? 'role-selected border-2 rounded-xl p-3 text-center transition' : 'role-default border-2 rounded-xl p-3 text-center transition';
+    }
+}
 
   async function handleSignup(e) {
     e.preventDefault();
