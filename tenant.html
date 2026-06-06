@@ -415,6 +415,7 @@
                     <div class="text-right">
                         <h2 class="text-lg font-bold text-slate-600 mb-1">#<span id="inv-id"></span></h2>
                         <p class="text-sm text-slate-500" id="inv-date">Oct 24, 2023</p>
+                         <p class="text-xs text-rose-600 font-bold" id="inv-due-date-display">Due: -</p>
                     </div>
                 </div>
                 
@@ -1186,8 +1187,11 @@ function viewInvoice(id) {
     const totalDueWithFees = currentBaseBalance + dynamicFee;
 
     // 2. BASIC UI POPULATION
+    const invoiceDueDate = new Date(inv.date);
+
     document.getElementById('inv-id').innerText = inv.invoice_num || inv.id.slice(0,8);
-    document.getElementById('inv-date').innerText = new Date(inv.date).toLocaleDateString();
+    document.getElementById('inv-date').innerText = invoiceDueDate.toLocaleDateString();
+    document.getElementById('inv-due-date-display').innerText = `Due: ${invoiceDueDate.toLocaleDateString()}`;
     document.getElementById('inv-prev-bal').innerText = `$${totalRaw.toLocaleString(undefined, {minimumFractionDigits: 2})}`; 
     document.getElementById('inv-prev-pay').innerText = `$${(paidRaw + pendingRaw).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
     document.getElementById('inv-fwd-bal').innerText = `$${currentBaseBalance.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
