@@ -1003,7 +1003,8 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-bold text-slate-700" id="prev-date">Oct 24, 2023</p>
-                            <p class="text-xs text-slate-500">Bill To: <span id="prev-name">Tenant Name</span></p>
+                            <p class="text-xs text-rose-600 font-bold" id="prev-due-date">Due: -</p>
+                            <p class="text-xs text-slate-500 mt-1">Bill To: <span id="prev-name">Tenant Name</span></p>
                         </div>
                     </div>
                     
@@ -1388,19 +1389,24 @@ function startSystemTour() {
             const fType = inv.fee_type || globalSettings.late_fee_method || 'Fixed';
             const fVal = parseFloat(inv.fee_value !== undefined ? inv.fee_value : (globalSettings.late_fee_amount || 0));
             
+            let isCapped = false;
             if (fType === 'Daily') {
                 fee = fVal * daysLate;
                 // --- HARD CAP: Daily fees cannot exceed 10% of total invoice ---
                 const maxCap = inv.total * 0.10;
-                if (fee > maxCap) fee = maxCap;
+                if (fee >= maxCap) {
+                    fee = maxCap;
+                    isCapped = true;
+                }
             } else if (fType === 'Percentage') {
                 fee = inv.total * (fVal / 100);
             } else {
                 fee = fVal;
             }
+            return { isOverdue, daysLate, fee, isCapped };
         }
     }
-    return { isOverdue, daysLate, fee };
+    return { isOverdue, daysLate, fee: 0, isCapped: false };
 }
     // --- 1. INIT & POLLING ---
 async function initSystem() {
@@ -3753,8 +3759,13 @@ function act_viewInvoice(id) {
 
         const calc = calculateOverdueDetails(inv, state.settings);
 
+        const dueDate = new Date(inv.date);
+        const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : parseInt(state.settings.grace_period || 0);
+        dueDate.setDate(dueDate.getDate() + grace);
+
         setText('prev-name', inv.tenant_name || 'Unknown');
         setText('prev-date', new Date(inv.date).toLocaleDateString());
+        setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`);
         
         const currentBal = inv.total + calc.fee;
         setText('prev-total-due', `$${currentBal.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
@@ -3777,6 +3788,10 @@ function act_viewInvoice(id) {
             if (type === 'Daily') feeLabel = `Late Fee ($${val}/day x ${calc.daysLate} days)`;
 
             tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${calc.fee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
+            
+            if (calc.isCapped) {
+                tbody.innerHTML += `<tr><td colspan="2" class="py-1 text-right text-[10px] text-amber-600 italic font-semibold">* Daily late fee limit reached (capped at 10% of total)</td></tr>`;
+            }
         }
 
         document.getElementById('inv-step-input').classList.add('hidden-section');
@@ -4425,8 +4440,13 @@ function logic_resetInvoice() {
         date: dateStr 
     }; 
 
+    const grace = parseInt(s.grace_period || 0);
+    const dueDate = new Date(draftDate);
+    dueDate.setDate(dueDate.getDate() + grace);
+
     setText('prev-name', tenant.name); 
     setText('prev-date', draftDate.toLocaleDateString()); 
+    setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`);
     
     // In the preview, we show the base total, but add a notice about the potential late fee
     setText('prev-total-due', `$${baseTotal.toLocaleString()}`);
