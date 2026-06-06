@@ -1003,6 +1003,7 @@
                         </div>
                         <div class="text-right">
                             <p class="text-sm font-bold text-slate-700" id="prev-date">Oct 24, 2023</p>
+                            <p class="text-xs text-rose-600 font-bold" id="prev-due-date">Due: -</p>
                             <p class="text-xs text-slate-500">Bill To: <span id="prev-name">Tenant Name</span></p>
                         </div>
                     </div>
@@ -4426,7 +4427,8 @@ function logic_resetInvoice() {
     }; 
 
     setText('prev-name', tenant.name); 
-    setText('prev-date', draftDate.toLocaleDateString()); 
+    setText('prev-date', draftDate.toLocaleDateString());
+    setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`);
     
     // In the preview, we show the base total, but add a notice about the potential late fee
     setText('prev-total-due', `$${baseTotal.toLocaleString()}`);
