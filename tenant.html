@@ -1209,7 +1209,7 @@ function viewInvoice(id) {
          tbody.innerHTML += `
             <tr class="bg-rose-50 border-t border-rose-100">
                 <td class="p-3 text-rose-600 font-bold">
-                    Late Fee <span class="text-[10px] font-normal">(${calc.daysLate} days past grace)</span>
+                    Late Fee <span class="text-[10px] font-normal">(${calc.daysLate} days late)</span>
                 </td>
                 <td class="p-3 text-right font-bold text-rose-600">+$${calc.fee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
             </tr>`;
