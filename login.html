@@ -253,37 +253,49 @@
         async function handleForgot(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-forgot');
-            failedAttempts = 0;
-            const originalText = btn.innerText;
+            const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+            
+            hideError();
+            const originalText = btn.innerHTML;
             btn.innerHTML = `<i class="fas fa-circle-notch fa-spin"></i> Sending...`;
             btn.disabled = true;
 
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+            try {
+                // Triggers Supabase password recovery
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + window.location.pathname
+                });
+
+                if (error) throw error;
+
                 document.getElementById('form-forgot').classList.add('hidden-section');
                 document.getElementById('forgot-success').classList.remove('hidden-section');
-            }, 1500);
+            } catch (err) {
+                console.error("Reset Password Error:", err.message);
+                showError("Reset Failed", err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
         // --- NEW: INVITATION & PASSWORD SETUP ENGINE ---
         window.addEventListener('DOMContentLoaded', checkInvitationLink);
         window.addEventListener('hashchange', checkInvitationLink);
 
-        async function checkInvitationLink() {
+       async function checkInvitationLink() {
             const hash = window.location.hash;
             
-            // Detect if the user arrived via the "Set Up Your Account" invitation email
-            if (hash && hash.includes('type=invite')) {
-                // Change View Title and Subtitle dynamically
-                document.getElementById('view-title').innerText = "Activate Account";
-                document.getElementById('view-subtitle').innerText = "Choose a password to secure your account";
+            if (hash && (hash.includes('type=invite') || hash.includes('type=recovery'))) {
+                const isRecovery = hash.includes('type=recovery');
                 
-                // Swap the login form to a "Set Password" form
+                document.getElementById('view-title').innerText = isRecovery ? "Reset Password" : "Activate Account";
+                document.getElementById('view-subtitle').innerText = isRecovery ? "Choose a new password for your account" : "Choose a password to secure your account";
+                
                 const loginForm = document.querySelector('#view-login form');
                 if (loginForm) {
-                    loginForm.setAttribute('onsubmit', ''); // Clear inline onsubmit
-                    loginForm.onsubmit = handleSetPassword; // Bind new handler
+                    loginForm.setAttribute('onsubmit', ''); 
+                    loginForm.onsubmit = handleSetPassword; 
                     loginForm.innerHTML = `
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1">New Password</label>
@@ -299,13 +311,12 @@
                                 <input type="password" id="confirm-new-password" class="w-full bg-slate-50 border border-slate-200 p-3 pl-11 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition font-medium text-slate-700 placeholder:text-slate-300" placeholder="Confirm your password" required>
                             </div>
                         </div>
-                        <button type="submit" id="btn-activate" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-600 active:scale-[0.98] transition shadow-lg shadow-indigo-900/10 text-base flex items-center justify-center gap-2 mt-4">
-                            Activate & Log In
+                        <button type="submit" id="btn-activate" class="w-full bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-600 active:scale-[0.98] transition shadow-lg shadow-indigo-900/10 text-base flex items-center justify-center gap-2 mt-4">
+                            ${isRecovery ? 'Reset & Log In' : 'Activate & Log In'}
                         </button>
                     `;
                 }
 
-                // Hide the plain sign-up link at the bottom since they are already registered
                 const signupLink = document.querySelector('#view-login .border-t');
                 if (signupLink) signupLink.classList.add('hidden-section');
             }
@@ -335,17 +346,40 @@
             try {
                 // Get the active session (automatically parsed from the URL hash)
                 const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-                if (sessionError || !session) throw new Error("Your invitation token has expired or is invalid.");
+                if (sessionError || !session) throw new Error("Your session token has expired or is invalid.");
 
                 // Update the user's password in the database
                 const { error: updateError } = await supabaseClient.auth.updateUser({ password: pass });
                 if (updateError) throw updateError;
 
-                // Establish the local storage session variables so tenant.html can read them
-                localStorage.setItem('kozeyy_user_id', session.user.id);
+                const userId = session.user.id;
+                localStorage.setItem('kozeyy_user_id', userId);
+
+                // Run check_is_owner
+                const { data: isOwner } = await supabaseClient.rpc('check_is_owner', { 
+                    target_uid: userId 
+                });
+
+                if (isOwner === true) {
+                    localStorage.setItem('kozeyy_role', 'owner');
+                    window.location.href = 'owner.html';
+                    return;
+                }
+
+                // Check if established tenant or applicant
+                const { data: tenantRecord } = await supabaseClient
+                    .from('tenants')
+                    .select('id')
+                    .eq('id', userId)
+                    .maybeSingle();
+
                 localStorage.setItem('kozeyy_role', 'tenant');
 
-                window.location.href = 'tenant.html';
+                if (tenantRecord) {
+                    window.location.href = 'tenant.html';
+                } else {
+                    window.location.href = 'applicantportal.html';
+                }
             } catch (err) {
                 console.error(err);
                 showError("Activation Failed", err.message);
