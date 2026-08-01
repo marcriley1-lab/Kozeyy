@@ -1245,80 +1245,72 @@ function viewInvoice(id) {
              feeSection.classList.add('hidden-section');
              totalEl.innerText = `$${totalDueWithFees.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
              payBtnContainer.innerHTML = pendingNotice + `
-                <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center mt-4">
-                    <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fas fa-wallet"></i></div>
-                    <h3 class="font-bold text-slate-800">Online Payment Unavailable</h3>
-                    <p class="text-xs text-slate-500 mt-2">The property owner has not connected their bank account yet.</p>
+                <div class="bg-amber-50 border border-amber-200 rounded-2xl p-5 text-center mt-3">
+                    <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-2 text-lg"><i class="fas fa-wallet"></i></div>
+                    <h3 class="font-bold text-slate-800 text-sm">Online Payment Unavailable</h3>
+                    <p class="text-xs text-slate-500 mt-1">The property manager has not linked online payment processing yet.</p>
                 </div>`;
         } else if (totalDueWithFees <= 0) {
             feeSection.classList.add('hidden-section');
             totalEl.innerText = `$0.00`;
-            payBtnContainer.innerHTML = pendingNotice + `<div class="w-full bg-slate-100 text-slate-500 text-center py-4 rounded-xl font-bold uppercase">Balance Processing</div>`;
+            payBtnContainer.innerHTML = pendingNotice + `<div class="w-full bg-slate-100 text-slate-500 text-center py-3.5 rounded-2xl font-bold uppercase text-xs mt-3">Balance Processing</div>`;
         } else {
-            // Update Stripe totals based on dynamic amount
+            // Calculate exact Stripe payment totals
             const achFee = 2.50;
             const achTotal = totalDueWithFees + achFee;
             const cardTotal = (totalDueWithFees + 0.30) / 0.971;
             const cardFee = cardTotal - totalDueWithFees;
 
             totalEl.innerText = `$${totalDueWithFees.toLocaleString(undefined, {minimumFractionDigits: 2})}`; 
-            feeSection.classList.remove('hidden-section');
-            feeSection.innerHTML = `
-                <div class="flex justify-between text-slate-500 font-bold border-b border-slate-200 pb-1"><span>Processing Fees</span></div>
-                <div class="text-slate-500 mt-2 text-xs">
-                    <div class="flex justify-between"><span>Bank Transfer (ACH)</span> <span>+$2.50</span></div>
-                    <div class="flex justify-between"><span>Credit/Debit Card</span> <span>+$${cardFee.toFixed(2)}</span></div>
-                </div>`;
+            // Keep separate fee breakdown hidden (amounts are clearly stated on payment cards below)
+            feeSection.classList.add('hidden-section');
             
-           payBtnContainer.innerHTML = pendingNotice + `
-    <div class="mt-6 space-y-3 text-left">
-        <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Select Payment Method</label>
+            payBtnContainer.innerHTML = pendingNotice + `
+    <div class="mt-3 space-y-2.5 text-left">
+        <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Select Payment Method</label>
         
+        <!-- ACH Bank Transfer Option -->
         <div onclick="initStripePayment('${inv.id}', ${totalDueWithFees}, 'us_bank_account', ${achFee})" 
-             class="group relative flex items-center justify-between p-4 bg-white border border-slate-200 hover:border-indigo-500 rounded-xl cursor-pointer transition shadow-sm hover:shadow-md">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition">
-                    <i class="fas fa-university text-lg"></i>
+             class="group relative flex items-center justify-between p-3.5 bg-white border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/20 rounded-2xl cursor-pointer transition shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition">
+                    <i class="fas fa-university text-sm"></i>
                 </div>
                 <div>
-                    <p class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <p class="font-bold text-slate-800 text-xs flex items-center gap-1.5">
                         Bank Transfer (ACH)
-                        <span class="bg-emerald-100 text-emerald-700 text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wide">Lowest Fee</span>
+                        <span class="bg-emerald-100 text-emerald-700 text-[8px] font-black uppercase px-1.5 py-0.5 rounded">Lowest Fee</span>
                     </p>
-                    <p class="text-xs text-slate-400">Log in safely via secure portals</p>
+                    <p class="text-[10px] text-slate-400">Secure direct bank link</p>
                 </div>
             </div>
             <div class="text-right">
-                <p class="font-black text-slate-900 text-base">$${achTotal.toFixed(2)}</p>
-                <p class="text-[10px] text-slate-400">+$2.50 fee</p>
+                <p class="font-black text-slate-900 text-sm">$${achTotal.toFixed(2)}</p>
+                <p class="text-[9px] text-slate-400">+$2.50 fee</p>
             </div>
         </div>
         
+        <!-- Card & Cash App Option -->
         <div onclick="initStripePayment('${inv.id}', ${totalDueWithFees}, 'card', ${cardFee})" 
-             class="group relative flex items-center justify-between p-4 bg-white border border-slate-200 hover:border-indigo-500 rounded-xl cursor-pointer transition shadow-sm hover:shadow-md">
-            <div class="flex items-center gap-4">
-                <div class="w-10 h-10 bg-slate-50 rounded-lg flex items-center justify-center text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition">
-                    <i class="far fa-credit-card text-lg"></i>
+             class="group relative flex items-center justify-between p-3.5 bg-white border border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/20 rounded-2xl cursor-pointer transition shadow-sm">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center text-slate-500 group-hover:bg-indigo-600 group-hover:text-white transition">
+                    <i class="far fa-credit-card text-sm"></i>
                 </div>
                 <div>
-                    <p class="font-bold text-slate-800 text-sm">Cards & Cash App</p>
-                    <div class="flex items-center gap-2 mt-0.5 text-slate-400 text-[11px]">
-                        <span class="flex items-center gap-1 font-medium text-emerald-600"><i class="fas fa-money-bill-wave"></i> Cash App Pay</span>•
-                        <span class="flex items-center gap-1 text-slate-400"><i class="fab fa-cc-visa"></i> Visa</span>•
-                        <span class="flex items-center gap-1 text-slate-400"><i class="fab fa-cc-mastercard"></i> Mastercard</span>
+                    <p class="font-bold text-slate-800 text-xs">Credit / Debit / Cash App</p>
+                    <div class="flex items-center gap-1.5 mt-0.5 text-slate-400 text-[10px]">
+                        <span class="text-emerald-600 font-bold"><i class="fas fa-money-bill-wave"></i> Cash App</span>•
+                        <span>Visa / MC</span>
                     </div>
                 </div>
             </div>
             <div class="text-right">
-                <p class="font-black text-slate-900 text-base">$${cardTotal.toFixed(2)}</p>
-                <p class="text-[10px] text-slate-400">+$${cardFee.toFixed(2)} fee</p>
+                <p class="font-black text-slate-900 text-sm">$${cardTotal.toFixed(2)}</p>
+                <p class="text-[9px] text-slate-400">+$${cardFee.toFixed(2)} fee</p>
             </div>
         </div>
-    </div>
-    
-    <p class="text-center text-[11px] text-slate-400 mt-5 bg-slate-50 py-2 rounded-lg border border-slate-100">
-        <i class="fas fa-lock text-emerald-500 mr-1"></i> Payments securely encrypted and managed by Stripe.
-    </p>`;
+    </div>`;
         }
     }
     toggleModal('invoiceModal');
