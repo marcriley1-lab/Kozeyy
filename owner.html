@@ -4573,7 +4573,7 @@ function logic_resetInvoice() {
             throw new Error("Invalid Tenant ID (NaN). Please re-select the tenant.");
         }
 
-        // --- THE FIX: Fetch your LATEST Stripe ID from the owners table ---
+        // Fetch Stripe ID
         const { data: ownerProfile, error: ownerErr } = await supabaseClient
             .from('owners')
             .select('stripe_customer_id')
@@ -4585,12 +4585,31 @@ function logic_resetInvoice() {
         }
 
         const currentStripeId = ownerProfile.stripe_customer_id;
-        console.log("Creating invoice with Stripe ID:", currentStripeId);
 
         const file = document.getElementById('inv-doc').files[0]; 
         let docUrl = null; 
         if (file) docUrl = await uploadFile(file, 'invoices'); 
 
+        // 1. ALWAYS Insert the Initial Invoice into 'invoices' table
+        const { error: invErr } = await supabaseClient.from('invoices').insert([{ 
+            owner_id: ownerId, 
+            tenant_id: tenantUuid, 
+            tenant_name: draftInvoice.tenantName, 
+            items: draftInvoice.items, 
+            total: draftInvoice.total, 
+            date: draftInvoice.date, 
+            status: 'Unpaid', 
+            landlord_stripe_id: currentStripeId, 
+            doc_url: docUrl,                         
+            fee_type: settings.late_fee_method || 'Fixed',
+            fee_value: parseFloat(settings.late_fee_amount) || 0,
+            grace_period: parseInt(settings.grace_period) || 0,
+            fee_enabled: settings.late_fee_enabled !== false
+        }]); 
+
+        if (invErr) throw invErr;
+
+        // 2. If Recurring is enabled, save or update the recurring schedule
         if (isRecurring) {
             const recurDay = parseInt(document.getElementById('inv-recur-day').value) || 1;
             const recurEnd = document.getElementById('inv-recur-end').value || null;
@@ -4605,53 +4624,33 @@ function logic_resetInvoice() {
                 active: true
             };
 
-            let error;
+            let recurErr;
             if(editingRecurringId) {
                 const res = await supabaseClient.from('recurring_invoices').update(recurData).eq('id', editingRecurringId);
-                error = res.error;
+                recurErr = res.error;
             } else {
                 const res = await supabaseClient.from('recurring_invoices').insert([recurData]);
-                error = res.error;
+                recurErr = res.error;
             }
-            if(error) throw error;
-            showToast("Recurring Invoice Scheduled");
-
-        } else {
-            // Updated to use the FRESH Stripe ID
-            const { error } = await supabaseClient.from('invoices').insert([{ 
-                owner_id: ownerId, 
-                tenant_id: tenantUuid, 
-                tenant_name: draftInvoice.tenantName, 
-                items: draftInvoice.items, 
-                total: draftInvoice.total, 
-                date: draftInvoice.date, 
-                status: 'Unpaid', 
-                landlord_stripe_id: currentStripeId, 
-                doc_url: docUrl,                         
-                fee_type: settings.late_fee_method || 'Fixed',
-                fee_value: parseFloat(settings.late_fee_amount) || 0,
-                grace_period: parseInt(settings.grace_period) || 0,
-                fee_enabled: settings.late_fee_enabled !== false
-            }]); 
-
-            if(error) throw error;
-
-            const tenant = state.tenants.find(t => String(t.id) === tenantUuid);
-            if(tenant && tenant.email) {
-                await sendEmail(
-                    tenant.email,
-                    "New Invoice Available",
-                    "alert",
-                    {
-                        title: "New Invoice Received",
-                        message: `A new invoice for $${draftInvoice.total.toLocaleString()} is available in your portal. Due date: ${new Date(draftInvoice.date).toLocaleDateString()}`,
-                        actionLink: "https://kozeyy.com/tenant.html"
-                    }
-                );
-            }
-
-            showToast("Invoice Sent Successfully"); 
+            if(recurErr) throw recurErr;
         }
+
+        // 3. Email Notification to Tenant
+        const tenant = state.tenants.find(t => String(t.id) === tenantUuid);
+        if(tenant && tenant.email) {
+            await sendEmail(
+                tenant.email,
+                "New Invoice Available",
+                "alert",
+                {
+                    title: "New Invoice Received",
+                    message: `A new invoice for $${draftInvoice.total.toLocaleString()} is available in your portal. Due date: ${new Date(draftInvoice.date).toLocaleDateString()}`,
+                    actionLink: "https://kozeyy.com/tenant.html"
+                }
+            );
+        }
+
+        showToast(isRecurring ? "Initial Invoice Sent & Auto-Billing Enabled" : "Invoice Sent Successfully"); 
 
         closeModal('modal-invoice'); 
         await fetchData(); 
