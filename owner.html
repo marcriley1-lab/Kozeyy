@@ -975,11 +975,14 @@
                         
                         <div id="inv-recurring-opts" class="hidden-section space-y-3 pt-3 mt-2 border-t border-slate-200">
                             <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month</label>
-                                <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
-                                <p class="text-[10px] text-slate-400 mt-1">
-                                    Next scheduled invoice: <span id="inv-recur-next" class="font-bold text-indigo-600">...</span>
-                                </p>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month Rent Due</label>
+            <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
+            <p class="text-[10px] text-slate-400 mt-1">
+                Next invoice sent: <span id="inv-recur-next" class="font-bold text-indigo-600">...</span>
+            </p>
+            <p class="text-[9px] text-slate-400 mt-0.5 italic">
+                *Invoices are automatically sent 5 days before the due date each month.
+            </p>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-1">End Date (Optional)</label>
@@ -4423,38 +4426,39 @@ function logic_resetInvoice() {
         // 4. SYNC UI 
         toggleRecurringOptions(); 
     }
-    function updateNextDate() {
-        const dayInput = Math.min(31, Math.max(1, parseInt(document.getElementById('inv-recur-day').value) || 1));
+  function updateNextDate() {
+        const dueDay = Math.min(31, Math.max(1, parseInt(document.getElementById('inv-recur-day').value) || 1));
         const dateVal = document.getElementById('inv-date').value;
         
         let baseDate = new Date();
         if (dateVal) {
             const parts = dateVal.split('-');
             if (parts.length === 3) {
-                // Parse local YYYY-MM-DD
                 baseDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
             }
         }
 
-        // The next automated invoice runs in the NEXT calendar month after the initial invoice date
-        let nextRunMonth = baseDate.getMonth() + 1;
-        let nextRunYear = baseDate.getFullYear();
-        
-        // Handle year overflow (e.g. Dec -> Jan)
-        if (nextRunMonth > 11) {
-            nextRunMonth = 0;
-            nextRunYear++;
+        // Calculate next month's due date
+        let nextMonth = baseDate.getMonth() + 1;
+        let nextYear = baseDate.getFullYear();
+        if (nextMonth > 11) {
+            nextMonth = 0;
+            nextYear++;
         }
 
-        // Cap days at month limit (e.g. Feb 28th)
-        const daysInTargetMonth = new Date(nextRunYear, nextRunMonth + 1, 0).getDate();
-        const validDay = Math.min(dayInput, daysInTargetMonth);
+        const maxDays = new Date(nextYear, nextMonth + 1, 0).getDate();
+        const validDueDay = Math.min(dueDay, maxDays);
+        const nextDueDate = new Date(nextYear, nextMonth, validDueDay);
 
-        const nextRun = new Date(nextRunYear, nextRunMonth, validDay);
+        // Send invoice 5 days BEFORE the due date
+        const sendDate = new Date(nextDueDate);
+        sendDate.setDate(sendDate.getDate() - 5);
 
-        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        const options = { weekday: 'short', month: 'short', day: 'numeric' };
         const el = document.getElementById('inv-recur-next');
-        if (el) el.innerText = nextRun.toLocaleDateString(undefined, options);
+        if (el) {
+            el.innerText = `${sendDate.toLocaleDateString(undefined, options)} (Due: ${nextDueDate.toLocaleDateString(undefined, options)})`;
+        }
     }
     
     function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
