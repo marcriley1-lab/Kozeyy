@@ -961,35 +961,48 @@
                     </div>
 
                     <div id="inv-recurring-wrapper" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-opacity duration-200">
-                        <div class="flex items-center justify-between">
-                            <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
-                                <i class="fas fa-sync-alt text-indigo-500"></i> Recurring Rent?
-                                <span id="inv-recur-status" class="hidden-section text-xs text-emerald-600 font-bold ml-1"></span>
-                            </label>
+    <div class="flex items-center justify-between">
+        <label class="font-bold text-sm text-slate-800 flex items-center gap-2 brand-font">
+            <i class="fas fa-sync-alt text-indigo-600"></i> Enable Monthly Auto-Billing?
+            <span id="inv-recur-status" class="hidden-section text-xs text-emerald-600 font-bold ml-1"></span>
+        </label>
 
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="inv-recurring" class="sr-only peer" onchange="toggleRecurringOptions()">
-                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                            </label>
-                        </div>
-                        
-                        <div id="inv-recurring-opts" class="hidden-section space-y-3 pt-3 mt-2 border-t border-slate-200">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month Rent Due</label>
-            <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
-            <p class="text-[10px] text-slate-400 mt-1">
-                Next invoice sent: <span id="inv-recur-next" class="font-bold text-indigo-600">...</span>
+        <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="inv-recurring" class="sr-only peer" onchange="toggleRecurringOptions()">
+            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+        </label>
+    </div>
+    
+    <div id="inv-recurring-opts" class="hidden-section space-y-3 pt-3 mt-3 border-t border-slate-200">
+        <div>
+            <div class="flex justify-between items-center mb-1">
+                <label class="block text-xs font-bold text-slate-700">Monthly Due Day</label>
+                <span class="text-[10px] text-slate-400">Day of month (1 - 31)</span>
+            </div>
+            <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="1" min="1" max="31">
+        </div>
+
+        <!-- Structured Schedule Breakdown Card -->
+        <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 text-xs space-y-1.5">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-600 font-medium">Next Invoice Dispatch:</span>
+                <span id="inv-recur-next-send" class="font-bold text-indigo-700">...</span>
+            </div>
+            <div class="flex justify-between items-center pt-1.5 border-t border-indigo-100/60">
+                <span class="text-slate-600 font-medium">Next Invoice Due:</span>
+                <span id="inv-recur-next-due" class="font-bold text-indigo-700">...</span>
+            </div>
+            <p class="text-[10px] text-slate-400 pt-1 italic border-t border-indigo-100/40">
+                <i class="fas fa-info-circle mr-1"></i>Invoices dispatch automatically 5 days prior to each monthly due date.
             </p>
-            <p class="text-[9px] text-slate-400 mt-0.5 italic">
-                *Invoices are automatically sent 5 days before the due date each month.
-            </p>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-500 mb-1">End Date (Optional)</label>
-                                <input type="date" id="inv-recur-end" class="w-full border p-2 rounded-lg text-sm bg-white">
-                            </div>
-                        </div>
-                    </div>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Auto-Billing End Date (Optional)</label>
+            <input type="date" id="inv-recur-end" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+    </div>
+</div>
 
                     <!-- Active Recurring Alert Box (Located directly above Preview Button) -->
                     <div id="inv-recurring-edit-alert" class="hidden-section p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl font-medium flex flex-col gap-1 shadow-sm mt-4">
@@ -4438,7 +4451,6 @@ function logic_resetInvoice() {
             }
         }
 
-        // Calculate next month's due date
         let nextMonth = baseDate.getMonth() + 1;
         let nextYear = baseDate.getFullYear();
         if (nextMonth > 11) {
@@ -4450,15 +4462,16 @@ function logic_resetInvoice() {
         const validDueDay = Math.min(dueDay, maxDays);
         const nextDueDate = new Date(nextYear, nextMonth, validDueDay);
 
-        // Send invoice 5 days BEFORE the due date
         const sendDate = new Date(nextDueDate);
         sendDate.setDate(sendDate.getDate() - 5);
 
-        const options = { weekday: 'short', month: 'short', day: 'numeric' };
-        const el = document.getElementById('inv-recur-next');
-        if (el) {
-            el.innerText = `${sendDate.toLocaleDateString(undefined, options)} (Due: ${nextDueDate.toLocaleDateString(undefined, options)})`;
-        }
+        const options = { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' };
+        
+        const sendEl = document.getElementById('inv-recur-next-send');
+        const dueEl = document.getElementById('inv-recur-next-due');
+
+        if (sendEl) sendEl.innerText = sendDate.toLocaleDateString(undefined, options);
+        if (dueEl) dueEl.innerText = nextDueDate.toLocaleDateString(undefined, options);
     }
     
     function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
