@@ -935,7 +935,18 @@
             
             <div id="inv-step-input">
                 <form onsubmit="event.preventDefault(); logic_generatePreview();" class="space-y-4">
-                    <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
+                   <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
+
+<!-- Recurring invoice notice alert -->
+<div id="inv-recurring-edit-alert" class="hidden-section p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl font-medium mt-3 flex flex-col gap-1 shadow-sm">
+    <div class="flex items-center gap-2 text-amber-700 font-bold">
+        <i class="fas fa-sync-alt animate-spin-slow"></i>
+        <span>Active Recurring Schedule Found</span>
+    </div>
+    <p class="text-[11px] text-amber-600">
+        This resident already has an active automated monthly invoice schedule. Modifying these settings and saving will overwrite their existing monthly billing profile.
+    </p>
+</div>
                     
                     <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
                         <button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-lg font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button>
@@ -4341,6 +4352,8 @@ async function processLeaseFinalization() {
     }
 function logic_resetInvoice() { 
         const tid = document.getElementById('inv-tenant').value; 
+        const alertBox = document.getElementById('inv-recurring-edit-alert');
+        const titleEl = document.getElementById('inv-modal-title');
         
         // 1. Standard Reset (Rent Items)
         invItems = []; 
@@ -4350,26 +4363,37 @@ function logic_resetInvoice() {
         } else if (invMode === 'variable') logic_addRow(); 
         renderInvItems(); 
 
-        // 2. RECURRING LOGIC
+        // 2. RECURRING LOGIC DEFAULT RESET
         editingRecurringId = null;
+        if (alertBox) alertBox.classList.add('hidden-section');
+        if (titleEl) titleEl.innerText = "Create Invoice";
+        
         const statusEl = document.getElementById('inv-recur-status');
         const checkbox = document.getElementById('inv-recurring');
         
-        // Reset defaults (Start hidden and unchecked)
         if(statusEl) statusEl.classList.add('hidden-section');
         checkbox.checked = false; 
         
         // 3. Check for Existing Schedule
         if(tid && state.recurring_invoices) {
-            const existing = state.recurring_invoices.find(r => r.tenant_id == tid && r.active);
+            const existing = state.recurring_invoices.find(r => String(r.tenant_id) === String(tid) && r.active);
             
             if(existing) {
                 editingRecurringId = existing.id; 
                 
+                // Switch modal contexts to edit mode
+                if (titleEl) titleEl.innerText = "Edit Recurring Invoice";
+                if (alertBox) alertBox.classList.remove('hidden-section');
+
                 // A. Auto-Turn ON the Toggle
-                // Only for Fixed mode, as variable doesn't support recurring in this logic
                 if (invMode === 'fixed') {
                     checkbox.checked = true;
+                }
+
+                // If existing recurring amount matches the current edit structure, load it
+                if (existing.amount && invItems[0]) {
+                    invItems[0].amount = parseFloat(existing.amount);
+                    renderInvItems();
                 }
 
                 // B. Calculate the exact Next Scheduled Date
@@ -4377,8 +4401,6 @@ function logic_resetInvoice() {
                 const now = new Date();
                 let nextRun = new Date(now.getFullYear(), now.getMonth(), dayInput);
                 
-                // If today is past the scheduled day (or is today), move to next month
-                // Note: Cron usually runs early morning. If it's the same day, we assume it runs next month
                 if (now.getDate() >= dayInput) {
                     nextRun.setMonth(nextRun.getMonth() + 1);
                 }
@@ -4394,10 +4416,8 @@ function logic_resetInvoice() {
         }
 
         // 4. SYNC UI 
-        // This ensures the input fields appear immediately because we set checked = true above
         toggleRecurringOptions(); 
     }
-
     function updateNextDate() {
         const dayInput = parseInt(document.getElementById('inv-recur-day').value) || 1;
         const now = new Date();
@@ -4468,6 +4488,16 @@ function logic_resetInvoice() {
     
     document.getElementById('inv-step-input').classList.add('hidden-section'); 
     document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
+
+    // Update Action button text based on mode context
+    const actionBtn = document.getElementById('btn-confirm-inv');
+    if (actionBtn) {
+        if (editingRecurringId) {
+            actionBtn.innerText = "Save Recurring Schedule";
+        } else {
+            actionBtn.innerText = "Send Invoice";
+        }
+    }
 }
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
 
