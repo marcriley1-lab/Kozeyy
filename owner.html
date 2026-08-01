@@ -957,7 +957,7 @@
 
                     <div>
                         <label class="block text-xs font-bold text-slate-500 mb-1">Due Date</label>
-                        <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
+                       <input type="date" id="inv-date" onchange="updateNextDate()" required class="w-full border p-3 rounded-xl bg-slate-50">
                     </div>
 
                     <div id="inv-recurring-wrapper" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-opacity duration-200">
@@ -3982,8 +3982,6 @@ function renderLeases() {
         // CASE 2: Standard Toggle (Creating New or Viewing)
         if (isRecurring) {
             opts.classList.remove('hidden-section');
-            dateInput.disabled = true;
-            dateInput.parentElement.classList.add('opacity-50');
             
             if(editingRecurringId && state.recurring_invoices) {
                 const existing = state.recurring_invoices.find(r => r.id === editingRecurringId);
@@ -3992,7 +3990,15 @@ function renderLeases() {
                     document.getElementById('inv-recur-end').value = existing.end_date || '';
                 }
             } else {
-                if(!document.getElementById('inv-recur-day').value) document.getElementById('inv-recur-day').value = 1;
+                // Auto-sync recurring day with the day of the selected Due Date
+                if (dateInput.value) {
+                    const parts = dateInput.value.split('-');
+                    if (parts.length === 3) {
+                        document.getElementById('inv-recur-day').value = parseInt(parts[2]);
+                    }
+                } else if(!document.getElementById('inv-recur-day').value) {
+                    document.getElementById('inv-recur-day').value = 1;
+                }
             }
             updateNextDate();
 
@@ -4418,17 +4424,37 @@ function logic_resetInvoice() {
         toggleRecurringOptions(); 
     }
     function updateNextDate() {
-        const dayInput = parseInt(document.getElementById('inv-recur-day').value) || 1;
-        const now = new Date();
-        let nextRun = new Date(now.getFullYear(), now.getMonth(), dayInput);
-
-        // Logic: If today is the 15th and they pick the 5th, send NEXT month.
-        if (now.getDate() >= dayInput) {
-            nextRun.setMonth(nextRun.getMonth() + 1);
+        const dayInput = Math.min(31, Math.max(1, parseInt(document.getElementById('inv-recur-day').value) || 1));
+        const dateVal = document.getElementById('inv-date').value;
+        
+        let baseDate = new Date();
+        if (dateVal) {
+            const parts = dateVal.split('-');
+            if (parts.length === 3) {
+                // Parse local YYYY-MM-DD
+                baseDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            }
         }
 
+        // The next automated invoice runs in the NEXT calendar month after the initial invoice date
+        let nextRunMonth = baseDate.getMonth() + 1;
+        let nextRunYear = baseDate.getFullYear();
+        
+        // Handle year overflow (e.g. Dec -> Jan)
+        if (nextRunMonth > 11) {
+            nextRunMonth = 0;
+            nextRunYear++;
+        }
+
+        // Cap days at month limit (e.g. Feb 28th)
+        const daysInTargetMonth = new Date(nextRunYear, nextRunMonth + 1, 0).getDate();
+        const validDay = Math.min(dayInput, daysInTargetMonth);
+
+        const nextRun = new Date(nextRunYear, nextRunMonth, validDay);
+
         const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
-        document.getElementById('inv-recur-next').innerText = nextRun.toLocaleDateString(undefined, options);
+        const el = document.getElementById('inv-recur-next');
+        if (el) el.innerText = nextRun.toLocaleDateString(undefined, options);
     }
     
     function logic_addRow() { invItems.push({desc:'', amount:0}); renderInvItems(); }
