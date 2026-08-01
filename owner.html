@@ -933,20 +933,9 @@
             <button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
             <h3 class="text-xl font-bold mb-6 brand-font" id="inv-modal-title">Create Invoice</h3>
             
-            <div id="inv-step-input">
+            <<div id="inv-step-input">
                 <form onsubmit="event.preventDefault(); logic_generatePreview();" class="space-y-4">
-                   <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
-
-<!-- Recurring invoice notice alert -->
-<div id="inv-recurring-edit-alert" class="hidden-section p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl font-medium mt-3 flex flex-col gap-1 shadow-sm">
-    <div class="flex items-center gap-2 text-amber-700 font-bold">
-        <i class="fas fa-sync-alt animate-spin-slow"></i>
-        <span>Active Recurring Schedule Found</span>
-    </div>
-    <p class="text-[11px] text-amber-600">
-        This resident already has an active automated monthly invoice schedule. Modifying these settings and saving will overwrite their existing monthly billing profile.
-    </p>
-</div>
+                    <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
                     
                     <div class="flex gap-2 p-1 bg-slate-100 rounded-xl">
                         <button type="button" onclick="logic_invMode('fixed')" id="btn-fixed" class="flex-1 py-2 rounded-lg font-bold text-sm bg-white shadow text-emerald-700">Fixed Rent</button>
@@ -967,42 +956,42 @@
                     </div>
 
                     <div>
-    <label class="block text-xs font-bold text-slate-500 mb-1">Due Date</label>
-    <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
-</div>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Due Date</label>
+                        <input type="date" id="inv-date" required class="w-full border p-3 rounded-xl bg-slate-50">
+                    </div>
 
-   <div id="inv-recurring-wrapper" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-opacity duration-200">
-    <div class="flex items-center justify-between">
-        <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
-            <i class="fas fa-sync-alt text-indigo-500"></i> Recurring Rent?
-            <span id="inv-recur-status" class="hidden-section text-xs text-emerald-600 font-bold ml-1"></span>
-        </label>
+                    <div id="inv-recurring-wrapper" class="mt-4 p-4 bg-slate-50 rounded-xl border border-slate-200 transition-opacity duration-200">
+                        <div class="flex items-center justify-between">
+                            <label class="font-bold text-sm text-slate-700 flex items-center gap-2">
+                                <i class="fas fa-sync-alt text-indigo-500"></i> Recurring Rent?
+                                <span id="inv-recur-status" class="hidden-section text-xs text-emerald-600 font-bold ml-1"></span>
+                            </label>
 
-        <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="inv-recurring" class="sr-only peer" onchange="toggleRecurringOptions()">
-            <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-        </label>
-    </div>
-    
-    <div id="inv-recurring-opts" class="hidden-section space-y-3 pt-3 mt-2 border-t border-slate-200">
-        <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month</label>
-            <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
-            <p class="text-[10px] text-slate-400 mt-1">
-                Next scheduled run: <span id="inv-recur-next" class="font-bold text-indigo-600">...</span>
-            </p>
-        </div>
-        <div>
-            <label class="block text-xs font-bold text-slate-500 mb-1">End Date (Optional)</label>
-            <input type="date" id="inv-recur-end" class="w-full border p-2 rounded-lg text-sm bg-white">
-        </div>
-    </div>
-</div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="inv-recurring" class="sr-only peer" onchange="toggleRecurringOptions()">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+                        
+                        <div id="inv-recurring-opts" class="hidden-section space-y-3 pt-3 mt-2 border-t border-slate-200">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">Day of Month</label>
+                                <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border p-2 rounded-lg text-sm bg-white" placeholder="1" min="1" max="31">
+                                <p class="text-[10px] text-slate-400 mt-1">
+                                    Next scheduled run: <span id="inv-recur-next" class="font-bold text-indigo-600">...</span>
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">End Date (Optional)</label>
+                                <input type="date" id="inv-recur-end" class="w-full border p-2 rounded-lg text-sm bg-white">
+                            </div>
+                        </div>
+                    </div>
 
-                   <!-- Recurring Invoice Notice Alert (Placed directly above Preview Button) -->
-                    <div id="inv-recurring-edit-alert" class="hidden-section p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl font-medium flex flex-col gap-1 shadow-sm my-3">
+                    <!-- Active Recurring Alert Box (Located directly above Preview Button) -->
+                    <div id="inv-recurring-edit-alert" class="hidden-section p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl font-medium flex flex-col gap-1 shadow-sm mt-4">
                         <div class="flex items-center gap-2 text-amber-700 font-bold">
-                            <i class="fas fa-sync-alt animate-spin-slow"></i>
+                            <i class="fas fa-sync-alt"></i>
                             <span>Active Recurring Schedule Found</span>
                         </div>
                         <p class="text-[11px] text-amber-600">
