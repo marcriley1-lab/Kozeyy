@@ -933,7 +933,7 @@
             <button onclick="closeModal('modal-invoice')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button>
             <h3 class="text-xl font-bold mb-6 brand-font" id="inv-modal-title">Create Invoice</h3>
             
-            <<div id="inv-step-input">
+            <div id="inv-step-input">
                 <form onsubmit="event.preventDefault(); logic_generatePreview();" class="space-y-4">
                     <select id="inv-tenant" onchange="logic_resetInvoice()" class="w-full border p-3 rounded-xl bg-slate-50" required><option value="" disabled selected>Select a Tenant</option></select>
                     
@@ -1002,7 +1002,6 @@
                     <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font hover:bg-indigo-700 transition">Preview Invoice</button>
                 </form>
             </div>
-
             <div id="inv-step-preview" class="hidden-section">
                 <!-- Target Area for HTML2PDF -->
                 <div id="invoice-download-area" class="bg-white border border-slate-200 rounded-xl p-6 mb-6 paper-shadow relative overflow-hidden">
@@ -4883,7 +4882,6 @@ function signOut() {
                         
 </body>
 </html>
-
 
 
 
