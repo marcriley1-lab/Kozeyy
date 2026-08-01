@@ -999,6 +999,17 @@
     </div>
 </div>
 
+                   <!-- Recurring Invoice Notice Alert (Placed directly above Preview Button) -->
+                    <div id="inv-recurring-edit-alert" class="hidden-section p-4 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-xl font-medium flex flex-col gap-1 shadow-sm my-3">
+                        <div class="flex items-center gap-2 text-amber-700 font-bold">
+                            <i class="fas fa-sync-alt animate-spin-slow"></i>
+                            <span>Active Recurring Schedule Found</span>
+                        </div>
+                        <p class="text-[11px] text-amber-600">
+                            This resident already has an active automated monthly invoice schedule. Modifying these settings and saving will overwrite their existing monthly billing profile.
+                        </p>
+                    </div>
+
                     <button class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold brand-font hover:bg-indigo-700 transition">Preview Invoice</button>
                 </form>
             </div>
