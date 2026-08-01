@@ -4490,9 +4490,18 @@ function logic_resetInvoice() {
         date: dateStr 
     }; 
 
+    // Use local Date parsing for due date
+    let dueDateObj = new Date();
+    if (dateStr) {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+            dueDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        }
+    }
+
     setText('prev-name', tenant.name); 
-    setText('prev-date', draftDate.toLocaleDateString());
-    setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`);
+    setText('prev-date', new Date().toLocaleDateString()); // Shows Today's Date
+    setText('prev-due-date', `Due: ${dueDateObj.toLocaleDateString()}`); // Shows August 5, 2026
     
     // In the preview, we show the base total, but add a notice about the potential late fee
     setText('prev-total-due', `$${baseTotal.toLocaleString()}`);
