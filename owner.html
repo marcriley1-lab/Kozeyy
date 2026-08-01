@@ -982,18 +982,21 @@
             <input type="number" id="inv-recur-day" oninput="updateNextDate()" class="w-full border border-slate-200 p-2.5 rounded-xl text-sm bg-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="1" min="1" max="31">
         </div>
 
-        <!-- Structured Schedule Breakdown Card -->
         <div class="bg-indigo-50/70 border border-indigo-100 rounded-xl p-3 text-xs space-y-1.5">
-            <div class="flex justify-between items-center">
-                <span class="text-slate-600 font-medium">Next Invoice Dispatch:</span>
+            <div class="flex items-center justify-between pb-1.5 border-b border-indigo-100/60">
+                <span class="font-bold text-indigo-900 brand-font">Future Auto-Billing (Month 2+)</span>
+                <span class="text-[9px] bg-indigo-100 text-indigo-700 font-bold px-1.5 py-0.5 rounded">Recurring</span>
+            </div>
+            <div class="flex justify-between items-center pt-0.5">
+                <span class="text-slate-600 font-medium">Month 2 Dispatch Date:</span>
                 <span id="inv-recur-next-send" class="font-bold text-indigo-700">...</span>
             </div>
-            <div class="flex justify-between items-center pt-1.5 border-t border-indigo-100/60">
-                <span class="text-slate-600 font-medium">Next Invoice Due:</span>
+            <div class="flex justify-between items-center">
+                <span class="text-slate-600 font-medium">Month 2 Due Date:</span>
                 <span id="inv-recur-next-due" class="font-bold text-indigo-700">...</span>
             </div>
-            <p class="text-[10px] text-slate-400 pt-1 italic border-t border-indigo-100/40">
-                <i class="fas fa-info-circle mr-1"></i>Invoices dispatch automatically 5 days prior to each monthly due date.
+            <p class="text-[10px] text-slate-500 pt-1.5 italic border-t border-indigo-100/40 leading-tight">
+                <i class="fas fa-info-circle mr-1 text-indigo-500"></i>Your 1st invoice sends immediately. Auto-billing takes over for subsequent months 5 days prior to each due date.
             </p>
         </div>
 
