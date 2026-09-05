@@ -1347,9 +1347,15 @@ const KOZEYY_PLANS = {
     };
 
     // Helper Functions
-   function parseDateStr(str) { 
-    if(!str) return new Date(); 
-    // This version handles both "2023-10-24" and "2023-10-24T12:00:00Z"
+  function parseDateStr(str) { 
+    if (!str) return new Date(); 
+    if (typeof str === 'string' && str.includes('-') && !str.includes('T')) {
+        // Splitting YYYY-MM-DD prevents JavaScript from treating it as UTC midnight
+        const parts = str.split('-');
+        if (parts.length === 3) {
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), 12, 0, 0);
+        }
+    }
     const d = new Date(str);
     return isNaN(d.getTime()) ? new Date() : d;
 }
@@ -4045,18 +4051,23 @@ function renderFinancials() {
     modal.classList.add('flex');
 }
 function act_viewInvoice(id) {
-        const inv = state.invoices.find(i => i.id === id);
+        const inv = state.invoices.find(i => String(i.id).trim() === String(id).trim());
         if(!inv) return;
 
         const calc = calculateOverdueDetails(inv, state.settings);
 
-        const dueDate = new Date(inv.date);
+        // Safe local date parsing
+        const invoiceDueDate = parseDateStr(inv.date);
         const grace = inv.grace_period !== undefined ? parseInt(inv.grace_period) : parseInt(state.settings.grace_period || 0);
-        dueDate.setDate(dueDate.getDate() + grace);
+        
+        const finalDueDate = new Date(invoiceDueDate);
+        if (grace > 0) {
+            finalDueDate.setDate(finalDueDate.getDate() + grace);
+        }
 
         setText('prev-name', inv.tenant_name || 'Unknown');
-        setText('prev-date', new Date(inv.date).toLocaleDateString());
-        setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`);
+        setText('prev-date', invoiceDueDate.toLocaleDateString());
+        setText('prev-due-date', `Due: ${finalDueDate.toLocaleDateString()}`);
         
         const currentBal = inv.total + calc.fee;
         setText('prev-total-due', `$${currentBal.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
@@ -4753,12 +4764,13 @@ function logic_resetInvoice() {
     const baseTotal = invItems.reduce((a,b)=>a+(b.amount||0),0); 
     const s = state.settings || {};
 
-    // DYNAMIC CALCULATION:
-    // We calculate the due date based on the 'Send' date + grace period
-    const draftDate = parseDateStr(dateStr);
-    const grace = parseInt(s.grace_period || 0);
-    const dueDate = new Date(draftDate);
-    dueDate.setDate(dueDate.getDate() + grace);
+    // 1. Parse local invoice due date cleanly (No UTC shifts)
+    const dueDate = parseDateStr(dateStr);
+    const grace = Math.max(0, parseInt(s.grace_period || 0));
+
+    // 2. Cutoff date when late fee starts
+    const lateFeeCutoffDate = new Date(dueDate);
+    lateFeeCutoffDate.setDate(lateFeeCutoffDate.getDate() + grace);
 
     draftInvoice = { 
         tenantId: tidSelect, 
@@ -4768,36 +4780,34 @@ function logic_resetInvoice() {
         date: dateStr 
     }; 
 
-    // Use local Date parsing for due date
-    let dueDateObj = new Date();
-    if (dateStr) {
-        const parts = dateStr.split('-');
-        if (parts.length === 3) {
-            dueDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        }
-    }
-
+    // Header matches the invoice date selected
     setText('prev-name', tenant.name); 
-    setText('prev-date', new Date().toLocaleDateString()); // Shows Today's Date
-    setText('prev-due-date', `Due: ${dueDateObj.toLocaleDateString()}`); // Shows August 5, 2026
-    
-    // In the preview, we show the base total, but add a notice about the potential late fee
-    setText('prev-total-due', `$${baseTotal.toLocaleString()}`);
+    setText('prev-date', dueDate.toLocaleDateString()); 
+    setText('prev-due-date', `Due: ${dueDate.toLocaleDateString()}`); 
+    setText('prev-total-due', `$${baseTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}`);
     
     const tbody = document.getElementById('prev-items-body'); 
     tbody.innerHTML = ''; 
     invItems.forEach(i => { 
-        tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2">${i.desc}</td><td class="py-2 text-right font-medium">$${i.amount.toLocaleString()}</td></tr>`; 
+        tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0"><td class="py-2 text-slate-700">${i.desc}</td><td class="py-2 text-right font-medium text-slate-800">$${(parseFloat(i.amount)||0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`; 
     }); 
     
-    // Add a dynamic information row about when the fee kicks in
+    // 3. Information note with accurate phrasing
     if (s.late_fee_enabled !== false) {
         const feeVal = parseFloat(s.late_fee_amount || 0);
-        const feeType = s.late_fee_method === 'Percentage' ? `${feeVal}%` : `$${feeVal}`;
+        const feeType = s.late_fee_method === 'Percentage' ? `${feeVal}%` : `$${feeVal.toFixed(2)}`;
+        
+        let noticeText = "";
+        if (grace === 0) {
+            noticeText = `A late fee of ${feeType} will be applied automatically if unpaid after ${dueDate.toLocaleDateString()}.`;
+        } else {
+            noticeText = `Includes a ${grace}-day grace period. A late fee of ${feeType} will be applied automatically if unpaid after ${lateFeeCutoffDate.toLocaleDateString()}.`;
+        }
+
         tbody.innerHTML += `
             <tr class="text-[10px] text-slate-400 italic">
                 <td colspan="2" class="pt-4 text-center">
-                    A late fee of ${feeType} will be applied automatically if unpaid by ${dueDate.toLocaleDateString()}.
+                    ${noticeText}
                 </td>
             </tr>`;
     }
@@ -4805,14 +4815,9 @@ function logic_resetInvoice() {
     document.getElementById('inv-step-input').classList.add('hidden-section'); 
     document.getElementById('inv-step-preview').classList.remove('hidden-section'); 
 
-    // Update Action button text based on mode context
     const actionBtn = document.getElementById('btn-confirm-inv');
     if (actionBtn) {
-        if (editingRecurringId) {
-            actionBtn.innerText = "Save Recurring Schedule";
-        } else {
-            actionBtn.innerText = "Send Invoice";
-        }
+        actionBtn.innerText = editingRecurringId ? "Save Recurring Schedule" : "Send Invoice";
     }
 }
     function logic_backToInput() { document.getElementById('inv-step-input').classList.remove('hidden-section'); document.getElementById('inv-step-preview').classList.add('hidden-section'); setText('inv-modal-title',"Create Invoice"); }
