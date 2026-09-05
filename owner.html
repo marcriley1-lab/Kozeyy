@@ -3653,68 +3653,95 @@ async function act_saveSettings(e) {
     function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
     
 async function confirmPay() { 
-        let tid = document.getElementById('pay-tenant-id').value; 
-        const sel = document.getElementById('pay-tenant-select'); 
-        const ownerId = localStorage.getItem('kozeyy_user_id'); 
+    let tid = document.getElementById('pay-tenant-id').value; 
+    const sel = document.getElementById('pay-tenant-select'); 
+    const ownerId = localStorage.getItem('kozeyy_user_id'); 
 
-        if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
-        let amt = parseFloat(document.getElementById('pay-amount').value); 
+    if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
+    let amt = parseFloat(document.getElementById('pay-amount').value); 
+    
+    if(tid && amt > 0 && ownerId) { 
+        // 1. Insert Payment Record
+        const { error } = await supabaseClient.from('payments').insert([{ 
+            owner_id: ownerId,
+            tenant_id: tid, 
+            amount: amt, 
+            date: document.getElementById('pay-date').value 
+        }]);
+
+        if (error) { 
+            showToast("Payment Failed: " + error.message, 'error'); 
+            return; 
+        }
+
+        // 2. Fetch Open Invoices sorted oldest first
+        const openInvoices = state.invoices
+            .filter(i => i.tenant_id === tid && i.status !== 'Paid')
+            .sort((a,b) => new Date(a.date) - new Date(b.date)); 
         
-        if(tid && amt > 0 && ownerId) { 
-            // 1. Insert Payment Record
-            const { error } = await supabaseClient.from('payments').insert([{ 
-                owner_id: ownerId,
-                tenant_id: tid, 
-                amount: amt, 
-                date: document.getElementById('pay-date').value 
-            }]);
+        let remainingAmt = amt;
 
-            if (error) { 
-                showToast("Payment Failed: " + error.message, 'error'); 
-                return; 
+        for(const inv of openInvoices) { 
+            if (remainingAmt <= 0) break; 
+
+            // Calculate any overdue late fee on this invoice
+            const calc = calculateOverdueDetails(inv, state.settings);
+            const currentFee = (calc.isOverdue && !inv.fee_applied) ? (calc.fee || 0) : 0;
+            
+            // Effective total due including assessed fee
+            const currentInvoiceTotal = parseFloat(inv.total || 0) + currentFee;
+            const currentPaid = parseFloat(inv.amount_paid || 0);
+            const netDue = Math.max(0, currentInvoiceTotal - currentPaid);
+
+            const pay = Math.min(remainingAmt, netDue); 
+            const newPaid = currentPaid + pay; 
+            const isFullyPaid = newPaid >= currentInvoiceTotal;
+
+            const updateData = { 
+                amount_paid: newPaid, 
+                status: isFullyPaid ? 'Paid' : 'Unpaid' 
+            };
+
+            // If a late fee was assessed and being paid, lock it into the invoice
+            if (currentFee > 0) {
+                const updatedItems = [...(inv.items || [])];
+                const feeLabel = calc.isCapped ? `Late Fee (${calc.daysLate}d - Capped)` : `Late Fee (${calc.daysLate}d)`;
+                updatedItems.push({ desc: feeLabel, amount: currentFee });
+
+                updateData.items = updatedItems;
+                updateData.total = currentInvoiceTotal;
+                updateData.fee_applied = true; // Prevents fee from recalculating again
             }
 
-            // 2. Apply to Invoices (Existing Logic)
-            const openInvoices = state.invoices
-                .filter(i => i.tenant_id === tid && i.status !== 'Paid')
-                .sort((a,b) => new Date(a.date) - new Date(b.date)); 
-            
-            let remainingAmt = amt;
-            for(const inv of openInvoices) { 
-                if (remainingAmt <= 0) break; 
-                const due = inv.total - (inv.amount_paid || 0); 
-                const pay = Math.min(remainingAmt, due); 
-                const newPaid = (inv.amount_paid || 0) + pay; 
-                const newStatus = newPaid >= inv.total ? 'Paid' : 'Unpaid'; 
-                
-                const updateData = { amount_paid: newPaid, status: newStatus };
-                if (newStatus === 'Paid') updateData.paid_date = new Date().toISOString();
-
-                await supabaseClient.from('invoices').update(updateData).eq('id', inv.id); 
-                remainingAmt -= pay; 
-            } 
-            
-            // 3. SEND RECEIPT EMAIL (UPDATED)
-            const tenant = state.tenants.find(t => t.id === tid);
-            if(tenant && tenant.email) {
-                 await sendEmail(
-                     tenant.email, 
-                     "Rent Payment Receipt", 
-                     'receipt', 
-                     { 
-                        name: tenant.name, 
-                        amount: amt.toLocaleString(undefined, {minimumFractionDigits: 2}), 
-                        date: new Date().toLocaleDateString(),
-                        link: "https://kozeyy.com/tenant.html"
-                     }
-                 );
+            if (isFullyPaid) {
+                updateData.paid_date = new Date().toISOString();
             }
 
-            closeModal('modal-pay'); 
-            await initSystem(); 
-            showToast("Payment Recorded & Receipt Sent"); 
+            await supabaseClient.from('invoices').update(updateData).eq('id', inv.id); 
+            remainingAmt -= pay; 
         } 
-    }
+        
+        // 3. Send Receipt Email
+        const tenant = state.tenants.find(t => t.id === tid);
+        if(tenant && tenant.email) {
+             await sendEmail(
+                 tenant.email, 
+                 "Rent Payment Receipt", 
+                 'receipt', 
+                 { 
+                    name: tenant.name, 
+                    amount: amt.toLocaleString(undefined, {minimumFractionDigits: 2}), 
+                    date: new Date().toLocaleDateString(),
+                    link: "https://kozeyy.com/tenant.html"
+                 }
+             );
+        }
+
+        closeModal('modal-pay'); 
+        await initSystem(); 
+        showToast("Payment Recorded & Invoices Reconciled"); 
+    } 
+}
     
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
@@ -3783,7 +3810,10 @@ function renderFinancials() {
                         <td class="p-5 text-sm font-bold text-slate-700">${tenant.name}</td>
                         <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">#${record.invoice_num || '---'}</span></td>
                         <td class="p-5 text-sm text-slate-500 hidden md:table-cell">${(record.items && record.items[0]) ? record.items[0].desc : 'Rent'}</td>
-                        <td class="p-5 text-right font-bold text-slate-800 hidden md:table-cell">$${(record.total||0).toLocaleString()}</td>
+                        <td class="p-5 text-right font-bold text-slate-800 hidden md:table-cell">
+    $${(record.status === 'Paid' ? (record.total || 0) : ((record.total || 0) + (calc.isOverdue ? calc.fee : 0))).toLocaleString(undefined, {minimumFractionDigits: 2})}
+    ${calc.isOverdue && record.status !== 'Paid' ? `<span class="block text-[10px] text-rose-500 font-semibold font-mono">+${calc.fee > 0 ? '$' + calc.fee.toFixed(2) + ' fee' : ''}</span>` : ''}
+</td>
                         <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
                         <td class="p-5 text-right hidden md:table-cell"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
                     </tr>`;
