@@ -1103,7 +1103,31 @@
         </div>
     </div>
     
-    <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4"><div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative"><button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400"><i class="fas fa-times text-xl"></i></button><h3 class="text-xl font-bold mb-2 brand-font">Request</h3><p id="md-issue" class="text-lg font-medium text-slate-800 mb-1 brand-font"></p><p id="md-meta" class="text-sm text-slate-500 mb-4"></p><div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4"><p class="text-xs font-bold text-slate-400 uppercase mb-1">Notes</p><p id="md-notes" class="text-sm text-slate-700 italic">None</p></div><button onclick="closeModal('modal-maint-detail')" class="w-full border border-slate-300 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-50 brand-font">Close</button></div></div>
+    <div id="modal-maint-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md relative">
+            <button onclick="closeModal('modal-maint-detail')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            <h3 class="text-xl font-bold mb-2 brand-font">Maintenance Request</h3>
+            <p id="md-issue" class="text-lg font-bold text-slate-800 mb-1 brand-font"></p>
+            <p id="md-meta" class="text-xs text-slate-400 mb-4"></p>
+
+            <!-- Tenant Description & Permission to Enter Badge -->
+            <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-100 mb-4">
+                <div class="flex justify-between items-center mb-1">
+                    <p class="text-[10px] font-bold text-indigo-900 uppercase tracking-wider">Tenant Description</p>
+                    <span id="md-entry-badge"></span>
+                </div>
+                <p id="md-desc" class="text-sm text-slate-700 whitespace-pre-line mt-1"></p>
+            </div>
+
+            <!-- Resolution Notes -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Resolution Notes</p>
+                <p id="md-notes" class="text-sm text-slate-700 italic">None</p>
+            </div>
+
+            <button onclick="closeModal('modal-maint-detail')" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-3 rounded-xl font-bold text-sm transition">Close</button>
+        </div>
+    </div>
 
    <div id="modal-screening-detail" class="hidden-section fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm p-4">
     <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
@@ -2244,9 +2268,35 @@ const response = await fetch('https://xhufxnqfflnzlqhzhtaz.supabase.co/functions
 }
     function viewMaintNote(id) { 
         const m = state.maint.find(x => x.id == id); 
+        if (!m) return;
+
         setText('md-issue', m.issue); 
-        setText('md-meta', `Completed: ${m.completed_date ? new Date(m.completed_date).toLocaleDateString() : 'Unknown'}`); 
-        setText('md-notes', m.notes || "No notes."); 
+        
+        const dateStr = m.created_at ? new Date(m.created_at).toLocaleDateString() : 'Unknown';
+        const statusStr = m.status === 'Completed' && m.completed_date 
+            ? `Resolved: ${new Date(m.completed_date).toLocaleDateString()}` 
+            : `Status: ${m.status}`;
+        setText('md-meta', `Submitted: ${dateStr} • ${statusStr}`); 
+        setText('md-notes', m.notes || "No resolution notes yet."); 
+
+        // Extract and clean description & entry permission
+        const desc = m.description || m.issue || "No description provided.";
+        const allowsEntry = desc.includes('[Entry Permitted]');
+        const callsForEntry = desc.includes('[Call for Entry]');
+        const badgeEl = document.getElementById('md-entry-badge');
+        
+        if (allowsEntry) {
+            badgeEl.innerHTML = `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><i class="fas fa-key text-[9px]"></i> Entry Permitted</span>`;
+        } else if (callsForEntry) {
+            badgeEl.innerHTML = `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><i class="fas fa-phone text-[9px]"></i> Call for Entry</span>`;
+        } else {
+            badgeEl.innerHTML = '';
+        }
+        
+        // Strip the bracketed tag so it doesn't repeat inside the text body
+        const cleanedDesc = desc.replace(/\[Entry Permitted\]|\[Call for Entry\]/g, '').trim();
+        setText('md-desc', cleanedDesc || "No additional details provided.");
+        
         openModal('modal-maint-detail'); 
     }
 
