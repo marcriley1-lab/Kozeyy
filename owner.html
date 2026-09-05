@@ -3650,98 +3650,183 @@ async function act_saveSettings(e) {
 }
     function getMonthlyFinancials() { const months = [], revenueData = [], expenseData = []; const today = new Date(); for(let i=5; i>=0; i--) { const d = new Date(today.getFullYear(), today.getMonth() - i, 1); const mKey = d.getMonth(); const yKey = d.getFullYear(); months.push(d.toLocaleString('default', { month: 'short' })); const monthRev = state.payments.reduce((sum, p) => { const pd = parseDateStr(p.date); return (pd.getMonth() === mKey && pd.getFullYear() === yKey) ? sum + p.amount : sum; }, 0); revenueData.push(monthRev); const monthExp = state.expenses.reduce((sum, e) => { const ed = parseDateStr(e.date); return (ed.getMonth() === mKey && ed.getFullYear() === yKey) ? sum + e.amount : sum; }, 0); expenseData.push(monthExp); } return { labels: months, revenue: revenueData, expenses: expenseData }; }
 
-    function act_openPayModal(tenantId) { document.getElementById('pay-amount').value = ''; document.getElementById('pay-date').valueAsDate = new Date(); const sel = document.getElementById('pay-tenant-select'); if(tenantId) { document.getElementById('pay-tenant-id').value = tenantId; sel.classList.add('hidden-section'); } else { sel.classList.remove('hidden-section'); sel.innerHTML = '<option value="" disabled selected>Select Tenant</option>'; state.tenants.filter(t => t.status === 'Active').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); document.getElementById('pay-tenant-id').value = ""; } openModal('modal-pay'); }
-    
-async function confirmPay() { 
-    let tid = document.getElementById('pay-tenant-id').value; 
-    const sel = document.getElementById('pay-tenant-select'); 
-    const ownerId = localStorage.getItem('kozeyy_user_id'); 
+    function act_openPayModal(tenantId) { 
+        document.getElementById('pay-amount').value = ''; 
+        document.getElementById('pay-date').valueAsDate = new Date(); 
+        
+        const selTenant = document.getElementById('pay-tenant-select');
+        selTenant.innerHTML = '<option value="" disabled selected>Choose a Tenant...</option>';
+        
+        state.tenants.filter(t => t.status === 'Active').forEach(t => { 
+            selTenant.innerHTML += `<option value="${t.id}">${t.name}</option>`; 
+        });
 
-    if(!sel.classList.contains('hidden-section') && sel.value) tid = sel.value; 
-    let amt = parseFloat(document.getElementById('pay-amount').value); 
-    
-    if(tid && amt > 0 && ownerId) { 
-        // 1. Insert Payment Record
-        const { error } = await supabaseClient.from('payments').insert([{ 
-            owner_id: ownerId,
-            tenant_id: tid, 
-            amount: amt, 
-            date: document.getElementById('pay-date').value 
-        }]);
-
-        if (error) { 
-            showToast("Payment Failed: " + error.message, 'error'); 
-            return; 
+        if (tenantId) {
+            selTenant.value = tenantId;
+            document.getElementById('pay-tenant-id').value = tenantId;
+            onPayTenantChange();
+        } else {
+            document.getElementById('pay-tenant-id').value = "";
+            const selInv = document.getElementById('pay-invoice-select');
+            selInv.innerHTML = '<option value="auto">Select a tenant first</option>';
         }
 
-        // 2. Fetch Open Invoices sorted oldest first
+        openModal('modal-pay'); 
+    }
+
+ function onPayTenantChange() {
+        const tid = document.getElementById('pay-tenant-select').value;
+        document.getElementById('pay-tenant-id').value = tid;
+        const selInv = document.getElementById('pay-invoice-select');
+        selInv.innerHTML = '<option value="auto">Auto (Apply to oldest unpaid)</option>';
+
+        if (!tid) return;
+
         const openInvoices = state.invoices
-            .filter(i => i.tenant_id === tid && i.status !== 'Paid')
-            .sort((a,b) => new Date(a.date) - new Date(b.date)); 
-        
-        let remainingAmt = amt;
+            .filter(i => String(i.tenant_id) === String(tid) && i.status !== 'Paid')
+            .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        for(const inv of openInvoices) { 
-            if (remainingAmt <= 0) break; 
-
-            // Calculate any overdue late fee on this invoice
+        openInvoices.forEach(inv => {
             const calc = calculateOverdueDetails(inv, state.settings);
             const currentFee = (calc.isOverdue && !inv.fee_applied) ? (calc.fee || 0) : 0;
+            const netBalance = Math.max(0, (parseFloat(inv.total || 0) + currentFee) - parseFloat(inv.amount_paid || 0));
             
-            // Effective total due including assessed fee
-            const currentInvoiceTotal = parseFloat(inv.total || 0) + currentFee;
-            const currentPaid = parseFloat(inv.amount_paid || 0);
-            const netDue = Math.max(0, currentInvoiceTotal - currentPaid);
+            selInv.innerHTML += `<option value="${inv.id}">#${inv.invoice_num || inv.id.slice(0, 6)} - $${netBalance.toFixed(2)} due (${inv.date})</option>`;
+        });
 
-            const pay = Math.min(remainingAmt, netDue); 
-            const newPaid = currentPaid + pay; 
-            const isFullyPaid = newPaid >= currentInvoiceTotal;
-
-            const updateData = { 
-                amount_paid: newPaid, 
-                status: isFullyPaid ? 'Paid' : 'Unpaid' 
-            };
-
-            // If a late fee was assessed and being paid, lock it into the invoice
-            if (currentFee > 0) {
-                const updatedItems = [...(inv.items || [])];
-                const feeLabel = calc.isCapped ? `Late Fee (${calc.daysLate}d - Capped)` : `Late Fee (${calc.daysLate}d)`;
-                updatedItems.push({ desc: feeLabel, amount: currentFee });
-
-                updateData.items = updatedItems;
-                updateData.total = currentInvoiceTotal;
-                updateData.fee_applied = true; // Prevents fee from recalculating again
-            }
-
-            if (isFullyPaid) {
-                updateData.paid_date = new Date().toISOString();
-            }
-
-            await supabaseClient.from('invoices').update(updateData).eq('id', inv.id); 
-            remainingAmt -= pay; 
-        } 
-        
-        // 3. Send Receipt Email
-        const tenant = state.tenants.find(t => t.id === tid);
-        if(tenant && tenant.email) {
-             await sendEmail(
-                 tenant.email, 
-                 "Rent Payment Receipt", 
-                 'receipt', 
-                 { 
-                    name: tenant.name, 
-                    amount: amt.toLocaleString(undefined, {minimumFractionDigits: 2}), 
-                    date: new Date().toLocaleDateString(),
-                    link: "https://kozeyy.com/tenant.html"
-                 }
-             );
+        // Pre-fill amount with oldest unpaid invoice balance if available
+        if (openInvoices.length > 0) {
+            const firstInv = openInvoices[0];
+            const calc = calculateOverdueDetails(firstInv, state.settings);
+            const fee = (calc.isOverdue && !firstInv.fee_applied) ? (calc.fee || 0) : 0;
+            const due = Math.max(0, (parseFloat(firstInv.total || 0) + fee) - parseFloat(firstInv.amount_paid || 0));
+            document.getElementById('pay-amount').value = due.toFixed(2);
         }
+    }
 
-        closeModal('modal-pay'); 
-        await initSystem(); 
-        showToast("Payment Recorded & Invoices Reconciled"); 
-    } 
-}
+    function onPayInvoiceChange() {
+        const invId = document.getElementById('pay-invoice-select').value;
+        if (invId === 'auto') {
+            onPayTenantChange();
+            return;
+        }
+        const inv = state.invoices.find(i => String(i.id) === String(invId));
+        if (inv) {
+            const calc = calculateOverdueDetails(inv, state.settings);
+            const fee = (calc.isOverdue && !inv.fee_applied) ? (calc.fee || 0) : 0;
+            const due = Math.max(0, (parseFloat(inv.total || 0) + fee) - parseFloat(inv.amount_paid || 0));
+            document.getElementById('pay-amount').value = due.toFixed(2);
+        }
+    }
+async function confirmPay() { 
+        let tid = document.getElementById('pay-tenant-id').value; 
+        const selTenant = document.getElementById('pay-tenant-select');
+        const selectedInvId = document.getElementById('pay-invoice-select').value;
+        const ownerId = localStorage.getItem('kozeyy_user_id'); 
+
+        if (!tid && selTenant.value) tid = selTenant.value;
+        const amt = parseFloat(document.getElementById('pay-amount').value); 
+        const payDate = document.getElementById('pay-date').value;
+
+        if (!tid) return showToast("Please select a tenant", 'error');
+        if (!amt || amt <= 0) return showToast("Please enter a valid payment amount", 'error');
+
+        const btn = document.getElementById('btn-save-pay');
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Recording...";
+
+        try {
+            // 1. Insert Payment Record
+            const { error: payErr } = await supabaseClient.from('payments').insert([{ 
+                owner_id: ownerId,
+                tenant_id: tid, 
+                amount: amt, 
+                date: payDate 
+            }]);
+
+            if (payErr) throw payErr;
+
+            // 2. Identify Target Invoice(s)
+            let invoicesToReconcile = [];
+            if (selectedInvId && selectedInvId !== 'auto') {
+                const specificInv = state.invoices.find(i => String(i.id) === String(selectedInvId));
+                if (specificInv) invoicesToReconcile = [specificInv];
+            } else {
+                invoicesToReconcile = state.invoices
+                    .filter(i => String(i.tenant_id) === String(tid) && i.status !== 'Paid')
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+            }
+
+            // 3. Apply Payment and Reconcile Late Fees
+            let remainingAmt = amt;
+            for (const inv of invoicesToReconcile) { 
+                if (remainingAmt <= 0) break; 
+
+                const calc = calculateOverdueDetails(inv, state.settings);
+                const currentFee = (calc.isOverdue && !inv.fee_applied) ? (calc.fee || 0) : 0;
+                
+                const currentInvoiceTotal = parseFloat(inv.total || 0) + currentFee;
+                const currentPaid = parseFloat(inv.amount_paid || 0);
+                const netDue = Math.max(0, currentInvoiceTotal - currentPaid);
+
+                const pay = Math.min(remainingAmt, netDue); 
+                const newPaid = currentPaid + pay; 
+                const isFullyPaid = newPaid >= currentInvoiceTotal;
+
+                const updateData = { 
+                    amount_paid: newPaid, 
+                    status: isFullyPaid ? 'Paid' : 'Unpaid' 
+                };
+
+                // Permanently lock in late fee if assessed
+                if (currentFee > 0) {
+                    const updatedItems = [...(inv.items || [])];
+                    const feeLabel = calc.isCapped ? `Late Fee (${calc.daysLate}d - Capped)` : `Late Fee (${calc.daysLate}d)`;
+                    updatedItems.push({ desc: feeLabel, amount: currentFee });
+
+                    updateData.items = updatedItems;
+                    updateData.total = currentInvoiceTotal;
+                    updateData.fee_applied = true;
+                }
+
+                if (isFullyPaid) {
+                    updateData.paid_date = new Date(payDate).toISOString();
+                }
+
+                await supabaseClient.from('invoices').update(updateData).eq('id', inv.id); 
+                remainingAmt -= pay; 
+            }
+
+            // 4. Send Receipt Email
+            const tenant = state.tenants.find(t => String(t.id) === String(tid));
+            if (tenant && tenant.email) {
+                await sendEmail(
+                    tenant.email, 
+                    "Rent Payment Receipt", 
+                    'receipt', 
+                    { 
+                        name: tenant.name, 
+                        amount: amt.toLocaleString(undefined, { minimumFractionDigits: 2 }), 
+                        date: new Date(payDate).toLocaleDateString(),
+                        link: "https://kozeyy.com/tenant.html"
+                    }
+                );
+            }
+
+            closeModal('modal-pay'); 
+            await fetchData(); 
+            renderAll(); 
+            showToast("Payment recorded & invoice updated successfully!"); 
+
+        } catch (err) {
+            console.error("Payment error:", err);
+            showToast("Error: " + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
+        }
+    }
     
     function populateFinFilter() { const sel = document.getElementById('filter-financials'); const currentVal = sel.value; sel.innerHTML = '<option value="all">All Tenants</option>'; state.tenants.filter(t => t.status !== 'Vacant').forEach(t => { sel.innerHTML += `<option value="${t.id}">${t.name}</option>`; }); sel.value = currentVal; }
     
