@@ -3878,16 +3878,25 @@ function renderFinancials() {
                 const unpaidBal = Math.max(0, (record.total || 0) - (record.amount_paid || 0));
                 if (record.status !== 'Paid') totalOutstandingDebt += (unpaidBal + calc.fee);
 
-                let statusLabel = record.status;
+     let statusLabel = record.status;
                 let statusColor = 'text-slate-500 bg-slate-50';
                 if (record.status === 'Paid') {
                     statusColor = 'text-emerald-600 bg-emerald-50';
                 } else if (calc.isOverdue) { 
-                    statusLabel = calc.isCapped 
-                        ? `Overdue (+${calc.daysLate}d) • Capped` 
-                        : `Overdue (+${calc.daysLate}d)`; 
-                    statusColor = calc.isCapped ? 'text-amber-700 bg-amber-50 border border-amber-200' : 'text-rose-600 bg-rose-50'; 
+                    // Clean status without "Capped"
+                    statusLabel = `Overdue (+${calc.daysLate}d)`; 
+                    statusColor = 'text-rose-600 bg-rose-50'; 
                 }
+
+                // Late Fee Subtext: Only show if fee > 0; say "includes $X.XX late fee"
+                const activeFee = (calc.isOverdue && !record.fee_applied) ? (calc.fee || 0) : 0;
+                const totalDisplay = record.status === 'Paid' 
+                    ? (record.total || 0) 
+                    : ((record.total || 0) + activeFee);
+
+                const feeSubtext = (activeFee > 0 && record.status !== 'Paid')
+                    ? `<span class="block text-[10px] text-rose-500 font-medium">Includes $${activeFee.toFixed(2)} late fee</span>`
+                    : '';
                 
                 tbody.innerHTML += `
                     <tr onclick="act_viewInvoice('${record.id}')" class="hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer">
@@ -3896,9 +3905,9 @@ function renderFinancials() {
                         <td class="p-5"><span class="px-2 py-1 rounded text-xs font-bold bg-indigo-50 text-indigo-600">#${record.invoice_num || '---'}</span></td>
                         <td class="p-5 text-sm text-slate-500 hidden md:table-cell">${(record.items && record.items[0]) ? record.items[0].desc : 'Rent'}</td>
                         <td class="p-5 text-right font-bold text-slate-800 hidden md:table-cell">
-    $${(record.status === 'Paid' ? (record.total || 0) : ((record.total || 0) + (calc.isOverdue ? calc.fee : 0))).toLocaleString(undefined, {minimumFractionDigits: 2})}
-    ${calc.isOverdue && record.status !== 'Paid' ? `<span class="block text-[10px] text-rose-500 font-semibold font-mono">+${calc.fee > 0 ? '$' + calc.fee.toFixed(2) + ' fee' : ''}</span>` : ''}
-</td>
+                            $${totalDisplay.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            ${feeSubtext}
+                        </td>
                         <td class="p-5 text-right"><span class="px-2 py-1 rounded text-xs font-bold uppercase ${statusColor}">${statusLabel}</span></td>
                         <td class="p-5 text-right hidden md:table-cell"><button class="text-slate-400 hover:text-indigo-600"><i class="fas fa-eye"></i></button></td>
                     </tr>`;
@@ -4031,6 +4040,7 @@ function act_viewInvoice(id) {
 
             tbody.innerHTML += `<tr class="border-b border-slate-100 last:border-0 text-rose-600 font-bold"><td class="py-2">${feeLabel}</td><td class="py-2 text-right">+$${calc.fee.toLocaleString(undefined, {minimumFractionDigits: 2})}</td></tr>`;
             
+            // This displays the capped notice inside the modal only
             if (calc.isCapped) {
                 tbody.innerHTML += `<tr><td colspan="2" class="py-1 text-right text-[10px] text-amber-600 italic font-semibold">* Daily late fee limit reached (capped at 10% of total)</td></tr>`;
             }
