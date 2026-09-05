@@ -3749,7 +3749,8 @@ async function confirmPay() {
         const payDate = document.getElementById('pay-date').value;
 
         if (!tid) return showToast("Please select a tenant", 'error');
-        if (!amt || amt <= 0) return showToast("Please enter a valid payment amount", 'error');
+        if (!amt || amt <= 0 || isNaN(amt)) return showToast("Please enter a valid payment amount", 'error');
+        if (!payDate) return showToast("Please select a payment date", 'error');
 
         const btn = document.getElementById('btn-save-pay');
         const originalText = btn.innerText;
@@ -3765,20 +3766,28 @@ async function confirmPay() {
                 date: payDate 
             }]);
 
-            if (payErr) throw payErr;
+            if (payErr) throw new Error("Payment record failed: " + payErr.message);
 
             // 2. Identify Target Invoice(s)
             let invoicesToReconcile = [];
             if (selectedInvId && selectedInvId !== 'auto') {
-                const specificInv = state.invoices.find(i => String(i.id) === String(selectedInvId));
-                if (specificInv) invoicesToReconcile = [specificInv];
-            } else {
+                // Loose string comparison to match UUIDs reliably
+                const specificInv = state.invoices.find(i => String(i.id).trim() === String(selectedInvId).trim());
+                if (specificInv) {
+                    invoicesToReconcile = [specificInv];
+                }
+            }
+            
+            // Fallback to all unpaid invoices for this tenant, oldest first
+            if (invoicesToReconcile.length === 0) {
                 invoicesToReconcile = state.invoices
-                    .filter(i => String(i.tenant_id) === String(tid) && i.status !== 'Paid')
+                    .filter(i => String(i.tenant_id).trim() === String(tid).trim() && i.status !== 'Paid')
                     .sort((a, b) => new Date(a.date) - new Date(b.date));
             }
 
-            // 3. Apply Payment and Reconcile Late Fees
+            console.log("Invoices to reconcile:", invoicesToReconcile);
+
+            // 3. Apply Payment and Reconcile
             let remainingAmt = amt;
             for (const inv of invoicesToReconcile) { 
                 if (remainingAmt <= 0) break; 
@@ -3786,42 +3795,51 @@ async function confirmPay() {
                 const calc = calculateOverdueDetails(inv, state.settings);
                 const currentFee = (calc.isOverdue && !inv.fee_applied) ? (calc.fee || 0) : 0;
                 
-                const currentInvoiceTotal = parseFloat(inv.total || 0) + currentFee;
+                const baseTotal = parseFloat(inv.total || 0);
+                const currentInvoiceTotal = baseTotal + currentFee;
                 const currentPaid = parseFloat(inv.amount_paid || 0);
                 const netDue = Math.max(0, currentInvoiceTotal - currentPaid);
 
                 const pay = Math.min(remainingAmt, netDue); 
-                const newPaid = currentPaid + pay; 
-                const isFullyPaid = newPaid >= currentInvoiceTotal;
+                const newPaid = Number((currentPaid + pay).toFixed(2)); 
+                const isFullyPaid = newPaid >= (currentInvoiceTotal - 0.01); // Float rounding guard
 
-                const updateData = { 
+                const updatePayload = { 
                     amount_paid: newPaid, 
                     status: isFullyPaid ? 'Paid' : 'Unpaid' 
                 };
 
-                // Permanently lock in late fee if assessed
+                // If a late fee was assessed, adjust line items & total
                 if (currentFee > 0) {
-                    const updatedItems = [...(inv.items || [])];
-                    const feeLabel = calc.isCapped ? `Late Fee (${calc.daysLate}d - Capped)` : `Late Fee (${calc.daysLate}d)`;
-                    updatedItems.push({ desc: feeLabel, amount: currentFee });
-
-                    updateData.items = updatedItems;
-                    updateData.total = currentInvoiceTotal;
-                    updateData.fee_applied = true;
+                    const updatedItems = Array.isArray(inv.items) ? [...inv.items] : [];
+                    updatedItems.push({ desc: `Late Fee (${calc.daysLate}d)`, amount: currentFee });
+                    updatePayload.items = updatedItems;
+                    updatePayload.total = Number(currentInvoiceTotal.toFixed(2));
                 }
 
                 if (isFullyPaid) {
-                    updateData.paid_date = new Date(payDate).toISOString();
+                    updatePayload.paid_date = new Date(payDate).toISOString();
                 }
 
-                await supabaseClient.from('invoices').update(updateData).eq('id', inv.id); 
-                remainingAmt -= pay; 
+                console.log(`Updating invoice ${inv.id} with:`, updatePayload);
+
+                const { error: invErr } = await supabaseClient
+                    .from('invoices')
+                    .update(updatePayload)
+                    .eq('id', inv.id);
+
+                if (invErr) {
+                    console.error("Failed to update invoice:", invErr);
+                    throw new Error("Could not update invoice: " + invErr.message);
+                }
+
+                remainingAmt = Number((remainingAmt - pay).toFixed(2)); 
             }
 
-            // 4. Send Receipt Email
-            const tenant = state.tenants.find(t => String(t.id) === String(tid));
+            // 4. Send Receipt Email (non-blocking)
+            const tenant = state.tenants.find(t => String(t.id).trim() === String(tid).trim());
             if (tenant && tenant.email) {
-                await sendEmail(
+                sendEmail(
                     tenant.email, 
                     "Rent Payment Receipt", 
                     'receipt', 
@@ -3831,17 +3849,19 @@ async function confirmPay() {
                         date: new Date(payDate).toLocaleDateString(),
                         link: "https://kozeyy.com/tenant.html"
                     }
-                );
+                ).catch(e => console.warn("Receipt email warning:", e));
             }
 
             closeModal('modal-pay'); 
+            
+            // 5. Re-fetch clean data and force fresh recalculation
             await fetchData(); 
             renderAll(); 
-            showToast("Payment recorded & invoice updated successfully!"); 
+            showToast("Payment recorded and invoice marked as paid!"); 
 
         } catch (err) {
             console.error("Payment error:", err);
-            showToast("Error: " + err.message, 'error');
+            showToast(err.message || "An error occurred", 'error');
         } finally {
             btn.disabled = false;
             btn.innerText = originalText;
